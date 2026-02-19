@@ -83,14 +83,14 @@ Création d'une page showcase présentant tous les éléments visuels de base. L
 
 Définition complète du schéma Drizzle et création de la base SQLite.
 
-- [ ] **1.1** Créer `src/server/db/index.ts` — connexion SQLite via `bun:sqlite` avec chargement des extensions (sqlite-vec, FTS5)
-- [ ] **1.2** Créer `src/server/db/schema.ts` — définir **toutes** les tables Drizzle conformes à `schema.md` :
+- [x] **1.1** Créer `src/server/db/index.ts` — connexion SQLite via `bun:sqlite` avec chargement des extensions (sqlite-vec, FTS5)
+- [x] **1.2** Créer `src/server/db/schema.ts` — définir **toutes** les tables Drizzle conformes à `schema.md` :
   - Tables Better Auth : `user`, `session`, `account`, `verification`
   - Tables custom : `user_profiles`, `providers`, `kins`, `mcp_servers`, `kin_mcp_servers`, `messages`, `compacting_snapshots`, `memories`, `contacts`, `custom_tools`, `tasks`, `crons`, `vault_secrets`, `queue_items`, `files`
-- [ ] **1.3** Créer les index conformes au schéma (tous les `idx_*` documentés)
-- [ ] **1.4** Créer les tables virtuelles FTS5 (`memories_fts`, `messages_fts`) avec triggers de synchronisation
-- [ ] **1.5** Créer la table virtuelle sqlite-vec (`memories_vec`)
-- [ ] **1.6** Générer et exécuter la première migration Drizzle
+- [x] **1.3** Créer les index conformes au schéma (tous les `idx_*` documentés)
+- [x] **1.4** Créer les tables virtuelles FTS5 (`memories_fts`, `messages_fts`) avec triggers de synchronisation
+- [x] **1.5** Créer la table virtuelle sqlite-vec (`memories_vec`)
+- [x] **1.6** Générer et exécuter la première migration Drizzle
 - [ ] **1.7** (Optionnel) Créer `src/server/db/seed.ts` pour le développement
 
 **Critère de validation** : `bun run db:push` crée la base avec toutes les tables. Vérifiable via `sqlite3 data/kinbot.db ".tables"`.
