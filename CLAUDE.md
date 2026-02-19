@@ -8,7 +8,7 @@ Read these files **before starting any phase**. They are the source of truth.
 
 | File | Content |
 |---|---|
-| `idea.md` | Full functional specification (features, UX, architecture) |
+| `idea.md` | Full functional specification (features, UX, architecture) toujours inclure dans le contexte pour etre aligné |
 | `schema.md` | Complete SQLite database schema (all tables, indexes, virtual tables) |
 | `api.md` | REST API contracts (request/response for every route) + SSE events |
 | `config.md` | All configurable values with env vars and defaults |

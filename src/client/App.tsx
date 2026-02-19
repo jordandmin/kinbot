@@ -1,8 +1,12 @@
 import { useAuth } from '@/client/hooks/useAuth'
 import { LoginPage } from '@/client/pages/login/LoginPage'
 import { useTranslation } from 'react-i18next'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { DesignSystemPage } from '@/client/pages/design-system/DesignSystemPage'
 
-export function App() {
+const isDev = import.meta.env.DEV
+
+function AuthenticatedApp() {
   const { t } = useTranslation()
   const { user, isLoading, isAuthenticated, login } = useAuth()
 
@@ -31,5 +35,16 @@ export function App() {
         </p>
       </div>
     </div>
+  )
+}
+
+export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {isDev && <Route path="/design-system" element={<DesignSystemPage />} />}
+        <Route path="*" element={<AuthenticatedApp />} />
+      </Routes>
+    </BrowserRouter>
   )
 }

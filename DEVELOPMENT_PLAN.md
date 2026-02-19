@@ -34,44 +34,44 @@ Mise en place du monorepo, de la toolchain, et des fichiers de configuration.
 
 Création d'une page showcase présentant tous les éléments visuels de base. L'objectif est de valider la direction graphique (palette, typographie, composants, dark mode) avant de construire les vrais écrans.
 
-- [ ] **0.5.1** Créer `src/client/pages/design-system/DesignSystemPage.tsx` — page showcase accessible en dev à `/design-system`, avec les sections suivantes :
+- [x] **0.5.1** Créer `src/client/pages/design-system/DesignSystemPage.tsx` — page showcase accessible en dev à `/design-system`, avec les sections suivantes :
 
   **Palette de couleurs**
-  - [ ] **0.5.2** Afficher les couleurs primaires, secondaires, accent, success, warning, error, info
-  - [ ] **0.5.3** Afficher les couleurs de background et surface (light + dark)
-  - [ ] **0.5.4** Afficher les couleurs de texte (primary, secondary, muted, disabled)
+  - [x] **0.5.2** Afficher les couleurs primaires, secondaires, accent, success, warning, error, info
+  - [x] **0.5.3** Afficher les couleurs de background et surface (light + dark)
+  - [x] **0.5.4** Afficher les couleurs de texte (primary, secondary, muted, disabled)
 
   **Typographie**
-  - [ ] **0.5.5** Afficher la hiérarchie des titres (h1 → h6) avec la police choisie (Inter ou Plus Jakarta Sans)
-  - [ ] **0.5.6** Afficher les tailles de texte (body, small, caption, label)
-  - [ ] **0.5.7** Afficher les poids de police (regular, medium, semibold, bold)
+  - [x] **0.5.5** Afficher la hiérarchie des titres (h1 → h6) avec la police choisie (Inter ou Plus Jakarta Sans)
+  - [x] **0.5.6** Afficher les tailles de texte (body, small, caption, label)
+  - [x] **0.5.7** Afficher les poids de police (regular, medium, semibold, bold)
 
   **Composants de base**
-  - [ ] **0.5.8** Buttons : toutes les variantes (primary, secondary, outline, ghost, destructive) × tailles (sm, md, lg) + états (default, hover, disabled, loading)
-  - [ ] **0.5.9** Inputs : text input, textarea, select, avec labels, placeholders, messages d'erreur, états (default, focus, error, disabled)
-  - [ ] **0.5.10** Cards : card basique, card avec header/footer, card interactive (hover), card avec image
-  - [ ] **0.5.11** Badges : variantes (default, success, warning, error, info) + tailles
-  - [ ] **0.5.12** Alerts : success, warning, error, info — avec et sans icône
-  - [ ] **0.5.13** Checkboxes, Radio buttons, Switch/Toggle
-  - [ ] **0.5.14** Dialog/Modal : exemple avec formulaire à l'intérieur
-  - [ ] **0.5.15** Tabs, Dropdown menu, Tooltip
-  - [ ] **0.5.16** Avatar : différentes tailles, avec image, avec initiales, avec indicateur de statut (online/offline/busy)
+  - [x] **0.5.8** Buttons : toutes les variantes (primary, secondary, outline, ghost, destructive) × tailles (sm, md, lg) + états (default, hover, disabled, loading)
+  - [x] **0.5.9** Inputs : text input, textarea, select, avec labels, placeholders, messages d'erreur, états (default, focus, error, disabled)
+  - [x] **0.5.10** Cards : card basique, card avec header/footer, card interactive (hover), card avec image
+  - [x] **0.5.11** Badges : variantes (default, success, warning, error, info) + tailles
+  - [x] **0.5.12** Alerts : success, warning, error, info — avec et sans icône
+  - [x] **0.5.13** Checkboxes, Radio buttons, Switch/Toggle
+  - [x] **0.5.14** Dialog/Modal : exemple avec formulaire à l'intérieur
+  - [x] **0.5.15** Tabs, Dropdown menu, Tooltip
+  - [x] **0.5.16** Avatar : différentes tailles, avec image, avec initiales, avec indicateur de statut (online/offline/busy)
 
   **Patterns spécifiques KinBot**
-  - [ ] **0.5.17** Bulle de message : variante utilisateur (alignée à droite, couleur A), variante Kin (alignée à gauche, couleur B), variante système/tâche/cron (neutre) — avec avatar, nom, timestamp
-  - [ ] **0.5.18** Carte de Kin : aperçu d'un Kin dans la sidebar (avatar, nom, rôle, badge queue)
-  - [ ] **0.5.19** Indicateur de typing / streaming en cours
-  - [ ] **0.5.20** Indicateur d'état de tâche (pending, in_progress, completed, failed)
+  - [x] **0.5.17** Bulle de message : variante utilisateur (alignée à droite, couleur A), variante Kin (alignée à gauche, couleur B), variante système/tâche/cron (neutre) — avec avatar, nom, timestamp
+  - [x] **0.5.18** Carte de Kin : aperçu d'un Kin dans la sidebar (avatar, nom, rôle, badge queue)
+  - [x] **0.5.19** Indicateur de typing / streaming en cours
+  - [x] **0.5.20** Indicateur d'état de tâche (pending, in_progress, completed, failed)
 
   **Spacing et layout**
-  - [ ] **0.5.21** Afficher l'échelle de spacing (4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px)
-  - [ ] **0.5.22** Afficher les border-radius utilisés (coins arrondis généreux)
-  - [ ] **0.5.23** Afficher les ombres (shadows) sur les cards et éléments interactifs
+  - [x] **0.5.21** Afficher l'échelle de spacing (4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px)
+  - [x] **0.5.22** Afficher les border-radius utilisés (coins arrondis généreux)
+  - [x] **0.5.23** Afficher les ombres (shadows) sur les cards et éléments interactifs
 
   **Dark mode**
-  - [ ] **0.5.24** Toggle dark/light sur la page showcase — tous les éléments ci-dessus doivent fonctionner dans les deux thèmes (tons sombres chauds, pas de noir pur)
+  - [x] **0.5.24** Toggle dark/light sur la page showcase — tous les éléments ci-dessus doivent fonctionner dans les deux thèmes (tons sombres chauds, pas de noir pur)
 
-- [ ] **0.5.25** Route `/design-system` accessible uniquement en mode développement (pas en production)
+- [x] **0.5.25** Route `/design-system` accessible uniquement en mode développement (pas en production)
 
 **Critère de validation** : le porteur du projet ouvre `/design-system`, passe en revue chaque section en light et dark mode, et **approuve** la direction visuelle. Les ajustements demandés sont appliqués avant de continuer.
 
