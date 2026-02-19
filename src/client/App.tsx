@@ -1,14 +1,33 @@
+import { useAuth } from '@/client/hooks/useAuth'
+import { LoginPage } from '@/client/pages/login/LoginPage'
 import { useTranslation } from 'react-i18next'
 
 export function App() {
   const { t } = useTranslation()
+  const { user, isLoading, isAuthenticated, login } = useAuth()
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-primary">KinBot</h1>
+          <p className="mt-2 text-muted-foreground">{t('common.loading')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={login} />
+  }
+
+  // Authenticated — main app (placeholder for now)
   return (
     <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary">KinBot</h1>
         <p className="mt-2 text-muted-foreground">
-          {t('common.loading')}
+          Welcome, {user?.firstName ?? user?.pseudonym ?? 'User'}
         </p>
       </div>
     </div>
