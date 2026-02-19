@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   Bell,
   Search,
-  Send,
   Settings,
   User,
   Bot,
@@ -21,6 +20,7 @@ import {
   Pencil,
   Sparkles,
   Zap,
+  Leaf,
 } from 'lucide-react'
 
 import { Button } from '@/client/components/ui/button'
@@ -72,7 +72,6 @@ import {
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from '@/client/components/ui/avatar'
 import { Label } from '@/client/components/ui/label'
 import { Separator } from '@/client/components/ui/separator'
@@ -128,17 +127,17 @@ export function DesignSystemPage() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-background text-foreground">
-        {/* ─── HERO HEADER ──────────────────────────────────── */}
-        <header className="sticky top-0 z-50 glass-strong">
+      <div className="min-h-screen surface-base text-foreground">
+        {/* ─── HEADER ───────────────────────────────────────── */}
+        <header className="sticky top-0 z-50 surface-header border-b">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="gradient-primary flex size-10 items-center justify-center rounded-xl">
-                <Sparkles className="size-5 text-white" />
+              <div className="gradient-primary flex size-10 items-center justify-center rounded-xl shadow-sm">
+                <Leaf className="size-5 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold gradient-primary-text">KinBot Design System</h1>
-                <p className="text-xs text-muted-foreground">Gradient Vivid &mdash; Premium modern UI</p>
+                <p className="text-xs text-muted-foreground">Teal + Lime &mdash; Fresh & modern</p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={toggleDarkMode} className="gap-2">
@@ -148,15 +147,14 @@ export function DesignSystemPage() {
           </div>
         </header>
 
-        {/* ─── HERO BANNER ──────────────────────────────────── */}
-        <div className="relative overflow-hidden border-b">
-          <div className="absolute inset-0 gradient-primary opacity-[0.04]" />
-          <div className="mx-auto max-w-6xl px-6 py-16 text-center">
+        {/* ─── HERO ─────────────────────────────────────────── */}
+        <div className="gradient-mesh border-b">
+          <div className="mx-auto max-w-6xl px-6 py-20 text-center">
             <h2 className="text-5xl font-bold tracking-tight gradient-primary-text">
-              Gradient Vivid
+              Teal + Lime
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-lg text-muted-foreground">
-              Vibrant violet-to-peach gradients, glassmorphism surfaces, and a premium modern feel.
+              Fresh gradients on every surface. Glassmorphism panels. Nature-inspired energy.
             </p>
             <div className="mt-8 flex items-center justify-center gap-4">
               <Button className="gradient-primary border-0 text-white shadow-lg glow-primary">
@@ -170,6 +168,106 @@ export function DesignSystemPage() {
         </div>
 
         <main className="mx-auto max-w-6xl space-y-16 px-6 py-12">
+
+          {/* ─── SURFACES SHOWCASE ─────────────────────────── */}
+          <Section title="Surfaces & Backgrounds">
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              Every major surface has a gradient nuance &mdash; no flat colors. Backgrounds use radial gradient washes,
+              cards have directional tints, sidebars have vertical gradients.
+            </p>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Base surface */}
+              <div className="overflow-hidden rounded-xl border">
+                <div className="surface-base p-6 h-32 flex items-end">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">surface-base</p>
+                    <p className="text-sm mt-1">Page background with radial teal/lime wash</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card surface */}
+              <div className="overflow-hidden rounded-xl border">
+                <div className="surface-card p-6 h-32 flex items-end">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">surface-card</p>
+                    <p className="text-sm mt-1">Cards with diagonal teal-to-lime tint</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar surface */}
+              <div className="overflow-hidden rounded-xl border">
+                <div className="surface-sidebar p-6 h-32 flex items-end">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">surface-sidebar</p>
+                    <p className="text-sm mt-1">Sidebar with vertical gradient flow</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat surface */}
+              <div className="overflow-hidden rounded-xl border">
+                <div className="surface-chat p-6 h-32 flex items-end">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">surface-chat</p>
+                    <p className="text-sm mt-1">Chat area with top radial glow</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Header surface */}
+              <div className="overflow-hidden rounded-xl border">
+                <div className="surface-header p-6 h-32 flex items-end">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">surface-header</p>
+                    <p className="text-sm mt-1">Header with blur + gradient</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mesh gradient */}
+              <div className="overflow-hidden rounded-xl border">
+                <div className="gradient-mesh p-6 h-32 flex items-end">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">gradient-mesh</p>
+                    <p className="text-sm mt-1">Multi-point mesh for hero sections</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <SubSection title="Glass Effects (over gradient backgrounds)">
+              <div className="gradient-mesh relative overflow-hidden rounded-2xl p-8">
+                <div className="relative grid gap-6 sm:grid-cols-3">
+                  <div className="glass rounded-xl p-6 text-center">
+                    <Bot className="mx-auto size-8 text-primary" />
+                    <h4 className="mt-3 font-semibold">Glass</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">Frosted translucent</p>
+                  </div>
+                  <div className="glass-strong rounded-xl p-6 text-center">
+                    <Sparkles className="mx-auto size-8 text-primary" />
+                    <h4 className="mt-3 font-semibold">Glass Strong</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">More opaque frosted</p>
+                  </div>
+                  <div className="gradient-border rounded-xl bg-card p-6 text-center">
+                    <Zap className="mx-auto size-8 text-primary" />
+                    <h4 className="mt-3 font-semibold">Gradient Border</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">Teal-to-lime outline</p>
+                  </div>
+                </div>
+                <div className="relative mt-6 flex items-center justify-center gap-4">
+                  <div className="glow-primary gradient-primary rounded-full px-6 py-2 text-sm font-medium text-white">
+                    Glow Primary
+                  </div>
+                  <div className="glow-accent rounded-full bg-accent px-6 py-2 text-sm font-medium text-accent-foreground">
+                    Glow Accent
+                  </div>
+                </div>
+              </div>
+            </SubSection>
+          </Section>
 
           {/* ─── COLOR PALETTE ─────────────────────────────── */}
           <Section title="Color Palette">
@@ -186,7 +284,7 @@ export function DesignSystemPage() {
             <SubSection title="Gradients">
               <div className="flex flex-wrap gap-4">
                 <GradientSwatch name="Primary" className="gradient-primary" />
-                <GradientSwatch name="Hover" className="gradient-primary-hover" />
+                <GradientSwatch name="Animated" className="gradient-primary-hover" />
                 <GradientSwatch name="Subtle" className="gradient-subtle" />
               </div>
             </SubSection>
@@ -200,30 +298,13 @@ export function DesignSystemPage() {
               </div>
             </SubSection>
 
-            <SubSection title="Surfaces">
-              <div className="flex flex-wrap gap-4">
-                <ColorSwatch name="Background" className="bg-background ring-border" />
-                <ColorSwatch name="Card" className="bg-card ring-border" />
-                <ColorSwatch name="Muted" className="bg-muted" />
-                <ColorSwatch name="Sidebar" className="bg-sidebar ring-border" />
-                <div className="flex flex-col items-center gap-2">
-                  <div className="glass size-16 rounded-xl" />
-                  <span className="text-xs font-medium">Glass</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="glass-strong size-16 rounded-xl" />
-                  <span className="text-xs font-medium">Glass Strong</span>
-                </div>
-              </div>
-            </SubSection>
-
             <SubSection title="Text">
-              <div className="space-y-2 rounded-xl bg-card p-4">
-                <p className="text-foreground font-semibold">Foreground &mdash; Primary text for headings and body</p>
-                <p className="text-muted-foreground">Muted foreground &mdash; Secondary text, descriptions, hints</p>
-                <p className="text-primary font-semibold">Primary &mdash; Links, accents, interactive elements</p>
-                <p className="gradient-primary-text font-bold text-lg">Gradient text &mdash; Hero titles, brand elements</p>
-                <p className="text-destructive">Destructive &mdash; Errors and warnings</p>
+              <div className="space-y-2 surface-card rounded-xl p-4 border">
+                <p className="text-foreground font-semibold">Foreground &mdash; Primary text</p>
+                <p className="text-muted-foreground">Muted &mdash; Descriptions, hints</p>
+                <p className="text-primary font-semibold">Primary &mdash; Links, interactive</p>
+                <p className="gradient-primary-text font-bold text-lg">Gradient &mdash; Hero titles, brand</p>
+                <p className="text-destructive">Destructive &mdash; Errors</p>
               </div>
             </SubSection>
 
@@ -238,8 +319,8 @@ export function DesignSystemPage() {
 
           {/* ─── TYPOGRAPHY ──────────────────────────────────── */}
           <Section title="Typography">
-            <SubSection title="Headings (Plus Jakarta Sans)">
-              <div className="space-y-3 rounded-xl bg-card p-6">
+            <SubSection title="Headings">
+              <div className="space-y-3 surface-card rounded-xl p-6 border">
                 <h1 className="text-4xl font-bold tracking-tight">Heading 1 &mdash; Bold statement</h1>
                 <h2 className="text-3xl font-bold tracking-tight">Heading 2 &mdash; Section title</h2>
                 <h3 className="text-2xl font-semibold">Heading 3 &mdash; Subsection</h3>
@@ -249,23 +330,25 @@ export function DesignSystemPage() {
               </div>
             </SubSection>
 
-            <SubSection title="Body Text">
-              <div className="space-y-2 rounded-xl bg-card p-6">
-                <p className="text-lg">Large body (text-lg) &mdash; Perfect for intros and descriptions.</p>
-                <p className="text-base">Default body (text-base) &mdash; The main reading size across the app.</p>
-                <p className="text-sm">Small text (text-sm) &mdash; For secondary information and metadata.</p>
-                <p className="text-xs text-muted-foreground">Caption (text-xs) &mdash; Timestamps, counters, fine print.</p>
-              </div>
-            </SubSection>
+            <div className="grid gap-8 lg:grid-cols-2">
+              <SubSection title="Body Text">
+                <div className="space-y-2 surface-card rounded-xl p-6 border">
+                  <p className="text-lg">Large (text-lg) &mdash; For intros and featured text.</p>
+                  <p className="text-base">Default (text-base) &mdash; Main reading size.</p>
+                  <p className="text-sm">Small (text-sm) &mdash; Secondary information.</p>
+                  <p className="text-xs text-muted-foreground">Caption (text-xs) &mdash; Timestamps, fine print.</p>
+                </div>
+              </SubSection>
 
-            <SubSection title="Font Weights">
-              <div className="space-y-1 rounded-xl bg-card p-6">
-                <p className="font-normal">Regular (400) &mdash; Lorem ipsum dolor sit amet</p>
-                <p className="font-medium">Medium (500) &mdash; Lorem ipsum dolor sit amet</p>
-                <p className="font-semibold">Semibold (600) &mdash; Lorem ipsum dolor sit amet</p>
-                <p className="font-bold">Bold (700) &mdash; Lorem ipsum dolor sit amet</p>
-              </div>
-            </SubSection>
+              <SubSection title="Font Weights">
+                <div className="space-y-1 surface-card rounded-xl p-6 border">
+                  <p className="font-normal">Regular (400)</p>
+                  <p className="font-medium">Medium (500)</p>
+                  <p className="font-semibold">Semibold (600)</p>
+                  <p className="font-bold">Bold (700)</p>
+                </div>
+              </SubSection>
+            </div>
           </Section>
 
           {/* ─── BUTTONS ─────────────────────────────────────── */}
@@ -287,7 +370,7 @@ export function DesignSystemPage() {
                   <Sparkles className="size-4" /> Gradient CTA
                 </Button>
                 <Button className="gradient-primary-hover border-0 text-white shadow-lg">
-                  <Zap className="size-4" /> Animated Gradient
+                  <Zap className="size-4" /> Animated
                 </Button>
                 <Button variant="outline" className="gradient-border">
                   Gradient Border
@@ -310,7 +393,6 @@ export function DesignSystemPage() {
                 <Button variant="outline"><Settings className="size-4" /> Settings</Button>
                 <Button variant="destructive"><Trash2 className="size-4" /> Delete</Button>
                 <Button variant="ghost" size="icon"><Bell className="size-4" /></Button>
-                <Button variant="ghost" size="icon-sm"><Search className="size-4" /></Button>
               </div>
             </SubSection>
 
@@ -329,27 +411,27 @@ export function DesignSystemPage() {
               <SubSection title="Text Input">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="input-default">Default</Label>
-                    <Input id="input-default" placeholder="Type something..." />
+                    <Label htmlFor="i-default">Default</Label>
+                    <Input id="i-default" placeholder="Type something..." />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="input-with-value">With value</Label>
-                    <Input id="input-with-value" defaultValue="Hello KinBot" />
+                    <Label htmlFor="i-value">With value</Label>
+                    <Input id="i-value" defaultValue="Hello KinBot" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="input-error">Error state</Label>
-                    <Input id="input-error" aria-invalid="true" defaultValue="invalid@" />
+                    <Label htmlFor="i-error">Error</Label>
+                    <Input id="i-error" aria-invalid="true" defaultValue="bad-email" />
                     <p className="text-sm text-destructive">Please enter a valid email address</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="input-disabled">Disabled</Label>
-                    <Input id="input-disabled" disabled placeholder="Not editable" />
+                    <Label htmlFor="i-disabled">Disabled</Label>
+                    <Input id="i-disabled" disabled placeholder="Not editable" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="input-icon">With icon</Label>
+                    <Label htmlFor="i-icon">With icon</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input id="input-icon" className="pl-9" placeholder="Search memories..." />
+                      <Input id="i-icon" className="pl-9" placeholder="Search memories..." />
                     </div>
                   </div>
                 </div>
@@ -357,14 +439,11 @@ export function DesignSystemPage() {
 
               <div className="space-y-8">
                 <SubSection title="Textarea">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="textarea-default">Message</Label>
-                      <Textarea id="textarea-default" placeholder="Describe your Kin's personality..." />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ta-default">Character description</Label>
+                    <Textarea id="ta-default" placeholder="Describe your Kin's personality..." />
                   </div>
                 </SubSection>
-
                 <SubSection title="Select">
                   <div className="space-y-2">
                     <Label>LLM Model</Label>
@@ -387,27 +466,23 @@ export function DesignSystemPage() {
           {/* ─── CARDS ───────────────────────────────────────── */}
           <Section title="Cards">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <Card>
+              <Card className="surface-card">
                 <CardHeader>
-                  <CardTitle>Basic Card</CardTitle>
-                  <CardDescription>Standard card with content.</CardDescription>
+                  <CardTitle>Gradient Card</CardTitle>
+                  <CardDescription>Card with surface-card gradient tint.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Clean, minimal design with subtle shadow.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Subtle diagonal teal-to-lime wash.</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="surface-card">
                 <CardHeader>
-                  <CardTitle>Card with Footer</CardTitle>
-                  <CardDescription>Includes action buttons.</CardDescription>
+                  <CardTitle>With Footer</CardTitle>
+                  <CardDescription>Action buttons at the bottom.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Interactive card pattern for forms and settings.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Interactive card pattern.</p>
                 </CardContent>
                 <CardFooter className="flex gap-2">
                   <Button size="sm" className="gradient-primary border-0 text-white">Save</Button>
@@ -420,37 +495,31 @@ export function DesignSystemPage() {
                   <CardTitle className="flex items-center gap-2">
                     <Sparkles className="size-4 text-primary" /> Glass Card
                   </CardTitle>
-                  <CardDescription>Glassmorphism effect with hover.</CardDescription>
+                  <CardDescription>Glassmorphism + hover scale.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Frosted glass aesthetic with scale-up on hover.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Frosted glass over gradient.</p>
                 </CardContent>
               </Card>
 
-              <Card className="gradient-border overflow-hidden">
+              <Card className="gradient-border overflow-hidden surface-card">
                 <CardHeader>
                   <CardTitle className="gradient-primary-text">Gradient Border</CardTitle>
-                  <CardDescription>Eye-catching accent card.</CardDescription>
+                  <CardDescription>Teal-to-lime border highlight.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Uses the brand gradient as a border highlight.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Eye-catching accent card.</p>
                 </CardContent>
               </Card>
 
               <Card className="relative overflow-hidden">
-                <div className="absolute inset-0 gradient-primary opacity-[0.04]" />
+                <div className="absolute inset-0 gradient-primary opacity-[0.06]" />
                 <CardHeader className="relative">
-                  <CardTitle>Tinted Card</CardTitle>
-                  <CardDescription>Subtle gradient background tint.</CardDescription>
+                  <CardTitle>Strong Tinted</CardTitle>
+                  <CardDescription>Heavier gradient overlay.</CardDescription>
                 </CardHeader>
                 <CardContent className="relative">
-                  <p className="text-sm text-muted-foreground">
-                    A gentle gradient wash for featured content.
-                  </p>
+                  <p className="text-sm text-muted-foreground">For featured / highlighted content.</p>
                 </CardContent>
               </Card>
             </div>
@@ -458,25 +527,16 @@ export function DesignSystemPage() {
 
           {/* ─── BADGES ──────────────────────────────────────── */}
           <Section title="Badges">
-            <SubSection title="Variants">
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge>Default</Badge>
-                <Badge variant="secondary">Secondary</Badge>
-                <Badge variant="outline">Outline</Badge>
-                <Badge variant="destructive">Destructive</Badge>
-              </div>
-            </SubSection>
-
-            <SubSection title="Semantic">
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge className="bg-success text-success-foreground">Success</Badge>
-                <Badge className="bg-warning text-warning-foreground">Warning</Badge>
-                <Badge className="bg-destructive text-destructive-foreground">Error</Badge>
-                <Badge className="bg-info text-info-foreground">Info</Badge>
-                <Badge className="gradient-primary text-white border-0">Gradient</Badge>
-              </div>
-            </SubSection>
-
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge>Default</Badge>
+              <Badge variant="secondary">Secondary</Badge>
+              <Badge variant="outline">Outline</Badge>
+              <Badge variant="destructive">Destructive</Badge>
+              <Badge className="bg-success text-success-foreground">Success</Badge>
+              <Badge className="bg-warning text-warning-foreground">Warning</Badge>
+              <Badge className="bg-info text-info-foreground">Info</Badge>
+              <Badge className="gradient-primary text-white border-0">Gradient</Badge>
+            </div>
             <SubSection title="Use Cases">
               <div className="flex flex-wrap items-center gap-3">
                 <Badge variant="secondary">Queue: 3</Badge>
@@ -485,9 +545,6 @@ export function DesignSystemPage() {
                   <Loader2 className="size-3 animate-spin" /> Processing
                 </Badge>
                 <Badge variant="outline">v1.0.0</Badge>
-                <Badge className="gradient-primary text-white border-0">
-                  <Sparkles className="size-3" /> Premium
-                </Badge>
               </div>
             </SubSection>
           </Section>
@@ -498,92 +555,78 @@ export function DesignSystemPage() {
               <Alert>
                 <Info className="size-4" />
                 <AlertTitle>Info</AlertTitle>
-                <AlertDescription>
-                  Your Kin is learning from your conversation patterns.
-                </AlertDescription>
+                <AlertDescription>Your Kin is learning from conversation patterns.</AlertDescription>
               </Alert>
-
               <Alert className="border-success/50 text-success [&>svg]:text-success">
                 <CheckCircle className="size-4" />
                 <AlertTitle>Success</AlertTitle>
-                <AlertDescription>
-                  Anthropic provider connected and validated.
-                </AlertDescription>
+                <AlertDescription>Provider connected and validated.</AlertDescription>
               </Alert>
-
               <Alert className="border-warning/50 text-warning [&>svg]:text-warning">
                 <AlertTriangle className="size-4" />
                 <AlertTitle>Warning</AlertTitle>
-                <AlertDescription>
-                  No embedding provider configured. Memory search will be limited.
-                </AlertDescription>
+                <AlertDescription>No embedding provider. Memory search limited.</AlertDescription>
               </Alert>
-
               <Alert variant="destructive">
                 <AlertCircle className="size-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                  API key invalid. Please check your provider settings.
-                </AlertDescription>
+                <AlertDescription>API key invalid. Check provider settings.</AlertDescription>
               </Alert>
             </div>
           </Section>
 
           {/* ─── FORM CONTROLS ───────────────────────────────── */}
           <Section title="Checkboxes, Radios, Switches">
-            <div className="grid gap-8 sm:grid-cols-3">
-              <SubSection title="Checkboxes">
-                <div className="space-y-3 rounded-xl bg-card p-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="check-1" defaultChecked />
-                    <Label htmlFor="check-1">Remember me</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="check-2" />
-                    <Label htmlFor="check-2">Accept terms</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="check-3" disabled />
-                    <Label htmlFor="check-3" className="text-muted-foreground">Disabled</Label>
-                  </div>
+            <div className="grid gap-6 sm:grid-cols-3">
+              <div className="space-y-3 surface-card rounded-xl p-4 border">
+                <h4 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Checkboxes</h4>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="c1" defaultChecked />
+                  <Label htmlFor="c1">Remember me</Label>
                 </div>
-              </SubSection>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="c2" />
+                  <Label htmlFor="c2">Accept terms</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="c3" disabled />
+                  <Label htmlFor="c3" className="text-muted-foreground">Disabled</Label>
+                </div>
+              </div>
 
-              <SubSection title="Radio Buttons">
-                <div className="rounded-xl bg-card p-4">
-                  <RadioGroup defaultValue="claude">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="claude" id="radio-claude" />
-                      <Label htmlFor="radio-claude">Claude</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="gpt" id="radio-gpt" />
-                      <Label htmlFor="radio-gpt">GPT-4</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="gemini" id="radio-gemini" />
-                      <Label htmlFor="radio-gemini">Gemini</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              </SubSection>
+              <div className="surface-card rounded-xl p-4 border">
+                <h4 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-3">Radios</h4>
+                <RadioGroup defaultValue="claude">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="claude" id="r-claude" />
+                    <Label htmlFor="r-claude">Claude</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="gpt" id="r-gpt" />
+                    <Label htmlFor="r-gpt">GPT-4</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="gemini" id="r-gemini" />
+                    <Label htmlFor="r-gemini">Gemini</Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
-              <SubSection title="Switches">
-                <div className="space-y-3 rounded-xl bg-card p-4">
-                  <div className="flex items-center gap-2">
-                    <Switch id="switch-dark" defaultChecked />
-                    <Label htmlFor="switch-dark">Dark mode</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch id="switch-notif" />
-                    <Label htmlFor="switch-notif">Notifications</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch id="switch-disabled" disabled />
-                    <Label htmlFor="switch-disabled" className="text-muted-foreground">Disabled</Label>
-                  </div>
+              <div className="space-y-3 surface-card rounded-xl p-4 border">
+                <h4 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Switches</h4>
+                <div className="flex items-center gap-2">
+                  <Switch id="s1" defaultChecked />
+                  <Label htmlFor="s1">Dark mode</Label>
                 </div>
-              </SubSection>
+                <div className="flex items-center gap-2">
+                  <Switch id="s2" />
+                  <Label htmlFor="s2">Notifications</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch id="s3" disabled />
+                  <Label htmlFor="s3" className="text-muted-foreground">Disabled</Label>
+                </div>
+              </div>
             </div>
           </Section>
 
@@ -598,25 +641,21 @@ export function DesignSystemPage() {
               <DialogContent className="glass-strong">
                 <DialogHeader>
                   <DialogTitle className="gradient-primary-text">Create a new Kin</DialogTitle>
-                  <DialogDescription>
-                    Give your AI assistant a name, role, and personality.
-                  </DialogDescription>
+                  <DialogDescription>Give your AI assistant a name, role, and personality.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="dialog-name">Name</Label>
-                    <Input id="dialog-name" placeholder="e.g. Financial Advisor" />
+                    <Label htmlFor="d-name">Name</Label>
+                    <Input id="d-name" placeholder="e.g. Financial Advisor" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dialog-role">Role</Label>
-                    <Input id="dialog-role" placeholder="e.g. Expert in personal finance" />
+                    <Label htmlFor="d-role">Role</Label>
+                    <Input id="d-role" placeholder="e.g. Expert in personal finance" />
                   </div>
                   <div className="space-y-2">
                     <Label>Model</Label>
                     <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a model" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Choose a model" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="claude">Claude Sonnet 4</SelectItem>
                         <SelectItem value="gpt4">GPT-4o</SelectItem>
@@ -643,19 +682,15 @@ export function DesignSystemPage() {
                     <TabsTrigger value="chat">Chat</TabsTrigger>
                     <TabsTrigger value="memory">Memory</TabsTrigger>
                     <TabsTrigger value="tools">Tools</TabsTrigger>
-                    <TabsTrigger value="settings">Settings</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="chat" className="mt-3 rounded-lg bg-card p-4 text-sm text-muted-foreground">
-                    Main chat interface with streaming responses.
+                  <TabsContent value="chat" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">
+                    Chat interface with streaming responses.
                   </TabsContent>
-                  <TabsContent value="memory" className="mt-3 rounded-lg bg-card p-4 text-sm text-muted-foreground">
-                    Memory entries and semantic search.
+                  <TabsContent value="memory" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">
+                    Memory search and management.
                   </TabsContent>
-                  <TabsContent value="tools" className="mt-3 rounded-lg bg-card p-4 text-sm text-muted-foreground">
-                    Tool configuration, MCP servers, custom tools.
-                  </TabsContent>
-                  <TabsContent value="settings" className="mt-3 rounded-lg bg-card p-4 text-sm text-muted-foreground">
-                    Kin configuration and preferences.
+                  <TabsContent value="tools" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">
+                    MCP servers and custom tools.
                   </TabsContent>
                 </Tabs>
               </SubSection>
@@ -664,39 +699,28 @@ export function DesignSystemPage() {
                 <SubSection title="Dropdown Menu">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline">
-                        <MoreHorizontal className="size-4" /> Actions
-                      </Button>
+                      <Button variant="outline"><MoreHorizontal className="size-4" /> Actions</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem><Pencil className="mr-2 size-4" /> Edit</DropdownMenuItem>
                       <DropdownMenuItem><Copy className="mr-2 size-4" /> Duplicate</DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 size-4" /> Delete
-                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 size-4" /> Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </SubSection>
-
                 <SubSection title="Tooltips">
                   <div className="flex gap-3">
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon"><Settings className="size-4" /></Button>
-                      </TooltipTrigger>
+                      <TooltipTrigger asChild><Button variant="outline" size="icon"><Settings className="size-4" /></Button></TooltipTrigger>
                       <TooltipContent>Settings</TooltipContent>
                     </Tooltip>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon"><Bell className="size-4" /></Button>
-                      </TooltipTrigger>
+                      <TooltipTrigger asChild><Button variant="outline" size="icon"><Bell className="size-4" /></Button></TooltipTrigger>
                       <TooltipContent>Notifications</TooltipContent>
                     </Tooltip>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon"><Info className="size-4" /></Button>
-                      </TooltipTrigger>
+                      <TooltipTrigger asChild><Button variant="outline" size="icon"><Info className="size-4" /></Button></TooltipTrigger>
                       <TooltipContent>More info</TooltipContent>
                     </Tooltip>
                   </div>
@@ -707,55 +731,53 @@ export function DesignSystemPage() {
 
           {/* ─── AVATARS ─────────────────────────────────────── */}
           <Section title="Avatars">
-            <SubSection title="Sizes">
-              <div className="flex items-end gap-5">
-                {([
-                  { size: 'size-6', text: 'text-[10px]', label: 'XS' },
-                  { size: 'size-8', text: 'text-xs', label: 'SM' },
-                  { size: 'size-10', text: 'text-sm', label: 'MD' },
-                  { size: 'size-12', text: 'text-base', label: 'LG' },
-                  { size: 'size-16', text: 'text-lg', label: 'XL' },
-                ] as const).map((item) => (
-                  <div key={item.label} className="flex flex-col items-center gap-1.5">
-                    <Avatar className={item.size}>
-                      <AvatarFallback className={`gradient-primary text-white ${item.text}`}>KB</AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs text-muted-foreground">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </SubSection>
-
-            <SubSection title="With Status Indicator">
-              <div className="flex items-center gap-8">
-                {([
-                  { status: 'Online', color: 'bg-success' },
-                  { status: 'Offline', color: 'bg-muted-foreground' },
-                  { status: 'Busy', color: 'bg-warning animate-pulse' },
-                ] as const).map((item) => (
-                  <div key={item.status} className="flex flex-col items-center gap-1.5">
-                    <div className="relative">
-                      <Avatar className="size-10">
-                        <AvatarFallback className="gradient-primary text-white">
-                          <Bot className="size-5" />
-                        </AvatarFallback>
+            <div className="grid gap-8 sm:grid-cols-2">
+              <SubSection title="Sizes">
+                <div className="flex items-end gap-5">
+                  {([
+                    { size: 'size-6', text: 'text-[10px]', label: 'XS' },
+                    { size: 'size-8', text: 'text-xs', label: 'SM' },
+                    { size: 'size-10', text: 'text-sm', label: 'MD' },
+                    { size: 'size-12', text: 'text-base', label: 'LG' },
+                    { size: 'size-16', text: 'text-lg', label: 'XL' },
+                  ] as const).map((item) => (
+                    <div key={item.label} className="flex flex-col items-center gap-1.5">
+                      <Avatar className={item.size}>
+                        <AvatarFallback className={`gradient-primary text-white ${item.text}`}>KB</AvatarFallback>
                       </Avatar>
-                      <span className={`absolute bottom-0 right-0 size-3 rounded-full border-2 border-background ${item.color}`} />
+                      <span className="text-xs text-muted-foreground">{item.label}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">{item.status}</span>
-                  </div>
-                ))}
-              </div>
-            </SubSection>
+                  ))}
+                </div>
+              </SubSection>
+              <SubSection title="Status Indicators">
+                <div className="flex items-center gap-8">
+                  {([
+                    { status: 'Online', color: 'bg-success' },
+                    { status: 'Offline', color: 'bg-muted-foreground' },
+                    { status: 'Busy', color: 'bg-warning animate-pulse' },
+                  ] as const).map((item) => (
+                    <div key={item.status} className="flex flex-col items-center gap-1.5">
+                      <div className="relative">
+                        <Avatar className="size-10">
+                          <AvatarFallback className="gradient-primary text-white"><Bot className="size-5" /></AvatarFallback>
+                        </Avatar>
+                        <span className={`absolute bottom-0 right-0 size-3 rounded-full border-2 border-background ${item.color}`} />
+                      </div>
+                      <span className="text-xs text-muted-foreground">{item.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </SubSection>
+            </div>
           </Section>
 
           {/* ─── KINBOT PATTERNS ──────────────────────────────── */}
           <Section title="KinBot Patterns">
 
-            {/* Message Bubbles */}
             <SubSection title="Message Bubbles">
-              <div className="max-w-2xl space-y-4 rounded-xl bg-card p-6">
-                {/* User message */}
+              <div className="max-w-2xl space-y-4 surface-chat rounded-xl p-6 border">
+                {/* User */}
                 <div className="flex justify-end gap-2.5">
                   <div className="max-w-[75%] space-y-1">
                     <div className="flex items-center justify-end gap-2">
@@ -767,18 +789,13 @@ export function DesignSystemPage() {
                     </div>
                   </div>
                   <Avatar className="size-8 shrink-0">
-                    <AvatarFallback className="bg-secondary text-xs">
-                      <User className="size-4" />
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-secondary text-xs"><User className="size-4" /></AvatarFallback>
                   </Avatar>
                 </div>
-
-                {/* Kin message */}
+                {/* Kin */}
                 <div className="flex gap-2.5">
                   <Avatar className="size-8 shrink-0">
-                    <AvatarFallback className="gradient-primary text-white text-xs">
-                      <Bot className="size-4" />
-                    </AvatarFallback>
+                    <AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback>
                   </Avatar>
                   <div className="max-w-[75%] space-y-1">
                     <div className="flex items-center gap-2">
@@ -786,43 +803,25 @@ export function DesignSystemPage() {
                       <span className="text-xs text-muted-foreground">14:32</span>
                     </div>
                     <div className="rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm">
-                      <p className="text-sm">
-                        Of course! I can see three areas where we could optimize:
-                        subscriptions, dining, and transportation. Want a detailed breakdown?
-                      </p>
+                      <p className="text-sm">Of course! I can see three optimization areas: subscriptions, dining, and transport.</p>
                     </div>
                   </div>
                 </div>
-
-                {/* System message */}
+                {/* System */}
                 <div className="flex justify-center">
                   <div className="flex items-center gap-1.5 rounded-full bg-bubble-system px-4 py-1.5 text-bubble-system-foreground">
-                    <CheckCircle className="size-3" />
-                    <p className="text-xs">Task &ldquo;Expense Analysis&rdquo; completed</p>
-                  </div>
-                </div>
-
-                {/* Cron message */}
-                <div className="flex justify-center">
-                  <div className="flex items-center gap-1.5 rounded-full bg-bubble-system px-4 py-1.5 text-bubble-system-foreground">
-                    <Clock className="size-3" />
-                    <p className="text-xs">Scheduled report generated at 09:00</p>
+                    <CheckCircle className="size-3" /><p className="text-xs">Task &ldquo;Expense Analysis&rdquo; completed</p>
                   </div>
                 </div>
               </div>
             </SubSection>
 
-            {/* Kin Card */}
             <SubSection title="Kin Card (Sidebar)">
-              <div className="max-w-xs space-y-1 rounded-xl bg-sidebar p-2">
+              <div className="max-w-xs space-y-1 surface-sidebar rounded-xl p-2 border">
                 {/* Active */}
-                <div className="flex cursor-pointer items-center gap-3 rounded-lg bg-sidebar-accent p-3 transition-all">
+                <div className="flex cursor-pointer items-center gap-3 rounded-lg bg-sidebar-accent p-3">
                   <div className="relative">
-                    <Avatar className="size-10">
-                      <AvatarFallback className="gradient-primary text-white">
-                        <Bot className="size-5" />
-                      </AvatarFallback>
-                    </Avatar>
+                    <Avatar className="size-10"><AvatarFallback className="gradient-primary text-white"><Bot className="size-5" /></AvatarFallback></Avatar>
                     <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar-accent bg-success" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -833,15 +832,10 @@ export function DesignSystemPage() {
                     <p className="truncate text-xs text-muted-foreground">Expert in personal finance</p>
                   </div>
                 </div>
-
                 {/* Idle */}
-                <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-all hover:bg-sidebar-accent">
+                <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-sidebar-accent transition-colors">
                   <div className="relative">
-                    <Avatar className="size-10">
-                      <AvatarFallback className="bg-secondary text-secondary-foreground">
-                        <Bot className="size-5" />
-                      </AvatarFallback>
-                    </Avatar>
+                    <Avatar className="size-10"><AvatarFallback className="bg-secondary text-secondary-foreground"><Bot className="size-5" /></AvatarFallback></Avatar>
                     <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar bg-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -849,23 +843,16 @@ export function DesignSystemPage() {
                     <p className="truncate text-xs text-muted-foreground">Full-stack developer</p>
                   </div>
                 </div>
-
                 {/* Processing */}
-                <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-all hover:bg-sidebar-accent">
+                <div className="flex cursor-pointer items-center gap-3 rounded-lg p-3 hover:bg-sidebar-accent transition-colors">
                   <div className="relative">
-                    <Avatar className="size-10">
-                      <AvatarFallback className="gradient-primary text-white">
-                        <Bot className="size-5" />
-                      </AvatarFallback>
-                    </Avatar>
+                    <Avatar className="size-10"><AvatarFallback className="gradient-primary text-white"><Bot className="size-5" /></AvatarFallback></Avatar>
                     <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar bg-warning animate-pulse" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <p className="truncate text-sm font-medium">Research Agent</p>
-                      <Badge className="ml-2 bg-warning text-warning-foreground text-[10px]">
-                        <Loader2 className="size-3 animate-spin" />
-                      </Badge>
+                      <Badge className="ml-2 bg-warning text-warning-foreground text-[10px]"><Loader2 className="size-3 animate-spin" /></Badge>
                     </div>
                     <p className="truncate text-xs text-muted-foreground">Processing task...</p>
                   </div>
@@ -873,14 +860,11 @@ export function DesignSystemPage() {
               </div>
             </SubSection>
 
-            {/* Typing Indicator */}
-            <SubSection title="Typing / Streaming Indicator">
-              <div className="max-w-2xl rounded-xl bg-card p-6">
+            <SubSection title="Typing Indicator">
+              <div className="max-w-2xl surface-chat rounded-xl p-6 border">
                 <div className="flex gap-2.5">
                   <Avatar className="size-8 shrink-0">
-                    <AvatarFallback className="gradient-primary text-white text-xs">
-                      <Bot className="size-4" />
-                    </AvatarFallback>
+                    <AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback>
                   </Avatar>
                   <div className="space-y-1">
                     <span className="text-xs font-medium">Financial Advisor</span>
@@ -894,63 +878,22 @@ export function DesignSystemPage() {
               </div>
             </SubSection>
 
-            {/* Task Status */}
-            <SubSection title="Task Status Indicators">
+            <SubSection title="Task Status">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2 rounded-lg border bg-card p-3">
-                  <div className="size-2 rounded-full bg-muted-foreground" />
-                  <span className="text-sm">Pending</span>
+                  <div className="size-2 rounded-full bg-muted-foreground" /><span className="text-sm">Pending</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
-                  <Loader2 className="size-4 animate-spin text-warning" />
-                  <span className="text-sm">In Progress</span>
+                  <Loader2 className="size-4 animate-spin text-warning" /><span className="text-sm">In Progress</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 p-3">
-                  <CheckCircle className="size-4 text-success" />
-                  <span className="text-sm">Completed</span>
+                  <CheckCircle className="size-4 text-success" /><span className="text-sm">Completed</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                  <AlertCircle className="size-4 text-destructive" />
-                  <span className="text-sm">Failed</span>
+                  <AlertCircle className="size-4 text-destructive" /><span className="text-sm">Failed</span>
                 </div>
               </div>
             </SubSection>
-          </Section>
-
-          {/* ─── GLASSMORPHISM SHOWCASE ───────────────────────── */}
-          <Section title="Glassmorphism & Effects">
-            <div className="relative overflow-hidden rounded-2xl gradient-subtle p-8">
-              {/* Background decorative blobs */}
-              <div className="absolute -top-20 -left-20 size-60 rounded-full bg-primary/20 blur-3xl" />
-              <div className="absolute -bottom-20 -right-20 size-60 rounded-full bg-accent/30 blur-3xl" />
-
-              <div className="relative grid gap-6 sm:grid-cols-3">
-                <div className="glass rounded-xl p-6 text-center">
-                  <Bot className="mx-auto size-8 text-primary" />
-                  <h4 className="mt-3 font-semibold">Glass Card</h4>
-                  <p className="mt-1 text-sm text-muted-foreground">Standard glass effect</p>
-                </div>
-                <div className="glass-strong rounded-xl p-6 text-center">
-                  <Sparkles className="mx-auto size-8 text-primary" />
-                  <h4 className="mt-3 font-semibold">Glass Strong</h4>
-                  <p className="mt-1 text-sm text-muted-foreground">More opaque frosted glass</p>
-                </div>
-                <div className="gradient-border rounded-xl bg-card p-6 text-center">
-                  <Zap className="mx-auto size-8 text-primary" />
-                  <h4 className="mt-3 font-semibold">Gradient Border</h4>
-                  <p className="mt-1 text-sm text-muted-foreground">Animated gradient outline</p>
-                </div>
-              </div>
-
-              <div className="relative mt-6 flex items-center justify-center gap-4">
-                <div className="glow-primary gradient-primary rounded-full px-6 py-2 text-sm font-medium text-white">
-                  Glow Primary
-                </div>
-                <div className="glow-accent rounded-full bg-accent px-6 py-2 text-sm font-medium text-accent-foreground">
-                  Glow Accent
-                </div>
-              </div>
-            </div>
           </Section>
 
           {/* ─── SPACING & LAYOUT ────────────────────────────── */}
@@ -959,14 +902,10 @@ export function DesignSystemPage() {
               <SubSection title="Spacing Scale">
                 <div className="space-y-2">
                   {[
-                    { label: '4px', cls: 'w-1' },
-                    { label: '8px', cls: 'w-2' },
-                    { label: '12px', cls: 'w-3' },
-                    { label: '16px', cls: 'w-4' },
-                    { label: '24px', cls: 'w-6' },
-                    { label: '32px', cls: 'w-8' },
-                    { label: '48px', cls: 'w-12' },
-                    { label: '64px', cls: 'w-16' },
+                    { label: '4px', cls: 'w-1' }, { label: '8px', cls: 'w-2' },
+                    { label: '12px', cls: 'w-3' }, { label: '16px', cls: 'w-4' },
+                    { label: '24px', cls: 'w-6' }, { label: '32px', cls: 'w-8' },
+                    { label: '48px', cls: 'w-12' }, { label: '64px', cls: 'w-16' },
                   ].map((item) => (
                     <div key={item.label} className="flex items-center gap-3">
                       <span className="w-10 text-right text-xs text-muted-foreground">{item.label}</span>
@@ -975,16 +914,12 @@ export function DesignSystemPage() {
                   ))}
                 </div>
               </SubSection>
-
               <SubSection title="Border Radius">
                 <div className="flex flex-wrap gap-3">
                   {[
-                    { label: 'sm', cls: 'rounded-sm' },
-                    { label: 'md', cls: 'rounded-md' },
-                    { label: 'lg', cls: 'rounded-lg' },
-                    { label: 'xl', cls: 'rounded-xl' },
-                    { label: '2xl', cls: 'rounded-2xl' },
-                    { label: 'full', cls: 'rounded-full' },
+                    { label: 'sm', cls: 'rounded-sm' }, { label: 'md', cls: 'rounded-md' },
+                    { label: 'lg', cls: 'rounded-lg' }, { label: 'xl', cls: 'rounded-xl' },
+                    { label: '2xl', cls: 'rounded-2xl' }, { label: 'full', cls: 'rounded-full' },
                   ].map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-1.5">
                       <div className={`size-14 border-2 border-primary/30 bg-primary/10 ${item.cls}`} />
@@ -993,16 +928,11 @@ export function DesignSystemPage() {
                   ))}
                 </div>
               </SubSection>
-
               <SubSection title="Shadows">
                 <div className="flex flex-wrap gap-4">
-                  {[
-                    { label: 'sm', cls: 'shadow-sm' },
-                    { label: 'md', cls: 'shadow-md' },
-                    { label: 'lg', cls: 'shadow-lg' },
-                  ].map((item) => (
+                  {[{ label: 'sm', cls: 'shadow-sm' }, { label: 'md', cls: 'shadow-md' }, { label: 'lg', cls: 'shadow-lg' }].map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-1.5">
-                      <div className={`size-16 rounded-xl bg-card ${item.cls}`} />
+                      <div className={`size-16 rounded-xl surface-card border ${item.cls}`} />
                       <span className="text-xs text-muted-foreground">{item.label}</span>
                     </div>
                   ))}
@@ -1016,27 +946,24 @@ export function DesignSystemPage() {
             <Card className="glass max-w-2xl">
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground">
-                  Toggle the theme with the button below. Dark mode uses deep violet/navy tones
-                  (no pure black) with slightly brighter accent colors for comfortable reading.
+                  Dark mode uses deep forest/teal tones. All surface gradients adapt &mdash; they get slightly
+                  more intense to remain visible against the dark background.
                 </p>
                 <div className="mt-4 flex items-center gap-3">
                   <Button variant="outline" size="sm" onClick={toggleDarkMode}>
                     {isDark ? <Sun className="mr-2 size-4" /> : <Moon className="mr-2 size-4" />}
                     Switch to {isDark ? 'light' : 'dark'}
                   </Button>
-                  <Badge variant={isDark ? 'default' : 'secondary'}>
-                    {isDark ? 'Dark' : 'Light'}
-                  </Badge>
+                  <Badge variant={isDark ? 'default' : 'secondary'}>{isDark ? 'Dark' : 'Light'}</Badge>
                 </div>
               </CardContent>
             </Card>
           </Section>
 
-          {/* ─── FOOTER ──────────────────────────────────────── */}
           <div className="border-t pt-8 text-center">
             <p className="text-sm text-muted-foreground">
               <span className="gradient-primary-text font-semibold">KinBot Design System</span>
-              {' '}&mdash; Gradient Vivid theme. Dev only.
+              {' '}&mdash; Teal + Lime. Dev only.
             </p>
           </div>
         </main>
