@@ -675,42 +675,58 @@ export function DesignSystemPage() {
               </div>
             </SubSection>
 
-            <SubSection title="Kin Cards (Sidebar)">
-              <div className="max-w-xs space-y-1 surface-sidebar rounded-xl p-2 border">
-                <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent p-3">
-                  <div className="relative">
-                    <Avatar className="size-10"><AvatarFallback className="gradient-primary text-white"><Bot className="size-5" /></AvatarFallback></Avatar>
-                    <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar-accent bg-success" />
+            <SubSection title="Kin Cards (Agent List)">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Active / selected kin */}
+                <div className="group relative flex overflow-hidden rounded-xl border border-primary/30 bg-card shadow-md transition-all hover:shadow-lg hover:scale-[1.01]">
+                  <div className="w-20 shrink-0 gradient-primary flex items-center justify-center">
+                    <Bot className="size-8 text-white/90" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
+                  <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
                       <p className="truncate text-sm font-semibold">Financial Advisor</p>
-                      <Badge variant="secondary" className="ml-2 text-[10px]">2</Badge>
+                      <Badge variant="secondary" className="shrink-0 text-[10px]">2</Badge>
                     </div>
                     <p className="truncate text-xs text-muted-foreground">Personal finance expert</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 rounded-lg p-3 hover:bg-sidebar-accent transition-colors cursor-pointer">
-                  <div className="relative">
-                    <Avatar className="size-10"><AvatarFallback className="bg-secondary text-secondary-foreground"><Bot className="size-5" /></AvatarFallback></Avatar>
-                    <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar bg-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">Coding Assistant</p>
-                    <p className="truncate text-xs text-muted-foreground">Full-stack dev</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 rounded-lg p-3 hover:bg-sidebar-accent transition-colors cursor-pointer">
-                  <div className="relative">
-                    <Avatar className="size-10"><AvatarFallback className="gradient-primary text-white"><Bot className="size-5" /></AvatarFallback></Avatar>
-                    <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar bg-warning animate-pulse" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="truncate text-sm font-medium">Research Agent</p>
-                      <Badge className="ml-2 bg-warning text-warning-foreground text-[10px]"><Loader2 className="size-3 animate-spin" /></Badge>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="size-2 rounded-full bg-success" />
+                      <span className="text-[10px] text-muted-foreground">Online</span>
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">Processing...</p>
+                  </div>
+                </div>
+
+                {/* Idle kin */}
+                <div className="group relative flex overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer">
+                  <div className="w-20 shrink-0 bg-secondary flex items-center justify-center">
+                    <Bot className="size-8 text-secondary-foreground/70" />
+                  </div>
+                  <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
+                    <p className="truncate text-sm font-medium">Coding Assistant</p>
+                    <p className="truncate text-xs text-muted-foreground">Full-stack developer</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="size-2 rounded-full bg-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Offline</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Processing kin */}
+                <div className="group relative flex overflow-hidden rounded-xl border border-warning/30 bg-card transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer">
+                  <div className="w-20 shrink-0 bg-gradient-to-b from-primary/80 to-accent/80 flex items-center justify-center">
+                    <Bot className="size-8 text-white/90" />
+                  </div>
+                  <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-medium">Research Agent</p>
+                      <Badge className="shrink-0 bg-warning text-warning-foreground text-[10px]">
+                        <Loader2 className="size-3 animate-spin" />
+                      </Badge>
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">Deep web analysis</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="size-2 rounded-full bg-warning animate-pulse" />
+                      <span className="text-[10px] text-muted-foreground">Processing...</span>
+                    </div>
                   </div>
                 </div>
               </div>
