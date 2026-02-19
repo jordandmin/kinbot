@@ -99,20 +99,20 @@ Définition complète du schéma Drizzle et création de la base SQLite.
 
 ## Phase 2 — Authentification et gestion des utilisateurs
 
-- [ ] **2.1** Installer Better Auth et configurer `src/server/auth/index.ts` (adapter pour SQLite + Drizzle)
-- [ ] **2.2** Créer `src/server/auth/middleware.ts` — middleware Hono vérifiant la session (cookie HTTP-only) sur `/api/*` sauf `/api/auth/*` et `/api/onboarding/*`
-- [ ] **2.3** Créer `src/server/app.ts` — configuration Hono (CORS, middleware auth, montage des routes)
-- [ ] **2.4** Créer `src/server/index.ts` — point d'entrée (Hono app + serve static en prod)
-- [ ] **2.5** Créer les routes auth :
+- [x] **2.1** Installer Better Auth et configurer `src/server/auth/index.ts` (adapter pour SQLite + Drizzle)
+- [x] **2.2** Créer `src/server/auth/middleware.ts` — middleware Hono vérifiant la session (cookie HTTP-only) sur `/api/*` sauf `/api/auth/*` et `/api/onboarding/*`
+- [x] **2.3** Créer `src/server/app.ts` — configuration Hono (CORS, middleware auth, montage des routes)
+- [x] **2.4** Créer `src/server/index.ts` — point d'entrée (Hono app + serve static en prod)
+- [x] **2.5** Créer les routes auth :
   - `src/server/routes/auth.ts` — `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`
-- [ ] **2.6** Créer les routes profil :
+- [x] **2.6** Créer les routes profil :
   - `src/server/routes/me.ts` — `GET /api/me`, `PATCH /api/me`, `POST /api/me/avatar`
-- [ ] **2.7** Créer la route onboarding :
+- [x] **2.7** Créer la route onboarding :
   - `src/server/routes/onboarding.ts` — `GET /api/onboarding/status`
-- [ ] **2.8** Frontend : créer `src/client/lib/api.ts` — client API (fetch wrapper avec credentials: 'include')
-- [ ] **2.9** Frontend : créer le hook `src/client/hooks/useAuth.ts`
-- [ ] **2.10** Frontend : créer `src/client/pages/login/LoginPage.tsx`
-- [ ] **2.11** Frontend : créer `src/client/App.tsx` — router avec redirection vers login ou onboarding si nécessaire
+- [x] **2.8** Frontend : créer `src/client/lib/api.ts` — client API (fetch wrapper avec credentials: 'include')
+- [x] **2.9** Frontend : créer le hook `src/client/hooks/useAuth.ts`
+- [x] **2.10** Frontend : créer `src/client/pages/login/LoginPage.tsx`
+- [x] **2.11** Frontend : créer `src/client/App.tsx` — router avec redirection vers login ou onboarding si nécessaire
 
 **Critère de validation** : un utilisateur peut s'inscrire, se connecter, se déconnecter. Le middleware bloque les requêtes non authentifiées. La page de login fonctionne.
 
