@@ -6,6 +6,7 @@ import { meRoutes } from '@/server/routes/me'
 import { onboardingRoutes } from '@/server/routes/onboarding'
 import { providerRoutes } from '@/server/routes/providers'
 import { sseRoutes } from '@/server/routes/sse'
+import { kinRoutes } from '@/server/routes/kins'
 
 export type AppVariables = {
   session: { id: string; userId: string; token: string }
@@ -32,5 +33,6 @@ app.route('/api/me', meRoutes)
 app.route('/api/onboarding', onboardingRoutes)
 app.route('/api/providers', providerRoutes)
 app.route('/api/sse', sseRoutes)
+app.route('/api/kins', kinRoutes)
 
 export { app }

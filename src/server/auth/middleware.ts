@@ -1,6 +1,5 @@
 import type { Context, Next } from 'hono'
 import { auth } from '@/server/auth/index'
-import { fromNodeHeaders } from 'better-auth/node'
 
 /**
  * Hono middleware that verifies the session on all /api/* routes
@@ -20,7 +19,7 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 
   const session = await auth.api.getSession({
-    headers: fromNodeHeaders(c.req.raw.headers),
+    headers: c.req.raw.headers,
   })
 
   if (!session) {
