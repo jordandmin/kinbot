@@ -1,0 +1,110 @@
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes'
+import type { PaletteId } from '@/shared/types'
+
+const STORAGE_KEY = 'kinbot-palette'
+const DEFAULT_PALETTE: PaletteId = 'aurora'
+
+export interface PaletteInfo {
+  id: PaletteId
+  name: string
+  description: string
+  colors: [string, string, string] // glow-1, glow-2, glow-3 preview
+}
+
+export const PALETTES: PaletteInfo[] = [
+  {
+    id: 'aurora',
+    name: 'Aurora',
+    description: 'Purple \u2192 Pink \u2192 Peach',
+    colors: ['oklch(0.52 0.24 300)', 'oklch(0.62 0.26 340)', 'oklch(0.72 0.16 15)'],
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean',
+    description: 'Blue \u2192 Teal \u2192 Cyan',
+    colors: ['oklch(0.50 0.18 240)', 'oklch(0.55 0.16 195)', 'oklch(0.60 0.14 180)'],
+  },
+  {
+    id: 'forest',
+    name: 'Forest',
+    description: 'Emerald \u2192 Lime \u2192 Gold',
+    colors: ['oklch(0.52 0.18 155)', 'oklch(0.58 0.16 130)', 'oklch(0.68 0.14 85)'],
+  },
+  {
+    id: 'sunset',
+    name: 'Sunset',
+    description: 'Crimson \u2192 Orange \u2192 Amber',
+    colors: ['oklch(0.55 0.22 25)', 'oklch(0.65 0.20 50)', 'oklch(0.75 0.16 75)'],
+  },
+  {
+    id: 'monochrome',
+    name: 'Mono',
+    description: 'Neutral elegance',
+    colors: ['oklch(0.35 0 0)', 'oklch(0.55 0 0)', 'oklch(0.75 0 0)'],
+  },
+]
+
+interface PaletteContextValue {
+  palette: PaletteId
+  setPalette: (p: PaletteId) => void
+  palettes: PaletteInfo[]
+}
+
+const PaletteContext = createContext<PaletteContextValue>({
+  palette: DEFAULT_PALETTE,
+  setPalette: () => {},
+  palettes: PALETTES,
+})
+
+export function usePalette() {
+  return useContext(PaletteContext)
+}
+
+export { useTheme }
+
+function PaletteProvider({ children }: { children: React.ReactNode }) {
+  const [palette, setPaletteState] = useState<PaletteId>(() => {
+    if (typeof window === 'undefined') return DEFAULT_PALETTE
+    const stored = localStorage.getItem(STORAGE_KEY) as PaletteId | null
+    return stored && PALETTES.some(p => p.id === stored) ? stored : DEFAULT_PALETTE
+  })
+
+  const setPalette = useCallback((p: PaletteId) => {
+    setPaletteState(p)
+    localStorage.setItem(STORAGE_KEY, p)
+    // Apply to <html> immediately
+    const html = document.documentElement
+    if (p === DEFAULT_PALETTE) {
+      html.removeAttribute('data-palette')
+    } else {
+      html.setAttribute('data-palette', p)
+    }
+  }, [])
+
+  // Sync attribute on mount
+  useEffect(() => {
+    if (palette !== DEFAULT_PALETTE) {
+      document.documentElement.setAttribute('data-palette', palette)
+    }
+  }, [palette])
+
+  return (
+    <PaletteContext.Provider value={{ palette, setPalette, palettes: PALETTES }}>
+      {children}
+    </PaletteContext.Provider>
+  )
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <PaletteProvider>{children}</PaletteProvider>
+    </NextThemesProvider>
+  )
+}

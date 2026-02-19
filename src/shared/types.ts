@@ -20,6 +20,8 @@ export type MemoryCategory = 'fact' | 'preference' | 'decision' | 'knowledge'
 
 export type QueueItemPriority = 'user' | 'kin' | 'task'
 
+export type PaletteId = 'aurora' | 'ocean' | 'forest' | 'sunset' | 'monochrome'
+
 export interface ApiError {
   error: {
     code: string

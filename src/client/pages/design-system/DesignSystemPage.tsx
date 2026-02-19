@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
+import { usePalette } from '@/client/components/theme-provider'
+import { PaletteSwitcher } from '@/client/components/common/PaletteSwitcher'
 import {
-  Sun,
-  Moon,
   AlertCircle,
   CheckCircle,
   Info,
@@ -11,7 +12,6 @@ import {
   Settings,
   User,
   Bot,
-  Clock,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -23,6 +23,27 @@ import {
   Wand2,
   Star,
   Heart,
+  ChevronDown,
+  PanelRight,
+  ExternalLink,
+  BarChart3,
+  Palette,
+  Type,
+  MousePointerClick,
+  TextCursorInput,
+  LayoutGrid,
+  Tag,
+  ShieldAlert,
+  ToggleLeft,
+  Layers,
+  PanelLeftClose,
+  MessageCircle,
+  Activity,
+  ScrollText,
+  ChevronsUpDown,
+  BellRing,
+  Shapes,
+  Ruler,
 } from 'lucide-react'
 
 import { Button } from '@/client/components/ui/button'
@@ -73,13 +94,63 @@ import {
 } from '@/client/components/ui/tooltip'
 import { Avatar, AvatarFallback } from '@/client/components/ui/avatar'
 import { Label } from '@/client/components/ui/label'
+import { Skeleton } from '@/client/components/ui/skeleton'
+import { Progress } from '@/client/components/ui/progress'
+import { ScrollArea } from '@/client/components/ui/scroll-area'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/client/components/ui/sheet'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/client/components/ui/popover'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/client/components/ui/collapsible'
+import { Toaster } from '@/client/components/ui/sonner'
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/* ─── Nav sections ────────────────────────────────────────── */
+
+const NAV_SECTIONS = [
+  { id: 'surfaces', label: 'Surfaces', icon: Layers },
+  { id: 'colors', label: 'Colors', icon: Palette },
+  { id: 'typography', label: 'Typography', icon: Type },
+  { id: 'buttons', label: 'Buttons', icon: MousePointerClick },
+  { id: 'inputs', label: 'Inputs', icon: TextCursorInput },
+  { id: 'cards', label: 'Cards', icon: LayoutGrid },
+  { id: 'badges', label: 'Badges', icon: Tag },
+  { id: 'alerts', label: 'Alerts', icon: ShieldAlert },
+  { id: 'form-controls', label: 'Form Controls', icon: ToggleLeft },
+  { id: 'dialog', label: 'Dialog', icon: Layers },
+  { id: 'sheet', label: 'Sheet', icon: PanelRight },
+  { id: 'popover', label: 'Popover', icon: MessageCircle },
+  { id: 'tabs-dropdown', label: 'Tabs & Dropdown', icon: ChevronsUpDown },
+  { id: 'progress', label: 'Progress', icon: Activity },
+  { id: 'scroll-area', label: 'Scroll Area', icon: ScrollText },
+  { id: 'collapsible', label: 'Collapsible', icon: ChevronsUpDown },
+  { id: 'toast', label: 'Toast', icon: BellRing },
+  { id: 'avatars', label: 'Avatars', icon: User },
+  { id: 'kinbot-patterns', label: 'KinBot Patterns', icon: Shapes },
+  { id: 'loading-states', label: 'Loading States', icon: Loader2 },
+  { id: 'spacing', label: 'Spacing & Layout', icon: Ruler },
+] as const
+
+/* ─── Helpers ─────────────────────────────────────────────── */
+
+function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-6">
+    <section id={id} className="space-y-6 scroll-mt-20 animate-fade-in-up">
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-primary/30 via-accent/20 to-transparent" />
+        <div className="flex-1 separator-gradient" />
       </div>
       {children}
     </section>
@@ -104,58 +175,54 @@ function ColorSwatch({ name, className }: { name: string; className: string }) {
   )
 }
 
-export function DesignSystemPage() {
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'))
-  const [dialogOpen, setDialogOpen] = useState(false)
+/* ─── Main ────────────────────────────────────────────────── */
 
-  function toggleDarkMode() {
-    const next = !isDark
-    setIsDark(next)
-    document.documentElement.classList.toggle('dark', next)
-  }
+export function DesignSystemPage() {
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [progressVal, setProgressVal] = useState(42)
+  const [collapsibleOpen, setCollapsibleOpen] = useState(false)
+  const { palette, palettes } = usePalette()
+  const currentPalette = palettes.find(p => p.id === palette)
 
   return (
     <TooltipProvider>
       <div className="min-h-screen surface-base text-foreground">
+        <Toaster />
 
         {/* ─── HEADER ───────────────────────────────────────── */}
         <header className="sticky top-0 z-50 surface-header border-b">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
             <div className="flex items-center gap-3">
-              <div className="gradient-primary flex size-10 items-center justify-center rounded-xl shadow-md glow-primary">
-                <Wand2 className="size-5 text-white" />
+              <div className="gradient-primary flex size-9 items-center justify-center rounded-lg shadow-md glow-primary">
+                <Wand2 className="size-4 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold gradient-primary-text">KinBot</h1>
-                <p className="text-xs text-muted-foreground">Aurora &mdash; Purple + Pink</p>
+                <h1 className="text-lg font-bold gradient-primary-text">KinBot Design System</h1>
+                <p className="text-[10px] text-muted-foreground">{currentPalette?.name ?? 'Aurora'} &mdash; 24 components &middot; {NAV_SECTIONS.length} sections</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={toggleDarkMode} className="gap-2 glass">
-              {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-              {isDark ? 'Light' : 'Dark'}
-            </Button>
+            <PaletteSwitcher />
           </div>
         </header>
 
         {/* ─── HERO ─────────────────────────────────────────── */}
         <div className="relative overflow-hidden border-b">
-          {/* Animated aurora orbs */}
           <div className="aurora-orb aurora-orb-purple size-72 -top-20 -left-20" />
           <div className="aurora-orb aurora-orb-pink size-60 top-10 right-10" style={{ animationDelay: '-3s' }} />
           <div className="aurora-orb aurora-orb-peach size-48 bottom-0 left-1/3" style={{ animationDelay: '-5s' }} />
 
-          <div className="relative mx-auto max-w-6xl px-6 py-24 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 text-sm font-medium text-primary mb-6">
-              <Sparkles className="size-4" /> Design System v1
+          <div className="relative mx-auto max-w-7xl px-6 py-16 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 text-sm font-medium text-primary mb-4">
+              <Sparkles className="size-4" /> Design System v2
             </div>
-            <h2 className="text-6xl font-bold tracking-tight">
-              <span className="gradient-primary-text">Aurora</span>
+            <h2 className="text-5xl font-bold tracking-tight">
+              <span className="gradient-primary-text">{currentPalette?.name ?? 'Aurora'}</span>
             </h2>
-            <p className="mx-auto mt-4 max-w-md text-lg text-muted-foreground">
-              Purple to pink to peach. Northern lights on every surface.
-              Glassmorphism everywhere.
+            <p className="mx-auto mt-3 max-w-md text-muted-foreground">
+              {currentPalette?.description ?? 'Purple \u2192 Pink \u2192 Peach'}. Every surface alive with color.
+              Glassmorphism, glow, and motion.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="mt-8 flex items-center justify-center gap-4">
               <Button size="lg" className="gradient-primary-hover border-0 text-white shadow-lg glow-primary">
                 <Zap className="size-4" /> Get Started
               </Button>
@@ -166,673 +233,1030 @@ export function DesignSystemPage() {
           </div>
         </div>
 
-        <main className="mx-auto max-w-6xl space-y-16 px-6 py-12">
+        {/* ─── LAYOUT: sidebar + content ─────────────────────── */}
+        <div className="mx-auto max-w-7xl flex">
 
-          {/* ─── SURFACES ──────────────────────────────────── */}
-          <Section title="Surfaces & Backgrounds">
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              Every surface carries the aurora &mdash; purple, pink, and peach undertones shift
-              across backgrounds, cards, sidebars, and panels. Nothing is flat.
-            </p>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {([
-                { cls: 'surface-base', name: 'surface-base', desc: 'Multi-point aurora wash' },
-                { cls: 'surface-card', name: 'surface-card', desc: 'Iridescent diagonal tint' },
-                { cls: 'surface-sidebar', name: 'surface-sidebar', desc: 'Vertical aurora sweep' },
-                { cls: 'surface-chat', name: 'surface-chat', desc: 'Top aurora glow' },
-                { cls: 'surface-header', name: 'surface-header', desc: 'Gradient strip + blur' },
-                { cls: 'gradient-mesh', name: 'gradient-mesh', desc: 'Full aurora mesh' },
-              ] as const).map((s) => (
-                <div key={s.name} className="overflow-hidden rounded-xl border">
-                  <div className={`${s.cls} p-5 h-28 flex flex-col justify-end`}>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{s.name}</p>
-                    <p className="text-sm mt-0.5">{s.desc}</p>
-                  </div>
-                </div>
+          {/* Sidebar nav */}
+          <nav className="hidden lg:block sticky top-[57px] h-[calc(100vh-57px)] w-56 shrink-0 overflow-y-auto border-r py-4 px-3 surface-sidebar">
+            <ul className="space-y-0.5">
+              {NAV_SECTIONS.map(({ id, label, icon: Icon }) => (
+                <li key={id}>
+                  <a
+                    href={`#${id}`}
+                    className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                  >
+                    <Icon className="size-3.5 shrink-0" />
+                    <span className="truncate">{label}</span>
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
+          </nav>
 
-            <SubSection title="Glass & Glow">
-              <div className="relative rounded-2xl gradient-mesh py-14 px-8">
-                {/* Aurora orbs — overflow visible so blur bleeds out naturally */}
-                <div className="aurora-orb aurora-orb-purple size-56 -top-16 -left-16" />
-                <div className="aurora-orb aurora-orb-pink size-48 -bottom-12 -right-12" style={{ animationDelay: '-3s' }} />
-                <div className="aurora-orb aurora-orb-peach size-36 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '-5s' }} />
+          {/* Content */}
+          <main className="flex-1 min-w-0 space-y-16 px-6 lg:px-10 py-12">
 
-                <div className="relative grid gap-5 sm:grid-cols-3">
-                  <div className="glass rounded-xl p-5 text-center">
-                    <Bot className="mx-auto size-7 text-primary" />
-                    <h4 className="mt-2 font-semibold">Glass</h4>
-                    <p className="mt-1 text-xs text-muted-foreground">Frosted translucent</p>
-                  </div>
-                  <div className="glass-strong rounded-xl p-5 text-center">
-                    <Sparkles className="mx-auto size-7 text-primary" />
-                    <h4 className="mt-2 font-semibold">Glass Strong</h4>
-                    <p className="mt-1 text-xs text-muted-foreground">More opaque</p>
-                  </div>
-                  <div className="gradient-border gradient-border-animated rounded-xl bg-card p-5 text-center">
-                    <Zap className="mx-auto size-7 text-primary" />
-                    <h4 className="mt-2 font-semibold">Animated Border</h4>
-                    <p className="mt-1 text-xs text-muted-foreground">Shifting gradient outline</p>
-                  </div>
-                </div>
+            {/* ─── SURFACES ──────────────────────────────────── */}
+            <Section id="surfaces" title="Surfaces & Backgrounds">
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Every surface carries the aurora &mdash; purple, pink, and peach undertones shift
+                across backgrounds, cards, sidebars, and panels. Nothing is flat.
+              </p>
 
-                <div className="relative mt-8 flex items-center justify-center gap-4 flex-wrap">
-                  <span className="glow-primary gradient-primary rounded-full px-5 py-2 text-sm font-medium text-white">
-                    Glow Primary
-                  </span>
-                  <span className="glow-accent rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-foreground">
-                    Glow Accent
-                  </span>
-                </div>
-              </div>
-            </SubSection>
-          </Section>
-
-          {/* ─── COLORS ────────────────────────────────────── */}
-          <Section title="Color Palette">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div className="space-y-6">
-                <SubSection title="Core">
-                  <div className="flex flex-wrap gap-3">
-                    <ColorSwatch name="Primary" className="bg-primary" />
-                    <ColorSwatch name="Secondary" className="bg-secondary" />
-                    <ColorSwatch name="Accent" className="bg-accent" />
-                    <ColorSwatch name="Muted" className="bg-muted" />
-                  </div>
-                </SubSection>
-                <SubSection title="Semantic">
-                  <div className="flex flex-wrap gap-3">
-                    <ColorSwatch name="Success" className="bg-success" />
-                    <ColorSwatch name="Warning" className="bg-warning" />
-                    <ColorSwatch name="Error" className="bg-destructive" />
-                    <ColorSwatch name="Info" className="bg-info" />
-                  </div>
-                </SubSection>
-              </div>
-              <div className="space-y-6">
-                <SubSection title="Gradients">
-                  <div className="flex flex-wrap gap-3">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-16 w-32 rounded-xl shadow-md gradient-primary" />
-                      <span className="text-xs font-medium">Aurora</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-16 w-32 rounded-xl shadow-md gradient-primary-hover" />
-                      <span className="text-xs font-medium">Animated</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-16 w-32 rounded-xl gradient-subtle border" />
-                      <span className="text-xs font-medium">Subtle</span>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {([
+                  { cls: 'surface-base', name: 'surface-base', desc: 'Multi-point aurora wash' },
+                  { cls: 'surface-card', name: 'surface-card', desc: 'Iridescent diagonal tint' },
+                  { cls: 'surface-sidebar', name: 'surface-sidebar', desc: 'Vertical aurora sweep' },
+                  { cls: 'surface-chat', name: 'surface-chat', desc: 'Top aurora glow' },
+                  { cls: 'surface-header', name: 'surface-header', desc: 'Gradient strip + blur' },
+                  { cls: 'gradient-mesh', name: 'gradient-mesh', desc: 'Full aurora mesh' },
+                ] as const).map((s) => (
+                  <div key={s.name} className="overflow-hidden rounded-xl border">
+                    <div className={`${s.cls} p-5 h-28 flex flex-col justify-end`}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{s.name}</p>
+                      <p className="text-sm mt-0.5">{s.desc}</p>
                     </div>
                   </div>
-                </SubSection>
-                <SubSection title="Text">
-                  <div className="space-y-1.5 surface-card rounded-xl p-4 border">
-                    <p className="font-semibold">Foreground</p>
-                    <p className="text-muted-foreground">Muted foreground</p>
-                    <p className="text-primary font-semibold">Primary</p>
-                    <p className="gradient-primary-text font-bold text-lg">Gradient text</p>
+                ))}
+              </div>
+
+              <SubSection title="Glass & Glow">
+                <div className="relative rounded-2xl gradient-mesh py-14 px-8">
+                  <div className="aurora-orb aurora-orb-purple size-56 -top-16 -left-16" />
+                  <div className="aurora-orb aurora-orb-pink size-48 -bottom-12 -right-12" style={{ animationDelay: '-3s' }} />
+                  <div className="aurora-orb aurora-orb-peach size-36 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '-5s' }} />
+
+                  <div className="relative grid gap-5 sm:grid-cols-3">
+                    <div className="glass rounded-xl p-5 text-center">
+                      <Bot className="mx-auto size-7 text-primary" />
+                      <h4 className="mt-2 font-semibold">Glass</h4>
+                      <p className="mt-1 text-xs text-muted-foreground">Frosted translucent</p>
+                    </div>
+                    <div className="glass-strong rounded-xl p-5 text-center">
+                      <Sparkles className="mx-auto size-7 text-primary" />
+                      <h4 className="mt-2 font-semibold">Glass Strong</h4>
+                      <p className="mt-1 text-xs text-muted-foreground">More opaque</p>
+                    </div>
+                    <div className="gradient-border gradient-border-animated rounded-xl bg-card p-5 text-center">
+                      <Zap className="mx-auto size-7 text-primary" />
+                      <h4 className="mt-2 font-semibold">Animated Border</h4>
+                      <p className="mt-1 text-xs text-muted-foreground">Shifting gradient outline</p>
+                    </div>
                   </div>
-                </SubSection>
-              </div>
-            </div>
-          </Section>
 
-          {/* ─── TYPOGRAPHY ──────────────────────────────────── */}
-          <Section title="Typography">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="surface-card rounded-xl p-6 border space-y-2">
-                <h1 className="text-4xl font-bold tracking-tight">Heading 1</h1>
-                <h2 className="text-3xl font-bold tracking-tight">Heading 2</h2>
-                <h3 className="text-2xl font-semibold">Heading 3</h3>
-                <h4 className="text-xl font-semibold">Heading 4</h4>
-                <h5 className="text-lg font-medium">Heading 5</h5>
-                <h6 className="text-base font-medium text-muted-foreground">Heading 6</h6>
-              </div>
-              <div className="surface-card rounded-xl p-6 border space-y-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Body Sizes</p>
-                  <p className="text-lg">Large &mdash; For featured text</p>
-                  <p className="text-base">Default &mdash; Main body</p>
-                  <p className="text-sm text-muted-foreground">Small &mdash; Secondary</p>
-                  <p className="text-xs text-muted-foreground">Caption &mdash; Fine print</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Weights</p>
-                  <p className="font-normal">Regular 400</p>
-                  <p className="font-medium">Medium 500</p>
-                  <p className="font-semibold">Semibold 600</p>
-                  <p className="font-bold">Bold 700</p>
-                </div>
-              </div>
-            </div>
-          </Section>
-
-          {/* ─── BUTTONS ─────────────────────────────────────── */}
-          <Section title="Buttons">
-            <SubSection title="Variants">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button>Primary</Button>
-                <Button variant="secondary">Secondary</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
-                <Button variant="destructive">Destructive</Button>
-                <Button variant="link">Link</Button>
-              </div>
-            </SubSection>
-            <SubSection title="Aurora Buttons">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button className="gradient-primary border-0 text-white shadow-lg glow-primary">
-                  <Sparkles className="size-4" /> Aurora CTA
-                </Button>
-                <Button className="gradient-primary-hover border-0 text-white shadow-md">
-                  <Wand2 className="size-4" /> Animated
-                </Button>
-                <Button variant="outline" className="gradient-border gradient-border-animated">
-                  Gradient Border
-                </Button>
-                <Button variant="outline" className="glass">
-                  <Star className="size-4" /> Glass Button
-                </Button>
-              </div>
-            </SubSection>
-            <SubSection title="Sizes & States">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button size="xs">XS</Button>
-                <Button size="sm">Small</Button>
-                <Button>Default</Button>
-                <Button size="lg">Large</Button>
-                <Button disabled>Disabled</Button>
-                <Button disabled><Loader2 className="size-4 animate-spin" /> Loading</Button>
-              </div>
-            </SubSection>
-            <SubSection title="With Icons">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button><Plus className="size-4" /> Create Kin</Button>
-                <Button variant="outline"><Settings className="size-4" /> Settings</Button>
-                <Button variant="destructive"><Trash2 className="size-4" /> Delete</Button>
-                <Button variant="ghost" size="icon"><Heart className="size-4" /></Button>
-                <Button variant="ghost" size="icon"><Bell className="size-4" /></Button>
-              </div>
-            </SubSection>
-          </Section>
-
-          {/* ─── INPUTS ──────────────────────────────────────── */}
-          <Section title="Inputs">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="i1">Default</Label>
-                  <Input id="i1" placeholder="Type something..." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="i2">With value</Label>
-                  <Input id="i2" defaultValue="Hello KinBot" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="i3">Error</Label>
-                  <Input id="i3" aria-invalid="true" defaultValue="bad-value" />
-                  <p className="text-sm text-destructive">This field is invalid</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="i4">With icon</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="i4" className="pl-9" placeholder="Search memories..." />
+                  <div className="relative mt-8 flex items-center justify-center gap-4 flex-wrap">
+                    <span className="glow-primary gradient-primary rounded-full px-5 py-2 text-sm font-medium text-white">
+                      Glow Primary
+                    </span>
+                    <span className="glow-accent rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-foreground">
+                      Glow Accent
+                    </span>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="i5">Disabled</Label>
-                  <Input id="i5" disabled placeholder="Not editable" />
+              </SubSection>
+            </Section>
+
+            {/* ─── COLORS ────────────────────────────────────── */}
+            <Section id="colors" title="Color Palette">
+              <div className="grid gap-8 lg:grid-cols-2">
+                <div className="space-y-6">
+                  <SubSection title="Core">
+                    <div className="flex flex-wrap gap-3">
+                      <ColorSwatch name="Primary" className="bg-primary" />
+                      <ColorSwatch name="Secondary" className="bg-secondary" />
+                      <ColorSwatch name="Accent" className="bg-accent" />
+                      <ColorSwatch name="Muted" className="bg-muted" />
+                    </div>
+                  </SubSection>
+                  <SubSection title="Semantic">
+                    <div className="flex flex-wrap gap-3">
+                      <ColorSwatch name="Success" className="bg-success" />
+                      <ColorSwatch name="Warning" className="bg-warning" />
+                      <ColorSwatch name="Error" className="bg-destructive" />
+                      <ColorSwatch name="Info" className="bg-info" />
+                    </div>
+                  </SubSection>
+                  <SubSection title="Chart Colors">
+                    <div className="flex flex-wrap gap-3">
+                      <ColorSwatch name="Chart 1" className="bg-chart-1" />
+                      <ColorSwatch name="Chart 2" className="bg-chart-2" />
+                      <ColorSwatch name="Chart 3" className="bg-chart-3" />
+                      <ColorSwatch name="Chart 4" className="bg-chart-4" />
+                      <ColorSwatch name="Chart 5" className="bg-chart-5" />
+                    </div>
+                  </SubSection>
+                </div>
+                <div className="space-y-6">
+                  <SubSection title="Gradients">
+                    <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-16 w-32 rounded-xl shadow-md gradient-primary" />
+                        <span className="text-xs font-medium">Aurora</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-16 w-32 rounded-xl shadow-md gradient-primary-hover" />
+                        <span className="text-xs font-medium">Animated</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-16 w-32 rounded-xl gradient-subtle border" />
+                        <span className="text-xs font-medium">Subtle</span>
+                      </div>
+                    </div>
+                  </SubSection>
+                  <SubSection title="Text & Links">
+                    <div className="space-y-1.5 surface-card rounded-xl p-4 border">
+                      <p className="font-semibold">Foreground</p>
+                      <p className="text-muted-foreground">Muted foreground</p>
+                      <p className="text-primary font-semibold">Primary</p>
+                      <p className="text-link hover:text-link-hover cursor-pointer underline underline-offset-4">
+                        Link color <ExternalLink className="inline size-3" />
+                      </p>
+                      <p className="gradient-primary-text font-bold text-lg">Gradient text</p>
+                    </div>
+                  </SubSection>
                 </div>
               </div>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="ta1">Textarea</Label>
-                  <Textarea id="ta1" placeholder="Describe your Kin's personality..." rows={4} />
+            </Section>
+
+            {/* ─── TYPOGRAPHY ──────────────────────────────────── */}
+            <Section id="typography" title="Typography">
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="surface-card rounded-xl p-6 border space-y-2">
+                  <h1 className="text-4xl font-bold tracking-tight">Heading 1</h1>
+                  <h2 className="text-3xl font-bold tracking-tight">Heading 2</h2>
+                  <h3 className="text-2xl font-semibold">Heading 3</h3>
+                  <h4 className="text-xl font-semibold">Heading 4</h4>
+                  <h5 className="text-lg font-medium">Heading 5</h5>
+                  <h6 className="text-base font-medium text-muted-foreground">Heading 6</h6>
                 </div>
-                <div className="space-y-2">
-                  <Label>Select</Label>
-                  <Select>
-                    <SelectTrigger><SelectValue placeholder="Choose a model" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="claude">Claude Sonnet 4</SelectItem>
-                      <SelectItem value="gpt4">GPT-4o</SelectItem>
-                      <SelectItem value="gemini">Gemini 2.5 Pro</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="surface-card rounded-xl p-6 border space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Body Sizes</p>
+                    <p className="text-lg">Large &mdash; For featured text</p>
+                    <p className="text-base">Default &mdash; Main body</p>
+                    <p className="text-sm text-muted-foreground">Small &mdash; Secondary</p>
+                    <p className="text-xs text-muted-foreground">Caption &mdash; Fine print</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Weights</p>
+                    <p className="font-normal">Regular 400</p>
+                    <p className="font-medium">Medium 500</p>
+                    <p className="font-semibold">Semibold 600</p>
+                    <p className="font-bold">Bold 700</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Section>
+            </Section>
 
-          {/* ─── CARDS ───────────────────────────────────────── */}
-          <Section title="Cards">
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              <Card className="surface-card">
-                <CardHeader>
-                  <CardTitle>Aurora Card</CardTitle>
-                  <CardDescription>Iridescent surface tint.</CardDescription>
-                </CardHeader>
-                <CardContent><p className="text-sm text-muted-foreground">Purple &rarr; pink &rarr; peach diagonal wash.</p></CardContent>
-              </Card>
+            {/* ─── BUTTONS ─────────────────────────────────────── */}
+            <Section id="buttons" title="Buttons">
+              <SubSection title="Variants">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button>Primary</Button>
+                  <Button variant="secondary">Secondary</Button>
+                  <Button variant="outline">Outline</Button>
+                  <Button variant="ghost">Ghost</Button>
+                  <Button variant="destructive">Destructive</Button>
+                  <Button variant="link">Link</Button>
+                </div>
+              </SubSection>
+              <SubSection title="Aurora Buttons">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button className="gradient-primary border-0 text-white shadow-lg glow-primary">
+                    <Sparkles className="size-4" /> Aurora CTA
+                  </Button>
+                  <Button className="gradient-primary-hover border-0 text-white shadow-md">
+                    <Wand2 className="size-4" /> Animated
+                  </Button>
+                  <Button variant="outline" className="gradient-border gradient-border-animated">
+                    Gradient Border
+                  </Button>
+                  <Button variant="outline" className="glass">
+                    <Star className="size-4" /> Glass Button
+                  </Button>
+                </div>
+              </SubSection>
+              <SubSection title="Sizes & States">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button size="xs">XS</Button>
+                  <Button size="sm">Small</Button>
+                  <Button>Default</Button>
+                  <Button size="lg">Large</Button>
+                  <Button disabled>Disabled</Button>
+                  <Button disabled><Loader2 className="size-4 animate-spin" /> Loading</Button>
+                </div>
+              </SubSection>
+              <SubSection title="With Icons">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button><Plus className="size-4" /> Create Kin</Button>
+                  <Button variant="outline"><Settings className="size-4" /> Settings</Button>
+                  <Button variant="destructive"><Trash2 className="size-4" /> Delete</Button>
+                  <Button variant="ghost" size="icon"><Heart className="size-4" /></Button>
+                  <Button variant="ghost" size="icon"><Bell className="size-4" /></Button>
+                </div>
+              </SubSection>
+            </Section>
 
-              <Card className="surface-card">
-                <CardHeader><CardTitle>With Footer</CardTitle><CardDescription>Action buttons.</CardDescription></CardHeader>
-                <CardContent><p className="text-sm text-muted-foreground">Interactive card pattern.</p></CardContent>
-                <CardFooter className="flex gap-2">
-                  <Button size="sm" className="gradient-primary border-0 text-white">Save</Button>
-                  <Button variant="outline" size="sm">Cancel</Button>
-                </CardFooter>
-              </Card>
-
-              <Card className="glass cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-primary" /> Glass</CardTitle>
-                  <CardDescription>Frosted glass + hover.</CardDescription>
-                </CardHeader>
-                <CardContent><p className="text-sm text-muted-foreground">Translucent over any background.</p></CardContent>
-              </Card>
-
-              <Card className="gradient-border gradient-border-animated overflow-hidden surface-card">
-                <CardHeader>
-                  <CardTitle className="gradient-primary-text">Animated Border</CardTitle>
-                  <CardDescription>Shifting aurora outline.</CardDescription>
-                </CardHeader>
-                <CardContent><p className="text-sm text-muted-foreground">Eye-catching accent card.</p></CardContent>
-              </Card>
-
-              <Card className="relative overflow-hidden">
-                <div className="absolute inset-0 gradient-primary opacity-[0.07]" />
-                <CardHeader className="relative">
-                  <CardTitle>Strong Tint</CardTitle>
-                  <CardDescription>Heavier gradient overlay.</CardDescription>
-                </CardHeader>
-                <CardContent className="relative"><p className="text-sm text-muted-foreground">Featured content.</p></CardContent>
-              </Card>
-            </div>
-          </Section>
-
-          {/* ─── BADGES ──────────────────────────────────────── */}
-          <Section title="Badges">
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge>Default</Badge>
-              <Badge variant="secondary">Secondary</Badge>
-              <Badge variant="outline">Outline</Badge>
-              <Badge variant="destructive">Destructive</Badge>
-              <Badge className="bg-success text-success-foreground">Success</Badge>
-              <Badge className="bg-warning text-warning-foreground">Warning</Badge>
-              <Badge className="bg-info text-info-foreground">Info</Badge>
-              <Badge className="gradient-primary text-white border-0">
-                <Sparkles className="size-3" /> Aurora
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 mt-3">
-              <Badge variant="secondary">Queue: 3</Badge>
-              <Badge className="bg-success text-success-foreground">Online</Badge>
-              <Badge className="bg-warning text-warning-foreground"><Loader2 className="size-3 animate-spin" /> Processing</Badge>
-              <Badge variant="outline">v1.0.0</Badge>
-            </div>
-          </Section>
-
-          {/* ─── ALERTS ──────────────────────────────────────── */}
-          <Section title="Alerts">
-            <div className="max-w-2xl space-y-3">
-              <Alert>
-                <Info className="size-4" /><AlertTitle>Info</AlertTitle>
-                <AlertDescription>Your Kin is learning from patterns.</AlertDescription>
-              </Alert>
-              <Alert className="border-success/50 text-success [&>svg]:text-success">
-                <CheckCircle className="size-4" /><AlertTitle>Success</AlertTitle>
-                <AlertDescription>Provider connected.</AlertDescription>
-              </Alert>
-              <Alert className="border-warning/50 text-warning [&>svg]:text-warning">
-                <AlertTriangle className="size-4" /><AlertTitle>Warning</AlertTitle>
-                <AlertDescription>No embedding provider configured.</AlertDescription>
-              </Alert>
-              <Alert variant="destructive">
-                <AlertCircle className="size-4" /><AlertTitle>Error</AlertTitle>
-                <AlertDescription>API key invalid.</AlertDescription>
-              </Alert>
-            </div>
-          </Section>
-
-          {/* ─── FORM CONTROLS ───────────────────────────────── */}
-          <Section title="Checkboxes, Radios, Switches">
-            <div className="grid gap-5 sm:grid-cols-3">
-              <div className="space-y-3 surface-card rounded-xl p-4 border">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Checkboxes</p>
-                <div className="flex items-center gap-2"><Checkbox id="c1" defaultChecked /><Label htmlFor="c1">Checked</Label></div>
-                <div className="flex items-center gap-2"><Checkbox id="c2" /><Label htmlFor="c2">Unchecked</Label></div>
-                <div className="flex items-center gap-2"><Checkbox id="c3" disabled /><Label htmlFor="c3" className="text-muted-foreground">Disabled</Label></div>
-              </div>
-              <div className="surface-card rounded-xl p-4 border">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Radios</p>
-                <RadioGroup defaultValue="a">
-                  <div className="flex items-center gap-2"><RadioGroupItem value="a" id="ra" /><Label htmlFor="ra">Claude</Label></div>
-                  <div className="flex items-center gap-2"><RadioGroupItem value="b" id="rb" /><Label htmlFor="rb">GPT-4</Label></div>
-                  <div className="flex items-center gap-2"><RadioGroupItem value="c" id="rc" /><Label htmlFor="rc">Gemini</Label></div>
-                </RadioGroup>
-              </div>
-              <div className="space-y-3 surface-card rounded-xl p-4 border">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Switches</p>
-                <div className="flex items-center gap-2"><Switch id="s1" defaultChecked /><Label htmlFor="s1">Dark mode</Label></div>
-                <div className="flex items-center gap-2"><Switch id="s2" /><Label htmlFor="s2">Notifications</Label></div>
-                <div className="flex items-center gap-2"><Switch id="s3" disabled /><Label htmlFor="s3" className="text-muted-foreground">Disabled</Label></div>
-              </div>
-            </div>
-          </Section>
-
-          {/* ─── DIALOG ──────────────────────────────────────── */}
-          <Section title="Dialog / Modal">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gradient-primary border-0 text-white glow-primary">
-                  <Plus className="size-4" /> Create a Kin
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="glass-strong">
-                <DialogHeader>
-                  <DialogTitle className="gradient-primary-text">Create a new Kin</DialogTitle>
-                  <DialogDescription>Give your AI assistant a name and personality.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2"><Label>Name</Label><Input placeholder="e.g. Chef Cuisinier" /></div>
-                  <div className="space-y-2"><Label>Role</Label><Input placeholder="e.g. Expert gastronomique" /></div>
+            {/* ─── INPUTS ──────────────────────────────────────── */}
+            <Section id="inputs" title="Inputs">
+              <div className="grid gap-8 lg:grid-cols-2">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Model</Label>
-                    <Select><SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger>
+                    <Label htmlFor="i1">Default</Label>
+                    <Input id="i1" placeholder="Type something..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="i2">With value</Label>
+                    <Input id="i2" defaultValue="Hello KinBot" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="i3">Error</Label>
+                    <Input id="i3" aria-invalid="true" defaultValue="bad-value" />
+                    <p className="text-sm text-destructive">This field is invalid</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="i4">With icon</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input id="i4" className="pl-9" placeholder="Search memories..." />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="i5">Disabled</Label>
+                    <Input id="i5" disabled placeholder="Not editable" />
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="ta1">Textarea</Label>
+                    <Textarea id="ta1" placeholder="Describe your Kin's personality..." rows={4} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Select</Label>
+                    <Select>
+                      <SelectTrigger><SelectValue placeholder="Choose a model" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="claude">Claude Sonnet 4</SelectItem>
                         <SelectItem value="gpt4">GPT-4o</SelectItem>
+                        <SelectItem value="gemini">Gemini 2.5 Pro</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                  <Button className="gradient-primary border-0 text-white" onClick={() => setDialogOpen(false)}>
-                    <Wand2 className="size-4" /> Create
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </Section>
+              </div>
+            </Section>
 
-          {/* ─── TABS, DROPDOWN, TOOLTIP ─────────────────────── */}
-          <Section title="Tabs, Dropdown, Tooltip">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <SubSection title="Tabs">
-                <Tabs defaultValue="chat">
-                  <TabsList>
-                    <TabsTrigger value="chat">Chat</TabsTrigger>
-                    <TabsTrigger value="memory">Memory</TabsTrigger>
-                    <TabsTrigger value="tools">Tools</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="chat" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">Streaming chat interface.</TabsContent>
-                  <TabsContent value="memory" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">Semantic memory search.</TabsContent>
-                  <TabsContent value="tools" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">MCP and custom tools.</TabsContent>
-                </Tabs>
-              </SubSection>
-              <div className="space-y-6">
-                <SubSection title="Dropdown">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="outline"><MoreHorizontal className="size-4" /> Actions</Button></DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem><Pencil className="mr-2 size-4" /> Edit</DropdownMenuItem>
-                      <DropdownMenuItem><Copy className="mr-2 size-4" /> Duplicate</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 size-4" /> Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {/* ─── CARDS ───────────────────────────────────────── */}
+            <Section id="cards" title="Cards">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <Card className="surface-card">
+                  <CardHeader>
+                    <CardTitle>Aurora Card</CardTitle>
+                    <CardDescription>Iridescent surface tint.</CardDescription>
+                  </CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground">Purple &rarr; pink &rarr; peach diagonal wash.</p></CardContent>
+                </Card>
+
+                <Card className="surface-card">
+                  <CardHeader><CardTitle>With Footer</CardTitle><CardDescription>Action buttons.</CardDescription></CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground">Interactive card pattern.</p></CardContent>
+                  <CardFooter className="flex gap-2">
+                    <Button size="sm" className="gradient-primary border-0 text-white">Save</Button>
+                    <Button variant="outline" size="sm">Cancel</Button>
+                  </CardFooter>
+                </Card>
+
+                <Card className="glass cursor-pointer card-hover">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-primary" /> Glass</CardTitle>
+                    <CardDescription>Frosted glass + hover.</CardDescription>
+                  </CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground">Translucent over any background.</p></CardContent>
+                </Card>
+
+                <Card className="gradient-border gradient-border-animated overflow-hidden surface-card">
+                  <CardHeader>
+                    <CardTitle className="gradient-primary-text">Animated Border</CardTitle>
+                    <CardDescription>Shifting aurora outline.</CardDescription>
+                  </CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground">Eye-catching accent card.</p></CardContent>
+                </Card>
+
+                <Card className="relative overflow-hidden">
+                  <div className="absolute inset-0 gradient-primary opacity-[0.07]" />
+                  <CardHeader className="relative">
+                    <CardTitle>Strong Tint</CardTitle>
+                    <CardDescription>Heavier gradient overlay.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="relative"><p className="text-sm text-muted-foreground">Featured content.</p></CardContent>
+                </Card>
+              </div>
+            </Section>
+
+            {/* ─── BADGES ──────────────────────────────────────── */}
+            <Section id="badges" title="Badges">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge>Default</Badge>
+                <Badge variant="secondary">Secondary</Badge>
+                <Badge variant="outline">Outline</Badge>
+                <Badge variant="destructive">Destructive</Badge>
+                <Badge className="bg-success text-success-foreground">Success</Badge>
+                <Badge className="bg-warning text-warning-foreground">Warning</Badge>
+                <Badge className="bg-info text-info-foreground">Info</Badge>
+                <Badge className="gradient-primary text-white border-0">
+                  <Sparkles className="size-3" /> Aurora
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                <Badge variant="secondary">Queue: 3</Badge>
+                <Badge className="bg-success text-success-foreground">Online</Badge>
+                <Badge className="bg-warning text-warning-foreground"><Loader2 className="size-3 animate-spin" /> Processing</Badge>
+                <Badge variant="outline">v1.0.0</Badge>
+              </div>
+            </Section>
+
+            {/* ─── ALERTS ──────────────────────────────────────── */}
+            <Section id="alerts" title="Alerts">
+              <div className="max-w-2xl space-y-3">
+                <Alert>
+                  <Info className="size-4" /><AlertTitle>Info</AlertTitle>
+                  <AlertDescription>Your Kin is learning from patterns.</AlertDescription>
+                </Alert>
+                <Alert className="border-success/50 text-success [&>svg]:text-success">
+                  <CheckCircle className="size-4" /><AlertTitle>Success</AlertTitle>
+                  <AlertDescription>Provider connected.</AlertDescription>
+                </Alert>
+                <Alert className="border-warning/50 text-warning [&>svg]:text-warning">
+                  <AlertTriangle className="size-4" /><AlertTitle>Warning</AlertTitle>
+                  <AlertDescription>No embedding provider configured.</AlertDescription>
+                </Alert>
+                <Alert variant="destructive">
+                  <AlertCircle className="size-4" /><AlertTitle>Error</AlertTitle>
+                  <AlertDescription>API key invalid.</AlertDescription>
+                </Alert>
+              </div>
+            </Section>
+
+            {/* ─── FORM CONTROLS ───────────────────────────────── */}
+            <Section id="form-controls" title="Checkboxes, Radios, Switches">
+              <div className="grid gap-5 sm:grid-cols-3">
+                <div className="space-y-3 surface-card rounded-xl p-4 border">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Checkboxes</p>
+                  <div className="flex items-center gap-2"><Checkbox id="c1" defaultChecked /><Label htmlFor="c1">Checked</Label></div>
+                  <div className="flex items-center gap-2"><Checkbox id="c2" /><Label htmlFor="c2">Unchecked</Label></div>
+                  <div className="flex items-center gap-2"><Checkbox id="c3" disabled /><Label htmlFor="c3" className="text-muted-foreground">Disabled</Label></div>
+                </div>
+                <div className="surface-card rounded-xl p-4 border">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Radios</p>
+                  <RadioGroup defaultValue="a">
+                    <div className="flex items-center gap-2"><RadioGroupItem value="a" id="ra" /><Label htmlFor="ra">Claude</Label></div>
+                    <div className="flex items-center gap-2"><RadioGroupItem value="b" id="rb" /><Label htmlFor="rb">GPT-4</Label></div>
+                    <div className="flex items-center gap-2"><RadioGroupItem value="c" id="rc" /><Label htmlFor="rc">Gemini</Label></div>
+                  </RadioGroup>
+                </div>
+                <div className="space-y-3 surface-card rounded-xl p-4 border">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Switches</p>
+                  <div className="flex items-center gap-2"><Switch id="s1" defaultChecked /><Label htmlFor="s1">Dark mode</Label></div>
+                  <div className="flex items-center gap-2"><Switch id="s2" /><Label htmlFor="s2">Notifications</Label></div>
+                  <div className="flex items-center gap-2"><Switch id="s3" disabled /><Label htmlFor="s3" className="text-muted-foreground">Disabled</Label></div>
+                </div>
+              </div>
+            </Section>
+
+            {/* ─── DIALOG ──────────────────────────────────────── */}
+            <Section id="dialog" title="Dialog / Modal">
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gradient-primary border-0 text-white glow-primary">
+                    <Plus className="size-4" /> Create a Kin
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="glass-strong">
+                  <DialogHeader>
+                    <DialogTitle className="gradient-primary-text">Create a new Kin</DialogTitle>
+                    <DialogDescription>Give your AI assistant a name and personality.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2"><Label>Name</Label><Input placeholder="e.g. Chef Cuisinier" /></div>
+                    <div className="space-y-2"><Label>Role</Label><Input placeholder="e.g. Expert gastronomique" /></div>
+                    <div className="space-y-2">
+                      <Label>Model</Label>
+                      <Select><SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="claude">Claude Sonnet 4</SelectItem>
+                          <SelectItem value="gpt4">GPT-4o</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                    <Button className="gradient-primary border-0 text-white" onClick={() => setDialogOpen(false)}>
+                      <Wand2 className="size-4" /> Create
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </Section>
+
+            {/* ─── SHEET ───────────────────────────────────────── */}
+            <Section id="sheet" title="Sheet / Drawer">
+              <div className="flex flex-wrap gap-3">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline"><PanelRight className="size-4" /> Right Sheet</Button>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle className="gradient-primary-text">Kin Settings</SheetTitle>
+                      <SheetDescription>Configure your Kin's behavior and appearance.</SheetDescription>
+                    </SheetHeader>
+                    <div className="space-y-4 p-4">
+                      <div className="space-y-2"><Label>Display Name</Label><Input defaultValue="Financial Advisor" /></div>
+                      <div className="space-y-2"><Label>System Prompt</Label><Textarea rows={4} defaultValue="You are a helpful financial advisor..." /></div>
+                      <div className="flex items-center gap-2"><Switch defaultChecked /><Label>Auto-compact messages</Label></div>
+                      <div className="flex items-center gap-2"><Switch /><Label>Allow tool execution</Label></div>
+                      <Button className="w-full gradient-primary border-0 text-white">Save Changes</Button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline"><PanelLeftClose className="size-4" /> Left Sheet</Button>
+                  </SheetTrigger>
+                  <SheetContent side="left">
+                    <SheetHeader>
+                      <SheetTitle>Navigation</SheetTitle>
+                      <SheetDescription>Mobile sidebar example.</SheetDescription>
+                    </SheetHeader>
+                    <div className="space-y-2 p-4">
+                      {['Dashboard', 'Kins', 'Memories', 'Settings'].map((item) => (
+                        <div key={item} className="rounded-lg px-3 py-2 text-sm hover:bg-accent/50 cursor-pointer transition-colors">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </Section>
+
+            {/* ─── POPOVER ─────────────────────────────────────── */}
+            <Section id="popover" title="Popover">
+              <div className="flex flex-wrap gap-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline"><Settings className="size-4" /> Quick Settings</Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm">Model Settings</h4>
+                        <p className="text-xs text-muted-foreground">Configure the AI model parameters.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Temperature</Label>
+                          <span className="text-xs text-muted-foreground">0.7</span>
+                        </div>
+                        <Progress value={70} />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Max Tokens</Label>
+                          <span className="text-xs text-muted-foreground">4096</span>
+                        </div>
+                        <Progress value={50} />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch defaultChecked />
+                        <Label className="text-sm">Stream responses</Label>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline"><BarChart3 className="size-4" /> Status</Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">System Status</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">API</span>
+                          <Badge className="bg-success text-success-foreground text-[10px]">Healthy</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Database</span>
+                          <Badge className="bg-success text-success-foreground text-[10px]">Connected</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Queue</span>
+                          <Badge variant="secondary" className="text-[10px]">3 pending</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </Section>
+
+            {/* ─── TABS, DROPDOWN, TOOLTIP ─────────────────────── */}
+            <Section id="tabs-dropdown" title="Tabs, Dropdown, Tooltip">
+              <div className="grid gap-8 lg:grid-cols-2">
+                <SubSection title="Tabs">
+                  <Tabs defaultValue="chat">
+                    <TabsList>
+                      <TabsTrigger value="chat">Chat</TabsTrigger>
+                      <TabsTrigger value="memory">Memory</TabsTrigger>
+                      <TabsTrigger value="tools">Tools</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="chat" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">Streaming chat interface.</TabsContent>
+                    <TabsContent value="memory" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">Semantic memory search.</TabsContent>
+                    <TabsContent value="tools" className="mt-3 surface-card rounded-lg p-4 border text-sm text-muted-foreground">MCP and custom tools.</TabsContent>
+                  </Tabs>
                 </SubSection>
-                <SubSection title="Tooltips">
-                  <div className="flex gap-3">
-                    {[{ icon: Settings, label: 'Settings' }, { icon: Bell, label: 'Notifications' }, { icon: Info, label: 'Info' }].map(({ icon: Icon, label }) => (
-                      <Tooltip key={label}>
-                        <TooltipTrigger asChild><Button variant="outline" size="icon"><Icon className="size-4" /></Button></TooltipTrigger>
-                        <TooltipContent>{label}</TooltipContent>
-                      </Tooltip>
+                <div className="space-y-6">
+                  <SubSection title="Dropdown">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="outline"><MoreHorizontal className="size-4" /> Actions</Button></DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem><Pencil className="mr-2 size-4" /> Edit</DropdownMenuItem>
+                        <DropdownMenuItem><Copy className="mr-2 size-4" /> Duplicate</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 size-4" /> Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </SubSection>
+                  <SubSection title="Tooltips">
+                    <div className="flex gap-3">
+                      {[{ icon: Settings, label: 'Settings' }, { icon: Bell, label: 'Notifications' }, { icon: Info, label: 'Info' }].map(({ icon: Icon, label }) => (
+                        <Tooltip key={label}>
+                          <TooltipTrigger asChild><Button variant="outline" size="icon"><Icon className="size-4" /></Button></TooltipTrigger>
+                          <TooltipContent>{label}</TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </SubSection>
+                </div>
+              </div>
+            </Section>
+
+            {/* ─── PROGRESS ────────────────────────────────────── */}
+            <Section id="progress" title="Progress">
+              <div className="max-w-lg space-y-6">
+                <SubSection title="Default">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Token usage</span>
+                        <span className="text-muted-foreground">{progressVal}%</span>
+                      </div>
+                      <Progress value={progressVal} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="xs" variant="outline" onClick={() => setProgressVal(Math.max(0, progressVal - 10))}>-10</Button>
+                      <Button size="xs" variant="outline" onClick={() => setProgressVal(Math.min(100, progressVal + 10))}>+10</Button>
+                      <Button size="xs" variant="outline" onClick={() => setProgressVal(100)}>Full</Button>
+                      <Button size="xs" variant="outline" onClick={() => setProgressVal(0)}>Reset</Button>
+                    </div>
+                  </div>
+                </SubSection>
+                <SubSection title="Sizes & Colors">
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">Default (h-2)</span>
+                      <Progress value={65} />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">Thin (h-1)</span>
+                      <Progress value={80} className="h-1" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">Thick (h-3)</span>
+                      <Progress value={45} className="h-3" />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-muted-foreground">Aurora gradient</span>
+                      <Progress value={72} className="h-2.5 [&>[data-slot=progress-indicator]]:gradient-primary" />
+                    </div>
+                  </div>
+                </SubSection>
+              </div>
+            </Section>
+
+            {/* ─── SCROLL AREA ─────────────────────────────────── */}
+            <Section id="scroll-area" title="Scroll Area">
+              <div className="grid gap-6 sm:grid-cols-2">
+                <SubSection title="Vertical scroll">
+                  <ScrollArea className="h-48 rounded-xl border surface-card p-4">
+                    <div className="space-y-3">
+                      {Array.from({ length: 20 }, (_, i) => (
+                        <div key={i} className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent/30 transition-colors">
+                          <Avatar className="size-8">
+                            <AvatarFallback className="gradient-primary text-white text-xs">
+                              {String.fromCharCode(65 + (i % 26))}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">Memory #{i + 1}</p>
+                            <p className="text-xs text-muted-foreground">Extracted from conversation</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </SubSection>
+                <SubSection title="Chat messages scroll">
+                  <ScrollArea className="h-48 rounded-xl border surface-chat p-4">
+                    <div className="space-y-3">
+                      {['How are you?', 'I need help with finances', 'What about my subscriptions?', 'Can you track expenses?', 'Show me a summary', 'What are the trends?', 'Any recommendations?', 'Thanks!'].map((msg, i) => (
+                        <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-2xl px-3 py-1.5 text-sm ${i % 2 === 0 ? 'gradient-primary text-white rounded-br-md' : 'bg-bubble-kin text-bubble-kin-foreground rounded-bl-md'}`}>
+                            {msg}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </SubSection>
+              </div>
+            </Section>
+
+            {/* ─── COLLAPSIBLE ──────────────────────────────────── */}
+            <Section id="collapsible" title="Collapsible">
+              <div className="max-w-lg space-y-3">
+                <Collapsible open={collapsibleOpen} onOpenChange={setCollapsibleOpen}>
+                  <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <Bot className="size-4 text-primary" />
+                      <span className="text-sm font-medium">Advanced Settings</span>
+                    </div>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon-xs">
+                        <ChevronDown className={`size-4 transition-transform ${collapsibleOpen ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                  <CollapsibleContent>
+                    <div className="space-y-3 rounded-lg border border-t-0 rounded-t-none bg-card/50 p-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">Enable memory extraction</Label>
+                        <Switch defaultChecked />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">Auto-compact threshold</Label>
+                        <span className="text-sm text-muted-foreground">80%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">Max sub-kin depth</Label>
+                        <span className="text-sm text-muted-foreground">3</span>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible defaultOpen>
+                  <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="size-4 text-primary" />
+                      <span className="text-sm font-medium">Model Configuration</span>
+                    </div>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon-xs">
+                        <ChevronsUpDown className="size-4" />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                  <CollapsibleContent>
+                    <div className="space-y-3 rounded-lg border border-t-0 rounded-t-none bg-card/50 p-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Provider</Label>
+                        <Select defaultValue="anthropic">
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="anthropic">Anthropic</SelectItem>
+                            <SelectItem value="openai">OpenAI</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+            </Section>
+
+            {/* ─── TOAST ───────────────────────────────────────── */}
+            <Section id="toast" title="Toast Notifications">
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Powered by Sonner. Click buttons to trigger toasts.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" onClick={() => toast('Default notification', { description: 'Something happened.' })}>
+                  Default
+                </Button>
+                <Button variant="outline" onClick={() => toast.success('Kin created', { description: 'Financial Advisor is ready.' })}>
+                  <CheckCircle className="size-4 text-success" /> Success
+                </Button>
+                <Button variant="outline" onClick={() => toast.error('Connection failed', { description: 'Check your API key.' })}>
+                  <AlertCircle className="size-4 text-destructive" /> Error
+                </Button>
+                <Button variant="outline" onClick={() => toast.warning('Token limit near', { description: 'Compacting will trigger soon.' })}>
+                  <AlertTriangle className="size-4 text-warning" /> Warning
+                </Button>
+                <Button variant="outline" onClick={() => toast.info('Tip', { description: 'Use @mention to invoke other Kins.' })}>
+                  <Info className="size-4 text-info" /> Info
+                </Button>
+                <Button variant="outline" onClick={() => toast.loading('Processing...', { description: 'Analyzing your data.' })}>
+                  <Loader2 className="size-4 animate-spin" /> Loading
+                </Button>
+                <Button variant="outline" onClick={() => toast('Action required', { action: { label: 'Undo', onClick: () => toast.success('Undone!') }, description: 'Kin was deleted.' })}>
+                  With Action
+                </Button>
+              </div>
+            </Section>
+
+            {/* ─── AVATARS ─────────────────────────────────────── */}
+            <Section id="avatars" title="Avatars">
+              <div className="grid gap-8 sm:grid-cols-2">
+                <SubSection title="Sizes">
+                  <div className="flex items-end gap-4">
+                    {[
+                      { s: 'size-6', t: 'text-[10px]', l: 'XS' }, { s: 'size-8', t: 'text-xs', l: 'SM' },
+                      { s: 'size-10', t: 'text-sm', l: 'MD' }, { s: 'size-12', t: 'text-base', l: 'LG' },
+                      { s: 'size-16', t: 'text-lg', l: 'XL' },
+                    ].map((i) => (
+                      <div key={i.l} className="flex flex-col items-center gap-1.5">
+                        <Avatar className={i.s}><AvatarFallback className={`gradient-primary text-white ${i.t}`}>KB</AvatarFallback></Avatar>
+                        <span className="text-xs text-muted-foreground">{i.l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </SubSection>
+                <SubSection title="Status">
+                  <div className="flex items-center gap-6">
+                    {[
+                      { st: 'Online', c: 'bg-success' }, { st: 'Offline', c: 'bg-muted-foreground' }, { st: 'Busy', c: 'bg-warning animate-pulse' },
+                    ].map((i) => (
+                      <div key={i.st} className="flex flex-col items-center gap-1.5">
+                        <div className="relative">
+                          <Avatar className="size-10"><AvatarFallback className="gradient-primary text-white"><Bot className="size-5" /></AvatarFallback></Avatar>
+                          <span className={`absolute bottom-0 right-0 size-3 rounded-full border-2 border-background ${i.c}`} />
+                        </div>
+                        <span className="text-xs text-muted-foreground">{i.st}</span>
+                      </div>
                     ))}
                   </div>
                 </SubSection>
               </div>
-            </div>
-          </Section>
+            </Section>
 
-          {/* ─── AVATARS ─────────────────────────────────────── */}
-          <Section title="Avatars">
-            <div className="grid gap-8 sm:grid-cols-2">
-              <SubSection title="Sizes">
-                <div className="flex items-end gap-4">
-                  {[
-                    { s: 'size-6', t: 'text-[10px]', l: 'XS' }, { s: 'size-8', t: 'text-xs', l: 'SM' },
-                    { s: 'size-10', t: 'text-sm', l: 'MD' }, { s: 'size-12', t: 'text-base', l: 'LG' },
-                    { s: 'size-16', t: 'text-lg', l: 'XL' },
-                  ].map((i) => (
-                    <div key={i.l} className="flex flex-col items-center gap-1.5">
-                      <Avatar className={i.s}><AvatarFallback className={`gradient-primary text-white ${i.t}`}>KB</AvatarFallback></Avatar>
-                      <span className="text-xs text-muted-foreground">{i.l}</span>
-                    </div>
-                  ))}
-                </div>
-              </SubSection>
-              <SubSection title="Status">
-                <div className="flex items-center gap-6">
-                  {[
-                    { st: 'Online', c: 'bg-success' }, { st: 'Offline', c: 'bg-muted-foreground' }, { st: 'Busy', c: 'bg-warning animate-pulse' },
-                  ].map((i) => (
-                    <div key={i.st} className="flex flex-col items-center gap-1.5">
-                      <div className="relative">
-                        <Avatar className="size-10"><AvatarFallback className="gradient-primary text-white"><Bot className="size-5" /></AvatarFallback></Avatar>
-                        <span className={`absolute bottom-0 right-0 size-3 rounded-full border-2 border-background ${i.c}`} />
+            {/* ─── KINBOT PATTERNS ──────────────────────────────── */}
+            <Section id="kinbot-patterns" title="KinBot Patterns">
+
+              <SubSection title="Chat Bubbles">
+                <div className="max-w-2xl space-y-4 surface-chat rounded-xl p-6 border">
+                  {/* User */}
+                  <div className="flex justify-end gap-2.5">
+                    <div className="max-w-[75%] space-y-1">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-muted-foreground">Nicolas</span>
+                        <span className="text-xs text-muted-foreground">14:32</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{i.st}</span>
+                      <div className="gradient-primary rounded-2xl rounded-br-md px-4 py-2.5 text-white shadow-sm">
+                        <p className="text-sm">Can you analyze my monthly expenses?</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </SubSection>
-            </div>
-          </Section>
-
-          {/* ─── KINBOT PATTERNS ──────────────────────────────── */}
-          <Section title="KinBot Patterns">
-
-            <SubSection title="Chat Bubbles">
-              <div className="max-w-2xl space-y-4 surface-chat rounded-xl p-6 border">
-                {/* User */}
-                <div className="flex justify-end gap-2.5">
-                  <div className="max-w-[75%] space-y-1">
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-xs text-muted-foreground">Nicolas</span>
-                      <span className="text-xs text-muted-foreground">14:32</span>
-                    </div>
-                    <div className="gradient-primary rounded-2xl rounded-br-md px-4 py-2.5 text-white shadow-sm">
-                      <p className="text-sm">Can you analyze my monthly expenses?</p>
+                    <Avatar className="size-8 shrink-0"><AvatarFallback className="bg-secondary text-xs"><User className="size-4" /></AvatarFallback></Avatar>
+                  </div>
+                  {/* Kin */}
+                  <div className="flex gap-2.5">
+                    <Avatar className="size-8 shrink-0"><AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback></Avatar>
+                    <div className="max-w-[75%] space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">Financial Advisor</span>
+                        <span className="text-xs text-muted-foreground">14:33</span>
+                      </div>
+                      <div className="rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm">
+                        <p className="text-sm">Sure! I see three optimization areas: subscriptions, dining, and transport.</p>
+                      </div>
                     </div>
                   </div>
-                  <Avatar className="size-8 shrink-0"><AvatarFallback className="bg-secondary text-xs"><User className="size-4" /></AvatarFallback></Avatar>
+                  {/* System */}
+                  <div className="flex justify-center">
+                    <div className="flex items-center gap-1.5 rounded-full bg-bubble-system px-4 py-1.5 text-bubble-system-foreground">
+                      <CheckCircle className="size-3" /><p className="text-xs">Task completed</p>
+                    </div>
+                  </div>
                 </div>
-                {/* Kin */}
-                <div className="flex gap-2.5">
-                  <Avatar className="size-8 shrink-0"><AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback></Avatar>
-                  <div className="max-w-[75%] space-y-1">
-                    <div className="flex items-center gap-2">
+              </SubSection>
+
+              <SubSection title="Kin Cards (Agent List)">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {/* Active / selected kin */}
+                  <div className="group relative flex overflow-hidden rounded-xl border border-primary/30 bg-card shadow-md card-hover">
+                    <div className="w-20 shrink-0 gradient-primary flex items-center justify-center">
+                      <Bot className="size-8 text-white/90" />
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-semibold">Financial Advisor</p>
+                        <Badge variant="secondary" className="shrink-0 text-[10px]">2</Badge>
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">Personal finance expert</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="size-2 rounded-full bg-success" />
+                        <span className="text-[10px] text-muted-foreground">Online</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Idle kin */}
+                  <div className="group relative flex overflow-hidden rounded-xl border bg-card card-hover cursor-pointer">
+                    <div className="w-20 shrink-0 bg-secondary flex items-center justify-center">
+                      <Bot className="size-8 text-secondary-foreground/70" />
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
+                      <p className="truncate text-sm font-medium">Coding Assistant</p>
+                      <p className="truncate text-xs text-muted-foreground">Full-stack developer</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="size-2 rounded-full bg-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">Offline</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Processing kin */}
+                  <div className="group relative flex overflow-hidden rounded-xl border border-warning/30 bg-card card-hover cursor-pointer">
+                    <div className="w-20 shrink-0 bg-gradient-to-b from-primary/80 to-accent/80 flex items-center justify-center">
+                      <Bot className="size-8 text-white/90" />
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-medium">Research Agent</p>
+                        <Badge className="shrink-0 bg-warning text-warning-foreground text-[10px]">
+                          <Loader2 className="size-3 animate-spin" />
+                        </Badge>
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">Deep web analysis</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="size-2 rounded-full bg-warning animate-pulse" />
+                        <span className="text-[10px] text-muted-foreground">Processing...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SubSection>
+
+              <SubSection title="Typing Indicator">
+                <div className="max-w-2xl surface-chat rounded-xl p-6 border">
+                  <div className="flex gap-2.5">
+                    <Avatar className="size-8 shrink-0"><AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback></Avatar>
+                    <div className="space-y-1">
                       <span className="text-xs font-medium">Financial Advisor</span>
-                      <span className="text-xs text-muted-foreground">14:33</span>
-                    </div>
-                    <div className="rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm">
-                      <p className="text-sm">Sure! I see three optimization areas: subscriptions, dining, and transport.</p>
-                    </div>
-                  </div>
-                </div>
-                {/* System */}
-                <div className="flex justify-center">
-                  <div className="flex items-center gap-1.5 rounded-full bg-bubble-system px-4 py-1.5 text-bubble-system-foreground">
-                    <CheckCircle className="size-3" /><p className="text-xs">Task completed</p>
-                  </div>
-                </div>
-              </div>
-            </SubSection>
-
-            <SubSection title="Kin Cards (Agent List)">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {/* Active / selected kin */}
-                <div className="group relative flex overflow-hidden rounded-xl border border-primary/30 bg-card shadow-md transition-all hover:shadow-lg hover:scale-[1.01]">
-                  <div className="w-20 shrink-0 gradient-primary flex items-center justify-center">
-                    <Bot className="size-8 text-white/90" />
-                  </div>
-                  <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-semibold">Financial Advisor</p>
-                      <Badge variant="secondary" className="shrink-0 text-[10px]">2</Badge>
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">Personal finance expert</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="size-2 rounded-full bg-success" />
-                      <span className="text-[10px] text-muted-foreground">Online</span>
+                      <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-3">
+                        <span className="size-2 rounded-full bg-primary/60 animate-typing-dot" />
+                        <span className="size-2 rounded-full bg-primary/60 animate-typing-dot delay-2" />
+                        <span className="size-2 rounded-full bg-primary/60 animate-typing-dot delay-4" />
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Idle kin */}
-                <div className="group relative flex overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer">
-                  <div className="w-20 shrink-0 bg-secondary flex items-center justify-center">
-                    <Bot className="size-8 text-secondary-foreground/70" />
-                  </div>
-                  <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
-                    <p className="truncate text-sm font-medium">Coding Assistant</p>
-                    <p className="truncate text-xs text-muted-foreground">Full-stack developer</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="size-2 rounded-full bg-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">Offline</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Processing kin */}
-                <div className="group relative flex overflow-hidden rounded-xl border border-warning/30 bg-card transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer">
-                  <div className="w-20 shrink-0 bg-gradient-to-b from-primary/80 to-accent/80 flex items-center justify-center">
-                    <Bot className="size-8 text-white/90" />
-                  </div>
-                  <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-medium">Research Agent</p>
-                      <Badge className="shrink-0 bg-warning text-warning-foreground text-[10px]">
-                        <Loader2 className="size-3 animate-spin" />
-                      </Badge>
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">Deep web analysis</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="size-2 rounded-full bg-warning animate-pulse" />
-                      <span className="text-[10px] text-muted-foreground">Processing...</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </SubSection>
-
-            <SubSection title="Typing Indicator">
-              <div className="max-w-2xl surface-chat rounded-xl p-6 border">
-                <div className="flex gap-2.5">
-                  <Avatar className="size-8 shrink-0"><AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback></Avatar>
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium">Financial Advisor</span>
-                    <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-3">
-                      <span className="size-2 animate-bounce rounded-full bg-primary/50 [animation-delay:0ms]" />
-                      <span className="size-2 animate-bounce rounded-full bg-primary/50 [animation-delay:150ms]" />
-                      <span className="size-2 animate-bounce rounded-full bg-primary/50 [animation-delay:300ms]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </SubSection>
-
-            <SubSection title="Task Status">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2 rounded-lg border bg-card p-3">
-                  <div className="size-2 rounded-full bg-muted-foreground" /><span className="text-sm">Pending</span>
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
-                  <Loader2 className="size-4 animate-spin text-warning" /><span className="text-sm">In Progress</span>
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 p-3">
-                  <CheckCircle className="size-4 text-success" /><span className="text-sm">Completed</span>
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                  <AlertCircle className="size-4 text-destructive" /><span className="text-sm">Failed</span>
-                </div>
-              </div>
-            </SubSection>
-          </Section>
-
-          {/* ─── SPACING ─────────────────────────────────────── */}
-          <Section title="Spacing & Layout">
-            <div className="grid gap-8 lg:grid-cols-3">
-              <SubSection title="Scale">
-                <div className="space-y-2">
-                  {[{ l: '4px', w: 'w-1' }, { l: '8px', w: 'w-2' }, { l: '12px', w: 'w-3' }, { l: '16px', w: 'w-4' },
-                    { l: '24px', w: 'w-6' }, { l: '32px', w: 'w-8' }, { l: '48px', w: 'w-12' }, { l: '64px', w: 'w-16' },
-                  ].map((i) => (
-                    <div key={i.l} className="flex items-center gap-3">
-                      <span className="w-10 text-right text-xs text-muted-foreground">{i.l}</span>
-                      <div className={`h-4 rounded-sm gradient-primary ${i.w}`} />
-                    </div>
-                  ))}
                 </div>
               </SubSection>
-              <SubSection title="Radius">
-                <div className="flex flex-wrap gap-3">
-                  {[{ l: 'sm', c: 'rounded-sm' }, { l: 'md', c: 'rounded-md' }, { l: 'lg', c: 'rounded-lg' },
-                    { l: 'xl', c: 'rounded-xl' }, { l: '2xl', c: 'rounded-2xl' }, { l: 'full', c: 'rounded-full' },
-                  ].map((i) => (
-                    <div key={i.l} className="flex flex-col items-center gap-1.5">
-                      <div className={`size-14 border-2 border-primary/30 bg-primary/10 ${i.c}`} />
-                      <span className="text-xs text-muted-foreground">{i.l}</span>
-                    </div>
-                  ))}
+
+              <SubSection title="Task Status">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 rounded-lg border bg-card p-3">
+                    <div className="size-2 rounded-full bg-muted-foreground" /><span className="text-sm">Pending</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
+                    <Loader2 className="size-4 animate-spin text-warning" /><span className="text-sm">In Progress</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 p-3">
+                    <CheckCircle className="size-4 text-success" /><span className="text-sm">Completed</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <AlertCircle className="size-4 text-destructive" /><span className="text-sm">Failed</span>
+                  </div>
                 </div>
               </SubSection>
-              <SubSection title="Shadows">
-                <div className="flex flex-wrap gap-4">
-                  {[{ l: 'sm', c: 'shadow-sm' }, { l: 'md', c: 'shadow-md' }, { l: 'lg', c: 'shadow-lg' }].map((i) => (
-                    <div key={i.l} className="flex flex-col items-center gap-1.5">
-                      <div className={`size-16 rounded-xl surface-card border ${i.c}`} />
-                      <span className="text-xs text-muted-foreground">{i.l}</span>
+            </Section>
+
+            {/* ─── LOADING & EMPTY STATES ─────────────────────── */}
+            <Section id="loading-states" title="Loading & Empty States">
+              <SubSection title="Loading Skeletons">
+                <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+                  <div className="space-y-3 surface-chat rounded-xl p-6 border">
+                    <div className="flex gap-2.5">
+                      <Skeleton className="size-8 rounded-full shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-16 w-full rounded-2xl rounded-bl-md" />
+                      </div>
                     </div>
-                  ))}
+                    <div className="flex gap-2.5 justify-end">
+                      <div className="space-y-2 max-w-[75%]">
+                        <Skeleton className="h-3 w-16 ml-auto" />
+                        <Skeleton className="h-10 w-48 rounded-2xl rounded-br-md" />
+                      </div>
+                      <Skeleton className="size-8 rounded-full shrink-0" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex overflow-hidden rounded-xl border bg-card">
+                      <Skeleton className="w-20 shrink-0 h-20 rounded-none" />
+                      <div className="flex flex-1 flex-col justify-center gap-2 p-3">
+                        <Skeleton className="h-3.5 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-2 w-12" />
+                      </div>
+                    </div>
+                    <div className="flex overflow-hidden rounded-xl border bg-card">
+                      <Skeleton className="w-20 shrink-0 h-20 rounded-none" />
+                      <div className="flex flex-1 flex-col justify-center gap-2 p-3">
+                        <Skeleton className="h-3.5 w-28" />
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-2 w-12" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </SubSection>
+
+              <SubSection title="Empty States">
+                <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card/50 p-8 text-center">
+                    <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <Bot className="size-6 text-muted-foreground" />
+                    </div>
+                    <p className="font-medium">No Kins yet</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Create your first AI assistant to get started.</p>
+                    <Button size="sm" className="mt-4 gradient-primary border-0 text-white">
+                      <Plus className="size-4" /> Create a Kin
+                    </Button>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card/50 p-8 text-center">
+                    <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                      <Search className="size-6 text-muted-foreground" />
+                    </div>
+                    <p className="font-medium">No results</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Try adjusting your search or filters.</p>
+                  </div>
+                </div>
+              </SubSection>
+            </Section>
+
+            {/* ─── SPACING ─────────────────────────────────────── */}
+            <Section id="spacing" title="Spacing & Layout">
+              <div className="grid gap-8 lg:grid-cols-3">
+                <SubSection title="Scale">
+                  <div className="space-y-2">
+                    {[{ l: '4px', w: 'w-1' }, { l: '8px', w: 'w-2' }, { l: '12px', w: 'w-3' }, { l: '16px', w: 'w-4' },
+                      { l: '24px', w: 'w-6' }, { l: '32px', w: 'w-8' }, { l: '48px', w: 'w-12' }, { l: '64px', w: 'w-16' },
+                    ].map((i) => (
+                      <div key={i.l} className="flex items-center gap-3">
+                        <span className="w-10 text-right text-xs text-muted-foreground">{i.l}</span>
+                        <div className={`h-4 rounded-sm gradient-primary ${i.w}`} />
+                      </div>
+                    ))}
+                  </div>
+                </SubSection>
+                <SubSection title="Radius">
+                  <div className="flex flex-wrap gap-3">
+                    {[{ l: 'sm', c: 'rounded-sm' }, { l: 'md', c: 'rounded-md' }, { l: 'lg', c: 'rounded-lg' },
+                      { l: 'xl', c: 'rounded-xl' }, { l: '2xl', c: 'rounded-2xl' }, { l: 'full', c: 'rounded-full' },
+                    ].map((i) => (
+                      <div key={i.l} className="flex flex-col items-center gap-1.5">
+                        <div className={`size-14 border-2 border-primary/30 bg-primary/10 ${i.c}`} />
+                        <span className="text-xs text-muted-foreground">{i.l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </SubSection>
+                <SubSection title="Shadows">
+                  <div className="flex flex-wrap gap-4">
+                    {[{ l: 'xs', c: 'shadow-xs' }, { l: 'sm', c: 'shadow-sm' }, { l: 'md', c: 'shadow-md' }, { l: 'lg', c: 'shadow-lg' }, { l: 'xl', c: 'shadow-xl' }].map((i) => (
+                      <div key={i.l} className="flex flex-col items-center gap-1.5">
+                        <div className={`size-14 rounded-xl surface-card border ${i.c}`} />
+                        <span className="text-xs text-muted-foreground">{i.l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </SubSection>
+              </div>
+            </Section>
+
+            {/* ─── FOOTER ──────────────────────────────────────── */}
+            <div className="border-t pt-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                <span className="gradient-primary-text font-bold">KinBot</span> &mdash; Aurora Design System &middot; 24 components &middot; Dev only.
+              </p>
             </div>
-          </Section>
-
-          {/* ─── DARK MODE ───────────────────────────────────── */}
-          <Section title="Dark Mode">
-            <Card className="glass max-w-2xl">
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">
-                  Dark mode goes deep purple/plum. Aurora surfaces get more intense,
-                  glowing softly against the dark canvas. No pure black.
-                </p>
-                <div className="mt-4 flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={toggleDarkMode} className="glass">
-                    {isDark ? <Sun className="mr-2 size-4" /> : <Moon className="mr-2 size-4" />}
-                    Switch to {isDark ? 'light' : 'dark'}
-                  </Button>
-                  <Badge variant={isDark ? 'default' : 'secondary'}>{isDark ? 'Dark' : 'Light'}</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </Section>
-
-          <div className="border-t pt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              <span className="gradient-primary-text font-bold">KinBot</span> &mdash; Aurora theme. Dev only.
-            </p>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </TooltipProvider>
   )

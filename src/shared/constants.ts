@@ -16,3 +16,5 @@ export const REQUIRED_CAPABILITIES = ['llm', 'embedding'] as const
 export const MESSAGE_SOURCES = ['user', 'kin', 'task', 'cron', 'system'] as const
 
 export const TASK_STATUSES = ['pending', 'in_progress', 'completed', 'failed', 'cancelled'] as const
+
+export const PALETTE_IDS = ['aurora', 'ocean', 'forest', 'sunset', 'monochrome'] as const
