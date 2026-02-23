@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { Avatar, AvatarImage, AvatarFallback } from '@/client/components/ui/avatar'
 import { Button } from '@/client/components/ui/button'
+import { Badge } from '@/client/components/ui/badge'
 import { Progress } from '@/client/components/ui/progress'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
 import { ModelPicker } from '@/client/components/common/ModelPicker'
-import { AlertTriangle, Bot, Settings2, MessageSquare, Loader2 } from 'lucide-react'
+import { AlertTriangle, Bot, Settings2, MessageSquare, Loader2, Wrench } from 'lucide-react'
+import { cn } from '@/client/lib/utils'
 
 interface LLMModel {
   id: string
@@ -24,8 +26,11 @@ interface ConversationHeaderProps {
   messageCount: number
   estimatedTokens: number
   maxTokens: number
+  toolCallCount: number
+  isToolCallsOpen: boolean
   queueState?: { isProcessing: boolean; queueSize: number }
   onModelChange: (model: string) => void
+  onToggleToolCalls: () => void
   onEdit: () => void
 }
 
@@ -44,8 +49,11 @@ export function ConversationHeader({
   messageCount,
   estimatedTokens,
   maxTokens,
+  toolCallCount,
+  isToolCallsOpen,
   queueState,
   onModelChange,
+  onToggleToolCalls,
   onEdit,
 }: ConversationHeaderProps) {
   const { t } = useTranslation()
@@ -131,6 +139,29 @@ export function ConversationHeader({
           </TooltipContent>
         </Tooltip>
       </div>
+
+      {/* Tool calls toggle */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={cn('relative', isToolCallsOpen && 'bg-muted')}
+            onClick={onToggleToolCalls}
+          >
+            <Wrench className="size-4" />
+            {toolCallCount > 0 && (
+              <Badge
+                variant="default"
+                className="absolute -top-1 -right-1 size-4 p-0 text-[9px] flex items-center justify-center rounded-full"
+              >
+                {toolCallCount > 99 ? '99+' : toolCallCount}
+              </Badge>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{t('tools.viewer.title')}</TooltipContent>
+      </Tooltip>
 
       {/* Settings button */}
       <Button variant="ghost" size="icon-sm" onClick={onEdit}>

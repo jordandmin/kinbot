@@ -73,6 +73,15 @@ export async function createCron(params: CreateCronParams) {
     scheduleJob(created)
   }
 
+  // Emit SSE so sidebar picks up kin-created crons in real-time
+  if (created) {
+    sseManager.broadcast({
+      type: 'cron:created',
+      kinId: created.kinId,
+      data: { cronId: created.id, kinId: created.kinId },
+    })
+  }
+
   return created!
 }
 
@@ -110,12 +119,34 @@ export async function updateCron(
     scheduleJob(updated)
   }
 
+  sseManager.broadcast({
+    type: 'cron:updated',
+    kinId: updated.kinId,
+    data: { cronId: updated.id, kinId: updated.kinId },
+  })
+
   return updated
 }
 
 export async function deleteCron(cronId: string) {
   stopJob(cronId)
+
+  // Nullify FK references on tasks before deleting the cron
+  await db
+    .update(tasks)
+    .set({ cronId: null })
+    .where(eq(tasks.cronId, cronId))
+
+  const existing = await db.select().from(crons).where(eq(crons.id, cronId)).get()
   await db.delete(crons).where(eq(crons.id, cronId))
+
+  if (existing) {
+    sseManager.broadcast({
+      type: 'cron:deleted',
+      kinId: existing.kinId,
+      data: { cronId, kinId: existing.kinId },
+    })
+  }
 }
 
 export async function getCron(cronId: string) {
@@ -138,6 +169,11 @@ export async function approveCron(cronId: string) {
   const approved = await db.select().from(crons).where(eq(crons.id, cronId)).get()
   if (approved) {
     scheduleJob(approved)
+    sseManager.broadcast({
+      type: 'cron:updated',
+      kinId: approved.kinId,
+      data: { cronId: approved.id, kinId: approved.kinId },
+    })
   }
 
   return approved
@@ -206,13 +242,8 @@ async function triggerCron(cronId: string) {
     spawnType: cron.targetKinId ? 'other' : 'self',
     sourceKinId: cron.targetKinId ?? undefined,
     model: cron.model ?? undefined,
+    cronId: cron.id,
   })
-
-  // Link task to cron
-  await db
-    .update(tasks)
-    .set({ cronId: cron.id })
-    .where(eq(tasks.id, taskId))
 
   // Emit SSE event
   sseManager.sendToKin(cron.kinId, {

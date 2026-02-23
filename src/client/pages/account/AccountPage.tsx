@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SidebarTrigger } from '@/client/components/ui/sidebar'
-import { Separator } from '@/client/components/ui/separator'
 import { Input } from '@/client/components/ui/input'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
@@ -83,116 +81,107 @@ export function AccountPage() {
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
 
   return (
-    <>
-      {/* Header */}
-      <header className="surface-header sticky top-0 z-10 flex h-14 items-center gap-3 border-b px-4">
-        <SidebarTrigger />
-        <Separator orientation="vertical" className="h-5" />
-        <h2 className="text-sm font-medium">{t('account.title')}</h2>
-      </header>
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="mx-auto max-w-md">
+        <h2 className="text-lg font-semibold mb-1">{t('account.title')}</h2>
+        <p className="mb-6 text-sm text-muted-foreground">
+          {t('account.subtitle')}
+        </p>
 
-      {/* Content */}
-      <div className="flex-1 p-6">
-        <div className="mx-auto max-w-md">
-          <p className="mb-6 text-sm text-muted-foreground">
-            {t('account.subtitle')}
-          </p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {saved && (
+            <Alert className="animate-scale-in border-success/30 bg-success/10">
+              <CheckCircle2 className="size-4 text-success" />
+              <AlertDescription className="text-success">{t('account.saved')}</AlertDescription>
+            </Alert>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {saved && (
-              <Alert className="animate-scale-in border-success/30 bg-success/10">
-                <CheckCircle2 className="size-4 text-success" />
-                <AlertDescription className="text-success">{t('account.saved')}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Avatar */}
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="group relative"
-              >
-                <Avatar className="size-20 ring-2 ring-border transition-all group-hover:ring-primary">
-                  {avatarPreview ? (
-                    <AvatarImage src={avatarPreview} alt="Avatar" />
-                  ) : (
-                    <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                  <Camera className="size-5 text-white" />
-                </div>
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                className="hidden"
-              />
-            </div>
-
-            {/* Name fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="acctFirstName">{t('account.firstName')}</Label>
-                <Input
-                  id="acctFirstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="acctLastName">{t('account.lastName')}</Label>
-                <Input
-                  id="acctLastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="acctPseudonym">{t('account.pseudonym')}</Label>
-              <Input
-                id="acctPseudonym"
-                value={pseudonym}
-                onChange={(e) => setPseudonym(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('account.language')}</Label>
-              <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="btn-shine w-full"
-              size="lg"
+          {/* Avatar */}
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="group relative"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  {t('common.loading')}
-                </>
-              ) : (
-                t('account.save')
-              )}
-            </Button>
-          </form>
-        </div>
+              <Avatar className="size-20 ring-2 ring-border transition-all group-hover:ring-primary">
+                {avatarPreview ? (
+                  <AvatarImage src={avatarPreview} alt="Avatar" />
+                ) : (
+                  <AvatarFallback className="text-lg">{initials}</AvatarFallback>
+                )}
+              </Avatar>
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera className="size-5 text-white" />
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* Name fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="acctFirstName">{t('account.firstName')}</Label>
+              <Input
+                id="acctFirstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="acctLastName">{t('account.lastName')}</Label>
+              <Input
+                id="acctLastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="acctPseudonym">{t('account.pseudonym')}</Label>
+            <Input
+              id="acctPseudonym"
+              value={pseudonym}
+              onChange={(e) => setPseudonym(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('account.language')}</Label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="fr">Français</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="btn-shine w-full"
+            size="lg"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                {t('common.loading')}
+              </>
+            ) : (
+              t('account.save')
+            )}
+          </Button>
+        </form>
       </div>
-    </>
+    </div>
   )
 }

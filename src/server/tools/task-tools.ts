@@ -1,11 +1,15 @@
 import { tool } from 'ai'
 import { z } from 'zod'
+import { eq, inArray } from 'drizzle-orm'
 import {
   spawnTask,
   respondToTask,
   cancelTask,
   listKinTasks,
 } from '@/server/services/tasks'
+import { resolveKinId } from '@/server/services/kin-resolver'
+import { db } from '@/server/db/index'
+import { kins } from '@/server/db/schema'
 import { createLogger } from '@/server/logger'
 import type { ToolRegistration } from '@/server/tools/types'
 
@@ -24,7 +28,8 @@ export const spawnSelfTool: ToolRegistration = {
         'The sub-Kin inherits your character, expertise, and tools. ' +
         'Your current turn ends immediately after spawning.',
       inputSchema: z.object({
-        task_description: z.string().describe('Instructions for the sub-Kin task'),
+        title: z.string().describe('Short label for the task (shown in UI, max ~60 chars)'),
+        task_description: z.string().describe('Full instructions for the sub-Kin task'),
         mode: z
           .enum(['await', 'async'])
           .describe(
@@ -35,15 +40,21 @@ export const spawnSelfTool: ToolRegistration = {
           .string()
           .optional()
           .describe('LLM model for the sub-Kin. If omitted, inherits your model'),
+        allow_human_prompt: z
+          .boolean()
+          .optional()
+          .describe('Whether the sub-Kin can prompt the human user for input. Defaults to true.'),
       }),
-      execute: async ({ task_description, mode, model }) => {
+      execute: async ({ title, task_description, mode, model, allow_human_prompt }) => {
         log.debug({ kinId: ctx.kinId, mode, spawnType: 'self' }, 'Task spawn requested (spawn_self)')
         const { taskId } = await spawnTask({
           parentKinId: ctx.kinId,
+          title,
           description: task_description,
           mode,
           spawnType: 'self',
           model,
+          allowHumanPrompt: allow_human_prompt,
         })
         return { taskId, status: 'pending' }
       },
@@ -63,8 +74,9 @@ export const spawnKinTool: ToolRegistration = {
         'The sub-Kin uses the target Kin\'s identity and expertise. ' +
         'Your current turn ends immediately after spawning.',
       inputSchema: z.object({
-        kin_id: z.string().describe('ID of the target Kin to spawn'),
-        task_description: z.string().describe('Instructions for the sub-Kin task'),
+        kin_slug: z.string().describe('Slug of the target Kin to spawn (e.g. "test-ai")'),
+        title: z.string().describe('Short label for the task (shown in UI, max ~60 chars)'),
+        task_description: z.string().describe('Full instructions for the sub-Kin task'),
         mode: z
           .enum(['await', 'async'])
           .describe(
@@ -75,16 +87,26 @@ export const spawnKinTool: ToolRegistration = {
           .string()
           .optional()
           .describe('LLM model for the sub-Kin. If omitted, inherits target Kin\'s model'),
+        allow_human_prompt: z
+          .boolean()
+          .optional()
+          .describe('Whether the sub-Kin can prompt the human user for input. Defaults to true.'),
       }),
-      execute: async ({ kin_id, task_description, mode, model }) => {
-        log.debug({ kinId: ctx.kinId, targetKinId: kin_id, mode, spawnType: 'other' }, 'Task spawn requested (spawn_kin)')
+      execute: async ({ kin_slug, title, task_description, mode, model, allow_human_prompt }) => {
+        const kinId = resolveKinId(kin_slug)
+        if (!kinId) {
+          return { error: `Kin not found for slug "${kin_slug}"` }
+        }
+        log.debug({ kinId: ctx.kinId, targetKinId: kinId, mode, spawnType: 'other' }, 'Task spawn requested (spawn_kin)')
         const { taskId } = await spawnTask({
           parentKinId: ctx.kinId,
+          title,
           description: task_description,
           mode,
           spawnType: 'other',
-          sourceKinId: kin_id,
+          sourceKinId: kinId,
           model,
+          allowHumanPrompt: allow_human_prompt,
         })
         return { taskId, status: 'pending' }
       },
@@ -150,12 +172,34 @@ export const listTasksTool: ToolRegistration = {
       inputSchema: z.object({}),
       execute: async () => {
         const allTasks = await listKinTasks(ctx.kinId)
+
+        // Resolve source Kin slugs for 'other' spawn type tasks
+        const sourceKinIds = [...new Set(
+          allTasks
+            .filter((t) => t.spawnType === 'other' && t.sourceKinId)
+            .map((t) => t.sourceKinId!),
+        )]
+        const kinSlugMap = new Map<string, string>()
+        if (sourceKinIds.length > 0) {
+          const sourceKins = await db
+            .select({ id: kins.id, slug: kins.slug, name: kins.name })
+            .from(kins)
+            .where(inArray(kins.id, sourceKinIds))
+            .all()
+          for (const k of sourceKins) {
+            kinSlugMap.set(k.id, k.slug ?? k.name)
+          }
+        }
+
         return {
           tasks: allTasks.map((t) => ({
             id: t.id,
+            title: t.title,
             description: t.description,
             status: t.status,
             mode: t.mode,
+            spawnType: t.spawnType,
+            sourceKinSlug: t.sourceKinId ? kinSlugMap.get(t.sourceKinId) ?? null : null,
             depth: t.depth,
             createdAt: t.createdAt,
             updatedAt: t.updatedAt,

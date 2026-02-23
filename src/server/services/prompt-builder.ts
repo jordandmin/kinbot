@@ -5,6 +5,7 @@ interface ContactSummary {
   name: string
   type: string
   linkedKinSlug?: string | null
+  identifierSummary?: string
 }
 
 interface Memory {
@@ -19,6 +20,18 @@ interface KinDirectoryEntry {
   role: string
 }
 
+interface MCPToolSummaryForPrompt {
+  serverName: string
+  tools: Array<{ name: string; description: string }>
+}
+
+interface CronRunSummary {
+  status: string
+  result: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
 interface PromptParams {
   kin: {
     name: string
@@ -30,8 +43,10 @@ interface PromptParams {
   contacts: ContactSummary[]
   relevantMemories: Memory[]
   kinDirectory: KinDirectoryEntry[]
+  mcpTools?: MCPToolSummaryForPrompt[]
   isSubKin: boolean
   taskDescription?: string
+  previousCronRuns?: CronRunSummary[]
   userLanguage: 'fr' | 'en'
 }
 
@@ -51,6 +66,10 @@ export function buildSystemPrompt(params: PromptParams): string {
     // Sub-Kin prompt
     blocks.push(`You are ${params.kin.name}, executing a specific task.`)
     blocks.push(`## Your mission\n\n${params.taskDescription}`)
+    const isCronTask = params.previousCronRuns !== undefined
+    const cronJournalInstruction = isCronTask
+      ? `\n- This is a recurring scheduled task. End your final result with a concise summary of what you did and found, so the next run can pick up where you left off.`
+      : ''
     blocks.push(
       `## Constraints\n` +
       `- Focus exclusively on this task.\n` +
@@ -58,8 +77,35 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- Use update_task_status() to signal your progress.\n` +
       `- When done, set your status to "completed" and send the final result.\n` +
       `- If blocked, use request_input() to ask for clarification (max ${config.tasks.maxRequestInput} times).\n` +
-      `- If you cannot accomplish the task, set your status to "failed" with an explanation.`,
+      `- If you cannot accomplish the task, set your status to "failed" with an explanation.` +
+      cronJournalInstruction,
     )
+
+    // Cron journal: inject previous run results so the sub-Kin has continuity
+    if (params.previousCronRuns && params.previousCronRuns.length > 0) {
+      const MAX_RESULT_LENGTH = 500
+      const runLines = params.previousCronRuns
+        .map((r, i) => {
+          const date = r.createdAt.toISOString()
+          const durationMs = r.updatedAt.getTime() - r.createdAt.getTime()
+          const durationSec = Math.round(durationMs / 1000)
+          let detail = ''
+          if (r.status === 'completed' && r.result) {
+            const truncated = r.result.length > MAX_RESULT_LENGTH
+              ? r.result.slice(0, MAX_RESULT_LENGTH) + '...'
+              : r.result
+            detail = `\n   Result: ${truncated}`
+          } else if (r.status === 'failed') {
+            detail = `\n   (failed)`
+          }
+          return `${i + 1}. [${date}] ${r.status} (${durationSec}s)${detail}`
+        })
+        .join('\n')
+      blocks.push(
+        `## Previous runs\n\n` +
+        `This is a recurring scheduled task. Here are your most recent executions (newest first):\n\n${runLines}`,
+      )
+    }
   } else {
     // [1] Identity (with slug)
     const slugSuffix = params.kin.slug ? ` (slug: ${params.kin.slug})` : ''
@@ -76,20 +122,25 @@ export function buildSystemPrompt(params: PromptParams): string {
     }
   }
 
-  // [4] Contacts (compact summary)
+  // [4] Contacts (compact summary — global shared registry)
   if (params.contacts.length > 0) {
     const contactLines = params.contacts
       .map((c) => {
+        const parts: string[] = []
         if (c.type === 'kin' && c.linkedKinSlug) {
-          return `- ${c.name} (slug: ${c.linkedKinSlug}, ${c.type})`
+          parts.push(`slug: ${c.linkedKinSlug}`)
         }
-        return `- ${c.name} (id: ${c.id}, ${c.type})`
+        parts.push(c.type)
+        if (c.identifierSummary) {
+          parts.push(c.identifierSummary)
+        }
+        return `- ${c.name} (${parts.join(', ')}) [id: ${c.id}]`
       })
       .join('\n')
     blocks.push(
       `## Known contacts\n\n` +
-      `You know the following people and Kins. Use the get_contact(id) tool to ` +
-      `retrieve a contact's details when relevant.\n\n${contactLines}`,
+      `These are the shared contacts across all Kins. Use get_contact(id) to ` +
+      `retrieve a contact's full details, identifiers, and notes.\n\n${contactLines}`,
     )
   }
 
@@ -120,14 +171,21 @@ export function buildSystemPrompt(params: PromptParams): string {
     blocks.push(
       `## Internal instructions (do not share with the user)\n\n` +
       `### Contact management\n` +
-      `- When you interact with a new person or someone mentions a person you don't know, create a contact via create_contact().\n` +
-      `- When you learn an important fact about an existing contact, update their record via update_contact().\n\n` +
+      `- Contacts are shared across all Kins. When you create or update a contact, all Kins see it.\n` +
+      `- When you encounter a new person, use find_contact_by_identifier() to check if they already exist before creating a duplicate.\n` +
+      `- Create contacts via create_contact() with any identifiers you know (phone, email, WhatsApp, Discord, etc.).\n` +
+      `- Use set_contact_note(contact_id, scope, content) to record observations:\n` +
+      `  - "private" notes are only visible to you.\n` +
+      `  - "global" notes are visible to all Kins.\n` +
+      `- Use delete_contact() only when explicitly asked by the user.\n\n` +
       `### Memory management\n` +
       `- When you identify important information worth remembering long-term (fact, preference, decision), use memorize() to save it immediately.\n` +
       `- If you're unsure about past information, use recall() to check your memory rather than guessing.\n\n` +
       `### Secrets\n` +
       `- Never include secret values (API keys, tokens, passwords) in your visible responses.\n` +
-      `- If a user shares a secret in the chat, offer to store it in the Vault and redact the message via redact_message().\n\n` +
+      `- If a user shares a secret in the chat, offer to store it in the Vault via create_secret() and redact the message via redact_message().\n` +
+      `- When you need a secret, use search_secrets(query) first to find the right key, then get_secret(key) to retrieve it. Avoid listing all secrets.\n` +
+      `- You can create, update, and delete secrets. Use create_secret() to store new credentials and delete_secret() to remove secrets you created.\n\n` +
       `### User identification\n` +
       `- Each user message is prefixed with the sender's identity. Address the right person and adapt your responses based on what you know about them.\n\n` +
       `### Conversation context\n` +
@@ -139,7 +197,30 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- Use send_message(slug, message, type) to contact a Kin by its slug.\n` +
       `- Use type "request" when you expect a reply, "inform" for one-way messages.\n` +
       `- When you receive an inter-kin request (indicated by a system note), use the reply(request_id, message) tool to respond.\n` +
-      `- You can also use list_kins() to refresh the list of available Kins if needed.`,
+      `- You can also use list_kins() to refresh the list of available Kins if needed.\n\n` +
+      `### File storage\n` +
+      `- Use store_file() to create shareable files for the user. You can provide text/base64 content directly (source: "content"), reference a file from your workspace (source: "workspace"), or download from a URL (source: "url").\n` +
+      `- Files get a shareable URL. Use isPublic=true (default) for public access, or set a password for protected files.\n` +
+      `- Use expiresIn (minutes) for temporary files. Use readAndBurn=true for one-time download links.\n` +
+      `- Use list_stored_files() or search_stored_files() to find existing files before creating duplicates.\n` +
+      `- Always share the file URL with the user after creating a file.`,
+    )
+  }
+
+  // [6.5] MCP tools (external tool servers)
+  if (params.mcpTools && params.mcpTools.length > 0) {
+    const mcpLines = params.mcpTools
+      .map((server) => {
+        const toolLines = server.tools
+          .map((t) => `  - \`${t.name}\`: ${t.description}`)
+          .join('\n')
+        return `**${server.serverName}**\n${toolLines}`
+      })
+      .join('\n\n')
+    blocks.push(
+      `## MCP Tools (external servers)\n\n` +
+      `You have access to tools from the following external MCP servers. ` +
+      `Call them like any other tool.\n\n${mcpLines}`,
     )
   }
 

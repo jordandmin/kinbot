@@ -12,7 +12,7 @@ export async function authMiddleware(c: Context, next: Next) {
   const path = c.req.path
 
   // Skip auth for Better Auth routes, onboarding, and health check
-  if (path.startsWith('/api/auth/') || path.startsWith('/api/onboarding') || path === '/api/health') {
+  if (path.startsWith('/api/auth/') || path.startsWith('/api/onboarding') || path === '/api/health' || path.startsWith('/s/')) {
     return next()
   }
 

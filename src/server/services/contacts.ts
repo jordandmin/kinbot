@@ -1,89 +1,380 @@
-import { eq, and, like, or } from 'drizzle-orm'
+import { eq, and, like, or, sql } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { db } from '@/server/db/index'
-import { contacts } from '@/server/db/schema'
+import { contacts, contactIdentifiers, contactNotes, kins } from '@/server/db/schema'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type ContactType = 'human' | 'kin'
+type NoteScope = 'private' | 'global'
 
 interface CreateContactInput {
   name: string
   type: ContactType
   linkedUserId?: string | null
   linkedKinId?: string | null
-  notes?: string | null
+  identifiers?: Array<{ label: string; value: string }>
 }
 
 interface UpdateContactInput {
   name?: string
-  notes?: string
+  type?: ContactType
+  linkedUserId?: string | null
+  linkedKinId?: string | null
 }
 
-// ─── CRUD ────────────────────────────────────────────────────────────────────
-
-export async function getContact(contactId: string, kinId: string) {
-  return db
-    .select()
-    .from(contacts)
-    .where(and(eq(contacts.id, contactId), eq(contacts.kinId, kinId)))
-    .get()
+interface ContactWithDetails {
+  id: string
+  name: string
+  type: string
+  linkedUserId: string | null
+  linkedKinId: string | null
+  createdAt: Date
+  updatedAt: Date
+  identifiers: Array<{ id: string; label: string; value: string }>
+  notes: Array<{ id: string; kinId: string; scope: string; content: string; createdAt: Date; updatedAt: Date }>
 }
 
-export async function listContactsByKin(kinId: string) {
-  return db
-    .select()
-    .from(contacts)
-    .where(eq(contacts.kinId, kinId))
+interface ContactSummary {
+  id: string
+  name: string
+  type: string
+  linkedKinSlug?: string | null
+  identifierSummary?: string
+}
+
+// ─── Contact CRUD ────────────────────────────────────────────────────────────
+
+export async function listContacts() {
+  return db.select().from(contacts).all()
+}
+
+export async function getContact(contactId: string) {
+  return db.select().from(contacts).where(eq(contacts.id, contactId)).get()
+}
+
+export async function getContactWithDetails(
+  contactId: string,
+  kinId?: string,
+): Promise<ContactWithDetails | null> {
+  const contact = db.select().from(contacts).where(eq(contacts.id, contactId)).get()
+  if (!contact) return null
+
+  const identifiers = db
+    .select({ id: contactIdentifiers.id, label: contactIdentifiers.label, value: contactIdentifiers.value })
+    .from(contactIdentifiers)
+    .where(eq(contactIdentifiers.contactId, contactId))
     .all()
+
+  let notes
+  if (kinId) {
+    // Global notes from all Kins + private notes from requesting Kin only
+    notes = db
+      .select()
+      .from(contactNotes)
+      .where(
+        and(
+          eq(contactNotes.contactId, contactId),
+          or(eq(contactNotes.scope, 'global'), eq(contactNotes.kinId, kinId)),
+        ),
+      )
+      .all()
+  } else {
+    // Admin view: all notes
+    notes = db.select().from(contactNotes).where(eq(contactNotes.contactId, contactId)).all()
+  }
+
+  return {
+    ...contact,
+    identifiers,
+    notes: notes.map((n) => ({
+      id: n.id,
+      kinId: n.kinId,
+      scope: n.scope,
+      content: n.content,
+      createdAt: n.createdAt,
+      updatedAt: n.updatedAt,
+    })),
+  }
 }
 
-export async function createContact(kinId: string, input: CreateContactInput) {
+export async function createContact(input: CreateContactInput) {
   const id = uuid()
   const now = new Date()
 
-  await db.insert(contacts).values({
+  db.insert(contacts).values({
     id,
-    kinId,
     name: input.name,
     type: input.type,
     linkedUserId: input.linkedUserId ?? null,
     linkedKinId: input.linkedKinId ?? null,
-    notes: input.notes ?? null,
     createdAt: now,
     updatedAt: now,
-  })
+  }).run()
+
+  // Insert identifiers if provided
+  if (input.identifiers?.length) {
+    for (const ident of input.identifiers) {
+      db.insert(contactIdentifiers).values({
+        id: uuid(),
+        contactId: id,
+        label: ident.label,
+        value: ident.value,
+        createdAt: now,
+        updatedAt: now,
+      }).run()
+    }
+  }
 
   return db.select().from(contacts).where(eq(contacts.id, id)).get()!
 }
 
-export async function updateContact(contactId: string, kinId: string, updates: UpdateContactInput) {
-  const existing = await getContact(contactId, kinId)
+export async function updateContact(contactId: string, updates: UpdateContactInput) {
+  const existing = db.select().from(contacts).where(eq(contacts.id, contactId)).get()
   if (!existing) return null
 
-  await db
-    .update(contacts)
+  db.update(contacts)
     .set({
       ...(updates.name !== undefined ? { name: updates.name } : {}),
-      ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+      ...(updates.type !== undefined ? { type: updates.type } : {}),
+      ...(updates.linkedUserId !== undefined ? { linkedUserId: updates.linkedUserId } : {}),
+      ...(updates.linkedKinId !== undefined ? { linkedKinId: updates.linkedKinId } : {}),
       updatedAt: new Date(),
     })
-    .where(and(eq(contacts.id, contactId), eq(contacts.kinId, kinId)))
+    .where(eq(contacts.id, contactId))
+    .run()
 
   return db.select().from(contacts).where(eq(contacts.id, contactId)).get()!
 }
 
-export async function searchContacts(kinId: string, query: string) {
+export async function deleteContact(contactId: string): Promise<boolean> {
+  const existing = db.select().from(contacts).where(eq(contacts.id, contactId)).get()
+  if (!existing) return false
+
+  // Cascade deletes identifiers and notes via FK
+  db.delete(contacts).where(eq(contacts.id, contactId)).run()
+  return true
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
+
+export async function searchContacts(
+  query: string,
+  kinId?: string,
+): Promise<ContactWithDetails[]> {
   const pattern = `%${query}%`
 
-  return db
-    .select()
+  // Search in contact names
+  const byName = db
+    .select({ id: contacts.id })
     .from(contacts)
+    .where(like(contacts.name, pattern))
+    .all()
+
+  // Search in identifier labels and values
+  const byIdentifier = db
+    .select({ id: contactIdentifiers.contactId })
+    .from(contactIdentifiers)
+    .where(or(like(contactIdentifiers.value, pattern), like(contactIdentifiers.label, pattern)))
+    .all()
+
+  // Search in note content (only visible notes)
+  let byNote
+  if (kinId) {
+    byNote = db
+      .select({ id: contactNotes.contactId })
+      .from(contactNotes)
+      .where(
+        and(
+          like(contactNotes.content, pattern),
+          or(eq(contactNotes.scope, 'global'), eq(contactNotes.kinId, kinId)),
+        ),
+      )
+      .all()
+  } else {
+    byNote = db
+      .select({ id: contactNotes.contactId })
+      .from(contactNotes)
+      .where(like(contactNotes.content, pattern))
+      .all()
+  }
+
+  // Deduplicate contact IDs
+  const uniqueIds = [...new Set([
+    ...byName.map((r) => r.id),
+    ...byIdentifier.map((r) => r.id),
+    ...byNote.map((r) => r.id),
+  ])]
+
+  // Fetch full details for each
+  const results: ContactWithDetails[] = []
+  for (const id of uniqueIds) {
+    const detail = await getContactWithDetails(id, kinId)
+    if (detail) results.push(detail)
+  }
+
+  return results
+}
+
+// ─── Identifiers ─────────────────────────────────────────────────────────────
+
+export function addContactIdentifier(contactId: string, label: string, value: string) {
+  const now = new Date()
+  const id = uuid()
+  db.insert(contactIdentifiers).values({
+    id,
+    contactId,
+    label,
+    value,
+    createdAt: now,
+    updatedAt: now,
+  }).run()
+
+  return { id, contactId, label, value, createdAt: now, updatedAt: now }
+}
+
+export function updateContactIdentifier(identifierId: string, updates: { label?: string; value?: string }) {
+  const existing = db.select().from(contactIdentifiers).where(eq(contactIdentifiers.id, identifierId)).get()
+  if (!existing) return null
+
+  db.update(contactIdentifiers)
+    .set({
+      ...(updates.label !== undefined ? { label: updates.label } : {}),
+      ...(updates.value !== undefined ? { value: updates.value } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(contactIdentifiers.id, identifierId))
+    .run()
+
+  return db.select().from(contactIdentifiers).where(eq(contactIdentifiers.id, identifierId)).get()!
+}
+
+export function removeContactIdentifier(identifierId: string): boolean {
+  const existing = db.select().from(contactIdentifiers).where(eq(contactIdentifiers.id, identifierId)).get()
+  if (!existing) return false
+
+  db.delete(contactIdentifiers).where(eq(contactIdentifiers.id, identifierId)).run()
+  return true
+}
+
+export function findContactByIdentifier(label: string, value: string) {
+  const row = db
+    .select({ contactId: contactIdentifiers.contactId })
+    .from(contactIdentifiers)
+    .where(and(eq(contactIdentifiers.label, label), eq(contactIdentifiers.value, value)))
+    .get()
+
+  return row ? db.select().from(contacts).where(eq(contacts.id, row.contactId)).get() : null
+}
+
+export function listContactIdentifiers(contactId: string) {
+  return db
+    .select({ id: contactIdentifiers.id, label: contactIdentifiers.label, value: contactIdentifiers.value })
+    .from(contactIdentifiers)
+    .where(eq(contactIdentifiers.contactId, contactId))
+    .all()
+}
+
+// ─── Notes ───────────────────────────────────────────────────────────────────
+
+export function setContactNote(contactId: string, kinId: string, scope: NoteScope, content: string) {
+  const now = new Date()
+  const existing = db
+    .select()
+    .from(contactNotes)
     .where(
       and(
-        eq(contacts.kinId, kinId),
-        or(like(contacts.name, pattern), like(contacts.notes, pattern)),
+        eq(contactNotes.contactId, contactId),
+        eq(contactNotes.kinId, kinId),
+        eq(contactNotes.scope, scope),
+      ),
+    )
+    .get()
+
+  if (existing) {
+    db.update(contactNotes)
+      .set({ content, updatedAt: now })
+      .where(eq(contactNotes.id, existing.id))
+      .run()
+    return { ...existing, content, updatedAt: now }
+  }
+
+  const id = uuid()
+  db.insert(contactNotes).values({
+    id,
+    contactId,
+    kinId,
+    scope,
+    content,
+    createdAt: now,
+    updatedAt: now,
+  }).run()
+
+  return { id, contactId, kinId, scope, content, createdAt: now, updatedAt: now }
+}
+
+export function updateContactNote(noteId: string, content: string) {
+  const now = new Date()
+  const existing = db.select().from(contactNotes).where(eq(contactNotes.id, noteId)).get()
+  if (!existing) return null
+  db.update(contactNotes).set({ content, updatedAt: now }).where(eq(contactNotes.id, noteId)).run()
+  return { ...existing, content, updatedAt: now }
+}
+
+export function deleteContactNote(noteId: string) {
+  const existing = db.select().from(contactNotes).where(eq(contactNotes.id, noteId)).get()
+  if (!existing) return false
+  db.delete(contactNotes).where(eq(contactNotes.id, noteId)).run()
+  return true
+}
+
+export function getVisibleNotes(contactId: string, kinId: string) {
+  return db
+    .select()
+    .from(contactNotes)
+    .where(
+      and(
+        eq(contactNotes.contactId, contactId),
+        or(eq(contactNotes.scope, 'global'), eq(contactNotes.kinId, kinId)),
       ),
     )
     .all()
+}
+
+export function deleteNotesByKin(kinId: string) {
+  db.delete(contactNotes).where(eq(contactNotes.kinId, kinId)).run()
+}
+
+// ─── Prompt helpers ──────────────────────────────────────────────────────────
+
+export async function listContactsForPrompt(): Promise<ContactSummary[]> {
+  const allContacts = db
+    .select({
+      id: contacts.id,
+      name: contacts.name,
+      type: contacts.type,
+      linkedKinId: contacts.linkedKinId,
+    })
+    .from(contacts)
+    .all()
+
+  return Promise.all(
+    allContacts.map(async (c) => {
+      let linkedKinSlug: string | null = null
+      if (c.type === 'kin' && c.linkedKinId) {
+        const linked = db.select({ slug: kins.slug }).from(kins).where(eq(kins.id, c.linkedKinId)).get()
+        linkedKinSlug = linked?.slug ?? null
+      }
+
+      const identifiers = db
+        .select({ label: contactIdentifiers.label })
+        .from(contactIdentifiers)
+        .where(eq(contactIdentifiers.contactId, c.id))
+        .all()
+
+      const identifierSummary = identifiers.map((i) => i.label).join(', ') || undefined
+
+      return { id: c.id, name: c.name, type: c.type, linkedKinSlug, identifierSummary }
+    }),
+  )
 }

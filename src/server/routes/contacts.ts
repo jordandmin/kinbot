@@ -1,0 +1,202 @@
+import { Hono } from 'hono'
+import {
+  listContacts,
+  getContactWithDetails,
+  createContact,
+  updateContact,
+  deleteContact,
+  addContactIdentifier,
+  updateContactIdentifier,
+  removeContactIdentifier,
+  setContactNote,
+  updateContactNote,
+  deleteContactNote,
+} from '@/server/services/contacts'
+import { createLogger } from '@/server/logger'
+
+const log = createLogger('routes:contacts')
+const contactRoutes = new Hono()
+
+// GET /api/contacts — list all contacts with identifiers and notes (admin view)
+contactRoutes.get('/', async (c) => {
+  const allContacts = await listContacts()
+
+  // Attach full details for each contact (admin view = all notes)
+  const contactsWithDetails = await Promise.all(
+    allContacts.map((contact) => getContactWithDetails(contact.id)),
+  )
+
+  return c.json({ contacts: contactsWithDetails.filter(Boolean) })
+})
+
+// GET /api/contacts/:id — full contact detail (identifiers + all notes for admin view)
+contactRoutes.get('/:id', async (c) => {
+  const id = c.req.param('id')
+  const contact = await getContactWithDetails(id) // no kinId → admin view shows all notes
+  if (!contact) {
+    return c.json({ error: { code: 'CONTACT_NOT_FOUND', message: 'Contact not found' } }, 404)
+  }
+  return c.json({ contact })
+})
+
+// POST /api/contacts — create a new contact
+contactRoutes.post('/', async (c) => {
+  const { name, type, linkedUserId, linkedKinId, identifiers } = (await c.req.json()) as {
+    name: string
+    type: string
+    linkedUserId?: string
+    linkedKinId?: string
+    identifiers?: Array<{ label: string; value: string }>
+  }
+
+  if (!name || !type) {
+    return c.json(
+      { error: { code: 'INVALID_INPUT', message: 'Name and type are required' } },
+      400,
+    )
+  }
+
+  if (type !== 'human' && type !== 'kin') {
+    return c.json(
+      { error: { code: 'INVALID_INPUT', message: 'Type must be "human" or "kin"' } },
+      400,
+    )
+  }
+
+  const contact = await createContact({ name, type, linkedUserId, linkedKinId, identifiers })
+  log.info({ contactId: contact.id, name }, 'Contact created')
+  return c.json({ contact }, 201)
+})
+
+// PATCH /api/contacts/:id — update basic info
+contactRoutes.patch('/:id', async (c) => {
+  const id = c.req.param('id')
+  const body = (await c.req.json()) as {
+    name?: string
+    type?: 'human' | 'kin'
+    linkedUserId?: string | null
+    linkedKinId?: string | null
+  }
+
+  const updated = await updateContact(id, body)
+  if (!updated) {
+    return c.json({ error: { code: 'CONTACT_NOT_FOUND', message: 'Contact not found' } }, 404)
+  }
+
+  return c.json({ contact: updated })
+})
+
+// DELETE /api/contacts/:id — delete a contact (cascades identifiers + notes)
+contactRoutes.delete('/:id', async (c) => {
+  const id = c.req.param('id')
+
+  const deleted = await deleteContact(id)
+  if (!deleted) {
+    return c.json({ error: { code: 'CONTACT_NOT_FOUND', message: 'Contact not found' } }, 404)
+  }
+
+  log.info({ contactId: id }, 'Contact deleted')
+  return c.json({ success: true })
+})
+
+// ─── Identifiers ─────────────────────────────────────────────────────────────
+
+// POST /api/contacts/:id/identifiers — add an identifier
+contactRoutes.post('/:id/identifiers', async (c) => {
+  const contactId = c.req.param('id')
+  const { label, value } = (await c.req.json()) as { label: string; value: string }
+
+  if (!label || !value) {
+    return c.json(
+      { error: { code: 'INVALID_INPUT', message: 'Label and value are required' } },
+      400,
+    )
+  }
+
+  const identifier = addContactIdentifier(contactId, label, value)
+  return c.json({ identifier }, 201)
+})
+
+// PATCH /api/contacts/:id/identifiers/:identifierId — update an identifier
+contactRoutes.patch('/:id/identifiers/:identifierId', async (c) => {
+  const identifierId = c.req.param('identifierId')
+  const body = (await c.req.json()) as { label?: string; value?: string }
+
+  const updated = updateContactIdentifier(identifierId, body)
+  if (!updated) {
+    return c.json({ error: { code: 'IDENTIFIER_NOT_FOUND', message: 'Identifier not found' } }, 404)
+  }
+
+  return c.json({ identifier: updated })
+})
+
+// DELETE /api/contacts/:id/identifiers/:identifierId — remove an identifier
+contactRoutes.delete('/:id/identifiers/:identifierId', async (c) => {
+  const identifierId = c.req.param('identifierId')
+
+  const removed = removeContactIdentifier(identifierId)
+  if (!removed) {
+    return c.json(
+      { error: { code: 'IDENTIFIER_NOT_FOUND', message: 'Identifier not found' } },
+      404,
+    )
+  }
+
+  return c.json({ success: true })
+})
+
+// ─── Notes ──────────────────────────────────────────────────────────────────
+
+// POST /api/contacts/:id/notes — create/upsert a note (admin creates on behalf of a kin)
+contactRoutes.post('/:id/notes', async (c) => {
+  const contactId = c.req.param('id')
+  const { kinId, scope, content } = (await c.req.json()) as {
+    kinId: string
+    scope: 'private' | 'global'
+    content: string
+  }
+
+  if (!kinId || !scope || !content?.trim()) {
+    return c.json(
+      { error: { code: 'INVALID_INPUT', message: 'kinId, scope and content are required' } },
+      400,
+    )
+  }
+
+  const note = setContactNote(contactId, kinId, scope, content.trim())
+  return c.json({ note }, 201)
+})
+
+// PATCH /api/contacts/:id/notes/:noteId — update a note's content
+contactRoutes.patch('/:id/notes/:noteId', async (c) => {
+  const noteId = c.req.param('noteId')
+  const { content } = (await c.req.json()) as { content: string }
+
+  if (!content?.trim()) {
+    return c.json(
+      { error: { code: 'INVALID_INPUT', message: 'Content is required' } },
+      400,
+    )
+  }
+
+  const updated = updateContactNote(noteId, content.trim())
+  if (!updated) {
+    return c.json({ error: { code: 'NOTE_NOT_FOUND', message: 'Note not found' } }, 404)
+  }
+
+  return c.json({ note: updated })
+})
+
+// DELETE /api/contacts/:id/notes/:noteId — delete a note
+contactRoutes.delete('/:id/notes/:noteId', async (c) => {
+  const noteId = c.req.param('noteId')
+
+  const deleted = deleteContactNote(noteId)
+  if (!deleted) {
+    return c.json({ error: { code: 'NOTE_NOT_FOUND', message: 'Note not found' } }, 404)
+  }
+
+  return c.json({ success: true })
+})
+
+export { contactRoutes }

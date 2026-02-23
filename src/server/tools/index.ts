@@ -70,6 +70,14 @@ class ToolRegistry {
     }
   }
 
+  /** List all registered tool names with their availability (for API/UI). */
+  list(): Array<{ name: string; availability: ToolAvailability[] }> {
+    return Array.from(this.tools.entries()).map(([name, reg]) => ({
+      name,
+      availability: reg.availability,
+    }))
+  }
+
   get registeredCount(): number {
     return this.tools.size
   }

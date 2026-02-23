@@ -456,6 +456,75 @@ body {
   background: color-mix(in oklch, var(--color-foreground) 10%, transparent);
 }
 
+/* ── Syntax highlighting (rehype-highlight / hljs) ── */
+.markdown-content .hljs-keyword,
+.markdown-content .hljs-selector-tag,
+.markdown-content .hljs-built_in,
+.markdown-content .hljs-name { color: oklch(0.55 0.22 280); }
+.markdown-content .hljs-string,
+.markdown-content .hljs-attr,
+.markdown-content .hljs-addition { color: oklch(0.55 0.16 150); }
+.markdown-content .hljs-comment,
+.markdown-content .hljs-meta,
+.markdown-content .hljs-quote { color: var(--color-muted-foreground); font-style: italic; }
+.markdown-content .hljs-number,
+.markdown-content .hljs-literal { color: oklch(0.58 0.18 45); }
+.markdown-content .hljs-title,
+.markdown-content .hljs-title\.function_,
+.markdown-content .hljs-section { color: oklch(0.55 0.18 240); }
+.markdown-content .hljs-type,
+.markdown-content .hljs-template-variable,
+.markdown-content .hljs-variable { color: oklch(0.55 0.18 20); }
+.markdown-content .hljs-deletion { color: oklch(0.55 0.2 25); }
+.markdown-content .hljs-regexp,
+.markdown-content .hljs-symbol { color: oklch(0.58 0.17 330); }
+.markdown-content .hljs-params { color: var(--color-foreground); }
+.markdown-content .hljs-punctuation { color: var(--color-muted-foreground); }
+
+.dark .markdown-content .hljs-keyword,
+.dark .markdown-content .hljs-selector-tag,
+.dark .markdown-content .hljs-built_in,
+.dark .markdown-content .hljs-name { color: oklch(0.72 0.18 280); }
+.dark .markdown-content .hljs-string,
+.dark .markdown-content .hljs-attr,
+.dark .markdown-content .hljs-addition { color: oklch(0.72 0.14 150); }
+.dark .markdown-content .hljs-number,
+.dark .markdown-content .hljs-literal { color: oklch(0.75 0.14 55); }
+.dark .markdown-content .hljs-title,
+.dark .markdown-content .hljs-title\.function_,
+.dark .markdown-content .hljs-section { color: oklch(0.72 0.14 220); }
+.dark .markdown-content .hljs-type,
+.dark .markdown-content .hljs-template-variable,
+.dark .markdown-content .hljs-variable { color: oklch(0.72 0.14 20); }
+.dark .markdown-content .hljs-deletion { color: oklch(0.72 0.17 25); }
+.dark .markdown-content .hljs-regexp,
+.dark .markdown-content .hljs-symbol { color: oklch(0.72 0.13 330); }
+
+/* User bubble: muted syntax colors on primary bg */
+.markdown-content--user .hljs-keyword,
+.markdown-content--user .hljs-selector-tag,
+.markdown-content--user .hljs-built_in,
+.markdown-content--user .hljs-name,
+.markdown-content--user .hljs-string,
+.markdown-content--user .hljs-attr,
+.markdown-content--user .hljs-addition,
+.markdown-content--user .hljs-number,
+.markdown-content--user .hljs-literal,
+.markdown-content--user .hljs-title,
+.markdown-content--user .hljs-title\.function_,
+.markdown-content--user .hljs-section,
+.markdown-content--user .hljs-type,
+.markdown-content--user .hljs-template-variable,
+.markdown-content--user .hljs-variable,
+.markdown-content--user .hljs-deletion,
+.markdown-content--user .hljs-regexp,
+.markdown-content--user .hljs-symbol,
+.markdown-content--user .hljs-params,
+.markdown-content--user .hljs-punctuation { color: inherit; }
+.markdown-content--user .hljs-comment,
+.markdown-content--user .hljs-meta,
+.markdown-content--user .hljs-quote { color: inherit; opacity: 0.6; }
+
 /* Tables (GFM) */
 .markdown-content table {
   width: 100%;
@@ -869,6 +938,18 @@ body {
 
 .btn-jelly:active {
   animation: jelly 0.4s ease;
+}
+
+/* ─── INDETERMINATE PROGRESS ────────────────────────── */
+
+@keyframes indeterminate-progress {
+  0% { transform: translateX(-100%); width: 40%; }
+  50% { width: 60%; }
+  100% { transform: translateX(250%); width: 40%; }
+}
+
+.animate-indeterminate-progress {
+  animation: indeterminate-progress 1.5s ease-in-out infinite;
 }
 
 /* Card hover lift */

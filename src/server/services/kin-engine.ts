@@ -1,4 +1,4 @@
-import { streamText, stepCountIs } from 'ai'
+import { streamText, stepCountIs, type ModelMessage } from 'ai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
@@ -10,14 +10,14 @@ import {
   kins,
   messages,
   providers,
-  contacts,
   memories,
   compactingSnapshots,
   userProfiles,
 } from '@/server/db/schema'
 import { decrypt } from '@/server/services/encryption'
 import { buildSystemPrompt } from '@/server/services/prompt-builder'
-import { dequeueMessage, markQueueItemDone, isKinProcessing, getQueueSize } from '@/server/services/queue'
+import { dequeueMessage, markQueueItemDone, isKinProcessing, getQueueSize, recoverStaleProcessingItems } from '@/server/services/queue'
+import { recoverStaleTasks } from '@/server/services/tasks'
 import { sseManager } from '@/server/sse/index'
 import { eventBus } from '@/server/services/events'
 import { hookRegistry } from '@/server/hooks/index'
@@ -26,9 +26,11 @@ import { config } from '@/server/config'
 import { getOAuthAccessToken, OAUTH_HEADERS, REQUIRED_SYSTEM_BLOCK } from '@/server/providers/anthropic-oauth'
 import { getRelevantMemories } from '@/server/services/memory'
 import { maybeCompact } from '@/server/services/compacting'
-import { resolveMCPTools } from '@/server/services/mcp'
+import { resolveMCPTools, getMCPToolsSummary } from '@/server/services/mcp'
 import { resolveCustomTools } from '@/server/services/custom-tools'
+import type { KinToolConfig } from '@/shared/types'
 import { listAvailableKins } from '@/server/services/inter-kin'
+import { listContactsForPrompt } from '@/server/services/contacts'
 
 const log = createLogger('kin-engine')
 
@@ -58,11 +60,14 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
   if (kinLocks.has(kinId)) return false
   kinLocks.add(kinId)
 
+  // Hoisted so the finally block can guarantee cleanup
+  let queueItem: Awaited<ReturnType<typeof dequeueMessage>> = null
+
   try {
     // Don't process if already processing (DB-level check)
     if (await isKinProcessing(kinId)) return false
 
-    const queueItem = await dequeueMessage(kinId)
+    queueItem = await dequeueMessage(kinId)
     if (!queueItem) return false
 
     log.info({ kinId, queueItemId: queueItem.id, messageType: queueItem.messageType, sourceType: queueItem.sourceType }, 'Processing message')
@@ -75,15 +80,16 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       data: { kinId, queueSize: pendingCount, isProcessing: true },
     })
 
-    try {
     const kin = await db.select().from(kins).where(eq(kins.id, kinId)).get()
-    if (!kin) {
-      await markQueueItemDone(queueItem.id)
-      return false
-    }
+    if (!kin) return false
 
     // Save the incoming user message to DB
     const userMessageId = uuid()
+    // For task_result messages, propagate the task ID as metadata so the client
+    // can link the message back to its task detail modal.
+    const messageMetadata = queueItem.sourceType === 'task' && queueItem.taskId
+      ? JSON.stringify({ resolvedTaskId: queueItem.taskId })
+      : null
     await db.insert(messages).values({
       id: userMessageId,
       kinId,
@@ -93,6 +99,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       sourceId: queueItem.sourceId,
       requestId: queueItem.requestId,
       inReplyTo: queueItem.inReplyTo,
+      metadata: messageMetadata,
       createdAt: new Date(),
     })
 
@@ -117,28 +124,8 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     })
 
     // Build system prompt
-    const kinContacts = await db
-      .select({
-        id: contacts.id,
-        name: contacts.name,
-        type: contacts.type,
-        linkedKinId: contacts.linkedKinId,
-      })
-      .from(contacts)
-      .where(eq(contacts.kinId, kinId))
-      .all()
-
-    // Resolve slugs for kin-type contacts
-    const contactsWithSlug = await Promise.all(
-      kinContacts.map(async (c) => {
-        let linkedKinSlug: string | null = null
-        if (c.type === 'kin' && c.linkedKinId) {
-          const linked = db.select({ slug: kins.slug }).from(kins).where(eq(kins.id, c.linkedKinId)).get()
-          linkedKinSlug = linked?.slug ?? null
-        }
-        return { id: c.id, name: c.name, type: c.type, linkedKinSlug }
-      }),
-    )
+    // Fetch all global contacts with slug resolution and identifier summaries
+    const contactsWithSlug = await listContactsForPrompt()
 
     // Fetch kin directory for inter-kin communication
     const kinDirectory = (await listAvailableKins(kinId)).map((k) => ({
@@ -155,11 +142,15 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       // Memory retrieval failure is non-fatal — proceed without memories
     }
 
+    // Resolve MCP tool summaries for system prompt injection
+    const mcpToolsSummary = await getMCPToolsSummary(kinId)
+
     const systemPrompt = buildSystemPrompt({
       kin: { name: kin.name, slug: kin.slug, role: kin.role, character: kin.character, expertise: kin.expertise },
       contacts: contactsWithSlug,
       relevantMemories,
       kinDirectory,
+      mcpTools: mcpToolsSummary,
       isSubKin: false,
       userLanguage,
     })
@@ -176,17 +167,28 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         kinId,
         data: { error: 'No LLM provider available for this model' },
       })
-      await markQueueItemDone(queueItem.id)
       return true
     }
 
-    // Resolve tools for this Kin's context (native + MCP)
+    // Resolve tools for this Kin's context (native + MCP), filtered by toolConfig
+    const toolConfig: KinToolConfig | null = kin.toolConfig
+      ? JSON.parse(kin.toolConfig)
+      : null
+
     const nativeTools = toolRegistry.resolve({
       kinId,
       userId: queueItem.sourceId ?? undefined,
       isSubKin: false,
     })
-    const mcpTools = await resolveMCPTools(kinId)
+
+    // Filter disabled native tools
+    if (toolConfig?.disabledNativeTools?.length) {
+      for (const name of toolConfig.disabledNativeTools) {
+        delete nativeTools[name]
+      }
+    }
+
+    const mcpTools = await resolveMCPTools(kinId, toolConfig)
     const customToolDefs = await resolveCustomTools(kinId)
     const tools = { ...nativeTools, ...mcpTools, ...customToolDefs }
 
@@ -203,7 +205,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     // Call LLM with streaming (+ tool calling loop if tools are available)
     const assistantMessageId = uuid()
     let fullContent = ''
-    const toolCallsLog: Array<{ id: string; name: string; args: unknown; result?: unknown }> = []
+    const toolCallsLog: Array<{ id: string; name: string; args: unknown; result?: unknown; offset: number }> = []
 
     // Create an AbortController so the stream can be cancelled from outside
     const abortController = new AbortController()
@@ -233,11 +235,29 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
             break
           }
 
+          case 'tool-call-streaming-start': {
+            // Notify client as soon as the LLM starts generating a tool call
+            // (before arguments are fully parsed) for immediate UI feedback
+            sseManager.sendToKin(kinId, {
+              type: 'chat:tool-call-start',
+              kinId,
+              data: {
+                messageId: assistantMessageId,
+                toolCallId: part.toolCallId,
+                toolName: part.toolName,
+                contentOffset: fullContent.length,
+              },
+            })
+            break
+          }
+
           case 'tool-call': {
+            const contentOffset = fullContent.length
             toolCallsLog.push({
               id: part.toolCallId,
               name: part.toolName,
               args: part.input,
+              offset: contentOffset,
             })
             sseManager.sendToKin(kinId, {
               type: 'chat:tool-call',
@@ -247,6 +267,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
                 toolCallId: part.toolCallId,
                 toolName: part.toolName,
                 args: part.input,
+                contentOffset,
               },
             })
             break
@@ -269,7 +290,8 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
             break
           }
 
-          // Other event types (start-step, finish-step, etc.) — ignored for now
+          default:
+            log.debug({ kinId, partType: part.type }, 'Unhandled stream part type')
         }
       }
     } catch (streamError) {
@@ -286,7 +308,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     log.info({ kinId, messageId: assistantMessageId, contentLength: fullContent.length, toolCalls: toolCallsLog.length, wasAborted }, 'LLM turn completed')
 
     // Save assistant message (partial if aborted) with tool call metadata
-    if (fullContent || wasAborted) {
+    if (fullContent || toolCallsLog.length > 0 || wasAborted) {
       await db.insert(messages).values({
         id: assistantMessageId,
         kinId,
@@ -396,10 +418,15 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       data: { kinId, queueSize: 0, isProcessing: false },
     })
 
-    await markQueueItemDone(queueItem.id)
     return true
-  }
   } finally {
+    // Safety net: guarantee queue item is marked done regardless of exit path.
+    // markQueueItemDone is idempotent — safe to call even if already done above.
+    if (queueItem) {
+      await markQueueItemDone(queueItem.id).catch((err) =>
+        log.error({ kinId, err }, 'Failed to mark queue item done in finally'),
+      )
+    }
     kinLocks.delete(kinId)
   }
 }
@@ -408,8 +435,8 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
  * Build the message history for LLM context.
  * Includes compacted summary (if any) + recent non-compacted messages.
  */
-async function buildMessageHistory(kinId: string) {
-  const history: Array<{ role: 'user' | 'assistant'; content: string }> = []
+async function buildMessageHistory(kinId: string): Promise<ModelMessage[]> {
+  const history: ModelMessage[] = []
 
   // [9] Compacted summary — injected as a synthetic user message at the start
   const activeSnapshot = await db
@@ -469,15 +496,15 @@ async function buildMessageHistory(kinId: string) {
   }
 
   for (const msg of filteredMessages) {
-    if (msg.role === 'user' || msg.role === 'assistant') {
+    if (msg.role === 'user') {
       let content = msg.content ?? ''
       // Prefix user messages with pseudonym so the LLM knows who's speaking
-      if (msg.role === 'user' && msg.sourceType === 'user' && msg.sourceId) {
+      if (msg.sourceType === 'user' && msg.sourceId) {
         const pseudo = pseudonymMap.get(msg.sourceId)
         if (pseudo) content = `[${pseudo}] ${content}`
       }
       // Inter-kin messages: prefix the content with context instead of a separate system message
-      if (msg.role === 'user' && msg.sourceType === 'kin' && msg.sourceId) {
+      if (msg.sourceType === 'kin' && msg.sourceId) {
         const kinName = kinNameMap.get(msg.sourceId) ?? 'Unknown Kin'
         if (msg.inReplyTo) {
           content = `[Reply from Kin "${kinName}"]\n${content}`
@@ -489,11 +516,58 @@ async function buildMessageHistory(kinId: string) {
           content = `${prefix}\n${content}`
         }
       }
-      history.push({
-        role: msg.role as 'user' | 'assistant',
-        content,
-      })
+      history.push({ role: 'user', content })
+    } else if (msg.role === 'assistant') {
+      // Parse tool calls from the JSON column
+      let toolCalls: Array<{ id: string; name: string; args: unknown; result?: unknown }> | null = null
+      if (msg.toolCalls) {
+        try {
+          toolCalls = JSON.parse(msg.toolCalls as string)
+        } catch {
+          toolCalls = null
+        }
+      }
+
+      if (toolCalls && toolCalls.length > 0) {
+        // Build structured content: text part (if any) + tool call parts
+        const assistantContent: Array<
+          | { type: 'text'; text: string }
+          | { type: 'tool-call'; toolCallId: string; toolName: string; input: unknown }
+        > = []
+
+        const textContent = msg.content ?? ''
+        if (textContent) {
+          assistantContent.push({ type: 'text', text: textContent })
+        }
+
+        for (const tc of toolCalls) {
+          assistantContent.push({
+            type: 'tool-call',
+            toolCallId: tc.id,
+            toolName: tc.name,
+            input: tc.args,
+          })
+        }
+
+        history.push({ role: 'assistant', content: assistantContent })
+
+        // Emit a corresponding tool result message
+        history.push({
+          role: 'tool' as const,
+          content: toolCalls.map((tc) => ({
+            type: 'tool-result' as const,
+            toolCallId: tc.id,
+            toolName: tc.name,
+            output: { type: 'json' as const, value: (tc.result ?? null) as import('ai').JSONValue },
+          })),
+        })
+      } else {
+        // Simple text-only assistant message
+        history.push({ role: 'assistant', content: msg.content ?? '' })
+      }
     }
+    // role === 'tool' and 'system' messages from DB are skipped —
+    // tool results are reconstructed from the assistant's toolCalls JSON above
   }
 
   return history
@@ -605,6 +679,10 @@ let workerInterval: ReturnType<typeof setInterval> | null = null
  */
 export function startQueueWorker() {
   if (workerInterval) return
+
+  // On startup, reset any items stuck in 'processing' (e.g. after a crash)
+  recoverStaleProcessingItems()
+  recoverStaleTasks()
 
   workerInterval = setInterval(async () => {
     const allKins = await db.select({ id: kins.id }).from(kins).all()

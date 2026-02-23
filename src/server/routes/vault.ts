@@ -21,7 +21,11 @@ vaultRoutes.get('/', async (c) => {
 
 // POST /api/vault — create a new secret
 vaultRoutes.post('/', async (c) => {
-  const { key, value } = (await c.req.json()) as { key: string; value: string }
+  const { key, value, description } = (await c.req.json()) as {
+    key: string
+    value: string
+    description?: string
+  }
 
   if (!key || !value) {
     return c.json(
@@ -44,7 +48,7 @@ vaultRoutes.post('/', async (c) => {
     )
   }
 
-  const secret = await createSecret(key, value)
+  const secret = await createSecret(key, value, undefined, description)
   log.info({ secretId: secret.id, key }, 'Vault secret created')
   return c.json({ secret }, 201)
 })
@@ -52,7 +56,7 @@ vaultRoutes.post('/', async (c) => {
 // PATCH /api/vault/:id — update a secret
 vaultRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id')
-  const body = (await c.req.json()) as { key?: string; value?: string }
+  const body = (await c.req.json()) as { key?: string; value?: string; description?: string }
 
   const updated = await updateSecret(id, body)
   if (!updated) {

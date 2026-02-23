@@ -1,30 +1,61 @@
-import { generateText, stepCountIs } from 'ai'
-import { eq, and, desc, asc, inArray } from 'drizzle-orm'
+import { streamText, stepCountIs } from 'ai'
+import { eq, and, desc, asc, inArray, like, or, sql } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
-import { db } from '@/server/db/index'
+import { db, sqlite } from '@/server/db/index'
 import { createLogger } from '@/server/logger'
 import { tasks, kins, messages } from '@/server/db/schema'
 import { enqueueMessage } from '@/server/services/queue'
 import { buildSystemPrompt } from '@/server/services/prompt-builder'
 import { resolveLLMModel } from '@/server/services/kin-engine'
 import { toolRegistry } from '@/server/tools/index'
+import { resolveMCPTools } from '@/server/services/mcp'
+import { resolveCustomTools } from '@/server/services/custom-tools'
 import { sseManager } from '@/server/sse/index'
 import { config } from '@/server/config'
-import type { TaskStatus, TaskMode } from '@/shared/types'
+import type { TaskStatus, TaskMode, KinToolConfig } from '@/shared/types'
 
 const log = createLogger('tasks')
+
+/** Build a public avatar URL from a Kin's stored avatar path */
+function kinAvatarUrl(kinId: string, avatarPath: string | null, updatedAt?: Date | null): string | null {
+  if (!avatarPath) return null
+  const ext = avatarPath.split('.').pop() ?? 'png'
+  const v = updatedAt ? updatedAt.getTime() : Date.now()
+  return `/api/uploads/kins/${kinId}/avatar.${ext}?v=${v}`
+}
+
+// ─── Startup Recovery ────────────────────────────────────────────────────────
+
+/**
+ * Recover orphaned tasks stuck in 'pending' or 'in_progress' status.
+ * This can happen after a crash or restart. Called once at worker startup.
+ * Marks them as 'failed' so they don't block concurrent limits or spin forever.
+ */
+export function recoverStaleTasks() {
+  // Note: 'awaiting_human_input' is NOT recovered — the human can still respond after restart
+  const result = sqlite.run(
+    `UPDATE tasks SET status = 'failed', error = 'Interrupted by server restart', updated_at = ? WHERE status IN ('pending', 'in_progress')`,
+    [Date.now()],
+  )
+  if (result.changes > 0) {
+    log.warn({ count: result.changes }, 'Recovered stale tasks → marked as failed')
+  }
+}
 
 // ─── Spawn ───────────────────────────────────────────────────────────────────
 
 interface SpawnParams {
   parentKinId: string
+  title?: string
   description: string
   mode: TaskMode
   spawnType: 'self' | 'other'
   sourceKinId?: string
   model?: string
   parentTaskId?: string
+  cronId?: string
   depth?: number
+  allowHumanPrompt?: boolean
 }
 
 export async function spawnTask(params: SpawnParams) {
@@ -56,19 +87,33 @@ export async function spawnTask(params: SpawnParams) {
     spawnType: params.spawnType,
     mode: params.mode,
     model: params.model ?? null,
+    title: params.title ?? null,
     description: params.description,
     status: 'pending',
     depth,
     parentTaskId: params.parentTaskId ?? null,
+    cronId: params.cronId ?? null,
+    allowHumanPrompt: params.allowHumanPrompt ?? true,
     createdAt: now,
     updatedAt: now,
   })
 
-  // Emit SSE event
+  // Resolve executing Kin info for SSE metadata
+  const executingKinId = params.sourceKinId ?? params.parentKinId
+  const executingKin = await db.select().from(kins).where(eq(kins.id, executingKinId)).get()
+
+  // Emit SSE event with metadata for live task card
   sseManager.sendToKin(params.parentKinId, {
     type: 'task:status',
     kinId: params.parentKinId,
-    data: { taskId, kinId: params.parentKinId, status: 'pending' },
+    data: {
+      taskId,
+      kinId: params.parentKinId,
+      status: 'pending',
+      title: params.title ?? params.description,
+      senderName: executingKin?.name ?? null,
+      senderAvatarUrl: kinAvatarUrl(executingKinId, executingKin?.avatarPath ?? null, executingKin?.updatedAt),
+    },
   })
 
   log.info({ taskId, parentKinId: params.parentKinId, mode: params.mode, spawnType: params.spawnType, depth }, 'Task spawned')
@@ -82,6 +127,12 @@ export async function spawnTask(params: SpawnParams) {
 }
 
 // ─── Sub-Kin Execution ───────────────────────────────────────────────────────
+
+/**
+ * Re-trigger sub-Kin execution after pause (e.g., human prompt response).
+ * Reads accumulated message history from DB and starts a new LLM stream.
+ */
+export const resumeSubKin = executeSubKin
 
 async function executeSubKin(taskId: string) {
   const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
@@ -106,10 +157,22 @@ async function executeSubKin(taskId: string) {
   sseManager.sendToKin(task.parentKinId, {
     type: 'task:status',
     kinId: task.parentKinId,
-    data: { taskId, kinId: task.parentKinId, status: 'in_progress' },
+    data: {
+      taskId,
+      kinId: task.parentKinId,
+      status: 'in_progress',
+      title: task.title ?? task.description,
+      senderName: kinIdentity.name,
+      senderAvatarUrl: kinAvatarUrl(kinIdentity.id, kinIdentity.avatarPath, kinIdentity.updatedAt),
+    },
   })
 
   try {
+    // Fetch previous cron runs for journal continuity
+    const previousCronRuns = task.cronId
+      ? await fetchPreviousCronRuns(task.cronId, 5)
+      : undefined
+
     // Build sub-Kin system prompt
     const systemPrompt = buildSystemPrompt({
       kin: {
@@ -124,6 +187,7 @@ async function executeSubKin(taskId: string) {
       kinDirectory: [],
       isSubKin: true,
       taskDescription: task.description,
+      previousCronRuns,
       userLanguage: 'en',
     })
 
@@ -134,12 +198,50 @@ async function executeSubKin(taskId: string) {
       throw new Error('No LLM provider available')
     }
 
-    // Resolve sub-Kin tools
-    const tools = toolRegistry.resolve({
+    // Resolve tools: spawned Kin's full toolset (minus excluded) + sub-Kin communication tools
+    const kinToolConfig: KinToolConfig | null = kinIdentity.toolConfig
+      ? JSON.parse(kinIdentity.toolConfig)
+      : null
+
+    // Native tools resolved as the spawned Kin (same as a main Kin)
+    const nativeTools = toolRegistry.resolve({
+      kinId: kinIdentity.id,
+      taskId,
+      isSubKin: false,
+    })
+
+    // Filter disabled native tools per Kin config
+    if (kinToolConfig?.disabledNativeTools?.length) {
+      for (const name of kinToolConfig.disabledNativeTools) {
+        delete nativeTools[name]
+      }
+    }
+
+    // Remove tools not appropriate for sub-Kins
+    const SUB_KIN_EXCLUDED_TOOLS = [
+      'spawn_self', 'spawn_kin',
+      'respond_to_task', 'cancel_task', 'list_tasks',
+      'send_message', 'reply', 'list_kins',
+      'create_cron', 'update_cron', 'delete_cron', 'list_crons',
+      'add_mcp_server', 'update_mcp_server', 'remove_mcp_server', 'list_mcp_servers',
+      'register_tool', 'list_custom_tools',
+    ]
+    for (const name of SUB_KIN_EXCLUDED_TOOLS) {
+      delete nativeTools[name]
+    }
+
+    // Sub-Kin-specific tools (scoped to parent for communication back)
+    const subKinTools = toolRegistry.resolve({
       kinId: task.parentKinId,
       taskId,
       isSubKin: true,
     })
+
+    // MCP + custom tools for the spawned Kin
+    const mcpTools = await resolveMCPTools(kinIdentity.id, kinToolConfig)
+    const customToolDefs = await resolveCustomTools(kinIdentity.id)
+
+    const tools = { ...nativeTools, ...subKinTools, ...mcpTools, ...customToolDefs }
 
     // Build task message history (only messages for this task)
     const taskMessages = await db
@@ -172,8 +274,12 @@ async function executeSubKin(taskId: string) {
 
     const hasTools = Object.keys(tools).length > 0
 
-    // Execute LLM (non-streaming for sub-Kins)
-    const result = await generateText({
+    // Execute LLM with streaming (same pattern as kin-engine)
+    const assistantMessageId = uuid()
+    let fullContent = ''
+    const toolCallsLog: Array<{ id: string; name: string; args: unknown; result?: unknown; offset: number }> = []
+
+    const result = streamText({
       model,
       system: systemPrompt,
       messages: messageHistory,
@@ -181,18 +287,78 @@ async function executeSubKin(taskId: string) {
       stopWhen: hasTools ? stepCountIs(config.tools.maxSteps) : undefined,
     })
 
-    const responseText = result.text
+    for await (const part of result.fullStream) {
+      switch (part.type) {
+        case 'text-delta': {
+          fullContent += part.text
+          sseManager.sendToKin(task.parentKinId, {
+            type: 'chat:token',
+            kinId: task.parentKinId,
+            data: { messageId: assistantMessageId, token: part.text, taskId },
+          })
+          break
+        }
+        case 'tool-call': {
+          const contentOffset = fullContent.length
+          toolCallsLog.push({
+            id: part.toolCallId,
+            name: part.toolName,
+            args: part.input,
+            offset: contentOffset,
+          })
+          sseManager.sendToKin(task.parentKinId, {
+            type: 'chat:tool-call',
+            kinId: task.parentKinId,
+            data: {
+              messageId: assistantMessageId,
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              args: part.input,
+              contentOffset,
+              taskId,
+            },
+          })
+          break
+        }
+        case 'tool-result': {
+          const logged = toolCallsLog.find((tc) => tc.id === part.toolCallId)
+          if (logged) logged.result = part.output
+          sseManager.sendToKin(task.parentKinId, {
+            type: 'chat:tool-result',
+            kinId: task.parentKinId,
+            data: {
+              messageId: assistantMessageId,
+              toolCallId: part.toolCallId,
+              toolName: part.toolName,
+              result: part.output,
+              taskId,
+            },
+          })
+          break
+        }
+      }
+    }
 
-    // Save assistant message
+    const responseText = fullContent
+
+    // Save assistant message with tool calls
     await db.insert(messages).values({
-      id: uuid(),
+      id: assistantMessageId,
       kinId: task.parentKinId,
       taskId,
       role: 'assistant',
       content: responseText,
       sourceType: 'kin',
-      sourceId: task.parentKinId,
+      sourceId: kinIdentity.id,
+      toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
       createdAt: new Date(),
+    })
+
+    // Emit chat:done so the frontend knows streaming is over
+    sseManager.sendToKin(task.parentKinId, {
+      type: 'chat:done',
+      kinId: task.parentKinId,
+      data: { messageId: assistantMessageId, content: responseText, taskId },
     })
 
     // If task wasn't already resolved by tools (update_task_status), mark completed
@@ -218,6 +384,9 @@ export async function resolveTask(
   const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
   if (!task) return
 
+  // The Kin that actually executed the task (target Kin for 'other', parent for 'self')
+  const executingKinId = task.sourceKinId ?? task.parentKinId
+
   log.info({ taskId, status, mode: task.mode }, 'Task resolved')
 
   await db
@@ -230,32 +399,62 @@ export async function resolveTask(
     })
     .where(eq(tasks.id, taskId))
 
+  // Resolve executing Kin info for SSE metadata
+  const executingKin = await db.select().from(kins).where(eq(kins.id, executingKinId)).get()
+
   // Emit SSE
   sseManager.sendToKin(task.parentKinId, {
     type: 'task:done',
     kinId: task.parentKinId,
-    data: { taskId, kinId: task.parentKinId, status, result: result ?? null },
+    data: {
+      taskId,
+      kinId: task.parentKinId,
+      status,
+      result: result ?? null,
+      error: error ?? null,
+      title: task.title ?? task.description,
+      senderName: executingKin?.name ?? null,
+      senderAvatarUrl: kinAvatarUrl(executingKinId, executingKin?.avatarPath ?? null, executingKin?.updatedAt),
+    },
   })
 
-  // If await mode, deposit result in parent's queue
+  // Use title for UI display, fall back to description
+  const taskLabel = task.title ?? task.description
+
+  const taskMetadata = JSON.stringify({ resolvedTaskId: taskId })
+
+  // If await mode, deposit result (or failure) in parent's queue
   if (task.mode === 'await' && status === 'completed' && result) {
     await enqueueMessage({
       kinId: task.parentKinId,
       messageType: 'task_result',
-      content: `[Task: ${task.description}] Result: ${result}`,
+      content: `[Task: ${taskLabel}] Result: ${result}`,
       sourceType: 'task',
-      sourceId: taskId,
+      sourceId: executingKinId,
       priority: config.queue.taskPriority,
+      taskId, // Used by kin-engine to set metadata.resolvedTaskId on the message
+    })
+  } else if (task.mode === 'await' && status === 'failed') {
+    await enqueueMessage({
+      kinId: task.parentKinId,
+      messageType: 'task_result',
+      content: `[Task failed: ${taskLabel}] Error: ${error ?? 'Unknown error'}`,
+      sourceType: 'task',
+      sourceId: executingKinId,
+      priority: config.queue.taskPriority,
+      taskId,
     })
   } else if (task.mode === 'async' && status === 'completed' && result) {
     // Async mode: deposit as informational message (no queue entry)
+    const msgId = uuid()
     await db.insert(messages).values({
-      id: uuid(),
+      id: msgId,
       kinId: task.parentKinId,
       role: 'user',
-      content: `[Task completed: ${task.description}] ${result}`,
+      content: `[Task completed: ${taskLabel}] ${result}`,
       sourceType: 'task',
-      sourceId: taskId,
+      sourceId: executingKinId,
+      metadata: taskMetadata,
       createdAt: new Date(),
     })
 
@@ -264,10 +463,39 @@ export async function resolveTask(
       type: 'chat:message',
       kinId: task.parentKinId,
       data: {
-        id: uuid(),
+        id: msgId,
         role: 'user',
-        content: `[Task completed: ${task.description}] ${result}`,
+        content: `[Task completed: ${taskLabel}] ${result}`,
         sourceType: 'task',
+        sourceId: executingKinId,
+        resolvedTaskId: taskId,
+        createdAt: Date.now(),
+      },
+    })
+  } else if (task.mode === 'async' && status === 'failed') {
+    // Async mode: deposit failure as informational message
+    const msgId = uuid()
+    await db.insert(messages).values({
+      id: msgId,
+      kinId: task.parentKinId,
+      role: 'user',
+      content: `[Task failed: ${taskLabel}] Error: ${error ?? 'Unknown error'}`,
+      sourceType: 'task',
+      sourceId: executingKinId,
+      metadata: taskMetadata,
+      createdAt: new Date(),
+    })
+
+    sseManager.sendToKin(task.parentKinId, {
+      type: 'chat:message',
+      kinId: task.parentKinId,
+      data: {
+        id: msgId,
+        role: 'user',
+        content: `[Task failed: ${taskLabel}] Error: ${error ?? 'Unknown error'}`,
+        sourceType: 'task',
+        sourceId: executingKinId,
+        resolvedTaskId: taskId,
         createdAt: Date.now(),
       },
     })
@@ -288,6 +516,10 @@ export async function cancelTask(taskId: string, kinId: string) {
     return false
   }
 
+  // Cancel any pending human prompts for this task
+  const { cancelPendingPromptsForTask } = await import('@/server/services/human-prompts')
+  await cancelPendingPromptsForTask(taskId)
+
   await db
     .update(tasks)
     .set({ status: 'cancelled', updatedAt: new Date() })
@@ -296,7 +528,12 @@ export async function cancelTask(taskId: string, kinId: string) {
   sseManager.sendToKin(kinId, {
     type: 'task:status',
     kinId,
-    data: { taskId, kinId, status: 'cancelled' },
+    data: {
+      taskId,
+      kinId,
+      status: 'cancelled',
+      title: task.title ?? task.description,
+    },
   })
 
   return true
@@ -326,6 +563,67 @@ export async function listAllTasks(statusFilter?: TaskStatus) {
     .from(tasks)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(tasks.createdAt))
+    .all()
+}
+
+interface ListTasksPaginatedParams {
+  status?: TaskStatus
+  kinId?: string
+  cronId?: string
+  search?: string
+  limit: number
+  offset: number
+}
+
+export async function listTasksPaginated(params: ListTasksPaginatedParams) {
+  const { status, kinId, cronId, search, limit, offset } = params
+  const conditions: ReturnType<typeof eq>[] = []
+
+  if (status) conditions.push(eq(tasks.status, status))
+  if (kinId) conditions.push(eq(tasks.parentKinId, kinId))
+  if (cronId) conditions.push(eq(tasks.cronId, cronId))
+  if (search) {
+    const pattern = `%${search}%`
+    conditions.push(or(like(tasks.title, pattern), like(tasks.description, pattern))!)
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(tasks)
+    .where(whereClause)
+    .all()
+
+  const rows = await db
+    .select()
+    .from(tasks)
+    .where(whereClause)
+    .orderBy(desc(tasks.createdAt))
+    .limit(limit)
+    .offset(offset)
+    .all()
+
+  return { tasks: rows, total: count }
+}
+
+// ─── Cron Journal ────────────────────────────────────────────────────────────
+
+export async function fetchPreviousCronRuns(cronId: string, limit = 5) {
+  return db
+    .select({
+      status: tasks.status,
+      result: tasks.result,
+      createdAt: tasks.createdAt,
+      updatedAt: tasks.updatedAt,
+    })
+    .from(tasks)
+    .where(and(
+      eq(tasks.cronId, cronId),
+      inArray(tasks.status, ['completed', 'failed']),
+    ))
+    .orderBy(desc(tasks.createdAt))
+    .limit(limit)
     .all()
 }
 

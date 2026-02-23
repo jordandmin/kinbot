@@ -1,5 +1,8 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
-import Editor, { type OnMount, type BeforeMount } from '@monaco-editor/react'
+import { useCallback, useMemo } from 'react'
+import CodeMirror from '@uiw/react-codemirror'
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
+import { languages } from '@codemirror/language-data'
+import { EditorView } from '@codemirror/view'
 import { useTheme } from 'next-themes'
 import { cn } from '@/client/lib/utils'
 
@@ -11,7 +14,7 @@ interface MarkdownEditorProps {
   className?: string
 }
 
-/** Read a CSS variable from :root and convert to hex via Canvas 2D (handles oklch, hsl, rgb, etc.) */
+/** Read a CSS variable from :root and resolve to hex via Canvas 2D */
 function cssVarToHex(varName: string, fallback: string): string {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
   if (!raw) return fallback
@@ -30,65 +33,85 @@ function cssVarToHex(varName: string, fallback: string): string {
   }
 }
 
-function buildThemeColors() {
-  const bg = cssVarToHex('--color-background', '#fafafa')
-  const fg = cssVarToHex('--color-foreground', '#1a1a2e')
+function buildThemeExtension(isDark: boolean) {
+  const bg = cssVarToHex('--color-background', isDark ? '#1a1a2e' : '#fafafa')
+  const fg = cssVarToHex('--color-foreground', isDark ? '#fafafa' : '#1a1a2e')
   const primary = cssVarToHex('--color-primary', '#7c3aed')
-  const muted = cssVarToHex('--color-muted', '#f0f0f5')
+  const muted = cssVarToHex('--color-muted', isDark ? '#2a2a3e' : '#f0f0f5')
   const mutedFg = cssVarToHex('--color-muted-foreground', '#6b6b80')
-  const border = cssVarToHex('--color-border', '#e5e5ea')
-  const accent = cssVarToHex('--color-accent', '#ede0f0')
-  const info = cssVarToHex('--color-info', '#3b82f6')
-  const success = cssVarToHex('--color-success', '#22c55e')
-  const warning = cssVarToHex('--color-warning', '#eab308')
-  const destructive = cssVarToHex('--color-destructive', '#ef4444')
-  return { bg, fg, primary, muted, mutedFg, border, accent, info, success, warning, destructive }
-}
+  const border = cssVarToHex('--color-border', isDark ? '#3a3a4e' : '#e5e5ea')
 
-const THEME_NAME = 'kinbot'
-
-function defineKinbotTheme(monaco: Parameters<BeforeMount>[0], isDark: boolean) {
-  const c = buildThemeColors()
-  monaco.editor.defineTheme(THEME_NAME, {
-    base: isDark ? 'vs-dark' : 'vs',
-    inherit: true,
-    rules: [
-      // Markdown headings
-      { token: 'keyword.md', foreground: c.primary.slice(1), fontStyle: 'bold' },
-      // Bold
-      { token: 'strong.md', foreground: c.fg.slice(1), fontStyle: 'bold' },
-      // Italic
-      { token: 'emphasis.md', foreground: c.fg.slice(1), fontStyle: 'italic' },
-      // Links
-      { token: 'string.link.md', foreground: c.info.slice(1) },
-      // Inline code
-      { token: 'variable.md', foreground: c.success.slice(1) },
-      // List markers
-      { token: 'punctuation.md', foreground: c.primary.slice(1) },
-      // Blockquotes
-      { token: 'comment.md', foreground: c.mutedFg.slice(1), fontStyle: 'italic' },
-      // HR
-      { token: 'meta.separator.md', foreground: c.border.slice(1) },
-    ],
-    colors: {
-      'editor.background': c.bg,
-      'editor.foreground': c.fg,
-      'editor.lineHighlightBackground': c.muted + '40',
-      'editor.selectionBackground': c.primary + '30',
-      'editor.inactiveSelectionBackground': c.primary + '18',
-      'editorLineNumber.foreground': c.mutedFg + '80',
-      'editorLineNumber.activeForeground': c.primary,
-      'editorCursor.foreground': c.primary,
-      'editorIndentGuide.background': c.border + '40',
-      'editorIndentGuide.activeBackground': c.border,
-      'editor.selectionHighlightBackground': c.accent + '40',
-      'editorWidget.background': c.bg,
-      'editorWidget.border': c.border,
-      'scrollbarSlider.background': c.mutedFg + '20',
-      'scrollbarSlider.hoverBackground': c.mutedFg + '40',
-      'scrollbarSlider.activeBackground': c.mutedFg + '60',
+  return EditorView.theme({
+    '&': {
+      backgroundColor: bg,
+      color: fg,
+      fontSize: '13px',
+      fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
     },
-  })
+    '.cm-content': {
+      padding: '12px 0',
+      lineHeight: '20px',
+      caretColor: primary,
+    },
+    '.cm-cursor': {
+      borderLeftColor: primary,
+    },
+    '&.cm-focused .cm-cursor': {
+      borderLeftColor: primary,
+    },
+    '.cm-gutters': {
+      backgroundColor: bg,
+      color: mutedFg + '80',
+      border: 'none',
+      minWidth: '3em',
+    },
+    '.cm-activeLineGutter': {
+      backgroundColor: 'transparent',
+      color: primary,
+    },
+    '.cm-activeLine': {
+      backgroundColor: muted + '40',
+    },
+    '&.cm-focused .cm-activeLine': {
+      backgroundColor: muted + '60',
+    },
+    '.cm-selectionBackground': {
+      backgroundColor: primary + '30 !important',
+    },
+    '&.cm-focused .cm-selectionBackground': {
+      backgroundColor: primary + '30 !important',
+    },
+    '.cm-line': {
+      padding: '0 12px 0 4px',
+    },
+    '.cm-scroller': {
+      overflow: 'auto',
+    },
+    '.cm-scroller::-webkit-scrollbar': {
+      width: '8px',
+    },
+    '.cm-scroller::-webkit-scrollbar-thumb': {
+      backgroundColor: mutedFg + '20',
+      borderRadius: '4px',
+    },
+    '.cm-scroller::-webkit-scrollbar-thumb:hover': {
+      backgroundColor: mutedFg + '40',
+    },
+    // Syntax colors
+    '.cm-header': { color: primary, fontWeight: 'bold' },
+    '.cm-strong': { fontWeight: 'bold' },
+    '.cm-emphasis': { fontStyle: 'italic' },
+    '.cm-link': { color: cssVarToHex('--color-info', '#3b82f6'), textDecoration: 'none' },
+    '.cm-url': { color: mutedFg },
+    '.cm-meta': { color: primary },
+    '.cm-comment': { color: mutedFg, fontStyle: 'italic' },
+    // Fenced code
+    '.cm-monospace': { color: cssVarToHex('--color-success', '#22c55e') },
+    // Focus outline handled by parent wrapper
+    '&.cm-focused': {
+      outline: 'none',
+    },
+  }, { dark: isDark })
 }
 
 export function MarkdownEditor({
@@ -99,105 +122,47 @@ export function MarkdownEditor({
   className,
 }: MarkdownEditorProps) {
   const { resolvedTheme } = useTheme()
-  const [isFocused, setIsFocused] = useState(false)
-  const editorRef = useRef<Parameters<OnMount>[0] | null>(null)
-  const monacoRef = useRef<Parameters<BeforeMount>[0] | null>(null)
-
-  // Use a ref so callbacks always read the latest value
   const isDark = resolvedTheme === 'dark'
-  const isDarkRef = useRef(isDark)
-  isDarkRef.current = isDark
 
-  const handleBeforeMount: BeforeMount = (monaco) => {
-    monacoRef.current = monaco
-    // Use ref to get the current value, not the stale closure
-    defineKinbotTheme(monaco, isDarkRef.current)
-  }
+  const extensions = useMemo(() => [
+    markdown({ base: markdownLanguage, codeLanguages: languages }),
+    EditorView.lineWrapping,
+  ], [])
 
-  const handleMount: OnMount = (editor) => {
-    editorRef.current = editor
-    editor.onDidFocusEditorWidget(() => setIsFocused(true))
-    editor.onDidBlurEditorWidget(() => setIsFocused(false))
+  const theme = useMemo(() => buildThemeExtension(isDark), [isDark])
 
-    // Force theme update now that Monaco is fully loaded
-    // (resolvedTheme may have changed since beforeMount)
-    if (monacoRef.current) {
-      defineKinbotTheme(monacoRef.current, isDarkRef.current)
-      monacoRef.current.editor.setTheme(THEME_NAME)
-    }
-  }
-
-  // Re-define theme when palette or dark/light mode changes
-  const updateTheme = useCallback(() => {
-    if (!monacoRef.current) return
-    defineKinbotTheme(monacoRef.current, isDarkRef.current)
-    monacoRef.current.editor.setTheme(THEME_NAME)
-  }, [])
-
-  useEffect(() => {
-    updateTheme()
-  }, [resolvedTheme, updateTheme])
-
-  // Also observe palette changes (data-palette attribute on <html>)
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      // Small delay to let CSS variables update
-      requestAnimationFrame(() => updateTheme())
-    })
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class', 'data-palette'],
-    })
-    return () => observer.disconnect()
-  }, [updateTheme])
+  const handleChange = useCallback((val: string) => {
+    onChange(val)
+  }, [onChange])
 
   return (
     <div className={cn(
       'overflow-hidden rounded-md border border-input transition-[color,box-shadow]',
-      isFocused && 'border-ring ring-[3px] ring-ring/50',
-      className
+      '[&:has(.cm-focused)]:border-ring [&:has(.cm-focused)]:ring-[3px] [&:has(.cm-focused)]:ring-ring/50',
+      className,
     )}>
-      <Editor
-        height={height}
-        language="markdown"
-        theme={THEME_NAME}
+      <CodeMirror
         value={value}
-        onChange={(v) => onChange(v ?? '')}
-        beforeMount={handleBeforeMount}
-        onMount={handleMount}
-        options={{
-          minimap: { enabled: false },
-          lineNumbers: 'on',
-          wordWrap: 'on',
-          scrollBeyondLastLine: false,
-          folding: true,
-          foldingHighlight: false,
-          glyphMargin: false,
-          lineDecorationsWidth: 4,
-          lineNumbersMinChars: 3,
-          renderLineHighlight: 'line',
-          overviewRulerLanes: 0,
-          hideCursorInOverviewRuler: true,
-          overviewRulerBorder: false,
-          scrollbar: {
-            vertical: 'auto',
-            horizontal: 'hidden',
-            verticalScrollbarSize: 8,
-          },
-          fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-          fontSize: 13,
-          lineHeight: 20,
-          padding: { top: 12, bottom: 12 },
-          readOnly,
-          domReadOnly: readOnly,
-          contextmenu: false,
-          quickSuggestions: false,
-          suggestOnTriggerCharacters: false,
-          parameterHints: { enabled: false },
-          tabCompletion: 'off',
-          bracketPairColorization: { enabled: false },
-          guides: { indentation: false },
-          renderWhitespace: 'none',
+        onChange={handleChange}
+        height={height}
+        theme={theme}
+        extensions={extensions}
+        readOnly={readOnly}
+        basicSetup={{
+          lineNumbers: true,
+          foldGutter: true,
+          highlightActiveLine: true,
+          highlightActiveLineGutter: true,
+          bracketMatching: false,
+          closeBrackets: false,
+          autocompletion: false,
+          crosshairCursor: false,
+          rectangularSelection: false,
+          highlightSelectionMatches: false,
+          searchKeymap: false,
+          lintKeymap: false,
+          completionKeymap: false,
+          foldKeymap: true,
         }}
       />
     </div>

@@ -3,12 +3,52 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { tool as aiTool } from 'ai'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
+import { readdirSync, existsSync } from 'fs'
+import { homedir } from 'os'
+import { join } from 'path'
 import { db } from '@/server/db/index'
 import { createLogger } from '@/server/logger'
 import { mcpServers, kinMcpServers } from '@/server/db/schema'
 import type { Tool } from 'ai'
+import type { KinToolConfig } from '@/shared/types'
 
 const log = createLogger('mcp')
+
+// ─── PATH augmentation for child processes ───────────────────────────────────
+// Bun installed via snap has a restricted PATH and sandboxed HOME that may not
+// include node/npx. Detect common node installation paths and build an augmented PATH.
+const augmentedPath = (() => {
+  const basePath = process.env.PATH ?? ''
+  const extraPaths: string[] = []
+
+  // Use SNAP_REAL_HOME if running inside snap, otherwise fall back to os.homedir()
+  const realHome = process.env.SNAP_REAL_HOME || homedir()
+
+  // NVM: ~/.nvm/versions/node/*/bin (use the latest)
+  const nvmDir = join(realHome, '.nvm', 'versions', 'node')
+  if (existsSync(nvmDir)) {
+    try {
+      const versions = readdirSync(nvmDir).sort().reverse()
+      for (const v of versions) {
+        const binDir = join(nvmDir, v, 'bin')
+        if (existsSync(binDir)) {
+          extraPaths.push(binDir)
+          break // only use the latest
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Common system paths
+  for (const p of ['/usr/local/bin', '/usr/bin']) {
+    if (!basePath.includes(p)) extraPaths.push(p)
+  }
+
+  if (extraPaths.length === 0) return basePath
+  const result = [...extraPaths, ...basePath.split(':')].join(':')
+  log.debug({ extraPaths }, 'Augmented PATH for MCP child processes')
+  return result
+})()
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -39,6 +79,12 @@ async function getConnection(serverId: string): Promise<MCPConnection | null> {
   const server = await db.select().from(mcpServers).where(eq(mcpServers.id, serverId)).get()
   if (!server) return null
 
+  // Don't connect to pending servers
+  if (server.status !== 'active') {
+    log.debug({ serverId, status: server.status }, 'Skipping non-active MCP server')
+    return null
+  }
+
   try {
     const args = server.args ? JSON.parse(server.args) as string[] : []
     const env = server.env ? JSON.parse(server.env) as Record<string, string> : {}
@@ -46,7 +92,7 @@ async function getConnection(serverId: string): Promise<MCPConnection | null> {
     const transport = new StdioClientTransport({
       command: server.command,
       args,
-      env: { ...process.env, ...env } as Record<string, string>,
+      env: { ...process.env, PATH: augmentedPath, ...env } as Record<string, string>,
     })
 
     const client = new Client({
@@ -100,32 +146,100 @@ export async function disconnectAll() {
   }
 }
 
-// ─── Resolve MCP tools for a Kin ─────────────────────────────────────────────
+// ─── MCP tool summary for system prompt ──────────────────────────────────────
+
+export interface MCPToolSummary {
+  serverName: string
+  tools: Array<{ name: string; description: string }>
+}
 
 /**
- * Get all MCP tools available to a specific Kin.
- * Returns AI SDK Tool objects keyed by `mcp_{serverName}_{toolName}`.
+ * Get a lightweight summary of MCP tools available to a Kin.
+ * Used for injection into the system prompt so the Kin knows what MCP tools are available.
+ * This reuses existing connections (or creates them) but only extracts metadata.
  */
-export async function resolveMCPTools(
-  kinId: string,
-): Promise<Record<string, Tool<any, any>>> {
-  // Get MCP servers assigned to this Kin
+export async function getMCPToolsSummary(kinId: string): Promise<MCPToolSummary[]> {
   const links = await db
     .select({ mcpServerId: kinMcpServers.mcpServerId })
     .from(kinMcpServers)
     .where(eq(kinMcpServers.kinId, kinId))
     .all()
 
-  if (links.length === 0) return {}
+  if (links.length === 0) return []
 
-  const resolved: Record<string, Tool<any, any>> = {}
+  const summaries: MCPToolSummary[] = []
 
   for (const link of links) {
     const conn = await getConnection(link.mcpServerId)
     if (!conn) continue
 
+    summaries.push({
+      serverName: conn.serverName,
+      tools: conn.tools.map((t) => ({
+        name: `mcp_${sanitizeName(conn.serverName)}_${sanitizeName(t.name)}`,
+        description: t.description,
+      })),
+    })
+  }
+
+  return summaries
+}
+
+// ─── Resolve MCP tools for a Kin ─────────────────────────────────────────────
+
+/**
+ * Get all MCP tools available to a specific Kin.
+ * Returns AI SDK Tool objects keyed by `mcp_{serverName}_{toolName}`.
+ *
+ * When `toolConfig` is provided, only tools explicitly allowed in
+ * `toolConfig.mcpAccess` are included — unless the server was created
+ * by this Kin and is active (auto-enabled).
+ */
+export async function resolveMCPTools(
+  kinId: string,
+  toolConfig?: KinToolConfig | null,
+): Promise<Record<string, Tool<any, any>>> {
+  // Get MCP servers assigned to this Kin via junction table
+  const links = await db
+    .select({ mcpServerId: kinMcpServers.mcpServerId })
+    .from(kinMcpServers)
+    .where(eq(kinMcpServers.kinId, kinId))
+    .all()
+
+  const linkedIds = new Set(links.map((l) => l.mcpServerId))
+
+  // Also include servers referenced in toolConfig.mcpAccess (may not be linked yet)
+  if (toolConfig?.mcpAccess) {
+    for (const serverId of Object.keys(toolConfig.mcpAccess)) {
+      if (toolConfig.mcpAccess[serverId].length > 0) {
+        linkedIds.add(serverId)
+      }
+    }
+  }
+
+  if (linkedIds.size === 0) return {}
+
+  const resolved: Record<string, Tool<any, any>> = {}
+
+  for (const serverId of linkedIds) {
+    const conn = await getConnection(serverId)
+    if (!conn) continue
+
+    // Determine which tools are allowed from this server
+    const accessList = toolConfig?.mcpAccess?.[serverId]
+    const server = await db.select().from(mcpServers).where(eq(mcpServers.id, serverId)).get()
+    const autoEnabled = !accessList && server?.createdByKinId === kinId && server?.status === 'active'
+
+    // If toolConfig exists and no explicit access and not auto-enabled → skip server
+    if (toolConfig && !accessList && !autoEnabled) continue
+
     for (const mcpTool of conn.tools) {
       const toolKey = `mcp_${sanitizeName(conn.serverName)}_${sanitizeName(mcpTool.name)}`
+
+      // Check per-tool access if there's an explicit allow-list (not '*')
+      if (accessList && !accessList.includes('*') && !accessList.includes(mcpTool.name)) {
+        continue
+      }
 
       resolved[toolKey] = aiTool({
         description: `[MCP: ${conn.serverName}] ${mcpTool.description}`,
@@ -138,6 +252,66 @@ export async function resolveMCPTools(
   }
 
   return resolved
+}
+
+/**
+ * Get MCP tools metadata for a Kin, used by the tools API endpoint.
+ * Returns ALL active MCP servers with per-tool enabled/disabled state.
+ * This shows all globally-configured servers so the user can enable/disable
+ * tools from any server for this Kin.
+ */
+export async function getMCPToolsForConfig(
+  kinId: string,
+  toolConfig: KinToolConfig | null,
+): Promise<Array<{
+  serverId: string
+  serverName: string
+  autoEnabled: boolean
+  tools: Array<{ name: string; description: string; enabled: boolean }>
+}>> {
+  // Query ALL MCP servers — not just those linked via kinMcpServers
+  const allServers = await db
+    .select()
+    .from(mcpServers)
+    .all()
+
+  log.debug({ kinId, serverCount: allServers.length }, 'getMCPToolsForConfig: found MCP servers')
+
+  if (allServers.length === 0) return []
+
+  const result: Array<{
+    serverId: string
+    serverName: string
+    autoEnabled: boolean
+    tools: Array<{ name: string; description: string; enabled: boolean }>
+  }> = []
+
+  for (const server of allServers) {
+    const accessList = toolConfig?.mcpAccess?.[server.id]
+    const autoEnabled = !accessList && server.createdByKinId === kinId && server.status === 'active'
+
+    // Try to connect — if it fails, still show the server (with no tools)
+    const conn = await getConnection(server.id)
+
+    result.push({
+      serverId: server.id,
+      serverName: conn?.serverName ?? server.name,
+      autoEnabled,
+      tools: conn
+        ? conn.tools.map((t) => {
+            let enabled = false
+            if (autoEnabled) {
+              enabled = true
+            } else if (accessList) {
+              enabled = accessList.includes('*') || accessList.includes(t.name)
+            }
+            return { name: t.name, description: t.description, enabled }
+          })
+        : [],
+    })
+  }
+
+  return result
 }
 
 // ─── Call an MCP tool ────────────────────────────────────────────────────────

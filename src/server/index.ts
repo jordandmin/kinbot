@@ -7,6 +7,8 @@ import { db, initVirtualTables } from '@/server/db/index'
 import { startQueueWorker } from '@/server/services/kin-engine'
 import { registerAllTools } from '@/server/tools/register'
 import { initCronScheduler } from '@/server/services/crons'
+import { Cron } from 'croner'
+import { cleanExpiredFiles } from '@/server/services/file-storage'
 
 const log = createLogger('server')
 
@@ -31,6 +33,12 @@ startQueueWorker()
 // Initialize cron scheduler (restore active crons from DB)
 log.info('Initializing cron scheduler...')
 initCronScheduler()
+
+// File storage cleanup cron
+new Cron(`*/${config.fileStorage.cleanupIntervalMin} * * * *`, async () => {
+  const count = await cleanExpiredFiles()
+  if (count > 0) log.info({ count }, 'File storage cleanup completed')
+})
 
 // Serve uploaded files
 app.use('/api/uploads/*', serveStatic({ root: config.upload.dir, rewriteRequestPath: (path) => path.replace('/api/uploads', '') }))

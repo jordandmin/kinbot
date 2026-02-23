@@ -6,6 +6,9 @@ import {
   searchContactsTool,
   createContactTool,
   updateContactTool,
+  deleteContactTool,
+  setContactNoteTool,
+  findContactByIdentifierTool,
 } from '@/server/tools/contact-tools'
 import {
   recallTool,
@@ -15,7 +18,14 @@ import {
   listMemoriesTool,
 } from '@/server/tools/memory-tools'
 import { searchHistoryTool } from '@/server/tools/history-tools'
-import { getSecretTool, redactMessageTool } from '@/server/tools/vault-tools'
+import {
+  getSecretTool,
+  redactMessageTool,
+  createSecretTool,
+  updateSecretTool,
+  deleteSecretTool,
+  searchSecretsTool,
+} from '@/server/tools/vault-tools'
 import {
   spawnSelfTool,
   spawnKinTool,
@@ -28,6 +38,7 @@ import {
   updateTaskStatusTool,
   requestInputTool,
 } from '@/server/tools/subtask-tools'
+import { promptHumanTool } from '@/server/tools/human-prompt-tools'
 import {
   sendMessageTool,
   replyTool,
@@ -38,6 +49,7 @@ import {
   updateCronTool,
   deleteCronTool,
   listCronsTool,
+  getCronJournalTool,
 } from '@/server/tools/cron-tools'
 import {
   registerToolTool,
@@ -46,6 +58,20 @@ import {
 } from '@/server/tools/custom-tool-tools'
 import { generateImageTool } from '@/server/tools/image-tools'
 import { runShellTool } from '@/server/tools/shell-tools'
+import {
+  addMcpServerTool,
+  updateMcpServerTool,
+  removeMcpServerTool,
+  listMcpServersTool,
+} from '@/server/tools/mcp-tools'
+import {
+  storeFileTool,
+  getStoredFileTool,
+  listStoredFilesTool,
+  searchStoredFilesTool,
+  updateStoredFileTool,
+  deleteStoredFileTool,
+} from '@/server/tools/file-storage-tools'
 
 const log = createLogger('tools')
 
@@ -65,6 +91,9 @@ export function registerAllTools(): void {
   toolRegistry.register('search_contacts', searchContactsTool)
   toolRegistry.register('create_contact', createContactTool)
   toolRegistry.register('update_contact', updateContactTool)
+  toolRegistry.register('delete_contact', deleteContactTool)
+  toolRegistry.register('set_contact_note', setContactNoteTool)
+  toolRegistry.register('find_contact_by_identifier', findContactByIdentifierTool)
 
   // Phase 12: Memory tools
   toolRegistry.register('recall', recallTool)
@@ -79,6 +108,10 @@ export function registerAllTools(): void {
   // Phase 14: Vault tools
   toolRegistry.register('get_secret', getSecretTool)
   toolRegistry.register('redact_message', redactMessageTool)
+  toolRegistry.register('create_secret', createSecretTool)
+  toolRegistry.register('update_secret', updateSecretTool)
+  toolRegistry.register('delete_secret', deleteSecretTool)
+  toolRegistry.register('search_secrets', searchSecretsTool)
 
   // Phase 15: Task tools (parent — main only)
   toolRegistry.register('spawn_self', spawnSelfTool)
@@ -92,6 +125,9 @@ export function registerAllTools(): void {
   toolRegistry.register('update_task_status', updateTaskStatusTool)
   toolRegistry.register('request_input', requestInputTool)
 
+  // Human-in-the-loop (main + sub-kin)
+  toolRegistry.register('prompt_human', promptHumanTool)
+
   // Phase 16: Inter-Kin tools (main only)
   toolRegistry.register('send_message', sendMessageTool)
   toolRegistry.register('reply', replyTool)
@@ -102,6 +138,7 @@ export function registerAllTools(): void {
   toolRegistry.register('update_cron', updateCronTool)
   toolRegistry.register('delete_cron', deleteCronTool)
   toolRegistry.register('list_crons', listCronsTool)
+  toolRegistry.register('get_cron_journal', getCronJournalTool)
   // Phase 19: Custom tools (main only)
   toolRegistry.register('register_tool', registerToolTool)
   toolRegistry.register('run_custom_tool', runCustomToolTool)
@@ -110,8 +147,22 @@ export function registerAllTools(): void {
   // Phase 21: Image generation (main only)
   toolRegistry.register('generate_image', generateImageTool)
 
+  // Phase 18: MCP management tools (main only)
+  toolRegistry.register('add_mcp_server', addMcpServerTool)
+  toolRegistry.register('update_mcp_server', updateMcpServerTool)
+  toolRegistry.register('remove_mcp_server', removeMcpServerTool)
+  toolRegistry.register('list_mcp_servers', listMcpServersTool)
+
   // Shell execution (main + sub-kin)
   toolRegistry.register('run_shell', runShellTool)
+
+  // File storage tools (main only)
+  toolRegistry.register('store_file', storeFileTool)
+  toolRegistry.register('get_stored_file', getStoredFileTool)
+  toolRegistry.register('list_stored_files', listStoredFilesTool)
+  toolRegistry.register('search_stored_files', searchStoredFilesTool)
+  toolRegistry.register('update_stored_file', updateStoredFileTool)
+  toolRegistry.register('delete_stored_file', deleteStoredFileTool)
 
   log.info({ count: toolRegistry.registeredCount }, 'Native tools registered')
 }

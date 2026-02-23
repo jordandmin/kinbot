@@ -12,6 +12,7 @@ type HandlersMap = Record<string, SSEEventHandler>
 interface SSEState {
   eventSource: EventSource | null
   reconnectTimer: ReturnType<typeof setTimeout> | null
+  teardownTimer: ReturnType<typeof setTimeout> | null
   subscribers: Set<React.MutableRefObject<HandlersMap>>
 }
 
@@ -22,6 +23,7 @@ function getState(): SSEState {
   const state: SSEState = {
     eventSource: null,
     reconnectTimer: null,
+    teardownTimer: null,
     subscribers: new Set(),
   }
   if (import.meta.hot) {
@@ -47,6 +49,10 @@ function dispatch(data: Record<string, unknown>) {
 }
 
 function connect() {
+  // Clean up stale EventSource that got into CLOSED state without onerror
+  if (state.eventSource && state.eventSource.readyState === EventSource.CLOSED) {
+    state.eventSource = null
+  }
   if (state.eventSource) return
 
   const es = new EventSource('/api/sse', { withCredentials: true })
@@ -67,17 +73,29 @@ function connect() {
   es.onerror = () => {
     es.close()
     state.eventSource = null
-    // Reconnect only if there are still active subscribers
-    if (state.subscribers.size > 0) {
-      state.reconnectTimer = setTimeout(connect, 3000)
-    }
+    // Always schedule reconnect — during HMR, subscribers may temporarily be 0
+    // but components will remount shortly. The teardown grace period handles
+    // the case where the page is truly unloading.
+    scheduleReconnect()
   }
+}
+
+function scheduleReconnect() {
+  if (state.reconnectTimer) return // Already scheduled
+  state.reconnectTimer = setTimeout(() => {
+    state.reconnectTimer = null
+    connect()
+  }, 3000)
 }
 
 function teardown() {
   if (state.reconnectTimer) {
     clearTimeout(state.reconnectTimer)
     state.reconnectTimer = null
+  }
+  if (state.teardownTimer) {
+    clearTimeout(state.teardownTimer)
+    state.teardownTimer = null
   }
   if (state.eventSource) {
     state.eventSource.close()
@@ -94,12 +112,30 @@ export function useSSE(handlers: HandlersMap) {
   handlersRef.current = handlers
 
   useEffect(() => {
+    // Cancel any pending teardown — a new subscriber is mounting
+    if (state.teardownTimer) {
+      clearTimeout(state.teardownTimer)
+      state.teardownTimer = null
+    }
     state.subscribers.add(handlersRef)
     connect()
 
     return () => {
       state.subscribers.delete(handlersRef)
-      if (state.subscribers.size === 0) teardown()
+      if (state.subscribers.size === 0) {
+        // Grace period: during HMR, components unmount then remount quickly.
+        // Wait before tearing down so we don't kill the connection needlessly.
+        state.teardownTimer = setTimeout(teardown, 5000)
+      }
     }
   }, [])
+}
+
+// ---------------------------------------------------------------------------
+// HMR — self-accept so Vite doesn't bubble up and cause a full reload.
+// The state is already persisted in import.meta.hot.data, so re-evaluation
+// of this module just picks up where it left off.
+// ---------------------------------------------------------------------------
+if (import.meta.hot) {
+  import.meta.hot.accept()
 }

@@ -1,18 +1,13 @@
-import { useTranslation } from 'react-i18next'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarSeparator,
 } from '@/client/components/ui/sidebar'
 import { KinList } from '@/client/components/sidebar/KinList'
 import { TaskList } from '@/client/components/sidebar/TaskList'
-import { Settings, User, LogOut } from 'lucide-react'
+import { CronList } from '@/client/components/sidebar/CronList'
 
 interface KinSummary {
   id: string
@@ -20,10 +15,12 @@ interface KinSummary {
   name: string
   role: string
   avatarUrl: string | null
+  model: string
 }
 
 interface AppSidebarProps {
   kins: KinSummary[]
+  llmModels: { id: string; name: string; providerId: string; providerType: string; capability: string }[]
   selectedKinSlug: string | null
   unavailableKinIds: Set<string>
   kinQueueState: Map<string, { isProcessing: boolean; queueSize: number }>
@@ -31,11 +28,11 @@ interface AppSidebarProps {
   onCreateKin: () => void
   onEditKin: (id: string) => void
   onReorderKins: (newOrder: string[]) => void
-  onLogout: () => void
 }
 
 export function AppSidebar({
   kins,
+  llmModels,
   selectedKinSlug,
   unavailableKinIds,
   kinQueueState,
@@ -43,11 +40,8 @@ export function AppSidebar({
   onCreateKin,
   onEditKin,
   onReorderKins,
-  onLogout,
 }: AppSidebarProps) {
-  const { t } = useTranslation()
   const navigate = useNavigate()
-  const location = useLocation()
 
   return (
     <Sidebar className="surface-sidebar">
@@ -67,6 +61,7 @@ export function AppSidebar({
       <SidebarContent>
         <KinList
           kins={kins}
+          llmModels={llmModels}
           selectedKinSlug={selectedKinSlug}
           unavailableKinIds={unavailableKinIds}
           kinQueueState={kinQueueState}
@@ -79,41 +74,15 @@ export function AppSidebar({
         <SidebarSeparator />
 
         <TaskList />
+
+        <SidebarSeparator />
+
+        <CronList
+          kins={kins.map((k) => ({ id: k.id, name: k.name, role: k.role, avatarUrl: k.avatarUrl }))}
+          llmModels={llmModels}
+        />
       </SidebarContent>
 
-      <SidebarSeparator />
-
-      {/* Footer navigation */}
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => navigate('/account')}
-              isActive={location.pathname === '/account'}
-              tooltip={t('sidebar.account')}
-            >
-              <User className="size-4" />
-              <span>{t('sidebar.account')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => navigate('/settings')}
-              isActive={location.pathname === '/settings'}
-              tooltip={t('sidebar.settings')}
-            >
-              <Settings className="size-4" />
-              <span>{t('sidebar.settings')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={onLogout} tooltip={t('sidebar.logout')}>
-              <LogOut className="size-4" />
-              <span>{t('sidebar.logout')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   )
 }

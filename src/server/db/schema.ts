@@ -77,6 +77,7 @@ export const kins = sqliteTable('kins', {
   expertise: text('expertise').notNull(),
   model: text('model').notNull(),
   workspacePath: text('workspace_path').notNull(),
+  toolConfig: text('tool_config'), // JSON: KinToolConfig
   createdBy: text('created_by').references(() => user.id),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
@@ -88,6 +89,8 @@ export const mcpServers = sqliteTable('mcp_servers', {
   command: text('command').notNull(),
   args: text('args'), // JSON array
   env: text('env'), // JSON object
+  status: text('status').notNull().default('active'), // 'active' | 'pending_approval'
+  createdByKinId: text('created_by_kin_id').references(() => kins.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -152,16 +155,37 @@ export const memories = sqliteTable('memories', {
 
 export const contacts = sqliteTable('contacts', {
   id: text('id').primaryKey(),
-  kinId: text('kin_id').notNull().references(() => kins.id),
   name: text('name').notNull(),
   type: text('type').notNull(), // 'human' | 'kin'
   linkedUserId: text('linked_user_id').references(() => user.id),
   linkedKinId: text('linked_kin_id').references(() => kins.id),
-  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+export const contactIdentifiers = sqliteTable('contact_identifiers', {
+  id: text('id').primaryKey(),
+  contactId: text('contact_id').notNull().references(() => contacts.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(), // e.g. "email", "phone pro", "WhatsApp", "Discord"...
+  value: text('value').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 }, (table) => [
-  index('idx_contacts_kin_id').on(table.kinId),
+  index('idx_contact_identifiers_contact_id').on(table.contactId),
+])
+
+export const contactNotes = sqliteTable('contact_notes', {
+  id: text('id').primaryKey(),
+  contactId: text('contact_id').notNull().references(() => contacts.id, { onDelete: 'cascade' }),
+  kinId: text('kin_id').notNull().references(() => kins.id),
+  scope: text('scope').notNull(), // 'private' | 'global'
+  content: text('content').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+}, (table) => [
+  uniqueIndex('idx_contact_notes_unique').on(table.contactId, table.kinId, table.scope),
+  index('idx_contact_notes_contact_id').on(table.contactId),
+  index('idx_contact_notes_kin_id').on(table.kinId),
 ])
 
 export const customTools = sqliteTable('custom_tools', {
@@ -184,14 +208,16 @@ export const tasks = sqliteTable('tasks', {
   spawnType: text('spawn_type').notNull(), // 'self' | 'other'
   mode: text('mode').notNull().default('await'), // 'await' | 'async'
   model: text('model'),
+  title: text('title'),
   description: text('description').notNull(),
-  status: text('status').notNull().default('pending'), // 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  status: text('status').notNull().default('pending'), // 'pending' | 'in_progress' | 'awaiting_human_input' | 'completed' | 'failed' | 'cancelled'
   result: text('result'),
   error: text('error'),
   depth: integer('depth').notNull().default(1),
   parentTaskId: text('parent_task_id').references(() => tasks.id),
   cronId: text('cron_id').references(() => crons.id),
   requestInputCount: integer('request_input_count').notNull().default(0),
+  allowHumanPrompt: integer('allow_human_prompt', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 }, (table) => [
@@ -220,6 +246,8 @@ export const vaultSecrets = sqliteTable('vault_secrets', {
   id: text('id').primaryKey(),
   key: text('key').notNull().unique(),
   encryptedValue: text('encrypted_value').notNull(),
+  description: text('description'),
+  createdByKinId: text('created_by_kin_id').references(() => kins.id),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -253,3 +281,46 @@ export const files = sqliteTable('files', {
   size: integer('size').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 })
+
+export const humanPrompts = sqliteTable('human_prompts', {
+  id: text('id').primaryKey(),
+  kinId: text('kin_id').notNull().references(() => kins.id),
+  taskId: text('task_id').references(() => tasks.id),
+  messageId: text('message_id').references(() => messages.id),
+  promptType: text('prompt_type').notNull(), // 'confirm' | 'select' | 'multi_select'
+  question: text('question').notNull(),
+  description: text('description'),
+  options: text('options').notNull(), // JSON array of HumanPromptOption[]
+  response: text('response'), // JSON — structured response, NULL until answered
+  status: text('status').notNull().default('pending'), // 'pending' | 'answered' | 'expired' | 'cancelled'
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  respondedAt: integer('responded_at', { mode: 'timestamp_ms' }),
+}, (table) => [
+  index('idx_human_prompts_kin').on(table.kinId),
+  index('idx_human_prompts_task').on(table.taskId),
+  index('idx_human_prompts_status').on(table.status),
+])
+
+export const fileStorage = sqliteTable('file_storage', {
+  id: text('id').primaryKey(),
+  kinId: text('kin_id').notNull().references(() => kins.id),
+  name: text('name').notNull(),
+  description: text('description'),
+  originalName: text('original_name').notNull(),
+  storedPath: text('stored_path').notNull(),
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(),
+  accessToken: text('access_token').notNull().unique(),
+  passwordHash: text('password_hash'),
+  isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(true),
+  readAndBurn: integer('read_and_burn', { mode: 'boolean' }).notNull().default(false),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
+  downloadCount: integer('download_count').notNull().default(0),
+  createdByKinId: text('created_by_kin_id').references(() => kins.id),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+}, (table) => [
+  index('idx_file_storage_token').on(table.accessToken),
+  index('idx_file_storage_kin').on(table.kinId),
+  index('idx_file_storage_expires').on(table.expiresAt),
+])

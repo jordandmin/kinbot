@@ -6,6 +6,8 @@ import {
   deleteCron,
   listCrons,
 } from '@/server/services/crons'
+import { fetchPreviousCronRuns } from '@/server/services/tasks'
+import { resolveKinId } from '@/server/services/kin-resolver'
 import { createLogger } from '@/server/logger'
 import type { ToolRegistration } from '@/server/tools/types'
 
@@ -30,16 +32,24 @@ export const createCronTool: ToolRegistration = {
           .string()
           .describe('Cron expression (e.g. "0 9 * * *" for daily at 9am, "*/30 * * * *" every 30 min)'),
         task_description: z.string().describe('Instructions given to the sub-Kin at each execution'),
-        target_kin_id: z
+        target_kin_slug: z
           .string()
           .optional()
-          .describe('Target Kin ID to execute the task. If omitted, you execute it yourself'),
+          .describe('Slug of the target Kin to execute the task (e.g. "test-ai"). If omitted, you execute it yourself'),
         model: z
           .string()
           .optional()
           .describe('LLM model override for the sub-Kin'),
       }),
-      execute: async ({ name, schedule, task_description, target_kin_id, model }) => {
+      execute: async ({ name, schedule, task_description, target_kin_slug, model }) => {
+        let targetKinId: string | undefined
+        if (target_kin_slug) {
+          const resolved = resolveKinId(target_kin_slug)
+          if (!resolved) {
+            return { error: `Kin not found for slug "${target_kin_slug}"` }
+          }
+          targetKinId = resolved
+        }
         log.debug({ kinId: ctx.kinId, cronName: name, schedule }, 'Cron creation requested')
         try {
           const cron = await createCron({
@@ -47,7 +57,7 @@ export const createCronTool: ToolRegistration = {
             name,
             schedule,
             taskDescription: task_description,
-            targetKinId: target_kin_id,
+            targetKinId,
             model,
             createdBy: 'kin',
           })
@@ -144,6 +154,49 @@ export const listCronsTool: ToolRegistration = {
             requiresApproval: c.requiresApproval,
             lastTriggeredAt: c.lastTriggeredAt,
           })),
+        }
+      },
+    }),
+}
+
+/**
+ * get_cron_journal — retrieve the execution history of a cron.
+ * Returns recent run results so the Kin can review what happened.
+ * Available to main agents only.
+ */
+export const getCronJournalTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Retrieve the execution history (journal) of a scheduled task. ' +
+        'Returns the most recent runs with their status and result summary.',
+      inputSchema: z.object({
+        cron_id: z.string().describe('ID of the cron to get history for'),
+        limit: z
+          .number()
+          .optional()
+          .default(10)
+          .describe('Max number of runs to return (default 10)'),
+      }),
+      execute: async ({ cron_id, limit }) => {
+        try {
+          const runs = await fetchPreviousCronRuns(cron_id, limit)
+          return {
+            cronId: cron_id,
+            totalRuns: runs.length,
+            runs: runs.map((r) => ({
+              status: r.status,
+              result: r.result,
+              executedAt: r.createdAt.toISOString(),
+              completedAt: r.updatedAt.toISOString(),
+              durationSeconds: Math.round(
+                (r.updatedAt.getTime() - r.createdAt.getTime()) / 1000,
+              ),
+            })),
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
         }
       },
     }),

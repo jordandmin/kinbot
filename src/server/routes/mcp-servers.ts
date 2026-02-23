@@ -18,7 +18,10 @@ function serialize(server: typeof mcpServers.$inferSelect) {
     command: server.command,
     args: server.args ? JSON.parse(server.args) : [],
     env: server.env ? JSON.parse(server.env) : null,
+    status: server.status,
+    createdByKinId: server.createdByKinId,
     createdAt: new Date(server.createdAt).getTime(),
+    updatedAt: new Date(server.updatedAt).getTime(),
   }
 }
 
@@ -35,6 +38,8 @@ mcpServerRoutes.post('/', async (c) => {
     command: string
     args?: string[]
     env?: Record<string, string>
+    status?: string
+    createdByKinId?: string
   }>()
 
   if (!body.name || !body.command) {
@@ -53,14 +58,71 @@ mcpServerRoutes.post('/', async (c) => {
     command: body.command,
     args: body.args ? JSON.stringify(body.args) : null,
     env: body.env ? JSON.stringify(body.env) : null,
+    status: body.status ?? 'active',
+    createdByKinId: body.createdByKinId ?? null,
     createdAt: now,
     updatedAt: now,
   })
 
-  log.info({ serverId: id, name: body.name, command: body.command }, 'MCP server created')
+  log.info({ serverId: id, name: body.name, command: body.command, status: body.status ?? 'active' }, 'MCP server created')
 
   const created = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).get()
   return c.json({ server: serialize(created!) }, 201)
+})
+
+// PATCH /api/mcp-servers/:id — update an MCP server
+mcpServerRoutes.patch('/:id', async (c) => {
+  const id = c.req.param('id')
+  const existing = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).get()
+
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'MCP server not found' } }, 404)
+  }
+
+  const body = await c.req.json<{
+    name?: string
+    command?: string
+    args?: string[]
+    env?: Record<string, string>
+  }>()
+
+  const updates: Partial<typeof mcpServers.$inferInsert> = { updatedAt: new Date() }
+  if (body.name !== undefined) updates.name = body.name
+  if (body.command !== undefined) updates.command = body.command
+  if (body.args !== undefined) updates.args = JSON.stringify(body.args)
+  if (body.env !== undefined) updates.env = body.env ? JSON.stringify(body.env) : null
+
+  await db.update(mcpServers).set(updates).where(eq(mcpServers.id, id))
+
+  // If command, args, or env changed, disconnect so next call reconnects with new config
+  const configChanged = body.command !== undefined || body.args !== undefined || body.env !== undefined
+  if (configChanged) {
+    await disconnectServer(id)
+  }
+
+  const updated = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).get()
+  log.info({ serverId: id, name: updated!.name, configChanged }, 'MCP server updated')
+  return c.json({ server: serialize(updated!) })
+})
+
+// POST /api/mcp-servers/:id/approve — approve a pending MCP server
+mcpServerRoutes.post('/:id/approve', async (c) => {
+  const id = c.req.param('id')
+  const existing = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).get()
+
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'MCP server not found' } }, 404)
+  }
+
+  if (existing.status !== 'pending_approval') {
+    return c.json({ error: { code: 'ALREADY_ACTIVE', message: 'This server is already active' } }, 409)
+  }
+
+  await db.update(mcpServers).set({ status: 'active', updatedAt: new Date() }).where(eq(mcpServers.id, id))
+
+  const updated = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).get()
+  log.info({ serverId: id, name: updated!.name }, 'MCP server approved')
+  return c.json({ server: serialize(updated!) })
 })
 
 // DELETE /api/mcp-servers/:id — delete an MCP server

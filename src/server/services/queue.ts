@@ -1,6 +1,6 @@
 import { eq, and, desc, asc } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
-import { db } from '@/server/db/index'
+import { db, sqlite } from '@/server/db/index'
 import { createLogger } from '@/server/logger'
 import { queueItems } from '@/server/db/schema'
 import { config } from '@/server/config'
@@ -66,24 +66,54 @@ export async function enqueueMessage(params: EnqueueParams) {
 /**
  * Dequeue the next message for a Kin. Returns null if the queue is empty.
  * Messages are ordered by priority (DESC) then creation time (ASC).
+ *
+ * Uses a single atomic UPDATE ... RETURNING * to prevent race conditions:
+ * no two callers can grab the same item, even without external locks.
  */
 export async function dequeueMessage(kinId: string) {
-  const item = await db
-    .select()
-    .from(queueItems)
-    .where(and(eq(queueItems.kinId, kinId), eq(queueItems.status, 'pending')))
-    .orderBy(desc(queueItems.priority), asc(queueItems.createdAt))
-    .get()
+  const row = sqlite.query<{
+    id: string
+    kin_id: string
+    message_type: string
+    content: string
+    source_type: string
+    source_id: string | null
+    priority: number
+    request_id: string | null
+    in_reply_to: string | null
+    task_id: string | null
+    status: string
+    created_at: number
+    processed_at: number | null
+  }, [string]>(`
+    UPDATE queue_items
+    SET status = 'processing'
+    WHERE id = (
+      SELECT id FROM queue_items
+      WHERE kin_id = ? AND status = 'pending'
+      ORDER BY priority DESC, created_at ASC
+      LIMIT 1
+    )
+    RETURNING *
+  `).get(kinId)
 
-  if (!item) return null
+  if (!row) return null
 
-  // Mark as processing
-  await db
-    .update(queueItems)
-    .set({ status: 'processing' })
-    .where(eq(queueItems.id, item.id))
-
-  return item
+  return {
+    id: row.id,
+    kinId: row.kin_id,
+    messageType: row.message_type,
+    content: row.content,
+    sourceType: row.source_type,
+    sourceId: row.source_id,
+    priority: row.priority,
+    requestId: row.request_id,
+    inReplyTo: row.in_reply_to,
+    taskId: row.task_id,
+    status: row.status,
+    createdAt: new Date(row.created_at),
+    processedAt: row.processed_at ? new Date(row.processed_at) : null,
+  }
 }
 
 /**
@@ -120,4 +150,18 @@ export async function getQueueSize(kinId: string): Promise<number> {
     .all()
 
   return pending.length
+}
+
+/**
+ * Recover orphaned queue items stuck in 'processing' status.
+ * This can happen after a crash or restart. Called once at worker startup.
+ * Resets them to 'pending' so they get re-processed.
+ */
+export function recoverStaleProcessingItems() {
+  const result = sqlite.run(
+    `UPDATE queue_items SET status = 'pending' WHERE status = 'processing'`,
+  )
+  if (result.changes > 0) {
+    log.warn({ count: result.changes }, 'Recovered stale processing queue items → reset to pending')
+  }
 }

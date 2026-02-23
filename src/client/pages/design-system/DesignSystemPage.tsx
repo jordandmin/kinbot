@@ -5,6 +5,7 @@ import { PaletteSwitcher } from '@/client/components/common/PaletteSwitcher'
 import {
   AlertCircle,
   CheckCircle,
+  Clock,
   Info,
   AlertTriangle,
   Bell,
@@ -62,9 +63,16 @@ import {
   MousePointer,
   Play,
   Crown,
+  Wrench,
+  X,
+  Settings2,
 } from 'lucide-react'
 
 import { cn } from '@/client/lib/utils'
+import { TOOL_DOMAIN_META, TOOL_DOMAIN_MAP } from '@/shared/constants'
+import type { ToolDomain } from '@/shared/types'
+import { ToolDomainIcon } from '@/client/components/common/ToolDomainIcon'
+import { ToolDomainBadge } from '@/client/components/common/ToolDomainBadge'
 import { Button } from '@/client/components/ui/button'
 import { Input } from '@/client/components/ui/input'
 import { Textarea } from '@/client/components/ui/textarea'
@@ -196,6 +204,7 @@ const NAV_SECTIONS = [
   { id: 'avatars', label: 'Avatars', icon: User },
   { id: 'animations', label: 'Animations', icon: Play },
   { id: 'kinbot-patterns', label: 'KinBot Patterns', icon: Shapes },
+  { id: 'tool-calls', label: 'Tool Calls', icon: Wrench },
   { id: 'loading-states', label: 'Loading States', icon: Loader2 },
   { id: 'spacing', label: 'Spacing & Layout', icon: Ruler },
 ] as const
@@ -1724,7 +1733,8 @@ export function DesignSystemPage() {
                 </div>
               </SubSection>
 
-              <SubSection title="Kin Cards (Agent List)">
+              <SubSection title="Kin Cards — Current">
+                <p className="text-sm text-muted-foreground mb-3">Current horizontal card with left avatar strip.</p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {/* Active / selected kin */}
                   <div className="group relative flex overflow-hidden rounded-xl border border-primary/30 bg-card shadow-md card-hover">
@@ -1737,9 +1747,12 @@ export function DesignSystemPage() {
                         <Badge variant="secondary" className="shrink-0 text-[10px]">2</Badge>
                       </div>
                       <p className="truncate text-xs text-muted-foreground">Personal finance expert</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="size-2 rounded-full bg-success" />
-                        <span className="text-[10px] text-muted-foreground">Online</span>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="size-2 rounded-full bg-success" />
+                          <span className="text-[10px] text-muted-foreground">Online</span>
+                        </div>
+                        <span className="flex items-center gap-1 text-[9px] text-muted-foreground/70"><Sparkles className="size-2.5" />Claude Sonnet</span>
                       </div>
                     </div>
                   </div>
@@ -1752,9 +1765,12 @@ export function DesignSystemPage() {
                     <div className="flex flex-1 flex-col justify-center gap-1 p-3 min-w-0">
                       <p className="truncate text-sm font-medium">Coding Assistant</p>
                       <p className="truncate text-xs text-muted-foreground">Full-stack developer</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="size-2 rounded-full bg-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">Offline</span>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="size-2 rounded-full bg-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground">Offline</span>
+                        </div>
+                        <span className="flex items-center gap-1 text-[9px] text-muted-foreground/70"><Sparkles className="size-2.5" />GPT-4o</span>
                       </div>
                     </div>
                   </div>
@@ -1772,9 +1788,314 @@ export function DesignSystemPage() {
                         </Badge>
                       </div>
                       <p className="truncate text-xs text-muted-foreground">Deep web analysis</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="size-2 rounded-full bg-warning animate-pulse" />
-                        <span className="text-[10px] text-muted-foreground">Processing...</span>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="size-2 rounded-full bg-warning animate-pulse" />
+                          <span className="text-[10px] text-muted-foreground">Processing...</span>
+                        </div>
+                        <span className="flex items-center gap-1 text-[9px] text-muted-foreground/70"><Sparkles className="size-2.5" />Gemini Pro</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SubSection>
+
+              {/* ═══════════════════════════════════════════════════ */}
+              {/* PROPOSAL A — Compact Minimal Row                   */}
+              {/* ═══════════════════════════════════════════════════ */}
+              <SubSection title="Proposal A — Compact Minimal Row">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Slim single-row items with small circular avatar, left accent bar for selected state, and inline status dot. Maximizes vertical density.
+                </p>
+                <div className="max-w-xs space-y-1 rounded-xl border bg-sidebar p-2">
+                  {/* Selected */}
+                  <div className="group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 cursor-pointer bg-primary/10 transition-colors">
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-full gradient-primary" />
+                    <div className="relative size-8 shrink-0 rounded-full gradient-primary flex items-center justify-center shadow-sm">
+                      <Bot className="size-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-semibold">Financial Advisor</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Personal finance expert</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· Sonnet</span>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">2</Badge>
+                  </div>
+
+                  {/* Idle */}
+                  <div className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 cursor-pointer hover:bg-accent/40 transition-colors">
+                    <div className="relative size-8 shrink-0 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-4 text-secondary-foreground/70" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Coding Assistant</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Full-stack developer</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· GPT-4o</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Processing */}
+                  <div className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 cursor-pointer hover:bg-accent/40 transition-colors">
+                    <div className="relative size-8 shrink-0 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-4 text-secondary-foreground/70" />
+                      <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-warning animate-pulse" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Research Agent</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Deep web analysis</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· Gemini</span>
+                      </div>
+                    </div>
+                    <Loader2 className="size-3.5 shrink-0 text-primary animate-spin" />
+                  </div>
+
+                  {/* Unavailable */}
+                  <div className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 cursor-pointer hover:bg-accent/40 transition-colors opacity-60">
+                    <div className="relative size-8 shrink-0 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-4 text-secondary-foreground/70" />
+                      <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Writing Coach</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Creative writing</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· Opus</span>
+                      </div>
+                    </div>
+                    <AlertTriangle className="size-3.5 shrink-0 text-warning" />
+                  </div>
+                </div>
+              </SubSection>
+
+              {/* ═══════════════════════════════════════════════════ */}
+              {/* PROPOSAL B — Glass Pill                            */}
+              {/* ═══════════════════════════════════════════════════ */}
+              <SubSection title="Proposal B — Glass Pill">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Rounded pill-shaped items with glass morphism backdrop. Selected state uses gradient border spin. Processing state pulses.
+                </p>
+                <div className="max-w-xs space-y-2 rounded-xl border bg-sidebar p-3">
+                  {/* Selected */}
+                  <div className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer glass-strong gradient-border-spin transition-all">
+                    <div className="size-9 shrink-0 rounded-full gradient-primary flex items-center justify-center shadow-md">
+                      <Bot className="size-4.5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-semibold">Financial Advisor</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Personal finance expert</p>
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 text-[9px] text-muted-foreground">Sonnet</span>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0 rounded-full">2</Badge>
+                  </div>
+
+                  {/* Idle */}
+                  <div className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-all border border-transparent">
+                    <div className="size-9 shrink-0 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-4.5 text-secondary-foreground/70" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Coding Assistant</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Full-stack developer</p>
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 text-[9px] text-muted-foreground">GPT-4o</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Processing */}
+                  <div className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer glass pulse-glow transition-all border border-transparent">
+                    <div className="relative size-9 shrink-0 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-4.5 text-secondary-foreground/70" />
+                      <span className="absolute inset-0 rounded-full border-2 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Research Agent</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-primary font-medium">Thinking...</p>
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 text-[9px] text-muted-foreground">Gemini</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Idle 2 */}
+                  <div className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-all border border-transparent">
+                    <div className="size-9 shrink-0 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-4.5 text-secondary-foreground/70" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Writing Coach</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Creative writing</p>
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 text-[9px] text-muted-foreground">Opus</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SubSection>
+
+              {/* ═══════════════════════════════════════════════════ */}
+              {/* PROPOSAL C — Stacked Tile (Avatar Focused)         */}
+              {/* ═══════════════════════════════════════════════════ */}
+              <SubSection title="Proposal C — Stacked Tile (Avatar Focused)">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Vertical tiles with large centered avatar. Great for visual identity. Works well in a grid or scrollable row. Selected state uses glow + gradient border.
+                </p>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {/* Selected */}
+                  <div className="group flex flex-col items-center gap-2 rounded-2xl p-4 pb-3 cursor-pointer surface-card gradient-border glow-primary min-w-[110px] transition-all">
+                    <div className="size-14 rounded-full gradient-primary flex items-center justify-center shadow-lg">
+                      <Bot className="size-7 text-white" />
+                    </div>
+                    <div className="text-center min-w-0 w-full">
+                      <p className="truncate text-xs font-semibold">Financial Advisor</p>
+                      <p className="truncate text-[10px] text-muted-foreground mt-0.5">Finance expert</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-[9px] text-muted-foreground/70"><Sparkles className="size-2.5" />Sonnet</span>
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 rounded-full">2 in queue</Badge>
+                  </div>
+
+                  {/* Idle */}
+                  <div className="group flex flex-col items-center gap-2 rounded-2xl p-4 pb-3 cursor-pointer border border-transparent hover:border-border hover:shadow-md min-w-[110px] transition-all">
+                    <div className="size-14 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-7 text-secondary-foreground/70" />
+                    </div>
+                    <div className="text-center min-w-0 w-full">
+                      <p className="truncate text-xs font-medium">Coding Assistant</p>
+                      <p className="truncate text-[10px] text-muted-foreground mt-0.5">Developer</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-[9px] text-muted-foreground/70"><Sparkles className="size-2.5" />GPT-4o</span>
+                  </div>
+
+                  {/* Processing */}
+                  <div className="group flex flex-col items-center gap-2 rounded-2xl p-4 pb-3 cursor-pointer border border-transparent hover:border-border min-w-[110px] transition-all">
+                    <div className="relative size-14 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-7 text-secondary-foreground/70" />
+                      <svg className="absolute inset-0 size-14 animate-spin" style={{ animationDuration: '2s' }}>
+                        <circle cx="28" cy="28" r="26" fill="none" stroke="url(#grad-ring)" strokeWidth="2.5" strokeDasharray="40 120" strokeLinecap="round" />
+                        <defs>
+                          <linearGradient id="grad-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="var(--color-gradient-start)" />
+                            <stop offset="50%" stopColor="var(--color-gradient-mid)" />
+                            <stop offset="100%" stopColor="var(--color-gradient-end)" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                    <div className="text-center min-w-0 w-full">
+                      <p className="truncate text-xs font-medium">Research Agent</p>
+                      <p className="truncate text-[10px] text-primary font-medium mt-0.5">Thinking...</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-[9px] text-muted-foreground/70"><Sparkles className="size-2.5" />Gemini</span>
+                  </div>
+
+                  {/* Idle 2 */}
+                  <div className="group flex flex-col items-center gap-2 rounded-2xl p-4 pb-3 cursor-pointer border border-transparent hover:border-border hover:shadow-md min-w-[110px] transition-all">
+                    <div className="size-14 rounded-full bg-secondary flex items-center justify-center">
+                      <Bot className="size-7 text-secondary-foreground/70" />
+                    </div>
+                    <div className="text-center min-w-0 w-full">
+                      <p className="truncate text-xs font-medium">Writing Coach</p>
+                      <p className="truncate text-[10px] text-muted-foreground mt-0.5">Creative writing</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-[9px] text-muted-foreground/70"><Sparkles className="size-2.5" />Opus</span>
+                  </div>
+                </div>
+              </SubSection>
+
+              {/* ═══════════════════════════════════════════════════ */}
+              {/* PROPOSAL D — Gradient Accent Line                  */}
+              {/* ═══════════════════════════════════════════════════ */}
+              <SubSection title="Proposal D — Gradient Accent Line">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Ultra-clean rows with a gradient left accent stripe. No background change on selected — only the accent line and text weight communicate state. Very sidebar-native.
+                </p>
+                <div className="max-w-xs space-y-0.5 rounded-xl border bg-sidebar p-2">
+                  {/* Selected */}
+                  <div className="group relative flex items-center gap-3 rounded-lg pl-4 pr-3 py-2.5 cursor-pointer transition-colors">
+                    <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full gradient-primary" />
+                    <Avatar className="size-8 shrink-0">
+                      <AvatarFallback className="gradient-primary text-white text-[10px] font-bold">FA</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold gradient-primary-text">Financial Advisor</p>
+                        <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">2</Badge>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Personal finance expert</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· Sonnet</span>
+                      </div>
+                    </div>
+                    <Settings2 className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  {/* Idle */}
+                  <div className="group relative flex items-center gap-3 rounded-lg pl-4 pr-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors">
+                    <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-transparent" />
+                    <Avatar className="size-8 shrink-0">
+                      <AvatarFallback className="bg-secondary text-secondary-foreground text-[10px] font-bold">CA</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Coding Assistant</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Full-stack developer</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· GPT-4o</span>
+                      </div>
+                    </div>
+                    <Settings2 className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  {/* Processing */}
+                  <div className="group relative flex items-center gap-3 rounded-lg pl-4 pr-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors">
+                    <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary animate-pulse" />
+                    <Avatar className="size-8 shrink-0">
+                      <AvatarFallback className="bg-secondary text-secondary-foreground text-[10px] font-bold">RA</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Research Agent</p>
+                      <div className="flex items-center gap-1.5">
+                        <Loader2 className="size-3 text-primary animate-spin" />
+                        <p className="truncate text-[11px] text-primary font-medium">Thinking...</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· Gemini</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Idle 2 */}
+                  <div className="group relative flex items-center gap-3 rounded-lg pl-4 pr-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors">
+                    <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-transparent" />
+                    <Avatar className="size-8 shrink-0">
+                      <AvatarFallback className="bg-secondary text-secondary-foreground text-[10px] font-bold">WC</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">Writing Coach</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] text-muted-foreground">Creative writing</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· Opus</span>
+                      </div>
+                    </div>
+                    <Settings2 className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  {/* Unavailable */}
+                  <div className="group relative flex items-center gap-3 rounded-lg pl-4 pr-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors opacity-50">
+                    <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-transparent" />
+                    <Avatar className="size-8 shrink-0">
+                      <AvatarFallback className="bg-secondary text-secondary-foreground text-[10px] font-bold">DO</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm font-medium">DevOps Bot</p>
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle className="size-3 text-warning" />
+                        <p className="truncate text-[11px] text-warning">Model unavailable</p>
+                        <span className="shrink-0 text-[9px] text-muted-foreground/60">· Opus</span>
                       </div>
                     </div>
                   </div>
@@ -1797,22 +2118,481 @@ export function DesignSystemPage() {
                 </div>
               </SubSection>
 
-              <SubSection title="Task Status">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 rounded-lg border bg-card p-3">
-                    <div className="size-2 rounded-full bg-muted-foreground" /><span className="text-sm">Pending</span>
+              <SubSection title="Task Items — Sidebar">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Task items in the sidebar. Status conveyed by icon and text color only.
+                </p>
+                <div className="max-w-xs space-y-1 rounded-xl border bg-sidebar p-3">
+                  {/* Pending */}
+                  <div className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5 text-xs hover:bg-muted/70 transition-colors">
+                    <Avatar className="size-7 shrink-0">
+                      <AvatarFallback className="text-[10px] bg-secondary">FA</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">Analyze monthly expenses</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Clock className="size-3 shrink-0 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">Pending</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
-                    <Loader2 className="size-4 animate-spin text-warning" /><span className="text-sm">In Progress</span>
+                  {/* In Progress */}
+                  <div className="flex items-center gap-3 rounded-lg bg-primary/8 px-3 py-2.5 text-xs hover:bg-primary/15 transition-colors">
+                    <Avatar className="size-7 shrink-0">
+                      <AvatarFallback className="text-[10px] gradient-primary text-white">RA</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">Generate quarterly report</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Loader2 className="size-3 shrink-0 text-primary animate-spin" />
+                        <span className="text-[10px] text-primary font-medium">Running</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 p-3">
-                    <CheckCircle className="size-4 text-success" /><span className="text-sm">Completed</span>
+                  {/* Completed */}
+                  <div className="flex items-center gap-3 rounded-lg bg-success/8 px-3 py-2.5 text-xs hover:bg-success/15 transition-colors">
+                    <Avatar className="size-7 shrink-0">
+                      <AvatarFallback className="text-[10px] bg-secondary">AS</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">Summarize meeting notes</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <CheckCircle className="size-3 shrink-0 text-success" />
+                        <span className="text-[10px] text-success font-medium">Done</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                    <AlertCircle className="size-4 text-destructive" /><span className="text-sm">Failed</span>
+                  {/* Failed */}
+                  <div className="flex items-center gap-3 rounded-lg bg-destructive/8 px-3 py-2.5 text-xs hover:bg-destructive/15 transition-colors">
+                    <Avatar className="size-7 shrink-0">
+                      <AvatarFallback className="text-[10px] bg-secondary">DO</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">Deploy to production</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <AlertCircle className="size-3 shrink-0 text-destructive" />
+                        <span className="text-[10px] text-destructive font-medium">Failed</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Cancelled */}
+                  <div className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5 text-xs opacity-60 hover:bg-muted/70 transition-colors">
+                    <Avatar className="size-7 shrink-0">
+                      <AvatarFallback className="text-[10px] bg-secondary">AS</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">Translate documentation</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <X className="size-3 shrink-0 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">Cancelled</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </SubSection>
+
+              <SubSection title="Task Results — Chat">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Task results appear as centered cards. Status is conveyed by the icon and status text color.
+                  Failed tasks tint the result block.
+                </p>
+                <div className="max-w-2xl surface-chat rounded-xl p-6 border space-y-4">
+                  {/* Task completed (await) */}
+                  <div className="flex justify-center px-4">
+                    <div className="w-full max-w-md surface-card rounded-xl border border-border p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-8 shrink-0">
+                          <AvatarFallback className="text-[10px] gradient-primary text-white">FA</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">Analyze monthly expenses</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <CheckCircle className="size-3 text-success shrink-0" />
+                            <span className="text-xs text-success font-medium">Task completed</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto shrink-0">14:35</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-muted/80 p-3">
+                        <p className="text-xs text-foreground leading-relaxed">Your top 3 expense categories: Subscriptions ($142), Dining ($98), Transport ($67). Total savings potential: $85/month by optimizing subscriptions.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Task failed */}
+                  <div className="flex justify-center px-4">
+                    <div className="w-full max-w-md surface-card rounded-xl border border-border p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-8 shrink-0">
+                          <AvatarFallback className="text-[10px] bg-secondary">DO</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">Deploy to production</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <AlertCircle className="size-3 text-destructive shrink-0" />
+                            <span className="text-xs text-destructive font-medium">Task failed</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto shrink-0">01:52</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-destructive/10 p-3">
+                        <p className="text-xs text-destructive leading-relaxed">Error: No LLM provider available for model claude-sonnet-4-5-20250514</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Task completed (async) — inline notification */}
+                  <div className="flex justify-center px-4">
+                    <div className="flex items-center gap-2 rounded-full bg-bubble-system px-4 py-1.5 text-bubble-system-foreground">
+                      <Avatar className="size-4 shrink-0">
+                        <AvatarFallback className="text-[7px] bg-secondary">AS</AvatarFallback>
+                      </Avatar>
+                      <CheckCircle className="size-3" />
+                      <p className="text-xs">Task &quot;Translate docs&quot; completed</p>
+                    </div>
+                  </div>
+                </div>
+              </SubSection>
+            </Section>
+
+            {/* ─── TOOL CALLS ─────────────────────────────────── */}
+            <Section id="tool-calls" title="Tool Calls">
+
+              <SubSection title="Domain Badges & Icons">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Each tool domain has a dedicated icon, color, and label — centralized in <code className="text-xs bg-muted px-1 rounded">TOOL_DOMAIN_META</code>.
+                  Reusable via <code className="text-xs bg-muted px-1 rounded">{'<ToolDomainBadge>'}</code> and <code className="text-xs bg-muted px-1 rounded">{'<ToolDomainIcon>'}</code>.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {(Object.keys(TOOL_DOMAIN_META) as ToolDomain[]).map((domain) => (
+                    <ToolDomainBadge key={domain} domain={domain} />
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {(Object.keys(TOOL_DOMAIN_META) as ToolDomain[]).map((domain) => {
+                    const meta = TOOL_DOMAIN_META[domain]
+                    return (
+                      <div key={domain} className="flex flex-col items-center gap-1.5">
+                        <div className={cn('flex size-10 items-center justify-center rounded-lg', meta.bg)}>
+                          <ToolDomainIcon domain={domain} className={cn('size-5', meta.text)} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground capitalize">{domain}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </SubSection>
+
+              <SubSection title="Trigger Button (Header)">
+                <div className="flex items-center gap-6">
+                  <div className="flex flex-col items-center gap-2">
+                    <Button variant="ghost" size="icon-sm" className="relative"><Wrench className="size-4" /></Button>
+                    <span className="text-[10px] text-muted-foreground">No calls</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <Button variant="ghost" size="icon-sm" className="relative">
+                      <Wrench className="size-4" />
+                      <Badge variant="default" className="absolute -top-1 -right-1 size-4 p-0 text-[9px] flex items-center justify-center rounded-full">7</Badge>
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground">With count</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <Button variant="ghost" size="icon-sm" className="relative bg-muted">
+                      <Wrench className="size-4" />
+                      <Badge variant="default" className="absolute -top-1 -right-1 size-4 p-0 text-[9px] flex items-center justify-center rounded-full">12</Badge>
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground">Panel open</span>
+                  </div>
+                </div>
+              </SubSection>
+
+              {/* ── PROPOSAL A ─────────────────────────────────── */}
+              <SubSection title="Proposal A — Left border accent">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Colored left border identifies the domain. Subtle, scannable. Background tints on expand. Tool calls appear inline within the Kin&apos;s message flow.
+                </p>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* In-conversation */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">In-Conversation</p>
+                    <div className="max-w-lg surface-chat rounded-xl p-4 border space-y-3">
+                      {/* User message */}
+                      <div className="flex justify-end gap-2.5">
+                        <div className="max-w-[75%] space-y-1">
+                          <div className="flex items-center justify-end gap-2"><span className="text-xs text-muted-foreground">Nicolas</span><span className="text-xs text-muted-foreground">14:32</span></div>
+                          <div className="gradient-primary rounded-2xl rounded-br-md px-4 py-2.5 text-white shadow-sm"><p className="text-sm">What do you know about my work schedule?</p></div>
+                        </div>
+                        <Avatar className="size-8 shrink-0"><AvatarFallback className="bg-secondary text-xs"><User className="size-4" /></AvatarFallback></Avatar>
+                      </div>
+                      {/* Kin reply with tool calls embedded in the flow */}
+                      <div className="flex gap-2.5">
+                        <Avatar className="size-8 shrink-0"><AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback></Avatar>
+                        <div className="max-w-[85%] space-y-2">
+                          <div className="flex items-center gap-2"><span className="text-xs font-medium">Assistant</span><span className="text-xs text-muted-foreground">14:32</span></div>
+                          {/* First text segment */}
+                          <div className="rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm"><p className="text-sm">Let me check your memories and search for updates...</p></div>
+                          {/* Tool calls triggered mid-stream */}
+                          <div className="space-y-1">
+                            {(['memory', 'search'] as ToolDomain[]).map((domain) => {
+                              const meta = TOOL_DOMAIN_META[domain]
+                              const names: Record<string, string> = { memory: 'Recall Memory', search: 'Web Search' }
+                              return (
+                                <div key={domain} className={cn('rounded-lg border-l-2', meta.border)}>
+                                  <div className="flex items-center gap-2 px-2.5 py-1.5">
+                                    <ToolDomainIcon domain={domain} className={cn('size-3.5', meta.text)} />
+                                    <span className="flex-1 truncate text-xs font-medium text-muted-foreground">{names[domain]}</span>
+                                    <CheckCircle className="size-3 text-success" />
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {/* Continuation after tool results */}
+                          <div className="rounded-2xl rounded-tl-md rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm"><p className="text-sm">Based on your memories, you work Mon–Fri 9–5. I also found a recent schedule update confirming next week&apos;s shift change.</p></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Side panel */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Side Panel</p>
+                    <div className="max-w-sm rounded-xl border bg-background/80 backdrop-blur-sm overflow-hidden">
+                      <div className="flex items-center justify-between border-b px-3 py-2.5">
+                        <div><h3 className="text-sm font-semibold">Tool Calls</h3><p className="text-[10px] text-muted-foreground">3 tool call(s)</p></div>
+                        <Button variant="ghost" size="icon-xs"><X className="size-3.5" /></Button>
+                      </div>
+                      <div className="p-2 space-y-1">
+                        {(['memory', 'search', 'vault'] as ToolDomain[]).map((domain, i) => {
+                          const meta = TOOL_DOMAIN_META[domain]
+                          const names: Record<string, string> = { memory: 'Recall Memory', search: 'Web Search', vault: 'Get Secret' }
+                          const isOpen = i === 0
+                          return (
+                            <div key={domain} className={cn('rounded-lg border-l-2', meta.border, isOpen && meta.bg)}>
+                              <div className="flex items-center gap-2 px-2.5 py-2 cursor-pointer hover:bg-muted/50 transition-colors">
+                                <ChevronRight className={cn('size-3.5 text-muted-foreground transition-transform', isOpen && 'rotate-90')} />
+                                <ToolDomainIcon domain={domain} className={cn('size-4', meta.text)} />
+                                <span className="flex-1 truncate text-sm font-medium">{names[domain]}</span>
+                                <CheckCircle className="size-3.5 text-success" />
+                                <span className="text-[10px] text-muted-foreground tabular-nums">14:32</span>
+                              </div>
+                              {isOpen && (
+                                <div className="px-3 pb-2 space-y-2">
+                                  <ToolDomainBadge domain={domain} />
+                                  <div className="rounded-md bg-muted/30 p-2">
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Input</p>
+                                    <pre className="text-xs text-foreground/80">{'{ "query": "work schedule" }'}</pre>
+                                  </div>
+                                  <div className="rounded-md bg-muted/30 p-2">
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Output</p>
+                                    <pre className="text-xs text-foreground/80">{'{ "results": [{ "id": "m1" }] }'}</pre>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SubSection>
+
+              {/* ── PROPOSAL B ─────────────────────────────────── */}
+              <SubSection title="Proposal B — Full color card">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Entire card uses domain background. Strong visual separation between domains. Tool calls appear within the Kin&apos;s streaming response.
+                </p>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* In-conversation */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">In-Conversation</p>
+                    <div className="max-w-lg surface-chat rounded-xl p-4 border space-y-3">
+                      <div className="flex justify-end gap-2.5">
+                        <div className="max-w-[75%] space-y-1">
+                          <div className="flex items-center justify-end gap-2"><span className="text-xs text-muted-foreground">Nicolas</span><span className="text-xs text-muted-foreground">14:32</span></div>
+                          <div className="gradient-primary rounded-2xl rounded-br-md px-4 py-2.5 text-white shadow-sm"><p className="text-sm">Memorize that I prefer dark mode and generate me an avatar.</p></div>
+                        </div>
+                        <Avatar className="size-8 shrink-0"><AvatarFallback className="bg-secondary text-xs"><User className="size-4" /></AvatarFallback></Avatar>
+                      </div>
+                      {/* Kin reply with tool calls embedded */}
+                      <div className="flex gap-2.5">
+                        <Avatar className="size-8 shrink-0"><AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback></Avatar>
+                        <div className="max-w-[85%] space-y-2">
+                          <div className="flex items-center gap-2"><span className="text-xs font-medium">Assistant</span><span className="text-xs text-muted-foreground">14:32</span></div>
+                          <div className="rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm"><p className="text-sm">Sure! Let me save your preference and create an avatar for you.</p></div>
+                          {/* Tool calls mid-stream */}
+                          <div className="space-y-1.5">
+                            {(['memory', 'images'] as ToolDomain[]).map((domain) => {
+                              const meta = TOOL_DOMAIN_META[domain]
+                              const names: Record<string, string> = { memory: 'Memorize', images: 'Generate Image' }
+                              const statuses: Record<string, string> = { memory: 'success', images: 'pending' }
+                              return (
+                                <div key={domain} className={cn('flex items-center gap-2 rounded-lg border px-2.5 py-1.5', meta.bg, meta.border)}>
+                                  <div className={cn('flex size-5 items-center justify-center rounded', meta.bg)}>
+                                    <ToolDomainIcon domain={domain} className={cn('size-3', meta.text)} />
+                                  </div>
+                                  <span className="flex-1 truncate text-xs font-medium text-muted-foreground">{names[domain]}</span>
+                                  <ToolDomainBadge domain={domain} className="text-[9px]" showLabel={false} />
+                                  {statuses[domain] === 'success'
+                                    ? <CheckCircle className="size-3 text-success" />
+                                    : <Loader2 className="size-3 text-muted-foreground animate-spin" />
+                                  }
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {/* Continuation */}
+                          <div className="rounded-2xl rounded-tl-md rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm"><p className="text-sm">Your dark mode preference is saved! The avatar is still being generated, I&apos;ll let you know when it&apos;s ready.</p></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Side panel */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Side Panel</p>
+                    <div className="max-w-sm rounded-xl border bg-background/80 backdrop-blur-sm overflow-hidden">
+                      <div className="flex items-center justify-between border-b px-3 py-2.5">
+                        <div><h3 className="text-sm font-semibold">Tool Calls</h3><p className="text-[10px] text-muted-foreground">3 tool call(s)</p></div>
+                        <Button variant="ghost" size="icon-xs"><X className="size-3.5" /></Button>
+                      </div>
+                      <div className="p-2 space-y-1.5">
+                        {(['search', 'memory', 'images'] as ToolDomain[]).map((domain, i) => {
+                          const meta = TOOL_DOMAIN_META[domain]
+                          const names: Record<string, string> = { search: 'Web Search', memory: 'Memorize', images: 'Generate Image' }
+                          const isOpen = i === 1
+                          return (
+                            <div key={domain} className={cn('rounded-lg border', meta.bg, meta.border)}>
+                              <div className="flex items-center gap-2 px-3 py-2 cursor-pointer">
+                                <ChevronRight className={cn('size-3.5 text-muted-foreground transition-transform', isOpen && 'rotate-90')} />
+                                <div className={cn('flex size-6 items-center justify-center rounded-md', meta.bg, meta.border)}>
+                                  <ToolDomainIcon domain={domain} className={cn('size-3.5', meta.text)} />
+                                </div>
+                                <span className="flex-1 truncate text-sm font-medium">{names[domain]}</span>
+                                <ToolDomainBadge domain={domain} className="text-[9px]" />
+                                <CheckCircle className="size-3.5 text-success" />
+                              </div>
+                              {isOpen && (
+                                <div className="px-3 pb-2 space-y-2 border-t border-border/30 pt-2">
+                                  <div className="rounded-md bg-background/60 p-2">
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Input</p>
+                                    <pre className="text-xs text-foreground/80">{'{ "content": "prefers dark mode" }'}</pre>
+                                  </div>
+                                  <div className="rounded-md bg-background/60 p-2">
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Output</p>
+                                    <pre className="text-xs text-foreground/80">{'{ "id": "mem_abc", "stored": true }'}</pre>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SubSection>
+
+              {/* ── PROPOSAL C ─────────────────────────────────── */}
+              <SubSection title="Proposal C — Compact flat list">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Minimal flat rows grouped in a card. Icon in a colored square. Cleanest density. Tool calls grouped inline within the Kin&apos;s response.
+                </p>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* In-conversation */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">In-Conversation</p>
+                    <div className="max-w-lg surface-chat rounded-xl p-4 border space-y-3">
+                      <div className="flex justify-end gap-2.5">
+                        <div className="max-w-[75%] space-y-1">
+                          <div className="flex items-center justify-end gap-2"><span className="text-xs text-muted-foreground">Nicolas</span><span className="text-xs text-muted-foreground">14:32</span></div>
+                          <div className="gradient-primary rounded-2xl rounded-br-md px-4 py-2.5 text-white shadow-sm"><p className="text-sm">Check my vault for the API key, then run a shell command.</p></div>
+                        </div>
+                        <Avatar className="size-8 shrink-0"><AvatarFallback className="bg-secondary text-xs"><User className="size-4" /></AvatarFallback></Avatar>
+                      </div>
+                      {/* Kin reply with tool calls embedded */}
+                      <div className="flex gap-2.5">
+                        <Avatar className="size-8 shrink-0"><AvatarFallback className="gradient-primary text-white text-xs"><Bot className="size-4" /></AvatarFallback></Avatar>
+                        <div className="max-w-[85%] space-y-2">
+                          <div className="flex items-center gap-2"><span className="text-xs font-medium">Assistant</span><span className="text-xs text-muted-foreground">14:32</span></div>
+                          <div className="rounded-2xl rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm"><p className="text-sm">I&apos;ll retrieve the key and run the deploy command.</p></div>
+                          {/* Tool calls grouped in a card */}
+                          <div className="rounded-lg border bg-card overflow-hidden">
+                            {(['vault', 'shell'] as ToolDomain[]).map((domain, i) => {
+                              const meta = TOOL_DOMAIN_META[domain]
+                              const names: Record<string, string> = { vault: 'Get Secret', shell: 'Run Shell Command' }
+                              const isLast = i === 1
+                              return (
+                                <div key={domain} className={cn('flex items-center gap-2.5 px-2.5 py-2', !isLast && 'border-b border-border/50')}>
+                                  <div className={cn('flex size-6 items-center justify-center rounded-md shrink-0', meta.bg)}>
+                                    <ToolDomainIcon domain={domain} className={cn('size-3', meta.text)} />
+                                  </div>
+                                  <span className="flex-1 truncate text-xs font-medium text-muted-foreground">{names[domain]}</span>
+                                  <CheckCircle className="size-3 text-success" />
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {/* Continuation */}
+                          <div className="rounded-2xl rounded-tl-md rounded-bl-md bg-bubble-kin px-4 py-2.5 text-bubble-kin-foreground shadow-sm"><p className="text-sm">Done! Retrieved the key and ran the deploy command successfully. Everything looks good.</p></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Side panel */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Side Panel</p>
+                    <div className="max-w-sm rounded-xl border bg-background/80 backdrop-blur-sm overflow-hidden">
+                      <div className="flex items-center justify-between border-b px-3 py-2.5">
+                        <div><h3 className="text-sm font-semibold">Tool Calls</h3><p className="text-[10px] text-muted-foreground">4 tool call(s)</p></div>
+                        <Button variant="ghost" size="icon-xs"><X className="size-3.5" /></Button>
+                      </div>
+                      <div>
+                        {(['vault', 'shell', 'inter-kin', 'images'] as ToolDomain[]).map((domain, i) => {
+                          const meta = TOOL_DOMAIN_META[domain]
+                          const names: Record<string, string> = { vault: 'Get Secret', shell: 'Run Shell Command', 'inter-kin': 'Send Message', images: 'Generate Image' }
+                          const statuses = ['success', 'success', 'pending', 'error'] as const
+                          const statusIcons = { success: CheckCircle, pending: Loader2, error: AlertCircle }
+                          const statusClasses: Record<string, string> = { success: 'text-success', pending: 'text-muted-foreground animate-spin', error: 'text-destructive' }
+                          const status = statuses[i] ?? 'success'
+                          const StatusIcon = statusIcons[status]
+                          const isOpen = i === 3
+                          const isLast = i === 3
+                          return (
+                            <div key={domain}>
+                              <div className={cn('flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors', !isLast && !isOpen && 'border-b border-border/50')}>
+                                <div className={cn('flex size-7 items-center justify-center rounded-lg shrink-0', meta.bg)}>
+                                  <ToolDomainIcon domain={domain} className={cn('size-3.5', meta.text)} />
+                                </div>
+                                <span className="flex-1 truncate text-sm font-medium">{names[domain]}</span>
+                                <StatusIcon className={cn('size-3.5 shrink-0', statusClasses[status])} />
+                                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">14:32</span>
+                                <ChevronRight className={cn('size-3 text-muted-foreground transition-transform', isOpen && 'rotate-90')} />
+                              </div>
+                              {isOpen && (
+                                <div className="px-3 pb-3 space-y-2 border-b border-border/50">
+                                  <div className="flex items-center gap-2">
+                                    <ToolDomainBadge domain={domain} />
+                                    <span className="text-[10px] text-destructive font-medium">Error</span>
+                                  </div>
+                                  <div className="rounded-md bg-muted/30 p-2">
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Input</p>
+                                    <pre className="text-xs text-foreground/80">{'{ "prompt": "A robot mascot" }'}</pre>
+                                  </div>
+                                  <div className="rounded-md bg-destructive/5 border border-destructive/20 p-2">
+                                    <p className="text-[10px] font-medium text-destructive mb-1">Output</p>
+                                    <pre className="text-xs text-destructive/80">{'{ "error": "Rate limit exceeded" }'}</pre>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </SubSection>
+
             </Section>
 
             {/* ─── LOADING & EMPTY STATES ─────────────────────── */}

@@ -3,7 +3,7 @@ import { eq, and, not, desc } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { mkdirSync, existsSync, rmSync } from 'fs'
 import { db } from '@/server/db/index'
-import { kins, kinMcpServers, mcpServers, queueItems, compactingSnapshots, memories, messages, contacts, customTools, tasks, crons, files } from '@/server/db/schema'
+import { kins, kinMcpServers, mcpServers, queueItems, compactingSnapshots, memories, messages, contacts, contactNotes, customTools, tasks, crons, files } from '@/server/db/schema'
 import { config } from '@/server/config'
 import {
   generateAvatarImage,
@@ -11,6 +11,10 @@ import {
   ImageGenerationError,
 } from '@/server/services/image-generation'
 import { deleteMemory } from '@/server/services/memory'
+import { getMCPToolsForConfig } from '@/server/services/mcp'
+import { toolRegistry } from '@/server/tools/index'
+import { TOOL_DOMAIN_MAP } from '@/shared/constants'
+import type { KinToolConfig, ToolDomain } from '@/shared/types'
 import { sseManager } from '@/server/sse/index'
 import { generateSlug, ensureUniqueSlug, isValidSlug } from '@/server/utils/slug'
 import { resolveKinByIdOrSlug } from '@/server/services/kin-resolver'
@@ -19,10 +23,11 @@ import { createLogger } from '@/server/logger'
 const log = createLogger('routes:kins')
 const kinRoutes = new Hono()
 
-function kinAvatarUrl(kinId: string, avatarPath: string | null): string | null {
+function kinAvatarUrl(kinId: string, avatarPath: string | null, updatedAt?: Date | null): string | null {
   if (!avatarPath) return null
   const ext = avatarPath.split('.').pop() ?? 'png'
-  return `/api/uploads/kins/${kinId}/avatar.${ext}`
+  const v = updatedAt ? updatedAt.getTime() : Date.now()
+  return `/api/uploads/kins/${kinId}/avatar.${ext}?v=${v}`
 }
 
 // GET /api/kins — list all kins
@@ -35,7 +40,7 @@ kinRoutes.get('/', async (c) => {
       slug: k.slug,
       name: k.name,
       role: k.role,
-      avatarUrl: kinAvatarUrl(k.id, k.avatarPath),
+      avatarUrl: kinAvatarUrl(k.id, k.avatarPath, k.updatedAt),
       model: k.model,
       createdAt: k.createdAt,
     })),
@@ -67,16 +72,21 @@ kinRoutes.get('/:id', async (c) => {
   const queueSize = pendingItems.filter((q) => q.status === 'pending').length
   const isProcessing = pendingItems.some((q) => q.status === 'processing')
 
+  const toolConfig: KinToolConfig | null = kin.toolConfig
+    ? JSON.parse(kin.toolConfig)
+    : null
+
   return c.json({
     id: kin.id,
     slug: kin.slug,
     name: kin.name,
     role: kin.role,
-    avatarUrl: kinAvatarUrl(kin.id, kin.avatarPath),
+    avatarUrl: kinAvatarUrl(kin.id, kin.avatarPath, kin.updatedAt),
     character: kin.character,
     expertise: kin.expertise,
     model: kin.model,
     workspacePath: kin.workspacePath,
+    toolConfig,
     mcpServers: mcpLinks,
     queueSize,
     isProcessing,
@@ -172,6 +182,7 @@ kinRoutes.patch('/:id', async (c) => {
   if (body.character !== undefined) updates.character = body.character
   if (body.expertise !== undefined) updates.expertise = body.expertise
   if (body.model !== undefined) updates.model = body.model
+  if (body.toolConfig !== undefined) updates.toolConfig = JSON.stringify(body.toolConfig)
 
   // Handle slug update
   if (body.slug !== undefined) {
@@ -189,11 +200,32 @@ kinRoutes.patch('/:id', async (c) => {
 
   await db.update(kins).set(updates).where(eq(kins.id, id))
 
-  // Update MCP server links if provided
+  // Update MCP server links if provided explicitly
   if (body.mcpServerIds !== undefined) {
     await db.delete(kinMcpServers).where(eq(kinMcpServers.kinId, id))
     for (const mcpServerId of body.mcpServerIds as string[]) {
       await db.insert(kinMcpServers).values({ kinId: id, mcpServerId })
+    }
+  }
+
+  // Auto-sync kinMcpServers links based on toolConfig.mcpAccess
+  if (body.toolConfig !== undefined && body.mcpServerIds === undefined) {
+    const tc = body.toolConfig as KinToolConfig | null
+    if (tc?.mcpAccess) {
+      // Get current links
+      const currentLinks = await db
+        .select({ mcpServerId: kinMcpServers.mcpServerId })
+        .from(kinMcpServers)
+        .where(eq(kinMcpServers.kinId, id))
+        .all()
+      const currentSet = new Set(currentLinks.map((l) => l.mcpServerId))
+
+      // Servers that should be linked: those with enabled tools (non-empty access list)
+      for (const [serverId, access] of Object.entries(tc.mcpAccess)) {
+        if (access.length > 0 && !currentSet.has(serverId)) {
+          await db.insert(kinMcpServers).values({ kinId: id, mcpServerId: serverId })
+        }
+      }
     }
   }
 
@@ -211,11 +243,12 @@ kinRoutes.patch('/:id', async (c) => {
     slug: updated!.slug,
     name: updated!.name,
     role: updated!.role,
-    avatarUrl: kinAvatarUrl(id, updated!.avatarPath),
+    avatarUrl: kinAvatarUrl(id, updated!.avatarPath, updated!.updatedAt),
     character: updated!.character,
     expertise: updated!.expertise,
     model: updated!.model,
     workspacePath: updated!.workspacePath,
+    toolConfig: updated!.toolConfig ? JSON.parse(updated!.toolConfig) : null,
     mcpServers: mcpLinks,
     queueSize: 0,
     isProcessing: false,
@@ -261,7 +294,7 @@ kinRoutes.delete('/:id', async (c) => {
   await db.delete(crons).where(eq(crons.kinId, id))
   // 6. Remaining kin-owned records
   await db.update(contacts).set({ linkedKinId: null }).where(eq(contacts.linkedKinId, id))
-  await db.delete(contacts).where(eq(contacts.kinId, id))
+  await db.delete(contactNotes).where(eq(contactNotes.kinId, id))
   await db.delete(customTools).where(eq(customTools.kinId, id))
   await db.delete(kinMcpServers).where(eq(kinMcpServers.kinId, id))
 
@@ -371,6 +404,44 @@ kinRoutes.post('/:id/avatar/generate', async (c) => {
       502,
     )
   }
+})
+
+// ─── Tool authorization routes ────────────────────────────────────────────────
+
+// GET /api/kins/:id/tools — list all available tools with enabled/disabled state
+kinRoutes.get('/:id/tools', async (c) => {
+  const kin = resolveKinByIdOrSlug(c.req.param('id'))
+  if (!kin) {
+    return c.json({ error: { code: 'KIN_NOT_FOUND', message: 'Kin not found' } }, 404)
+  }
+
+  const toolConfig: KinToolConfig | null = kin.toolConfig
+    ? JSON.parse(kin.toolConfig)
+    : null
+
+  // Native tools grouped by domain
+  const allNative = toolRegistry.list()
+  const domainGroupsMap = new Map<ToolDomain, Array<{ name: string; enabled: boolean }>>()
+
+  for (const t of allNative) {
+    const domain = TOOL_DOMAIN_MAP[t.name]
+    if (!domain) continue
+    if (!domainGroupsMap.has(domain)) domainGroupsMap.set(domain, [])
+    const enabled = !toolConfig?.disabledNativeTools?.includes(t.name)
+    domainGroupsMap.get(domain)!.push({ name: t.name, enabled })
+  }
+
+  const nativeTools = Array.from(domainGroupsMap.entries()).map(([domain, tools]) => ({
+    domain,
+    tools,
+  }))
+
+  // MCP tools with enabled state
+  const mcpTools = await getMCPToolsForConfig(kin.id, toolConfig)
+
+  log.debug({ kinId: kin.id, nativeCount: nativeTools.length, mcpCount: mcpTools.length }, 'GET /tools response')
+
+  return c.json({ nativeTools, mcpTools })
 })
 
 // ─── Compacting routes ───────────────────────────────────────────────────────

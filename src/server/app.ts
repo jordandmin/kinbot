@@ -10,10 +10,14 @@ import { sseRoutes } from '@/server/routes/sse'
 import { kinRoutes } from '@/server/routes/kins'
 import { messageRoutes } from '@/server/routes/messages'
 import { vaultRoutes } from '@/server/routes/vault'
+import { contactRoutes } from '@/server/routes/contacts'
 import { taskRoutes } from '@/server/routes/tasks'
 import { cronRoutes } from '@/server/routes/crons'
 import { mcpServerRoutes } from '@/server/routes/mcp-servers'
 import { fileRoutes } from '@/server/routes/files'
+import { fileStorageRoutes } from '@/server/routes/file-storage'
+import { promptRoutes } from '@/server/routes/prompts'
+import { sharedRoutes } from '@/server/routes/shared'
 
 export type AppVariables = {
   session: { id: string; userId: string; token: string }
@@ -58,9 +62,13 @@ app.route('/api/sse', sseRoutes)
 app.route('/api/kins', kinRoutes)
 app.route('/api/kins/:kinId/messages', messageRoutes)
 app.route('/api/vault', vaultRoutes)
+app.route('/api/contacts', contactRoutes)
 app.route('/api/tasks', taskRoutes)
 app.route('/api/crons', cronRoutes)
 app.route('/api/mcp-servers', mcpServerRoutes)
 app.route('/api/files', fileRoutes)
+app.route('/api/file-storage', fileStorageRoutes)
+app.route('/api/prompts', promptRoutes)
+app.route('/s', sharedRoutes)
 
 export { app }

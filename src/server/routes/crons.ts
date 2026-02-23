@@ -17,12 +17,21 @@ const log = createLogger('routes:crons')
 
 export const cronRoutes = new Hono<{ Variables: AppVariables }>()
 
+function kinAvatarUrl(kinId: string, avatarPath: string | null): string | null {
+  if (!avatarPath) return null
+  const ext = avatarPath.split('.').pop() ?? 'png'
+  return `/api/uploads/kins/${kinId}/avatar.${ext}`
+}
+
+interface KinInfo { name: string; avatarPath: string | null }
+
 // Serialize cron for API response
-function serializeCron(cron: any, kinName?: string) {
+function serializeCron(cron: any, kinInfo?: KinInfo) {
   return {
     id: cron.id,
     kinId: cron.kinId,
-    kinName: kinName ?? 'Unknown',
+    kinName: kinInfo?.name ?? 'Unknown',
+    kinAvatarUrl: kinInfo ? kinAvatarUrl(cron.kinId, kinInfo.avatarPath) : null,
     name: cron.name,
     schedule: cron.schedule,
     taskDescription: cron.taskDescription,
@@ -41,12 +50,12 @@ cronRoutes.get('/', async (c) => {
   const kinId = c.req.query('kinId')
   const allCrons = await listCrons(kinId ?? undefined)
 
-  // Fetch kin names
+  // Fetch kin info (name + avatar)
   const kinIds = [...new Set(allCrons.map((cr) => cr.kinId))]
-  const kinMap = new Map<string, string>()
+  const kinMap = new Map<string, KinInfo>()
   for (const id of kinIds) {
-    const kin = await db.select({ name: kins.name }).from(kins).where(eq(kins.id, id)).get()
-    if (kin) kinMap.set(id, kin.name)
+    const kin = await db.select({ name: kins.name, avatarPath: kins.avatarPath }).from(kins).where(eq(kins.id, id)).get()
+    if (kin) kinMap.set(id, kin)
   }
 
   return c.json({
@@ -85,8 +94,8 @@ cronRoutes.post('/', async (c) => {
 
     log.info({ cronId: cron.id, kinId: cron.kinId, name: cron.name, schedule: cron.schedule }, 'Cron created')
 
-    const kin = await db.select({ name: kins.name }).from(kins).where(eq(kins.id, cron.kinId)).get()
-    return c.json({ cron: serializeCron(cron, kin?.name) }, 201)
+    const kin = await db.select({ name: kins.name, avatarPath: kins.avatarPath }).from(kins).where(eq(kins.id, cron.kinId)).get()
+    return c.json({ cron: serializeCron(cron, kin ?? undefined) }, 201)
   } catch (err) {
     return c.json(
       { error: { code: 'CRON_CREATE_ERROR', message: err instanceof Error ? err.message : 'Unknown error' } },
@@ -118,8 +127,8 @@ cronRoutes.patch('/:id', async (c) => {
       return c.json({ error: { code: 'NOT_FOUND', message: 'Cron not found' } }, 404)
     }
 
-    const kin = await db.select({ name: kins.name }).from(kins).where(eq(kins.id, updated.kinId)).get()
-    return c.json({ cron: serializeCron(updated, kin?.name) })
+    const kin = await db.select({ name: kins.name, avatarPath: kins.avatarPath }).from(kins).where(eq(kins.id, updated.kinId)).get()
+    return c.json({ cron: serializeCron(updated, kin ?? undefined) })
   } catch (err) {
     return c.json(
       { error: { code: 'CRON_UPDATE_ERROR', message: err instanceof Error ? err.message : 'Unknown error' } },
@@ -136,9 +145,16 @@ cronRoutes.delete('/:id', async (c) => {
     return c.json({ error: { code: 'NOT_FOUND', message: 'Cron not found' } }, 404)
   }
 
-  await deleteCron(cronId)
-  log.info({ cronId, kinId: existing.kinId, name: existing.name }, 'Cron deleted')
-  return c.json({ success: true })
+  try {
+    await deleteCron(cronId)
+    log.info({ cronId, kinId: existing.kinId, name: existing.name }, 'Cron deleted')
+    return c.json({ success: true })
+  } catch (err) {
+    return c.json(
+      { error: { code: 'CRON_DELETE_ERROR', message: err instanceof Error ? err.message : 'Unknown error' } },
+      500,
+    )
+  }
 })
 
 // POST /api/crons/:id/approve — approve a Kin-created cron
@@ -163,6 +179,6 @@ cronRoutes.post('/:id/approve', async (c) => {
 
   log.info({ cronId, kinId: approved.kinId, name: approved.name }, 'Cron approved')
 
-  const kin = await db.select({ name: kins.name }).from(kins).where(eq(kins.id, approved.kinId)).get()
-  return c.json({ cron: serializeCron(approved, kin?.name) })
+  const kin = await db.select({ name: kins.name, avatarPath: kins.avatarPath }).from(kins).where(eq(kins.id, approved.kinId)).get()
+  return c.json({ cron: serializeCron(approved, kin ?? undefined) })
 })

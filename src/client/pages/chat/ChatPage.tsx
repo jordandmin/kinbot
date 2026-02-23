@@ -12,11 +12,12 @@ import { useAuth } from '@/client/hooks/useAuth'
 import { Separator } from '@/client/components/ui/separator'
 import { ThemeToggle } from '@/client/components/common/ThemeToggle'
 import { PaletteToggle } from '@/client/components/common/PaletteToggle'
+import { UserMenu } from '@/client/components/common/UserMenu'
 import { MessageSquare } from 'lucide-react'
 
 export function ChatPage() {
   const { t } = useTranslation()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const {
@@ -92,6 +93,7 @@ export function ChatPage() {
     <SidebarProvider>
       <AppSidebar
         kins={kins}
+        llmModels={llmModels}
         selectedKinSlug={selectedKinSlug}
         unavailableKinIds={unavailableKinIds}
         kinQueueState={kinQueueState}
@@ -99,32 +101,42 @@ export function ChatPage() {
         onCreateKin={handleOpenCreateModal}
         onEditKin={handleOpenEditModal}
         onReorderKins={reorderKins}
-        onLogout={logout}
       />
 
       <SidebarInset>
-        <Routes>
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route
-            path="*"
-            element={
-              <div className="flex h-svh flex-col">
-                {/* Header */}
-                <header className="surface-header sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b px-4">
-                  <SidebarTrigger />
-                  <Separator orientation="vertical" className="h-5" />
-                  <div className="flex flex-1 items-center justify-between">
-                    <h2 className="text-sm text-muted-foreground">KinBot</h2>
-                    <div className="flex items-center gap-1">
-                      <PaletteToggle />
-                      <ThemeToggle />
-                    </div>
-                  </div>
-                </header>
+        <div className="flex h-svh flex-col">
+          {/* Shared header — always visible */}
+          <header className="surface-header sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b px-4">
+            <SidebarTrigger />
+            <Separator orientation="vertical" className="h-5" />
+            <div className="flex flex-1 items-center justify-between">
+              <h2 className="text-sm text-muted-foreground">KinBot</h2>
+              <div className="flex items-center gap-1">
+                <PaletteToggle />
+                <ThemeToggle />
+                {user && (
+                  <UserMenu
+                    user={{
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                      email: user.email,
+                      avatarUrl: user.avatarUrl,
+                    }}
+                    onLogout={logout}
+                  />
+                )}
+              </div>
+            </div>
+          </header>
 
-                {/* Chat content area */}
-                {selectedKin ? (
+          {/* Page content */}
+          <Routes>
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route
+              path="*"
+              element={
+                selectedKin ? (
                   <ChatPanel
                     kin={{
                       id: selectedKin.id,
@@ -150,11 +162,11 @@ export function ChatPage() {
                       </p>
                     </div>
                   </div>
-                )}
-              </div>
-            }
-          />
-        </Routes>
+                )
+              }
+            />
+          </Routes>
+        </div>
       </SidebarInset>
 
       {/* Create Kin modal */}

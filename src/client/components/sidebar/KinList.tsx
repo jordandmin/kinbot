@@ -29,10 +29,12 @@ interface KinSummary {
   name: string
   role: string
   avatarUrl: string | null
+  model: string
 }
 
 interface KinListProps {
   kins: KinSummary[]
+  llmModels: { id: string; name: string }[]
   selectedKinSlug: string | null
   unavailableKinIds: Set<string>
   kinQueueState: Map<string, { isProcessing: boolean; queueSize: number }>
@@ -42,7 +44,7 @@ interface KinListProps {
   onReorderKins: (newOrder: string[]) => void
 }
 
-export function KinList({ kins, selectedKinSlug, unavailableKinIds, kinQueueState, onSelectKin, onCreateKin, onEditKin, onReorderKins }: KinListProps) {
+export function KinList({ kins, llmModels, selectedKinSlug, unavailableKinIds, kinQueueState, onSelectKin, onCreateKin, onEditKin, onReorderKins }: KinListProps) {
   const { t } = useTranslation()
 
   const sensors = useSensors(
@@ -80,9 +82,10 @@ export function KinList({ kins, selectedKinSlug, unavailableKinIds, kinQueueStat
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={kinIds} strategy={verticalListSortingStrategy}>
-              <div className="space-y-1.5 px-1">
+              <div className="space-y-1 px-1">
                 {kins.map((kin) => {
                   const queueState = kinQueueState.get(kin.id)
+                  const modelName = llmModels.find((m) => m.id === kin.model)?.name
                   return (
                     <SortableKinCard
                       key={kin.id}
@@ -90,6 +93,7 @@ export function KinList({ kins, selectedKinSlug, unavailableKinIds, kinQueueStat
                       name={kin.name}
                       role={kin.role}
                       avatarUrl={kin.avatarUrl}
+                      modelDisplayName={modelName}
                       isSelected={selectedKinSlug === kin.slug}
                       isProcessing={queueState?.isProcessing}
                       queueSize={queueState?.queueSize}

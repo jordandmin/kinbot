@@ -22,6 +22,62 @@
       "when": 1771696056328,
       "tag": "0002_next_lady_ursula",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771721454344,
+      "tag": "0003_busy_imperial_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1771728307298,
+      "tag": "0004_handy_marvel_apes",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1771767851618,
+      "tag": "0005_amused_rick_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1771768725689,
+      "tag": "0006_heavy_arclight",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1771768939922,
+      "tag": "0007_goofy_wind_dancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1771771532433,
+      "tag": "0008_clear_whistler",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1771790779734,
+      "tag": "0009_stiff_bloodscream",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1771804756532,
+      "tag": "0010_sticky_skrulls",
+      "breakpoints": true
     }
   ]
 }

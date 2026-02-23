@@ -81,11 +81,11 @@ messageRoutes.get('/', async (c) => {
   const messageIds = messageList.map((m) => m.id)
   const fileMap = await getFilesForMessages(messageIds)
 
-  // Resolve source kin info for inter-kin messages
+  // Resolve source kin info for inter-kin and task messages
   const kinSourceIds = [
     ...new Set(
       messageList
-        .filter((m) => m.sourceType === 'kin' && m.sourceId)
+        .filter((m) => (m.sourceType === 'kin' || m.sourceType === 'task') && m.sourceId)
         .map((m) => m.sourceId!),
     ),
   ]
@@ -107,7 +107,8 @@ messageRoutes.get('/', async (c) => {
 
   return c.json({
     messages: messageList.map((m) => {
-      const kinInfo = m.sourceType === 'kin' && m.sourceId ? kinInfoMap.get(m.sourceId) : null
+      const kinInfo = (m.sourceType === 'kin' || m.sourceType === 'task') && m.sourceId ? kinInfoMap.get(m.sourceId) : null
+      const meta = m.metadata ? JSON.parse(m.metadata as string) : null
       return {
         id: m.id,
         role: m.role,
@@ -117,6 +118,8 @@ messageRoutes.get('/', async (c) => {
         sourceName: kinInfo?.name ?? null,
         sourceAvatarUrl: kinInfo?.avatarUrl ?? null,
         isRedacted: m.isRedacted,
+        toolCalls: m.toolCalls ? JSON.parse(m.toolCalls as string) : null,
+        resolvedTaskId: meta?.resolvedTaskId ?? null,
         files: (fileMap.get(m.id) ?? []).map(serializeFile),
         createdAt: m.createdAt,
       }

@@ -1,0 +1,178 @@
+import { tool } from 'ai'
+import { z } from 'zod'
+import { eq } from 'drizzle-orm'
+import { v4 as uuid } from 'uuid'
+import { db } from '@/server/db/index'
+import { mcpServers, kinMcpServers } from '@/server/db/schema'
+import { disconnectServer } from '@/server/services/mcp'
+import { config } from '@/server/config'
+import { createLogger } from '@/server/logger'
+import type { ToolRegistration } from '@/server/tools/types'
+
+const log = createLogger('tools:mcp')
+
+/**
+ * add_mcp_server — create a new MCP server on the platform.
+ * The server is auto-assigned to the calling Kin.
+ * If MCP_REQUIRE_APPROVAL is true, the server stays pending until approved by the user.
+ * Available to main agents only.
+ */
+export const addMcpServerTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Add a new MCP (Model Context Protocol) server to the platform. ' +
+        'The server will be auto-assigned to you. ' +
+        'Depending on platform settings, the server may require user approval before activation.',
+      inputSchema: z.object({
+        name: z.string().describe('Display name for the MCP server (e.g. "GitHub - Personal")'),
+        command: z.string().describe('Executable command to launch the server (e.g. "npx", "node", "python")'),
+        args: z
+          .array(z.string())
+          .optional()
+          .describe('Command-line arguments (e.g. ["-y", "@modelcontextprotocol/server-github"])'),
+        env: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe('Environment variables for the server process (e.g. {"GITHUB_TOKEN": "ghp_..."})'),
+      }),
+      execute: async ({ name, command, args, env }) => {
+        try {
+          const id = uuid()
+          const now = new Date()
+          const status = config.mcp.requireApproval ? 'pending_approval' : 'active'
+
+          await db.insert(mcpServers).values({
+            id,
+            name,
+            command,
+            args: args ? JSON.stringify(args) : null,
+            env: env ? JSON.stringify(env) : null,
+            status,
+            createdByKinId: ctx.kinId,
+            createdAt: now,
+            updatedAt: now,
+          })
+
+          // Auto-assign to the calling Kin
+          await db.insert(kinMcpServers).values({
+            kinId: ctx.kinId,
+            mcpServerId: id,
+          })
+
+          log.info({ serverId: id, name, kinId: ctx.kinId, status }, 'MCP server created by Kin')
+
+          return {
+            serverId: id,
+            name,
+            status,
+            message: status === 'pending_approval'
+              ? 'MCP server created — awaiting user approval before activation.'
+              : 'MCP server created and active.',
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * update_mcp_server — modify an existing MCP server's configuration.
+ * Available to main agents only.
+ */
+export const updateMcpServerTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'Update an existing MCP server configuration (name, command, args, env).',
+      inputSchema: z.object({
+        server_id: z.string().describe('ID of the MCP server to update'),
+        name: z.string().optional().describe('New display name'),
+        command: z.string().optional().describe('New executable command'),
+        args: z.array(z.string()).optional().describe('New command-line arguments'),
+        env: z.record(z.string(), z.string()).optional().describe('New environment variables (replaces all existing)'),
+      }),
+      execute: async ({ server_id, name, command, args, env }) => {
+        try {
+          const existing = await db.select().from(mcpServers).where(eq(mcpServers.id, server_id)).get()
+          if (!existing) return { error: 'MCP server not found' }
+
+          const updates: Partial<typeof mcpServers.$inferInsert> = { updatedAt: new Date() }
+          if (name !== undefined) updates.name = name
+          if (command !== undefined) updates.command = command
+          if (args !== undefined) updates.args = JSON.stringify(args)
+          if (env !== undefined) updates.env = env ? JSON.stringify(env) : null
+
+          await db.update(mcpServers).set(updates).where(eq(mcpServers.id, server_id))
+
+          // Disconnect if config changed so next call reconnects with new config
+          const configChanged = command !== undefined || args !== undefined || env !== undefined
+          if (configChanged) {
+            await disconnectServer(server_id)
+          }
+
+          log.info({ serverId: server_id, kinId: ctx.kinId, configChanged }, 'MCP server updated by Kin')
+          return { success: true, serverId: server_id }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * remove_mcp_server — delete an MCP server from the platform.
+ * Available to main agents only.
+ */
+export const removeMcpServerTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'Remove an MCP server from the platform permanently. This disconnects the server and removes it from all Kins.',
+      inputSchema: z.object({
+        server_id: z.string().describe('ID of the MCP server to remove'),
+      }),
+      execute: async ({ server_id }) => {
+        try {
+          const existing = await db.select().from(mcpServers).where(eq(mcpServers.id, server_id)).get()
+          if (!existing) return { error: 'MCP server not found' }
+
+          await disconnectServer(server_id)
+          await db.delete(mcpServers).where(eq(mcpServers.id, server_id))
+
+          log.info({ serverId: server_id, name: existing.name, kinId: ctx.kinId }, 'MCP server removed by Kin')
+          return { success: true }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * list_mcp_servers — list all MCP servers configured on the platform.
+ * Available to main agents only.
+ */
+export const listMcpServersTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'List all MCP servers configured on the platform with their status.',
+      inputSchema: z.object({}),
+      execute: async () => {
+        const servers = await db.select().from(mcpServers).all()
+        return {
+          servers: servers.map((s) => ({
+            id: s.id,
+            name: s.name,
+            command: s.command,
+            args: s.args ? JSON.parse(s.args) : [],
+            status: s.status,
+            createdByKinId: s.createdByKinId,
+          })),
+        }
+      },
+    }),
+}

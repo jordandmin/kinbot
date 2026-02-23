@@ -76,9 +76,17 @@ export const config = {
     maxSteps: Number(process.env.TOOLS_MAX_STEPS ?? 10),
   },
 
+  humanPrompts: {
+    maxPendingPerKin: Number(process.env.HUMAN_PROMPTS_MAX_PENDING ?? 5),
+  },
+
   interKin: {
     maxChainDepth: Number(process.env.INTER_KIN_MAX_CHAIN_DEPTH ?? 5),
     rateLimitPerMinute: Number(process.env.INTER_KIN_RATE_LIMIT ?? 20),
+  },
+
+  mcp: {
+    requireApproval: process.env.MCP_REQUIRE_APPROVAL !== 'false', // default: true
   },
 
   vault: {
@@ -93,4 +101,12 @@ export const config = {
     dir: process.env.UPLOAD_DIR ?? `${dataDir}/uploads`,
     maxFileSizeMb: Number(process.env.UPLOAD_MAX_FILE_SIZE ?? 50),
   },
+
+  fileStorage: {
+    dir: process.env.FILE_STORAGE_DIR ?? `${dataDir}/storage`,
+    maxFileSizeMb: Number(process.env.FILE_STORAGE_MAX_SIZE ?? 100),
+    cleanupIntervalMin: Number(process.env.FILE_STORAGE_CLEANUP_INTERVAL ?? 60),
+  },
+
+  publicUrl: process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3000}`,
 } as const

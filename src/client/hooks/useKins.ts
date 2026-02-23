@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
+import type { KinToolConfig } from '@/shared/types'
 
 interface KinSummary {
   id: string
@@ -16,6 +17,7 @@ interface KinDetail extends KinSummary {
   character: string
   expertise: string
   workspacePath: string
+  toolConfig: KinToolConfig | null
   mcpServers: { id: string; name: string }[]
   queueSize: number
   isProcessing: boolean
@@ -44,6 +46,7 @@ interface UpdateKinData {
   character?: string
   expertise?: string
   model?: string
+  toolConfig?: KinToolConfig | null
 }
 
 interface UserProfile {
