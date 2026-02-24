@@ -332,3 +332,4 @@ export type ToolDomain =
   | 'channels'
   | 'system'
   | 'users'
+  | 'database'

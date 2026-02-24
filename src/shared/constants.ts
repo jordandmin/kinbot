@@ -95,6 +95,7 @@ export const TOOL_DOMAIN_META: Record<ToolDomain, ToolDomainMeta> = {
   channels:        { icon: 'Radio',       bg: 'bg-chart-4/40',   text: 'text-chart-4',          border: 'border-chart-4/40',           labelKey: 'tools.domains.channels' },
   system:          { icon: 'ScrollText',  bg: 'bg-chart-5/40',   text: 'text-chart-5',          border: 'border-chart-5/40',           labelKey: 'tools.domains.system' },
   users:           { icon: 'UserCog',     bg: 'bg-chart-2/40',   text: 'text-chart-2',          border: 'border-chart-2/40',           labelKey: 'tools.domains.users' },
+  database:        { icon: 'Database',    bg: 'bg-destructive/20', text: 'text-destructive',      border: 'border-destructive/20',       labelKey: 'tools.domains.database' },
 } as const
 
 /** Map tool names to their UI domain category */
@@ -186,6 +187,8 @@ export const TOOL_DOMAIN_MAP: Record<string, ToolDomain> = {
   list_users: 'users',
   get_user: 'users',
   create_invitation: 'users',
+  // Database
+  execute_sql: 'database',
 } as const
 
 /** Suggested labels for contact identifiers (UI combo suggestions, not restrictive).

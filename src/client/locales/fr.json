@@ -756,7 +756,8 @@
       "webhooks": "Webhooks",
       "system": "Système",
       "channels": "Channels",
-      "users": "Utilisateurs"
+      "users": "Utilisateurs",
+      "database": "Base de données"
     },
     "names": {
       "web_search": "Recherche web",
@@ -825,7 +826,8 @@
       "get_platform_logs": "Logs plateforme",
       "list_users": "Lister les utilisateurs",
       "get_user": "Obtenir un utilisateur",
-      "create_invitation": "Créer une invitation"
+      "create_invitation": "Créer une invitation",
+      "execute_sql": "Exécuter SQL"
     }
   },
   "invite": {

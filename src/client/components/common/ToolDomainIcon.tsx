@@ -17,6 +17,7 @@ import {
   ScrollText,
   Radio,
   UserCog,
+  Database,
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 import type { ToolDomain } from '@/shared/types'
@@ -41,6 +42,7 @@ const DOMAIN_ICONS: Record<ToolDomain, React.FC<LucideProps>> = {
   channels: Radio,
   system: ScrollText,
   users: UserCog,
+  database: Database,
 }
 
 interface ToolDomainIconProps extends LucideProps {

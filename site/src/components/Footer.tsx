@@ -16,10 +16,10 @@ export function Footer() {
 
         <div className="flex flex-wrap items-center gap-6">
           {[
-            { label: 'GitHub', href: 'https://github.com/marlburrow/kinbot', external: true },
-            { label: 'Issues', href: 'https://github.com/marlburrow/kinbot/issues', external: true },
-            { label: 'Releases', href: 'https://github.com/marlburrow/kinbot/releases', external: true },
-            { label: 'License', href: 'https://github.com/marlburrow/kinbot/blob/main/LICENSE', external: true },
+            { label: 'GitHub', href: 'https://github.com/MarlBurroW/kinbot', external: true },
+            { label: 'Issues', href: 'https://github.com/MarlBurroW/kinbot/issues', external: true },
+            { label: 'Releases', href: 'https://github.com/MarlBurroW/kinbot/releases', external: true },
+            { label: 'License', href: 'https://github.com/MarlBurroW/kinbot/blob/main/LICENSE', external: true },
           ].map(({ label, href, external }) => (
             <a
               key={label}
@@ -36,7 +36,7 @@ export function Footer() {
 
         <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
           <a
-            href="https://github.com/marlburrow/kinbot"
+            href="https://github.com/MarlBurroW/kinbot"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 transition-colors hover:opacity-80"

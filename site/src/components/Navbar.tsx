@@ -57,7 +57,7 @@ export function Navbar({ dark, onToggleDark }: NavbarProps) {
             {dark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <a
-            href="https://github.com/marlburrow/kinbot"
+            href="https://github.com/MarlBurroW/kinbot"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"

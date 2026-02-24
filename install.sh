@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # KinBot installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/marlburrow/kinbot/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh | bash
 # Or:    KINBOT_PORT=8080 bash install.sh
 set -euo pipefail
 
@@ -9,7 +9,7 @@ KINBOT_DIR="${KINBOT_DIR:-/opt/kinbot}"
 KINBOT_DATA_DIR="${KINBOT_DATA_DIR:-/var/lib/kinbot}"
 KINBOT_PORT="${KINBOT_PORT:-3000}"
 KINBOT_USER="${KINBOT_USER:-kinbot}"
-KINBOT_REPO="marlburrow/kinbot"
+KINBOT_REPO="MarlBurroW/kinbot"
 KINBOT_BRANCH="${KINBOT_BRANCH:-main}"
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
@@ -363,7 +363,7 @@ main() {
   echo ""
   echo -e "${BOLD}KinBot Installer${NC}"
   echo -e "Self-hosted AI agent platform"
-  echo -e "https://github.com/marlburrow/kinbot"
+  echo -e "https://github.com/MarlBurroW/kinbot"
   echo ""
 
   detect_os

@@ -10,7 +10,7 @@ const tabs: { id: Tab; label: string }[] = [
 ]
 
 const code: Record<Tab, string> = {
-  script: `curl -fsSL https://raw.githubusercontent.com/marlburrow/kinbot/main/install.sh | bash
+  script: `curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh | bash
 
 # Customizable via env vars:
 # KINBOT_DIR=/opt/kinbot \\
@@ -23,9 +23,9 @@ const code: Record<Tab, string> = {
   -p 3000:3000 \\
   -v kinbot-data:/app/data \\
   --restart unless-stopped \\
-  ghcr.io/marlburrow/kinbot:latest`,
+  ghcr.io/MarlBurroW/kinbot:latest`,
 
-  manual: `git clone https://github.com/marlburrow/kinbot.git
+  manual: `git clone https://github.com/MarlBurroW/kinbot.git
 cd kinbot
 bun install
 bun run build

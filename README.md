@@ -72,7 +72,7 @@ It's a **self-hosted** platform designed for individuals and small groups (famil
 ### One-liner install (Linux / macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marlburrow/kinbot/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh | bash
 ```
 
 This script will:
@@ -90,7 +90,7 @@ Open `http://localhost:3000` — the onboarding wizard will guide you through th
 KINBOT_DIR=/home/me/kinbot \
 KINBOT_DATA_DIR=/home/me/kinbot-data \
 KINBOT_PORT=8080 \
-  bash <(curl -fsSL https://raw.githubusercontent.com/marlburrow/kinbot/main/install.sh)
+  bash <(curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh)
 ```
 
 ### Docker
@@ -101,12 +101,12 @@ docker run -d \
   -p 3000:3000 \
   -v kinbot-data:/app/data \
   --restart unless-stopped \
-  ghcr.io/marlburrow/kinbot:latest
+  ghcr.io/MarlBurroW/kinbot:latest
 ```
 
 Or with Docker Compose (see [`docker/docker-compose.yml`](docker/docker-compose.yml)):
 ```bash
-git clone https://github.com/marlburrow/kinbot.git
+git clone https://github.com/MarlBurroW/kinbot.git
 cd kinbot/docker
 ENCRYPTION_KEY=$(openssl rand -hex 32) docker compose up -d
 ```
@@ -114,7 +114,7 @@ ENCRYPTION_KEY=$(openssl rand -hex 32) docker compose up -d
 ### Manual
 
 ```bash
-git clone https://github.com/marlburrow/kinbot.git
+git clone https://github.com/MarlBurroW/kinbot.git
 cd kinbot
 bun install
 bun run build
@@ -203,7 +203,7 @@ See [`.env.example`](.env.example) for the complete list of all options (compact
 ### Setup
 
 ```bash
-git clone https://github.com/marlburrow/kinbot.git
+git clone https://github.com/MarlBurroW/kinbot.git
 cd kinbot
 bun install
 bun run dev    # Starts Vite dev server (port 5173) + Hono backend (port 3333)

@@ -95,6 +95,7 @@ import {
   sendChannelMessageTool,
 } from '@/server/tools/channel-tools'
 import { getPlatformLogsTool } from '@/server/tools/platform-tools'
+import { executeSqlTool } from '@/server/tools/database-tools'
 import {
   listUsersTool,
   getUserTool,
@@ -217,6 +218,9 @@ export function registerAllTools(): void {
 
   // Platform / system tools (main only, opt-in required)
   toolRegistry.register('get_platform_logs', getPlatformLogsTool)
+
+  // Database tools (main only, opt-in required — God Tier)
+  toolRegistry.register('execute_sql', executeSqlTool)
 
   // User management tools (main only)
   toolRegistry.register('list_users', listUsersTool)

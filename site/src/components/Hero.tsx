@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, Copy, Github, ArrowRight } from 'lucide-react'
 
-const INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/marlburrow/kinbot/main/install.sh | bash'
+const INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh | bash'
 
 export function Hero() {
   const [copied, setCopied] = useState(false)
@@ -62,7 +62,7 @@ export function Hero() {
       {/* CTA buttons */}
       <div className="animate-fade-in-up flex flex-col sm:flex-row items-center gap-4 mt-10" style={{ animationDelay: '0.2s' }}>
         <a
-          href="https://github.com/marlburrow/kinbot"
+          href="https://github.com/MarlBurroW/kinbot"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95"

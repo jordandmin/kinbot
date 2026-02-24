@@ -8,10 +8,10 @@
   "homepage": "https://marlburrow.github.io/kinbot",
   "repository": {
     "type": "git",
-    "url": "https://github.com/marlburrow/kinbot.git"
+    "url": "https://github.com/MarlBurroW/kinbot.git"
   },
   "bugs": {
-    "url": "https://github.com/marlburrow/kinbot/issues"
+    "url": "https://github.com/MarlBurroW/kinbot/issues"
   },
   "keywords": [
     "ai-agents",

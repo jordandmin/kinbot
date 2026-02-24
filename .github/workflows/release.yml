@@ -61,7 +61,7 @@ jobs:
 
             **One-liner (Linux/macOS):**
             ```bash
-            curl -fsSL https://raw.githubusercontent.com/marlburrow/kinbot/main/install.sh | bash
+            curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh | bash
             ```
 
             **Docker:**
@@ -70,12 +70,12 @@ jobs:
               --name kinbot \
               -p 3000:3000 \
               -v kinbot-data:/app/data \
-              ghcr.io/marlburrow/kinbot:${{ github.ref_name }}
+              ghcr.io/MarlBurroW/kinbot:${{ github.ref_name }}
             ```
 
             **Manual:**
             ```bash
-            git clone https://github.com/marlburrow/kinbot.git
+            git clone https://github.com/MarlBurroW/kinbot.git
             cd kinbot && bun install && bun run build && bun run db:migrate
             NODE_ENV=production bun run start
             ```
