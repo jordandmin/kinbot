@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s" --no-merges | head -50)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s" --no-merges | head -30)
+          fi
+
+          # Write changelog to a file to avoid shell escaping issues
+          echo "$CHANGELOG" > /tmp/changelog.txt
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KinBot ${{ steps.changelog.outputs.version }}
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ---
+
+            ## Installation
+
+            **One-liner (Linux/macOS):**
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/marlburrow/kinbot/main/install.sh | bash
+            ```
+
+            **Docker:**
+            ```bash
+            docker run -d \
+              --name kinbot \
+              -p 3000:3000 \
+              -v kinbot-data:/app/data \
+              ghcr.io/marlburrow/kinbot:${{ github.ref_name }}
+            ```
+
+            **Manual:**
+            ```bash
+            git clone https://github.com/marlburrow/kinbot.git
+            cd kinbot && bun install && bun run build && bun run db:migrate
+            NODE_ENV=production bun run start
+            ```
+
+            Open `http://localhost:3000` — the setup wizard will guide you through the rest.
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            install.sh

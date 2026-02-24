@@ -38,3 +38,6 @@ data/
 
 # VSCode
 .vscode/
+
+# Claude Code
+.claude/
