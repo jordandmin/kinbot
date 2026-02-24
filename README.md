@@ -131,18 +131,18 @@ NODE_ENV=production bun run start
 │                   KinBot  (single process)                    │
 │                                                               │
 │  ┌──────────────────┐      ┌───────────────────────────────┐  │
-│  │  React + Vite    │      │        Hono REST API           │  │
-│  │  Tailwind 4      │◀────▶│        + SSE stream           │  │
+│  │  React + Vite    │      │        Hono REST API          │  │
+│  │  Tailwind 4      │◀───▶│        + SSE stream           │  │
 │  │  shadcn/ui       │      └──────────────┬────────────────┘  │
 │  └──────────────────┘                     │                   │
 │                                           │                   │
 │              ┌────────────────────────────┤                   │
 │              │            │               │                   │
-│    ┌─────────▼──┐  ┌──────▼────┐  ┌──────▼──────┐           │
-│    │  Vercel    │  │  Queue    │  │   Croner    │           │
-│    │  AI SDK   │  │  (FIFO)   │  │  (Cron jobs)│           │
-│    │  Kin Engine│  │  per Kin  │  └─────────────┘           │
-│    └────────────┘  └───────────┘                             │
+│    ┌─────────▼──┐  ┌──────▼────┐  ┌──────▼──────┐             │
+│    │  Vercel    │  │  Queue    │  │   Croner    │             │
+│    │  AI SDK    │  │  (FIFO)   │  │  (Cron jobs)│             │
+│    │  Kin Engine│  │  per Kin  │  └─────────────┘             │
+│    └────────────┘  └───────────┘                              │
 │                                                               │
 │  ┌─────────────────────────────────────────────────────────┐  │
 │  │           SQLite  (bun:sqlite + Drizzle ORM)            │  │
