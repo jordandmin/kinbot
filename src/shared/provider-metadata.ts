@@ -37,6 +37,7 @@ export const PROVIDER_META = {
   stability:          { capabilities: ['image'],                      displayName: 'Stability AI' },
   fal:                { capabilities: ['image'],                      displayName: 'fal.ai' },
   serper:             { capabilities: ['search'],                     displayName: 'Serper' },
+  perplexity:         { capabilities: ['llm', 'search'],              displayName: 'Perplexity' },
 } as const satisfies Record<string, ProviderMeta>
 
 export type ProviderType = keyof typeof PROVIDER_META
