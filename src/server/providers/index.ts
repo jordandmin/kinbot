@@ -24,6 +24,7 @@ import { replicateProvider } from '@/server/providers/replicate'
 import { stabilityProvider } from '@/server/providers/stability'
 import { falProvider } from '@/server/providers/fal'
 import { serperProvider } from '@/server/providers/serper'
+import { perplexityProvider } from '@/server/providers/perplexity'
 
 const log = createLogger('providers')
 
@@ -50,6 +51,7 @@ const registry: Record<string, ProviderDefinition> = {
   stability: stabilityProvider,
   fal: falProvider,
   serper: serperProvider,
+  perplexity: perplexityProvider,
 }
 
 export function getProviderDefinition(type: string): ProviderDefinition | undefined {
