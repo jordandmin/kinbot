@@ -5,6 +5,10 @@ import type { ChannelPlatform } from '@/shared/types'
 const PLATFORM_COLORS: Record<string, string> = {
   telegram: '#26A5E4',
   discord: '#5865F2',
+  slack: '#4A154B',
+  whatsapp: '#25D366',
+  signal: '#3A76F0',
+  matrix: '#0DBD8B',
 }
 
 function TelegramSvg({ className, color }: { className?: string; color?: string }) {

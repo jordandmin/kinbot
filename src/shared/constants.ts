@@ -44,7 +44,7 @@ export const MEMORY_CATEGORIES = ['fact', 'preference', 'decision', 'knowledge']
 
 export const MESSAGE_SOURCES = ['user', 'kin', 'task', 'cron', 'system', 'webhook', 'channel'] as const
 
-export const CHANNEL_PLATFORMS = ['telegram', 'discord'] as const
+export const CHANNEL_PLATFORMS = ['telegram', 'discord', 'slack', 'whatsapp', 'signal', 'matrix'] as const
 
 export const TASK_STATUSES = ['pending', 'in_progress', 'awaiting_human_input', 'completed', 'failed', 'cancelled'] as const
 
