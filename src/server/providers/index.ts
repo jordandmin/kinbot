@@ -22,6 +22,7 @@ import { jinaProvider } from '@/server/providers/jina'
 import { nomicProvider } from '@/server/providers/nomic'
 import { replicateProvider } from '@/server/providers/replicate'
 import { stabilityProvider } from '@/server/providers/stability'
+import { falProvider } from '@/server/providers/fal'
 
 const log = createLogger('providers')
 
@@ -46,6 +47,7 @@ const registry: Record<string, ProviderDefinition> = {
   nomic: nomicProvider,
   replicate: replicateProvider,
   stability: stabilityProvider,
+  fal: falProvider,
 }
 
 export function getProviderDefinition(type: string): ProviderDefinition | undefined {
