@@ -56,6 +56,12 @@ app.use('*', async (c, next) => {
   else log.debug(data, 'Request completed')
 })
 
+// Global error handler — ensures all unhandled exceptions return JSON, not plain text
+app.onError((err, c) => {
+  log.error({ err }, 'Unhandled error')
+  return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500)
+})
+
 app.use('/api/*', authMiddleware)
 
 // Health check

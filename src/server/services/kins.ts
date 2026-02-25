@@ -16,6 +16,10 @@ import {
   tasks,
   crons,
   files,
+  webhooks,
+  humanPrompts,
+  fileStorage,
+  vaultSecrets,
 } from '@/server/db/schema'
 import { config } from '@/server/config'
 import { generateSlug, ensureUniqueSlug, isValidSlug } from '@/server/utils/slug'
@@ -235,6 +239,8 @@ export async function deleteKin(kinId: string): Promise<boolean> {
   if (!existing) return false
 
   // Clean up all related records — topological order (leaves first)
+  // humanPrompts must come before messages and tasks (references both)
+  await db.delete(humanPrompts).where(eq(humanPrompts.kinId, kinId))
   await db.delete(files).where(eq(files.kinId, kinId))
   await db.delete(compactingSnapshots).where(eq(compactingSnapshots.kinId, kinId))
   await db.delete(memories).where(eq(memories.kinId, kinId))
@@ -248,6 +254,10 @@ export async function deleteKin(kinId: string): Promise<boolean> {
   await db.update(contacts).set({ linkedKinId: null }).where(eq(contacts.linkedKinId, kinId))
   await db.delete(contactNotes).where(eq(contactNotes.kinId, kinId))
   await db.delete(customTools).where(eq(customTools.kinId, kinId))
+  await db.delete(webhooks).where(eq(webhooks.kinId, kinId))
+  await db.delete(fileStorage).where(eq(fileStorage.kinId, kinId))
+  await db.update(fileStorage).set({ createdByKinId: null }).where(eq(fileStorage.createdByKinId, kinId))
+  await db.update(vaultSecrets).set({ createdByKinId: null }).where(eq(vaultSecrets.createdByKinId, kinId))
   await db.delete(kinMcpServers).where(eq(kinMcpServers.kinId, kinId))
 
   // Delete the kin

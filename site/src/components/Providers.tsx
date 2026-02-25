@@ -21,6 +21,25 @@ import type { ComponentType, SVGProps } from 'react'
 
 type SvgIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
 
+const fallBackIcon: SvgIcon = ({ size = 24, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <rect width="24" height="24" fill="#E0E0E0" />
+    <path
+      d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM11.9999 7C12.5524 7 13.0999 7.22464 13.4141 7.58579C13.7283 7.94695 13.9999 8.41421 13.9999 9C13.9999 9.55248 13.7752 10.0999 13.4141 10.4141C13.053 10.7283 12.5524 10.9999 11.9999 10.9999C11.4475 10.9999 10.9936 10.7283 10.6325 10.4141C10.2714 10.0999 10.0467 9.55248 10.0467 9C10.0467 8.41421 10.3183 7.94695 10.6325 7.58579C10.9478 7.22464 11.4952 7 11.9999 7Z"
+      fill="#B0B0B0"
+    />
+  </svg>
+)
+
+
+
 const providers: {
   name: string
   description: string
@@ -157,7 +176,7 @@ const providers: {
     name: 'Serper',
     description: 'Google SERP API',
     capabilities: ['Search'],
-    logo: 'https://serper.dev/favicon.ico',
+    Icon: fallBackIcon,
   },
 ]
 
