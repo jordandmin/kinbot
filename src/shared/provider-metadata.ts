@@ -34,6 +34,7 @@ export const PROVIDER_META = {
   jina:               { capabilities: ['embedding'],                  displayName: 'Jina AI' },
   nomic:              { capabilities: ['embedding'],                  displayName: 'Nomic' },
   replicate:          { capabilities: ['image'],                      displayName: 'Replicate' },
+  stability:          { capabilities: ['image'],                      displayName: 'Stability AI' },
 } as const satisfies Record<string, ProviderMeta>
 
 export type ProviderType = keyof typeof PROVIDER_META
