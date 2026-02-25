@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/client/components/ui/alert-dialog'
 import { Plus, Search } from 'lucide-react'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { useMemories } from '@/client/hooks/useMemories'
 import { MemoryCard } from '@/client/components/memory/MemoryCard'
 import { MemoryFormDialog } from '@/client/components/memory/MemoryFormDialog'
@@ -107,8 +107,7 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
       await deleteMemory(deletingMemory.id, deletingMemory.kinId)
       toast.success(t('settings.memories.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingMemory(null)
     }

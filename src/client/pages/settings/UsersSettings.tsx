@@ -26,7 +26,7 @@ import { Input } from '@/client/components/ui/input'
 import { Label } from '@/client/components/ui/label'
 import { UserPlus, Copy, Trash2, Link2, Clock, CheckCircle2, XCircle, Users } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { useAuth } from '@/client/hooks/useAuth'
 import type { UserSummary, InvitationSummary } from '@/shared/types'
 
@@ -73,8 +73,7 @@ export function UsersSettings() {
       await fetchUsers()
       toast.success(t('settings.users.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingUser(null)
     }
@@ -94,8 +93,7 @@ export function UsersSettings() {
       setRevealedLink(data.invitation.url)
       toast.success(t('settings.users.invitations.created'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setInviteCreating(false)
     }
@@ -108,8 +106,7 @@ export function UsersSettings() {
       await fetchInvitations()
       toast.success(t('settings.users.invitations.revoked'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setRevokingInvitation(null)
     }

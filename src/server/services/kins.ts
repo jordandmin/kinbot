@@ -1,4 +1,4 @@
-import { eq, and, not } from 'drizzle-orm'
+import { eq, and, not, inArray, or } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { mkdirSync, existsSync, rmSync } from 'fs'
 import { db } from '@/server/db/index'
@@ -20,6 +20,7 @@ import {
   humanPrompts,
   fileStorage,
   vaultSecrets,
+  scheduledWakeups,
 } from '@/server/db/schema'
 import { config } from '@/server/config'
 import { generateSlug, ensureUniqueSlug, isValidSlug } from '@/server/utils/slug'
@@ -238,12 +239,31 @@ export async function deleteKin(kinId: string): Promise<boolean> {
   const existing = db.select().from(kins).where(eq(kins.id, kinId)).get()
   if (!existing) return false
 
+  // Gather IDs of tasks and crons belonging to this kin to handle cross-kin FK references
+  const kinTaskIds = db.select({ id: tasks.id }).from(tasks).where(eq(tasks.parentKinId, kinId)).all().map((t) => t.id)
+  const kinCronIds = db.select({ id: crons.id }).from(crons).where(eq(crons.kinId, kinId)).all().map((c) => c.id)
+
   // Clean up all related records — topological order (leaves first)
   // humanPrompts must come before messages and tasks (references both)
   await db.delete(humanPrompts).where(eq(humanPrompts.kinId, kinId))
   await db.delete(files).where(eq(files.kinId, kinId))
   await db.delete(compactingSnapshots).where(eq(compactingSnapshots.kinId, kinId))
   await db.delete(memories).where(eq(memories.kinId, kinId))
+
+  // Null out cross-kin references before deleting tasks and crons
+  if (kinTaskIds.length > 0) {
+    // Other kins' queue items referencing this kin's tasks
+    await db.update(queueItems).set({ taskId: null }).where(inArray(queueItems.taskId, kinTaskIds))
+    // Other kins' messages referencing this kin's tasks
+    await db.update(messages).set({ taskId: null }).where(inArray(messages.taskId, kinTaskIds))
+    // Other kins' tasks referencing this kin's tasks as parent
+    await db.update(tasks).set({ parentTaskId: null }).where(inArray(tasks.parentTaskId, kinTaskIds))
+  }
+  if (kinCronIds.length > 0) {
+    // Other kins' tasks referencing this kin's crons
+    await db.update(tasks).set({ cronId: null }).where(inArray(tasks.cronId, kinCronIds))
+  }
+
   await db.delete(queueItems).where(eq(queueItems.kinId, kinId))
   await db.delete(messages).where(eq(messages.kinId, kinId))
   await db.update(tasks).set({ parentTaskId: null }).where(eq(tasks.parentKinId, kinId))
@@ -258,7 +278,11 @@ export async function deleteKin(kinId: string): Promise<boolean> {
   await db.delete(fileStorage).where(eq(fileStorage.kinId, kinId))
   await db.update(fileStorage).set({ createdByKinId: null }).where(eq(fileStorage.createdByKinId, kinId))
   await db.update(vaultSecrets).set({ createdByKinId: null }).where(eq(vaultSecrets.createdByKinId, kinId))
+  await db.update(mcpServers).set({ createdByKinId: null }).where(eq(mcpServers.createdByKinId, kinId))
   await db.delete(kinMcpServers).where(eq(kinMcpServers.kinId, kinId))
+  await db.delete(scheduledWakeups).where(
+    or(eq(scheduledWakeups.callerKinId, kinId), eq(scheduledWakeups.targetKinId, kinId)),
+  )
 
   // Delete the kin
   await db.delete(kins).where(eq(kins.id, kinId))

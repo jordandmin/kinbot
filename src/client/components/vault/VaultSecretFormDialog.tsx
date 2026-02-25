@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/client/components/ui/dialog'
 import { AlertCircle, Loader2 } from 'lucide-react'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import type { VaultSecretData } from '@/client/components/vault/VaultSecretCard'
 
 interface VaultSecretFormDialogProps {
@@ -77,7 +77,7 @@ export function VaultSecretFormDialog({
       onSaved()
       handleClose()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(getErrorMessage(err))
     } finally {
       setIsSaving(false)
     }

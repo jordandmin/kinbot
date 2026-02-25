@@ -33,6 +33,7 @@ import { ModelPicker } from '@/client/components/common/ModelPicker'
 import { KinSelectItem, type KinOption } from '@/client/components/common/KinSelectItem'
 import { AlertCircle, Loader2, Trash2 } from 'lucide-react'
 import { cn } from '@/client/lib/utils'
+import { getErrorMessage } from '@/client/lib/api'
 import { cronToHuman } from '@/client/lib/cron-human'
 import type { CronSummary } from '@/shared/types'
 
@@ -144,7 +145,7 @@ export function CronFormModal({
       }
       onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(getErrorMessage(err))
     } finally {
       setIsSubmitting(false)
     }
@@ -157,7 +158,7 @@ export function CronFormModal({
       await onDelete(cron.id)
       onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(getErrorMessage(err))
     } finally {
       setIsSubmitting(false)
     }

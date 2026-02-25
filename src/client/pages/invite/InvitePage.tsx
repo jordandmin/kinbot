@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/client/components/ui/select'
+import { getErrorMessage } from '@/client/lib/api'
 
 export function InvitePage() {
   const { t } = useTranslation()
@@ -141,8 +142,7 @@ export function InvitePage() {
       // Redirect to app after short delay
       setTimeout(() => navigate('/'), 1500)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      setError(message || t('invite.error'))
+      setError(getErrorMessage(err) || t('invite.error'))
     } finally {
       setIsLoading(false)
     }

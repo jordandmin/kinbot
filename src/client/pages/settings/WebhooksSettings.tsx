@@ -24,7 +24,7 @@ import { Input } from '@/client/components/ui/input'
 import { Label } from '@/client/components/ui/label'
 import { Plus, Copy, Eye, EyeOff , Webhook} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { WebhookCard } from '@/client/components/webhook/WebhookCard'
 import { WebhookFormDialog } from '@/client/components/webhook/WebhookFormDialog'
 import { WebhookLogDialog } from '@/client/components/webhook/WebhookLogDialog'
@@ -101,8 +101,7 @@ export function WebhooksSettings() {
       await fetchWebhooks()
       toast.success(t('settings.webhooks.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingWebhook(null)
     }
@@ -122,8 +121,7 @@ export function WebhooksSettings() {
       setShowToken(false)
       toast.success(t('settings.webhooks.regenerated'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setRegeneratingWebhook(null)
     }

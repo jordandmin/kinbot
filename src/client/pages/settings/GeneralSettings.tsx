@@ -6,7 +6,7 @@ import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
 import { MarkdownEditor } from '@/client/components/ui/markdown-editor'
 import { ModelPicker } from '@/client/components/common/ModelPicker'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 
 interface ProviderModel {
   id: string
@@ -79,8 +79,7 @@ export function GeneralSettings() {
       setInitialGlobalPrompt(globalPrompt)
       toast.success(t('settings.general.saved'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setSavingPrompt(false)
     }
@@ -93,8 +92,7 @@ export function GeneralSettings() {
       setInitialExtractionModel(extractionModel)
       toast.success(t('settings.general.modelSaved'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setSavingExtractionModel(false)
     }
@@ -107,8 +105,7 @@ export function GeneralSettings() {
       setInitialEmbeddingModel(embeddingModel)
       toast.success(t('settings.general.modelSaved'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setSavingEmbeddingModel(false)
     }
