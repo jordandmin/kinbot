@@ -238,7 +238,7 @@ export interface QuickSessionSummary {
 
 // ─── Channel types ──────────────────────────────────────────────────────────
 
-export type ChannelPlatform = 'telegram' | 'discord'
+export type ChannelPlatform = 'telegram' | 'discord' | 'slack'
 
 export type ChannelStatus = 'active' | 'inactive' | 'error'
 

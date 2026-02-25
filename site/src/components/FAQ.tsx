@@ -10,7 +10,7 @@ const faqs: FAQItem[] = [
   {
     question: 'Is KinBot free?',
     answer:
-      'Yes, KinBot is completely free and open-source under the MIT license. You self-host it on your own hardware or server. The only cost is the API usage from your chosen AI providers.',
+      'Yes, KinBot is completely free and open-source under the AGPL-3.0 license. You self-host it on your own hardware or server. The only cost is the API usage from your chosen AI providers.',
   },
   {
     question: 'What makes KinBot different from ChatGPT or Open WebUI?',
@@ -30,7 +30,7 @@ const faqs: FAQItem[] = [
   {
     question: 'What AI providers are supported?',
     answer:
-      'Over 20 providers including Anthropic (Claude), OpenAI (GPT, DALL-E, embeddings), Google Gemini, Mistral, Groq, Together AI, Fireworks AI, DeepSeek, xAI (Grok), OpenRouter, Cohere, Ollama (local models), Replicate, Stability AI, Jina, Nomic, Voyage, Tavily, and Brave Search. New providers are added regularly.',
+      'Over 25 providers including Anthropic (Claude), OpenAI (GPT, DALL-E, embeddings), Google Gemini, Mistral, Groq, Together AI, Fireworks AI, DeepSeek, xAI (Grok), OpenRouter, Cohere, Ollama (local models), Replicate, Stability AI, FAL AI, Jina, Nomic, Voyage, Tavily, and Brave Search. New providers are added regularly.',
   },
   {
     question: 'Can I use local models with Ollama?',
@@ -56,6 +56,16 @@ const faqs: FAQItem[] = [
     question: 'Can agents run tasks on a schedule?',
     answer:
       'Yes. KinBot has built-in cron jobs so agents can perform tasks autonomously on a schedule: daily reports, monitoring, data collection, or anything else. Combined with webhooks, agents can also react to external events in real-time.',
+  },
+  {
+    question: 'How much RAM and disk space does KinBot need?',
+    answer:
+      'Minimal. KinBot uses ~100MB RAM at idle. Storage depends on your usage — a SQLite file grows with conversations and memory entries. A typical single-user instance stays under 500MB for months. No Redis, no Postgres, no external services needed.',
+  },
+  {
+    question: 'Can I migrate from ChatGPT or Open WebUI?',
+    answer:
+      'Not yet, but it\'s on the roadmap. For now, KinBot starts fresh with a clean memory. The upside: your agents build genuine long-term context from day one instead of importing noisy chat logs.',
   },
   {
     question: 'How do I update KinBot?',
