@@ -33,6 +33,7 @@ export const PROVIDER_META = {
   tavily:             { capabilities: ['search'],                     displayName: 'Tavily' },
   jina:               { capabilities: ['embedding'],                  displayName: 'Jina AI' },
   nomic:              { capabilities: ['embedding'],                  displayName: 'Nomic' },
+  replicate:          { capabilities: ['image'],                      displayName: 'Replicate' },
 } as const satisfies Record<string, ProviderMeta>
 
 export type ProviderType = keyof typeof PROVIDER_META
