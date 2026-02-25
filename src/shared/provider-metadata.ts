@@ -35,6 +35,7 @@ export const PROVIDER_META = {
   nomic:              { capabilities: ['embedding'],                  displayName: 'Nomic' },
   replicate:          { capabilities: ['image'],                      displayName: 'Replicate' },
   stability:          { capabilities: ['image'],                      displayName: 'Stability AI' },
+  fal:                { capabilities: ['image'],                      displayName: 'fal.ai' },
 } as const satisfies Record<string, ProviderMeta>
 
 export type ProviderType = keyof typeof PROVIDER_META
