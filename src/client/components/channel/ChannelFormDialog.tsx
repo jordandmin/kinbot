@@ -32,6 +32,10 @@ import { CHANNEL_PLATFORMS } from '@/shared/constants'
 const PLATFORM_LABELS: Record<ChannelPlatform, string> = {
   telegram: 'Telegram',
   discord: 'Discord',
+  slack: 'Slack',
+  whatsapp: 'WhatsApp',
+  signal: 'Signal',
+  matrix: 'Matrix',
 }
 
 function PlatformSetupGuide({ platform }: { platform: ChannelPlatform }) {
