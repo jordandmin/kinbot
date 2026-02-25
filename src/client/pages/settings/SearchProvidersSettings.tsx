@@ -22,7 +22,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus, Search } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { ProviderCard, type ProviderData } from '@/client/components/kin/ProviderCard'
 import { ProviderFormDialog } from '@/client/components/kin/AddProviderDialog'
 import { SEARCH_PROVIDER_TYPES } from '@/shared/constants'
@@ -98,8 +98,7 @@ export function SearchProvidersSettings() {
       await fetchProviders()
       toast.success(t('settings.providers.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingProvider(null)
     }

@@ -15,7 +15,7 @@ import {
 import { Collapsible, CollapsibleContent } from '@/client/components/ui/collapsible'
 import { Plus , MessageCircle} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { ChannelCard } from '@/client/components/channel/ChannelCard'
 import { ChannelFormDialog } from '@/client/components/channel/ChannelFormDialog'
 import { ChannelUserMappings } from '@/client/components/channel/ChannelUserMappings'
@@ -90,8 +90,7 @@ export function ChannelsSettings() {
       await fetchChannels()
       toast.success(t('settings.channels.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingChannel(null)
     }
@@ -108,8 +107,7 @@ export function ChannelsSettings() {
         : t('settings.channels.activate'),
       )
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setTogglingId(null)
     }
@@ -126,8 +124,7 @@ export function ChannelsSettings() {
         toast.error(`${t('settings.channels.testFailed')}: ${result.error}`)
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setTestingId(null)
     }

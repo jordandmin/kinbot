@@ -14,7 +14,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus , Users} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { ContactCard, type ContactData, type KinInfo } from '@/client/components/contacts/ContactCard'
 import { ContactFormDialog } from '@/client/components/contacts/ContactFormDialog'
 
@@ -56,8 +56,7 @@ export function ContactsSettings() {
       await fetchContacts()
       toast.success(t('settings.contacts.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingContact(null)
     }

@@ -15,7 +15,7 @@ import {
 } from '@/client/components/ui/dialog'
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
 import { ProviderIcon } from '@/client/components/common/ProviderIcon'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { PROVIDER_CAPABILITIES, PROVIDER_DISPLAY_NAMES, PROVIDER_TYPES, PROVIDERS_WITHOUT_API_KEY } from '@/shared/constants'
 import type { ProviderType } from '@/shared/types'
 
@@ -123,8 +123,7 @@ export function ProviderFormDialog({ open, onOpenChange, onSaved, provider, prov
         setError(result.error || t('onboarding.providers.testFailed'))
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      setError(message || t('onboarding.providers.testFailed'))
+      setError(getErrorMessage(err) || t('onboarding.providers.testFailed'))
     } finally {
       setIsTesting(false)
     }
@@ -159,8 +158,7 @@ export function ProviderFormDialog({ open, onOpenChange, onSaved, provider, prov
       onSaved()
       handleClose()
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      setError(message || t('onboarding.providers.testFailed'))
+      setError(getErrorMessage(err) || t('onboarding.providers.testFailed'))
     } finally {
       setIsSaving(false)
     }

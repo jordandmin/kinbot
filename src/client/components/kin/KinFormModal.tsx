@@ -32,6 +32,7 @@ import { KinToolsTab } from '@/client/components/kin/KinToolsTab'
 import { MemoryList } from '@/client/components/memory/MemoryList'
 import { AlertCircle, ArrowLeft, Brain, Camera, Loader2, Settings, Sparkles, Trash2, Wrench } from 'lucide-react'
 import { cn } from '@/client/lib/utils'
+import { getErrorMessage } from '@/client/lib/api'
 import { TOOL_DOMAIN_MAP } from '@/shared/constants'
 import type { KinToolConfig } from '@/shared/types'
 import type { GeneratedKinConfig } from '@/client/hooks/useKins'
@@ -390,8 +391,7 @@ export function KinFormModal({
       }
       onOpenChange(false)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      setError(message || t('common.error'))
+      setError(getErrorMessage(err) || t('common.error'))
     } finally {
       setIsLoading(false)
     }
@@ -404,8 +404,7 @@ export function KinFormModal({
       await onDeleteKin(kin.id)
       onOpenChange(false)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      setError(message || t('common.error'))
+      setError(getErrorMessage(err) || t('common.error'))
     } finally {
       setIsDeleting(false)
     }

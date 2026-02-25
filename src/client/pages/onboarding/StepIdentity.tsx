@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/client/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { AlertCircle, Camera, Loader2 } from 'lucide-react'
 import { useAuth } from '@/client/hooks/useAuth'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 
 interface StepIdentityProps {
   onComplete: () => void
@@ -78,8 +78,7 @@ export function StepIdentity({ onComplete }: StepIdentityProps) {
 
       onComplete()
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      setError(message || t('common.error'))
+      setError(getErrorMessage(err) || t('common.error'))
     } finally {
       setIsLoading(false)
     }

@@ -14,7 +14,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus , FileUp} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { FileStorageCard, type StoredFileData } from '@/client/components/file-storage/FileStorageCard'
 import { FileStorageFormDialog } from '@/client/components/file-storage/FileStorageFormDialog'
 
@@ -60,8 +60,7 @@ export function FileStorageSettings() {
       await fetchFiles()
       toast.success(t('settings.files.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingFile(null)
     }

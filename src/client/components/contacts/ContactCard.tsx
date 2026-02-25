@@ -15,7 +15,7 @@ import {
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { Pencil, Trash2, User, Bot, Globe, Lock, Plus, Check, X } from 'lucide-react'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import type { ContactPlatformId } from '@/shared/types'
 
 export interface ContactIdentifierData {
@@ -84,7 +84,7 @@ export function ContactCard({ contact, kinInfo, onEdit, onDelete, onRefresh }: C
       setPlatformIds((prev) => prev.filter((p) => p.id !== pidId))
       toast.success(t('settings.contacts.platformIdRevoked'))
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(getErrorMessage(err))
     }
   }
 
@@ -106,7 +106,7 @@ export function ContactCard({ contact, kinInfo, onEdit, onDelete, onRefresh }: C
       cancelEdit()
       onRefresh?.()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(getErrorMessage(err))
     }
   }
 
@@ -116,7 +116,7 @@ export function ContactCard({ contact, kinInfo, onEdit, onDelete, onRefresh }: C
       toast.success(t('settings.contacts.noteDeleted'))
       onRefresh?.()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(getErrorMessage(err))
     }
   }
 
@@ -144,7 +144,7 @@ export function ContactCard({ contact, kinInfo, onEdit, onDelete, onRefresh }: C
       cancelAddNote()
       onRefresh?.()
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(getErrorMessage(err))
     }
   }
 

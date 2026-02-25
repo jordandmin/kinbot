@@ -64,8 +64,7 @@ export function ProvidersSettings() {
       await fetchProviders()
       toast.success(t('settings.providers.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingProvider(null)
     }

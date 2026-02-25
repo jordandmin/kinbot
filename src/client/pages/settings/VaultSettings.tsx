@@ -14,7 +14,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus , Lock} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { VaultSecretCard, type VaultSecretData } from '@/client/components/vault/VaultSecretCard'
 import { VaultSecretFormDialog } from '@/client/components/vault/VaultSecretFormDialog'
 
@@ -58,8 +58,7 @@ export function VaultSettings() {
       await fetchSecrets()
       toast.success(t('settings.vault.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingSecret(null)
     }

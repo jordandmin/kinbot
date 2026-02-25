@@ -14,7 +14,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus , Plug} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { McpServerCard, type McpServerData } from '@/client/components/mcp/McpServerCard'
 import { McpServerFormDialog } from '@/client/components/mcp/McpServerFormDialog'
 
@@ -57,8 +57,7 @@ export function McpServersSettings() {
       await fetchServers()
       toast.success(t('settings.mcp.approved'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     }
   }
 
@@ -69,8 +68,7 @@ export function McpServersSettings() {
       await fetchServers()
       toast.success(t('settings.mcp.deleted'))
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      toast.error(message)
+      toast.error(getErrorMessage(err))
     } finally {
       setDeletingServer(null)
     }

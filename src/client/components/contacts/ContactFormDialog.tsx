@@ -25,7 +25,7 @@ import {
   PopoverTrigger,
 } from '@/client/components/ui/popover'
 import { AlertCircle, Check, ChevronsUpDown, Loader2, Plus, X } from 'lucide-react'
-import { api } from '@/client/lib/api'
+import { api, getErrorMessage } from '@/client/lib/api'
 import { CONTACT_IDENTIFIER_SUGGESTIONS } from '@/shared/constants'
 import type { ContactData } from '@/client/components/contacts/ContactCard'
 
@@ -239,8 +239,7 @@ export function ContactFormDialog({
       onSaved()
       handleClose()
     } catch (err: unknown) {
-      const apiErr = err as { error?: { message?: string } }
-      setError(apiErr?.error?.message ?? (err instanceof Error ? err.message : String(err)))
+      setError(getErrorMessage(err))
     } finally {
       setIsSaving(false)
     }
