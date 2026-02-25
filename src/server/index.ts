@@ -15,6 +15,7 @@ import { browserPool } from '@/server/services/browser-pool'
 import { channelAdapters } from '@/server/channels/index'
 import { TelegramAdapter } from '@/server/channels/telegram'
 import { DiscordAdapter } from '@/server/channels/discord'
+import { SlackAdapter } from '@/server/channels/slack'
 import { restoreActiveChannels } from '@/server/services/channels'
 import { ensureUserContactsExist } from '@/server/services/contacts'
 
@@ -55,6 +56,7 @@ ensureUserContactsExist().catch((err) => log.error({ err }, 'Failed to backfill 
 // Register channel adapters and restore active channels
 channelAdapters.register(new TelegramAdapter())
 channelAdapters.register(new DiscordAdapter())
+channelAdapters.register(new SlackAdapter())
 restoreActiveChannels().catch((err) => log.error({ err }, 'Failed to restore active channels'))
 
 // File storage cleanup cron
