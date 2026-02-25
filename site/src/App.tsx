@@ -8,6 +8,7 @@ import { Architecture } from './components/Architecture'
 import { Install } from './components/Install'
 import { FAQ } from './components/FAQ'
 import { Changelog } from './components/Changelog'
+import { GitHubCTA } from './components/GitHubCTA'
 import { Footer } from './components/Footer'
 import { ScrollReveal } from './components/ScrollReveal'
 
@@ -48,6 +49,9 @@ export default function App() {
         </ScrollReveal>
         <ScrollReveal>
           <Changelog />
+        </ScrollReveal>
+        <ScrollReveal>
+          <GitHubCTA />
         </ScrollReveal>
       </main>
       <Footer />
