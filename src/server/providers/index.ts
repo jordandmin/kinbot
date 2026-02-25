@@ -20,6 +20,7 @@ import { xaiProvider } from '@/server/providers/xai'
 import { tavilyProvider } from '@/server/providers/tavily'
 import { jinaProvider } from '@/server/providers/jina'
 import { nomicProvider } from '@/server/providers/nomic'
+import { replicateProvider } from '@/server/providers/replicate'
 
 const log = createLogger('providers')
 
@@ -42,6 +43,7 @@ const registry: Record<string, ProviderDefinition> = {
   tavily: tavilyProvider,
   jina: jinaProvider,
   nomic: nomicProvider,
+  replicate: replicateProvider,
 }
 
 export function getProviderDefinition(type: string): ProviderDefinition | undefined {
