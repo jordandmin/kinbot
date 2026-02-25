@@ -1,54 +1,140 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
 import { MarkdownEditor } from '@/client/components/ui/markdown-editor'
+import { ModelPicker } from '@/client/components/common/ModelPicker'
 import { api } from '@/client/lib/api'
+
+interface ProviderModel {
+  id: string
+  name: string
+  providerId: string
+  providerType: string
+  capability: string
+}
 
 export function GeneralSettings() {
   const { t } = useTranslation()
+
+  // Global prompt
   const [globalPrompt, setGlobalPrompt] = useState('')
-  const [initialValue, setInitialValue] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [initialGlobalPrompt, setInitialGlobalPrompt] = useState('')
+  const [savingPrompt, setSavingPrompt] = useState(false)
+
+  // Models
+  const [allModels, setAllModels] = useState<ProviderModel[]>([])
+  const [extractionModel, setExtractionModel] = useState('')
+  const [initialExtractionModel, setInitialExtractionModel] = useState('')
+  const [savingExtractionModel, setSavingExtractionModel] = useState(false)
+  const [embeddingModel, setEmbeddingModel] = useState('')
+  const [initialEmbeddingModel, setInitialEmbeddingModel] = useState('')
+  const [savingEmbeddingModel, setSavingEmbeddingModel] = useState(false)
 
   useEffect(() => {
     fetchGlobalPrompt()
+    fetchModels()
+    fetchModelSettings()
   }, [])
 
   const fetchGlobalPrompt = async () => {
     try {
       const data = await api.get<{ globalPrompt: string }>('/settings/global-prompt')
       setGlobalPrompt(data.globalPrompt)
-      setInitialValue(data.globalPrompt)
+      setInitialGlobalPrompt(data.globalPrompt)
     } catch {
       // Ignore — will show empty
     }
   }
 
-  const handleSave = async () => {
-    setSaving(true)
+  const fetchModels = async () => {
+    try {
+      const data = await api.get<{ models: ProviderModel[] }>('/providers/models')
+      setAllModels(data.models)
+    } catch {
+      // Ignore
+    }
+  }
+
+  const fetchModelSettings = async () => {
+    try {
+      const data = await api.get<{ extractionModel: string | null; embeddingModel: string | null }>(
+        '/settings/models',
+      )
+      setExtractionModel(data.extractionModel ?? '')
+      setInitialExtractionModel(data.extractionModel ?? '')
+      setEmbeddingModel(data.embeddingModel ?? '')
+      setInitialEmbeddingModel(data.embeddingModel ?? '')
+    } catch {
+      // Ignore
+    }
+  }
+
+  const handleSavePrompt = async () => {
+    setSavingPrompt(true)
     try {
       await api.put('/settings/global-prompt', { globalPrompt })
-      setInitialValue(globalPrompt)
+      setInitialGlobalPrompt(globalPrompt)
       toast.success(t('settings.general.saved'))
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       toast.error(message)
     } finally {
-      setSaving(false)
+      setSavingPrompt(false)
     }
   }
 
-  const hasChanges = globalPrompt !== initialValue
+  const handleSaveExtractionModel = async () => {
+    setSavingExtractionModel(true)
+    try {
+      await api.put('/settings/extraction-model', { model: extractionModel || null })
+      setInitialExtractionModel(extractionModel)
+      toast.success(t('settings.general.modelSaved'))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      toast.error(message)
+    } finally {
+      setSavingExtractionModel(false)
+    }
+  }
+
+  const handleSaveEmbeddingModel = async () => {
+    setSavingEmbeddingModel(true)
+    try {
+      await api.put('/settings/embedding-model', { model: embeddingModel })
+      setInitialEmbeddingModel(embeddingModel)
+      toast.success(t('settings.general.modelSaved'))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      toast.error(message)
+    } finally {
+      setSavingEmbeddingModel(false)
+    }
+  }
+
+  const hasPromptChanges = globalPrompt !== initialGlobalPrompt
   const approxTokens = Math.ceil(globalPrompt.length / 4)
+  const hasExtractionModelChanges = extractionModel !== initialExtractionModel
+  const hasEmbeddingModelChanges = embeddingModel !== initialEmbeddingModel
+
+  const llmModels = useMemo(
+    () => allModels.filter((m) => m.capability === 'llm'),
+    [allModels],
+  )
+  const embeddingModels = useMemo(
+    () => allModels.filter((m) => m.capability === 'embedding'),
+    [allModels],
+  )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <p className="text-sm text-muted-foreground">
         {t('settings.general.description')}
       </p>
 
+      {/* Global prompt */}
       <div className="space-y-2">
         <Label htmlFor="global-prompt">
           {t('settings.general.globalPrompt')}
@@ -69,11 +155,70 @@ export function GeneralSettings() {
       </div>
 
       <Button
-        onClick={handleSave}
-        disabled={!hasChanges || saving}
+        onClick={handleSavePrompt}
+        disabled={!hasPromptChanges || savingPrompt}
       >
-        {saving ? t('common.loading') : t('common.save')}
+        {savingPrompt ? t('common.loading') : t('common.save')}
       </Button>
+
+      {/* Model configuration */}
+      <div className="border-t pt-8 space-y-6">
+        <div>
+          <h3 className="text-sm font-medium">{t('settings.general.modelConfig')}</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t('settings.general.modelConfigDescription')}
+          </p>
+        </div>
+
+        {/* Extraction model */}
+        <div className="space-y-2">
+          <Label>{t('settings.general.extractionModel')}</Label>
+          <ModelPicker
+            models={llmModels}
+            value={extractionModel}
+            onValueChange={setExtractionModel}
+            placeholder={t('settings.general.extractionModelPlaceholder')}
+            allowClear
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('settings.general.extractionModelHint')}
+          </p>
+          <Button
+            size="sm"
+            onClick={handleSaveExtractionModel}
+            disabled={!hasExtractionModelChanges || savingExtractionModel}
+          >
+            {savingExtractionModel ? t('common.loading') : t('common.save')}
+          </Button>
+        </div>
+
+        {/* Embedding model */}
+        <div className="space-y-2">
+          <Label>{t('settings.general.embeddingModel')}</Label>
+          <ModelPicker
+            models={embeddingModels}
+            value={embeddingModel}
+            onValueChange={setEmbeddingModel}
+            placeholder={t('settings.general.embeddingModelPlaceholder')}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('settings.general.embeddingModelHint')}
+          </p>
+          {hasEmbeddingModelChanges && embeddingModel && (
+            <div className="flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-600 dark:text-yellow-400">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>{t('settings.general.embeddingModelWarning')}</span>
+            </div>
+          )}
+          <Button
+            size="sm"
+            onClick={handleSaveEmbeddingModel}
+            disabled={!hasEmbeddingModelChanges || savingEmbeddingModel || !embeddingModel}
+          >
+            {savingEmbeddingModel ? t('common.loading') : t('common.save')}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
