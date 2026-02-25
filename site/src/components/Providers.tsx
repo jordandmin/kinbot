@@ -83,6 +83,12 @@ const providers = [
     capabilities: ['Search'],
     logo: 'https://cdn.simpleicons.org/brave',
   },
+  {
+    name: 'Tavily',
+    description: 'AI-optimized search',
+    capabilities: ['Search'],
+    logo: 'https://cdn.simpleicons.org/t',
+  },
 ]
 
 const capabilityColors: Record<string, string> = {
@@ -158,7 +164,7 @@ export function Providers() {
         className="text-center mt-8 text-sm"
         style={{ color: 'var(--color-muted-foreground)' }}
       >
-        More providers coming soon — Replicate, Stability AI, Tavily, Jina AI, and more.
+        More providers coming soon — Replicate, Stability AI, Jina AI, and more.
       </p>
     </section>
   )

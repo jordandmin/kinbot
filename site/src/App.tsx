@@ -9,6 +9,7 @@ import { Install } from './components/Install'
 import { FAQ } from './components/FAQ'
 import { Changelog } from './components/Changelog'
 import { Footer } from './components/Footer'
+import { ScrollReveal } from './components/ScrollReveal'
 
 export default function App() {
   const [dark, setDark] = useState(() => {
@@ -27,13 +28,27 @@ export default function App() {
       <Navbar dark={dark} onToggleDark={() => setDark(d => !d)} />
       <main>
         <Hero />
-        <Features />
-        <Comparison />
-        <Providers />
-        <Architecture />
-        <Install />
-        <FAQ />
-        <Changelog />
+        <ScrollReveal>
+          <Features />
+        </ScrollReveal>
+        <ScrollReveal>
+          <Comparison />
+        </ScrollReveal>
+        <ScrollReveal>
+          <Providers />
+        </ScrollReveal>
+        <ScrollReveal>
+          <Architecture />
+        </ScrollReveal>
+        <ScrollReveal>
+          <Install />
+        </ScrollReveal>
+        <ScrollReveal>
+          <FAQ />
+        </ScrollReveal>
+        <ScrollReveal>
+          <Changelog />
+        </ScrollReveal>
       </main>
       <Footer />
     </div>
