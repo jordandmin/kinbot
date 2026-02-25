@@ -275,11 +275,20 @@ ensure_bun() {
 }
 
 # ─── Clone or update ─────────────────────────────────────────────────────────
+ROLLBACK_COMMIT=""
+
 install_or_update() {
   header "Installing KinBot..."
 
   if [ -d "$KINBOT_DIR/.git" ]; then
     info "Existing installation found at $KINBOT_DIR — updating..."
+
+    # Save current commit for rollback on failure
+    ROLLBACK_COMMIT="$(git -C "$KINBOT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
+    if [ -n "$ROLLBACK_COMMIT" ]; then
+      info "Saved rollback point: ${ROLLBACK_COMMIT:0:8}"
+    fi
+
     git -C "$KINBOT_DIR" fetch origin
     git -C "$KINBOT_DIR" checkout "$KINBOT_BRANCH"
     git -C "$KINBOT_DIR" pull origin "$KINBOT_BRANCH"
@@ -292,6 +301,66 @@ install_or_update() {
     success "Cloned"
     IS_UPDATE=false
   fi
+}
+
+# ─── Rollback on failure ────────────────────────────────────────────────────
+rollback() {
+  local exit_code=$?
+  if [ $exit_code -eq 0 ]; then
+    return
+  fi
+
+  echo ""
+  echo -e "${RED}${BOLD}Installation failed!${NC}"
+
+  # Rollback git to previous commit on update
+  if [ -n "${ROLLBACK_COMMIT:-}" ] && [ -d "$KINBOT_DIR/.git" ]; then
+    echo ""
+    warn "Rolling back to previous version (${ROLLBACK_COMMIT:0:8})..."
+    if git -C "$KINBOT_DIR" reset --hard "$ROLLBACK_COMMIT" &>/dev/null; then
+      success "Code rolled back to ${ROLLBACK_COMMIT:0:8}"
+
+      # Try to rebuild the old version so the service can restart
+      info "Rebuilding previous version..."
+      BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+      export PATH="$BUN_INSTALL/bin:$PATH"
+      if command -v bun &>/dev/null; then
+        cd "$KINBOT_DIR"
+        if bun install --frozen-lockfile &>/dev/null && bun run build &>/dev/null; then
+          success "Previous version rebuilt"
+        else
+          warn "Could not rebuild previous version — manual intervention needed"
+        fi
+      fi
+
+      # Restart the service if it was running
+      if [ "${IS_UPDATE:-false}" = true ]; then
+        info "Restarting service with previous version..."
+        if [ "${INIT_SYSTEM:-}" = "launchd" ]; then
+          local plist="$HOME/Library/LaunchAgents/io.kinbot.server.plist"
+          [ -f "$plist" ] && launchctl load "$plist" 2>/dev/null
+        elif [ "${IS_ROOT:-false}" = true ]; then
+          systemctl start kinbot 2>/dev/null || true
+        else
+          systemctl --user start kinbot 2>/dev/null || true
+        fi
+        success "Service restarted with previous version"
+      fi
+    else
+      warn "Rollback failed — manual intervention needed"
+      warn "Try: cd $KINBOT_DIR && git reset --hard $ROLLBACK_COMMIT"
+    fi
+  elif [ "${IS_UPDATE:-false}" != true ] && [ -d "$KINBOT_DIR" ]; then
+    # Fresh install failed — clean up the partial clone
+    warn "Cleaning up partial installation..."
+    rm -rf "$KINBOT_DIR"
+    success "Removed $KINBOT_DIR"
+  fi
+
+  echo ""
+  echo -e "${RED}Please check the error above and try again.${NC}"
+  echo -e "${DIM}If the problem persists, open an issue: https://github.com/$KINBOT_REPO/issues${NC}"
+  echo ""
 }
 
 # ─── Build ───────────────────────────────────────────────────────────────────
@@ -949,6 +1018,9 @@ main() {
     exit 0
   fi
 
+  # Enable rollback trap for actual install/update
+  trap rollback EXIT
+
   echo ""
   echo -e "${BOLD}KinBot Installer${NC}"
   echo -e "Self-hosted AI agent platform"
@@ -966,6 +1038,11 @@ main() {
   setup_system_user
   resolve_bun_path
   create_service
+
+  # Disable rollback trap — we made it!
+  trap - EXIT
+  ROLLBACK_COMMIT=""
+
   print_summary
 }
 
