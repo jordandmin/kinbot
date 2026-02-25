@@ -4,6 +4,7 @@ import { db } from '@/server/db/index'
 import { createLogger } from '@/server/logger'
 import { providers } from '@/server/db/schema'
 import { config } from '@/server/config'
+import { getEmbeddingModel } from '@/server/services/app-settings'
 import { decrypt } from '@/server/services/encryption'
 
 const log = createLogger('embeddings')
@@ -23,16 +24,18 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     baseUrl?: string
   }
 
+  const embeddingModelId = (await getEmbeddingModel()) ?? config.memory.embeddingModel
+
   let model
   if (provider.type === 'openai') {
     const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
-    model = openai.embedding(config.memory.embeddingModel)
+    model = openai.embedding(embeddingModelId)
   } else if (provider.type === 'voyage') {
     const voyage = createOpenAI({
       apiKey: providerConfig.apiKey,
       baseURL: providerConfig.baseUrl ?? 'https://api.voyageai.com/v1',
     })
-    model = voyage.embedding(config.memory.embeddingModel)
+    model = voyage.embedding(embeddingModelId)
   } else {
     throw new Error(`Provider type ${provider.type} does not support embeddings`)
   }

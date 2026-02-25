@@ -11,6 +11,7 @@ import {
   userProfiles,
 } from '@/server/db/schema'
 import { config } from '@/server/config'
+import { getExtractionModel } from '@/server/services/app-settings'
 import { createMemory, searchMemories } from '@/server/services/memory'
 import { sseManager } from '@/server/sse/index'
 import type { MemoryCategory } from '@/shared/types'
@@ -291,8 +292,10 @@ async function extractMemories(
   lastMessageId: string,
 ): Promise<number> {
   const { resolveLLMModel } = await import('@/server/services/kin-engine')
-  const extractionProviderId = config.memory.extractionModel ? null : kinProviderId
-  const model = await resolveLLMModel(config.memory.extractionModel ?? kinModel, extractionProviderId)
+  const settingsExtractionModel = await getExtractionModel()
+  const effectiveExtractionModel = settingsExtractionModel ?? config.memory.extractionModel
+  const extractionProviderId = effectiveExtractionModel ? null : kinProviderId
+  const model = await resolveLLMModel(effectiveExtractionModel ?? kinModel, extractionProviderId)
   if (!model) return 0
 
   // Get existing memories for dedup context

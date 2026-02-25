@@ -2,7 +2,15 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from '@/server/db/index'
 import { userProfiles } from '@/server/db/schema'
-import { getGlobalPrompt, setGlobalPrompt, deleteSetting } from '@/server/services/app-settings'
+import {
+  getGlobalPrompt,
+  setGlobalPrompt,
+  deleteSetting,
+  getExtractionModel,
+  setExtractionModel,
+  getEmbeddingModel,
+  setEmbeddingModel,
+} from '@/server/services/app-settings'
 import type { AppVariables } from '@/server/app'
 import { createLogger } from '@/server/logger'
 
@@ -55,6 +63,55 @@ settingsRoutes.put('/global-prompt', async (c) => {
 
   log.info('Global prompt updated')
   return c.json({ globalPrompt: trimmed })
+})
+
+// GET /api/settings/models
+settingsRoutes.get('/models', async (c) => {
+  const [extractionModel, embeddingModel] = await Promise.all([
+    getExtractionModel(),
+    getEmbeddingModel(),
+  ])
+  return c.json({ extractionModel, embeddingModel })
+})
+
+// PUT /api/settings/extraction-model
+settingsRoutes.put('/extraction-model', async (c) => {
+  const body = await c.req.json()
+  const { model } = body as { model: string | null }
+
+  if (model !== null && typeof model !== 'string') {
+    return c.json(
+      { error: { code: 'INVALID_BODY', message: 'model must be a string or null' } },
+      400,
+    )
+  }
+
+  if (!model || model.trim() === '') {
+    await deleteSetting('extraction_model')
+    log.info('Extraction model cleared')
+    return c.json({ extractionModel: null })
+  }
+
+  await setExtractionModel(model.trim())
+  log.info({ model: model.trim() }, 'Extraction model updated')
+  return c.json({ extractionModel: model.trim() })
+})
+
+// PUT /api/settings/embedding-model
+settingsRoutes.put('/embedding-model', async (c) => {
+  const body = await c.req.json()
+  const { model } = body as { model: string }
+
+  if (!model || typeof model !== 'string' || model.trim() === '') {
+    return c.json(
+      { error: { code: 'INVALID_BODY', message: 'model must be a non-empty string' } },
+      400,
+    )
+  }
+
+  await setEmbeddingModel(model.trim())
+  log.info({ model: model.trim() }, 'Embedding model updated')
+  return c.json({ embeddingModel: model.trim() })
 })
 
 export { settingsRoutes }

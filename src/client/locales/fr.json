@@ -99,7 +99,9 @@
       "covered": "Couvert",
       "missing": "Manquant",
       "finish": "Terminer la configuration",
-      "cannotFinish": "Configurez des fournisseurs couvrant les capacités LLM et Embedding"
+      "cannotFinish": "Configurez des fournisseurs couvrant les capacités LLM et Embedding",
+      "modelConfig": "Configuration des modèles",
+      "modelConfigHint": "Choisissez les modèles utilisés pour l'extraction mémorielle et la recherche sémantique"
     },
     "searchProviders": {
       "title": "Fournisseurs de recherche",
@@ -369,7 +371,17 @@
       "globalPrompt": "Prompt global",
       "globalPromptPlaceholder": "Saisissez les instructions que tous les Kins doivent suivre...",
       "globalPromptHint": "Ce texte est injecté dans le prompt système de chaque Kin.",
-      "saved": "Prompt global mis à jour"
+      "saved": "Prompt global mis à jour",
+      "modelConfig": "Configuration des modèles",
+      "modelConfigDescription": "Modèles utilisés pour l'extraction mémorielle et la recherche sémantique",
+      "extractionModel": "Modèle d'extraction",
+      "extractionModelPlaceholder": "Utiliser le modèle de chaque Kin (défaut)",
+      "extractionModelHint": "LLM utilisé pour extraire les souvenirs lors du compactage. Laisser vide pour utiliser le modèle de chaque Kin.",
+      "embeddingModel": "Modèle d'embedding",
+      "embeddingModelPlaceholder": "Sélectionner un modèle d'embedding",
+      "embeddingModelHint": "Modèle utilisé pour générer les embeddings sémantiques lors de la recherche mémorielle.",
+      "embeddingModelWarning": "Attention : changer le modèle d'embedding nécessite de régénérer tous les souvenirs existants.",
+      "modelSaved": "Modèle sauvegardé"
     },
     "providers": {
       "title": "Fournisseurs IA",

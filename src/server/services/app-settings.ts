@@ -54,3 +54,19 @@ export async function getGlobalPrompt(): Promise<string | null> {
 export async function setGlobalPrompt(value: string): Promise<void> {
   return setSetting('global_prompt', value)
 }
+
+export async function getExtractionModel(): Promise<string | null> {
+  return getSetting('extraction_model')
+}
+
+export async function setExtractionModel(model: string): Promise<void> {
+  return setSetting('extraction_model', model)
+}
+
+export async function getEmbeddingModel(): Promise<string | null> {
+  return getSetting('embedding_model')
+}
+
+export async function setEmbeddingModel(model: string): Promise<void> {
+  return setSetting('embedding_model', model)
+}
