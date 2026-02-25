@@ -41,3 +41,4 @@ data/
 
 # Claude Code
 .claude/
+.marlbot-context.md

@@ -6,6 +6,7 @@ import { openaiProvider } from '@/server/providers/openai'
 import { geminiProvider } from '@/server/providers/gemini'
 import { voyageProvider } from '@/server/providers/voyage'
 import { braveSearchProvider } from '@/server/providers/brave-search'
+import { mistralProvider } from '@/server/providers/mistral'
 
 const log = createLogger('providers')
 
@@ -16,6 +17,7 @@ const registry: Record<string, ProviderDefinition> = {
   gemini: geminiProvider,
   voyage: voyageProvider,
   'brave-search': braveSearchProvider,
+  mistral: mistralProvider,
 }
 
 export function getProviderDefinition(type: string): ProviderDefinition | undefined {
