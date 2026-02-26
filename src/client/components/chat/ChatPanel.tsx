@@ -23,7 +23,7 @@ import { useExportConversation } from '@/client/hooks/useExportConversation'
 import { ConversationSearch } from '@/client/components/chat/ConversationSearch'
 import { ChatEmptyState } from '@/client/components/chat/ChatEmptyState'
 import { cn } from '@/client/lib/utils'
-import { ArrowDown } from 'lucide-react'
+import { ArrowDown, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/client/lib/api'
 
@@ -70,6 +70,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchHighlightId, setSearchHighlightId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const dragCounterRef = useRef(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<MessageInputHandle>(null)
@@ -208,6 +210,38 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     setTimeout(() => inputRef.current?.focus(), 50)
   }, [setDraftContent, draftContent])
 
+  // Full-area drag-and-drop for file upload
+  const handlePanelDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    dragCounterRef.current++
+    if (dragCounterRef.current === 1 && e.dataTransfer.types.includes('Files')) {
+      setIsDragOver(true)
+    }
+  }, [])
+
+  const handlePanelDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    dragCounterRef.current--
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false)
+    }
+  }, [])
+
+  const handlePanelDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }, [])
+
+  const handlePanelDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    dragCounterRef.current = 0
+    setIsDragOver(false)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && addFiles) {
+      addFiles(Array.from(e.dataTransfer.files))
+      inputRef.current?.focus()
+    }
+  }, [addFiles])
+
   // Resolve kin info for the currently open task detail modal
   const detailTask = detailTaskId ? liveTasks.find((t) => t.taskId === detailTaskId) : null
 
@@ -257,7 +291,25 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   }, [messages])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div
+      className="relative flex min-h-0 flex-1 flex-col"
+      onDragEnter={handlePanelDragEnter}
+      onDragLeave={handlePanelDragLeave}
+      onDragOver={handlePanelDragOver}
+      onDrop={handlePanelDrop}
+    >
+      {/* Full-area drop overlay */}
+      {isDragOver && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary rounded-lg transition-all animate-fade-in">
+          <div className="flex flex-col items-center gap-3 text-primary">
+            <div className="rounded-full bg-primary/10 p-4">
+              <Upload className="size-8" />
+            </div>
+            <p className="text-sm font-medium">{t('chat.dropFiles')}</p>
+          </div>
+        </div>
+      )}
+
       {/* Conversation header */}
       <ConversationHeader
         name={kin.name}
