@@ -5,12 +5,15 @@ import '@/client/styles/globals.css'
 import { App } from '@/client/App'
 import { ThemeProvider } from '@/client/components/theme-provider'
 import { Toaster } from '@/client/components/ui/sonner'
+import { ErrorBoundary } from '@/client/components/common/ErrorBoundary'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
-      <App />
-      <Toaster />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <App />
+        <Toaster />
+      </ThemeProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

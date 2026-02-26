@@ -101,7 +101,6 @@ function connect() {
   })
 
   es.addEventListener('connected', () => {
-    console.log('[SSE] Connected')
     setStatus('connected')
   })
 
