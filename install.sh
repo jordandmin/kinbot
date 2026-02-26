@@ -363,6 +363,22 @@ ENV
 }
 
 # ─── Install Bun ─────────────────────────────────────────────────────────────
+# Minimum Bun version required (lockfileVersion 1 needs Bun 1.2+)
+BUN_MIN_VERSION="1.2.0"
+
+# Compare two semver strings: returns 0 if $1 >= $2, 1 otherwise
+version_gte() {
+  local IFS='.'
+  local -a v1=($1) v2=($2)
+  local i
+  for i in 0 1 2; do
+    local a="${v1[$i]:-0}" b="${v2[$i]:-0}"
+    if [ "$a" -gt "$b" ] 2>/dev/null; then return 0; fi
+    if [ "$a" -lt "$b" ] 2>/dev/null; then return 1; fi
+  done
+  return 0
+}
+
 ensure_bun() {
   header "Checking Bun runtime..."
 
@@ -371,7 +387,27 @@ ensure_bun() {
   export PATH="$BUN_INSTALL/bin:$PATH"
 
   if command -v bun &>/dev/null; then
-    success "Bun v$(bun --version)"
+    local current_version
+    current_version="$(bun --version 2>/dev/null || echo "0.0.0")"
+
+    if version_gte "$current_version" "$BUN_MIN_VERSION"; then
+      success "Bun v${current_version}"
+      return 0
+    fi
+
+    warn "Bun v${current_version} is too old (need v${BUN_MIN_VERSION}+)"
+    info "Upgrading Bun..."
+    run_with_spinner "Upgrading Bun..." bash -c 'curl -fsSL https://bun.sh/install | bash'
+    export PATH="$BUN_INSTALL/bin:$PATH"
+    hash -r 2>/dev/null || true
+
+    local new_version
+    new_version="$(bun --version 2>/dev/null || echo "0.0.0")"
+    if version_gte "$new_version" "$BUN_MIN_VERSION"; then
+      success "Bun upgraded: v${current_version} → v${new_version}"
+    else
+      error "Bun upgrade failed (got v${new_version}, need v${BUN_MIN_VERSION}+). Upgrade manually: https://bun.sh"
+    fi
     return 0
   fi
 
@@ -380,7 +416,13 @@ ensure_bun() {
   export PATH="$BUN_INSTALL/bin:$PATH"
 
   command -v bun &>/dev/null || error "Bun installation failed. Install manually: https://bun.sh"
-  success "Bun v$(bun --version) installed"
+
+  local installed_version
+  installed_version="$(bun --version 2>/dev/null || echo "0.0.0")"
+  if ! version_gte "$installed_version" "$BUN_MIN_VERSION"; then
+    error "Installed Bun v${installed_version} is below minimum v${BUN_MIN_VERSION}. Please update manually: https://bun.sh"
+  fi
+  success "Bun v${installed_version} installed"
 }
 
 # ─── Backup database before update ───────────────────────────────────────────
@@ -1265,7 +1307,14 @@ check_status() {
   BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
   export PATH="$BUN_INSTALL/bin:$PATH"
   if command -v bun &>/dev/null; then
-    success "Bun v$(bun --version)"
+    local bun_ver
+    bun_ver="$(bun --version 2>/dev/null || echo "0.0.0")"
+    if version_gte "$bun_ver" "$BUN_MIN_VERSION"; then
+      success "Bun v${bun_ver}"
+    else
+      warn "Bun v${bun_ver} is outdated (need v${BUN_MIN_VERSION}+). Run the installer to upgrade."
+      has_issues=true
+    fi
   else
     warn "Bun not found"
     has_issues=true
@@ -1397,7 +1446,13 @@ dry_run() {
   BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
   export PATH="$BUN_INSTALL/bin:$PATH"
   if command -v bun &>/dev/null; then
-    success "Bun v$(bun --version) — already installed"
+    local bun_ver
+    bun_ver="$(bun --version 2>/dev/null || echo "0.0.0")"
+    if version_gte "$bun_ver" "$BUN_MIN_VERSION"; then
+      success "Bun v${bun_ver} — already installed (meets v${BUN_MIN_VERSION}+ requirement)"
+    else
+      info "Bun v${bun_ver} — ${YELLOW}will be upgraded${NC} (need v${BUN_MIN_VERSION}+)"
+    fi
   else
     info "Bun — ${YELLOW}will be installed${NC} from https://bun.sh"
   fi
