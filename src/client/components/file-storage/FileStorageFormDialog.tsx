@@ -5,22 +5,8 @@ import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
 import { Alert, AlertDescription } from '@/client/components/ui/alert'
 import { Switch } from '@/client/components/ui/switch'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/client/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/client/components/ui/select'
 import { AlertCircle, Loader2 } from 'lucide-react'
+import { KinSelector } from '@/client/components/common/KinSelector'
 import { api, getErrorMessage } from '@/client/lib/api'
 import type { StoredFileData } from '@/client/components/file-storage/FileStorageCard'
 
@@ -174,16 +160,11 @@ export function FileStorageFormDialog({
 
               <div className="space-y-2">
                 <Label>{t('settings.files.kin')}</Label>
-                <Select value={kinId} onValueChange={setKinId}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {kins.map((k) => (
-                      <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <KinSelector
+                  value={kinId}
+                  onValueChange={setKinId}
+                  kins={kins}
+                />
               </div>
             </>
           )}

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/client/components/ui/select'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
+import { KinSelector } from '@/client/components/common/KinSelector'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { Pencil, Trash2, User, Bot, Globe, Lock, Plus, Check, X } from 'lucide-react'
 import { api, getErrorMessage } from '@/client/lib/api'
@@ -149,6 +150,7 @@ export function ContactCard({ contact, kinInfo, onEdit, onDelete, onRefresh }: C
   }
 
   const kinEntries = kinInfo ? [...kinInfo.entries()] : []
+  const kinOptions = kinEntries.map(([id, info]) => ({ id, name: info.name, avatarUrl: info.avatarUrl }))
 
   return (
     <Card className="surface-card">
@@ -304,18 +306,14 @@ export function ContactCard({ contact, kinInfo, onEdit, onDelete, onRefresh }: C
             {addingNote && (
               <div className="space-y-2 rounded-lg border border-dashed p-2">
                 <div className="flex items-center gap-2">
-                  <Select value={newNoteKinId} onValueChange={setNewNoteKinId}>
-                    <SelectTrigger className="h-7 w-36 text-xs">
-                      <SelectValue placeholder={t('settings.contacts.noteKinPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {kinEntries.map(([id, info]) => (
-                        <SelectItem key={id} value={id}>
-                          {info.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <KinSelector
+                    value={newNoteKinId}
+                    onValueChange={setNewNoteKinId}
+                    kins={kinOptions}
+                    placeholder={t('settings.contacts.noteKinPlaceholder')}
+                    triggerClassName="h-7 w-36 text-xs"
+                    autoHeight={false}
+                  />
                   <Select value={newNoteScope} onValueChange={(v) => setNewNoteScope(v as 'global' | 'private')}>
                     <SelectTrigger className="h-7 w-28 text-xs">
                       <SelectValue />
