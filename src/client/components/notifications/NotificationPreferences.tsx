@@ -5,7 +5,11 @@ import { Switch } from '@/client/components/ui/switch'
 import { Label } from '@/client/components/ui/label'
 import { Button } from '@/client/components/ui/button'
 import { Separator } from '@/client/components/ui/separator'
-import { Plus, Radio } from 'lucide-react'
+import { Plus, Radio, Volume2 } from 'lucide-react'
+import {
+  getNotificationSoundEnabled,
+  setNotificationSoundEnabled,
+} from '@/client/hooks/useNotificationSound'
 import { toast } from 'sonner'
 import { NOTIFICATION_TYPES } from '@/shared/constants'
 import { NotificationChannelCard } from './NotificationChannelCard'
@@ -19,6 +23,7 @@ export function NotificationPreferences() {
   const [channels, setChannels] = useState<NotificationChannelSummary[]>([])
   const [formOpen, setFormOpen] = useState(false)
   const [editChannel, setEditChannel] = useState<NotificationChannelSummary | null>(null)
+  const [soundEnabled, setSoundEnabled] = useState(getNotificationSoundEnabled)
 
   const fetchChannels = useCallback(() => {
     api.get<{ channels: NotificationChannelSummary[] }>('/notifications/channels')
@@ -80,6 +85,26 @@ export function NotificationPreferences() {
       <div>
         <h3 className="text-lg font-semibold">{t('settings.notifications.title')}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{t('settings.notifications.description')}</p>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-md border border-dashed px-4 py-3">
+        <Label htmlFor="notif-sound" className="flex-1 cursor-pointer">
+          <span className="text-sm font-medium flex items-center gap-1.5">
+            <Volume2 className="size-3.5" />
+            {t('settings.notifications.sound')}
+          </span>
+          <p className="mt-0.5 text-xs font-normal text-muted-foreground">
+            {t('settings.notifications.soundDescription')}
+          </p>
+        </Label>
+        <Switch
+          id="notif-sound"
+          checked={soundEnabled}
+          onCheckedChange={(checked) => {
+            setSoundEnabled(checked)
+            setNotificationSoundEnabled(checked)
+          }}
+        />
       </div>
 
       <div className="space-y-4">

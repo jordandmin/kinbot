@@ -878,6 +878,8 @@
       "labelPlaceholder": "Mon Telegram",
       "typeFilter": "types",
       "typeFilterAll": "Tous les types",
+      "sound": "Son de notification",
+      "soundDescription": "Jouer un son lorsqu'une nouvelle notification arrive.",
       "testSent": "Notification test envoyée !",
       "testFailed": "Test échoué",
       "errorState": "{{count}} erreurs de livraison consécutives",
