@@ -383,6 +383,57 @@ ensure_bun() {
   success "Bun v$(bun --version) installed"
 }
 
+# ─── Backup database before update ───────────────────────────────────────────
+BACKUP_DB_PATH=""
+
+backup_database() {
+  local db_file="$KINBOT_DATA_DIR/kinbot.db"
+  [ ! -f "$db_file" ] && return
+
+  local backup_dir="$KINBOT_DATA_DIR/backups"
+  mkdir -p "$backup_dir"
+
+  local timestamp
+  timestamp="$(date +%Y%m%d-%H%M%S)"
+  local version_tag
+  version_tag="$(git -C "$KINBOT_DIR" describe --tags 2>/dev/null || git -C "$KINBOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+  # Sanitize version for filename
+  version_tag="$(echo "$version_tag" | tr '/' '-')"
+
+  BACKUP_DB_PATH="$backup_dir/kinbot-${version_tag}-${timestamp}.db"
+
+  # Use sqlite3 .backup if available (safe even if DB is in use), else cp
+  if command -v sqlite3 &>/dev/null; then
+    if sqlite3 "$db_file" ".backup '$BACKUP_DB_PATH'" 2>/dev/null; then
+      success "Database backed up (sqlite3): $(basename "$BACKUP_DB_PATH")"
+    else
+      cp "$db_file" "$BACKUP_DB_PATH"
+      success "Database backed up (copy): $(basename "$BACKUP_DB_PATH")"
+    fi
+  else
+    cp "$db_file" "$BACKUP_DB_PATH"
+    success "Database backed up (copy): $(basename "$BACKUP_DB_PATH")"
+  fi
+
+  # Also backup WAL/SHM if they exist (for cp-based backups)
+  [ -f "${db_file}-wal" ] && cp "${db_file}-wal" "${BACKUP_DB_PATH}-wal" 2>/dev/null || true
+  [ -f "${db_file}-shm" ] && cp "${db_file}-shm" "${BACKUP_DB_PATH}-shm" 2>/dev/null || true
+
+  # Prune old backups: keep last 5
+  local count
+  count="$(find "$backup_dir" -maxdepth 1 -name 'kinbot-*.db' -type f 2>/dev/null | wc -l)"
+  if [ "$count" -gt 5 ] 2>/dev/null; then
+    find "$backup_dir" -maxdepth 1 -name 'kinbot-*.db' -type f -printf '%T@ %p\n' 2>/dev/null \
+      | sort -n \
+      | head -n "$((count - 5))" \
+      | awk '{print $2}' \
+      | while IFS= read -r old; do
+          rm -f "$old" "${old}-wal" "${old}-shm"
+        done
+    info "Pruned old backups (keeping last 5)"
+  fi
+}
+
 # ─── Clone or update ─────────────────────────────────────────────────────────
 ROLLBACK_COMMIT=""
 
@@ -391,6 +442,9 @@ install_or_update() {
 
   if [ -d "$KINBOT_DIR/.git" ]; then
     info "Existing installation found at $KINBOT_DIR — updating..."
+
+    # Backup database before update
+    backup_database
 
     # Save current commit for rollback on failure
     ROLLBACK_COMMIT="$(git -C "$KINBOT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
@@ -496,6 +550,13 @@ rollback() {
     warn "Cleaning up partial installation..."
     rm -rf "$KINBOT_DIR"
     success "Removed $KINBOT_DIR"
+  fi
+
+  # Mention database backup if one was made
+  if [ -n "${BACKUP_DB_PATH:-}" ] && [ -f "${BACKUP_DB_PATH:-}" ]; then
+    echo ""
+    info "Database backup is available at: $BACKUP_DB_PATH"
+    info "To restore: cp '$BACKUP_DB_PATH' '$KINBOT_DATA_DIR/kinbot.db'"
   fi
 
   echo ""
@@ -820,6 +881,9 @@ print_summary() {
   echo -e "  ${CYAN}Install dir:${NC}  $KINBOT_DIR"
   echo -e "  ${CYAN}Data dir:${NC}     $KINBOT_DATA_DIR"
   echo -e "  ${CYAN}Config file:${NC}  $KINBOT_DATA_DIR/kinbot.env"
+  if [ -n "${BACKUP_DB_PATH:-}" ] && [ -f "${BACKUP_DB_PATH:-}" ]; then
+    echo -e "  ${CYAN}DB backup:${NC}    $(basename "$BACKUP_DB_PATH")"
+  fi
   echo ""
   echo -e "  Visit the URL above to complete the setup wizard."
   echo -e "  You will need at least one AI provider API key"
@@ -1127,6 +1191,17 @@ check_status() {
     else
       warn "No database found"
       has_issues=true
+    fi
+    # Show backup info
+    local backup_dir="$KINBOT_DATA_DIR/backups"
+    if [ -d "$backup_dir" ]; then
+      local backup_count
+      backup_count="$(find "$backup_dir" -maxdepth 1 -name 'kinbot-*.db' -type f 2>/dev/null | wc -l)"
+      if [ "$backup_count" -gt 0 ] 2>/dev/null; then
+        local latest_backup
+        latest_backup="$(find "$backup_dir" -maxdepth 1 -name 'kinbot-*.db' -type f -printf '%T@ %f\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')"
+        success "Backups: $backup_count (latest: $latest_backup)"
+      fi
     fi
   else
     error_noexit "Data directory not found at $KINBOT_DATA_DIR"
