@@ -68,7 +68,7 @@ It runs as a single process with one SQLite file. No Postgres, no Redis, no exte
 - Cron jobs, webhooks, Telegram integration
 - Encrypted vault for secrets
 - Multi-user with auth (admin + member roles)
-- 14 AI providers supported (including Ollama for fully local)
+- 25+ AI providers supported (including Ollama for fully local)
 
 **Stack:** Bun + Hono + React + SQLite
 **License:** AGPL-3.0
@@ -102,7 +102,7 @@ Key design decisions:
 - Inter-agent communication with correlation IDs and rate limiting
 - AES-256-GCM vault for secrets that never appear in prompts
 
-Built with Bun + Hono (backend) and React (frontend). Supports 14 providers including Ollama for fully local inference.
+Built with Bun + Hono (backend) and React (frontend). Supports 25+ providers including Ollama for fully local inference.
 
 I've been running it personally for several months with agents handling everything from code review to home automation orchestration.
 
@@ -153,7 +153,7 @@ Tweet 4 :
 ```
 github.com/MarlBurroW/kinbot
 
-Built with Bun + Hono + React. Supports 14 providers (incl. Ollama for fully local).
+Built with Bun + Hono + React. Supports 25+ providers (incl. Ollama for fully local).
 
 Early days, feedback welcome. Star if it looks interesting ⭐
 ```
