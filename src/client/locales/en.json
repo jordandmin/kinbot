@@ -436,7 +436,12 @@
         "Explain a complex topic simply"
       ],
       "hint": "Type a message below or pick a suggestion to get started"
-    }
+    },
+    "contextMenu": {
+      "copy": "Copy message",
+      "quote": "Quote reply"
+    },
+    "regenerate": "Regenerate"
   },
   "quickChat": {
     "title": "Quick Session",
