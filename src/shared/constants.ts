@@ -54,6 +54,7 @@ export const NOTIFICATION_TYPES = [
   'cron:pending-approval',
   'mcp:pending-approval',
   'kin:error',
+  'kin:alert',
 ] as const
 
 export const PALETTE_IDS = ['aurora', 'ocean', 'forest', 'sunset', 'monochrome'] as const
@@ -148,6 +149,7 @@ export const TOOL_DOMAIN_MAP: Record<string, ToolDomain> = {
   update_task_status: 'tasks',
   request_input: 'tasks',
   prompt_human: 'tasks',
+  notify: 'tasks',
   // Inter-Kin
   send_message: 'inter-kin',
   reply: 'inter-kin',

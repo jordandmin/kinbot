@@ -900,14 +900,16 @@
       "channel-user-pending": "User pending approval",
       "cron-pending-approval": "Cron pending approval",
       "mcp-pending-approval": "MCP pending approval",
-      "kin-error": "Kin error"
+      "kin-error": "Kin error",
+      "kin-alert": "Kin alert"
     },
     "descriptions": {
       "prompt-pending": "A Kin is waiting for your response to continue",
       "channel-user-pending": "A new user on a channel needs your approval",
       "cron-pending-approval": "A scheduled job created by a Kin needs your approval",
       "mcp-pending-approval": "An MCP server added by a Kin needs your approval",
-      "kin-error": "A Kin encountered an error that may need investigation"
+      "kin-error": "A Kin encountered an error that may need investigation",
+      "kin-alert": "A Kin sent you a notification"
     }
   },
   "modelPicker": {

@@ -48,6 +48,7 @@ import {
   requestInputTool,
 } from '@/server/tools/subtask-tools'
 import { promptHumanTool } from '@/server/tools/human-prompt-tools'
+import { notifyTool } from '@/server/tools/notify-tool'
 import {
   sendMessageTool,
   replyTool,
@@ -174,6 +175,7 @@ export function registerAllTools(): void {
 
   // Human-in-the-loop (main + sub-kin)
   toolRegistry.register('prompt_human', promptHumanTool)
+  toolRegistry.register('notify', notifyTool)
 
   // Phase 16: Inter-Kin tools (main only)
   toolRegistry.register('send_message', sendMessageTool)
