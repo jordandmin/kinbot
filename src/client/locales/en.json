@@ -214,7 +214,8 @@
       "roleTip": "A one-line summary of what this Kin does. Shown under the name in the sidebar.",
       "modelTip": "The AI model powering this Kin. Different models have different strengths - larger models are smarter but slower and more expensive.",
       "characterTip": "Defines the Kin's personality: how it talks, its tone, quirks, and communication style. Think of it as the Kin's \"soul\".",
-      "expertiseTip": "Describes what the Kin knows and should focus on. This guides its answers, priorities, and areas of competence."
+      "expertiseTip": "Describes what the Kin knows and should focus on. This guides its answers, priorities, and areas of competence.",
+      "slugPlaceholder": "my-kin-slug"
     },
     "settings": {
       "title": "Kin settings",

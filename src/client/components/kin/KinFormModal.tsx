@@ -672,7 +672,7 @@ export function KinFormModal({
                                     id="kinFormSlug"
                                     value={slug}
                                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                                    placeholder="my-kin-slug"
+                                    placeholder={t('kin.create.slugPlaceholder')}
                                   />
                                   <p className="text-xs text-muted-foreground">{t('kin.edit.slugHelp')}</p>
                                 </div>
