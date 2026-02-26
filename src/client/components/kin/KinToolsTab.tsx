@@ -14,6 +14,7 @@ import { ToolDomainIcon } from '@/client/components/common/ToolDomainIcon'
 import { Badge } from '@/client/components/ui/badge'
 import { useKinTools, type NativeToolGroup, type McpToolGroup } from '@/client/hooks/useKinTools'
 import { TOOL_DOMAIN_META, SEARCH_PROVIDER_TYPES } from '@/shared/constants'
+import { ProviderIcon } from '@/client/components/common/ProviderIcon'
 import { ChevronRight, Loader2, Plug } from 'lucide-react'
 import { cn } from '@/client/lib/utils'
 import type { KinToolConfig, ToolDomain } from '@/shared/types'
@@ -233,7 +234,10 @@ export function KinToolsTab({ kinId, toolConfig, onToolConfigChange }: KinToolsT
                 </SelectItem>
                 {searchProviders.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.name}
+                    <span className="flex items-center gap-2">
+                      <ProviderIcon providerType={p.type} className="size-4" />
+                      {p.name}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

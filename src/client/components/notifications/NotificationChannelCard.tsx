@@ -56,17 +56,16 @@ export function NotificationChannelCard({ channel, onEdit, onDelete, onTest, onT
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" className="size-7" onClick={onTest} title={t('common.test')}>
+          <Button variant="ghost" size="icon-xs" onClick={onTest} title={t('common.test')}>
             <Send className="size-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-7" onClick={onEdit}>
+          <Button variant="ghost" size="icon-xs" onClick={onEdit}>
             <Pencil className="size-3.5" />
           </Button>
           <ConfirmDeleteButton
             onConfirm={onDelete}
             description={t('settings.notifications.deleteConfirm')}
-            size="icon"
-            className="size-7 text-destructive"
+            size="icon-xs"
           />
           <Switch
             checked={channel.isActive}
