@@ -17,6 +17,7 @@ import { Plus , MessageCircle} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
 import { api, getErrorMessage } from '@/client/lib/api'
+import { useSSE } from '@/client/hooks/useSSE'
 import { ChannelCard } from '@/client/components/channel/ChannelCard'
 import { ChannelFormDialog } from '@/client/components/channel/ChannelFormDialog'
 import { ChannelUserMappings } from '@/client/components/channel/ChannelUserMappings'
@@ -59,6 +60,18 @@ export function ChannelsSettings() {
     fetchChannels()
     fetchKins()
   }, [fetchChannels, fetchKins])
+
+  // SSE: react to channel changes from other tabs/users
+  useSSE({
+    'channel:created': () => { fetchChannels() },
+    'channel:updated': () => { fetchChannels() },
+    'channel:deleted': (data) => {
+      const channelId = data.channelId as string
+      setChannels((prev) => prev.filter((c) => c.id !== channelId))
+    },
+    'channel:user-pending': () => { fetchChannels() },
+    'channel:user-approved': () => { fetchChannels() },
+  })
 
   // Auto-expand channels with pending approval requests
   useEffect(() => {
