@@ -74,7 +74,8 @@ export function Navbar({ dark, onToggleDark }: NavbarProps) {
       }}
     >
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2">
+        <a href="#" className="flex items-center gap-2.5">
+          <img src="/kinbot/logo.svg" alt="" width={28} height={28} className="rounded-md" />
           <span className="text-xl font-extrabold gradient-text">KinBot</span>
         </a>
 
