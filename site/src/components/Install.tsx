@@ -114,8 +114,8 @@ export function Install() {
           <span style={{ color: 'var(--color-foreground)' }}>in minutes.</span>
         </h2>
         <p className="text-lg" style={{ color: 'var(--color-muted-foreground)' }}>
-          Three ways to run KinBot. The first visit launches the setup wizard —
-          you'll need at least one AI provider API key.
+          Three ways to run KinBot. The first visit launches the setup wizard.
+          Using Ollama? It's auto-detected, no API key needed.
         </p>
       </div>
 
@@ -161,7 +161,7 @@ export function Install() {
             { label: 'git', note: 'for cloning the repo' },
             { label: '~500 MB disk', note: 'dependencies + build' },
             { label: 'Linux or macOS', note: 'Docker: any OS' },
-            { label: 'One AI API key', note: 'Anthropic, OpenAI, or Gemini' },
+            { label: 'One AI provider', note: 'Ollama (no key) or any cloud API key' },
             { label: 'Port 3000', note: 'or configure KINBOT_PORT' },
           ].map(({ label, note }) => (
             <div key={label} className="flex items-start gap-2">
