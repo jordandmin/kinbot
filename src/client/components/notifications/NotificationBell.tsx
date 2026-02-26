@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell } from 'lucide-react'
+import { useNotificationSound } from '@/client/hooks/useNotificationSound'
 import { Button } from '@/client/components/ui/button'
 import { Badge } from '@/client/components/ui/badge'
 import {
@@ -26,6 +27,9 @@ export function NotificationBell({ onOpenSettings }: NotificationBellProps) {
     markAllAsRead,
     deleteNotification,
   } = useNotifications()
+
+  // Play a chime on new notifications (respects user preference)
+  useNotificationSound()
 
   const handleClick = useCallback((notification: NotificationSummary) => {
     setOpen(false)
