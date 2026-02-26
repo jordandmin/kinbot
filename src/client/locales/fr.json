@@ -350,7 +350,13 @@
     "downloadFile": "Télécharger",
     "viewImage": "Voir en taille réelle",
     "memoriesUsed": "{{count}} souvenirs",
-    "memoriesUsedSingular": "1 souvenir"
+    "memoriesUsedSingular": "1 souvenir",
+    "welcome": {
+      "title": "Bienvenue sur KinBot",
+      "description": "Les Kins sont des personnalités IA que vous créez et personnalisez. Chaque Kin a son propre caractère, son expertise, ses outils et sa mémoire. Créez votre premier Kin pour commencer !",
+      "createFirst": "Créer votre premier Kin"
+    },
+    "shortcutHint": "pour trouver un Kin rapidement"
   },
   "quickChat": {
     "title": "Session rapide",

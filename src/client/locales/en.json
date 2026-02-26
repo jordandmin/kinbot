@@ -350,7 +350,13 @@
     "downloadFile": "Download",
     "viewImage": "View full size",
     "memoriesUsed": "{{count}} memories",
-    "memoriesUsedSingular": "1 memory"
+    "memoriesUsedSingular": "1 memory",
+    "welcome": {
+      "title": "Welcome to KinBot",
+      "description": "Kins are AI personalities you create and customize. Each Kin has its own character, expertise, tools, and memory. Create your first one to get started!",
+      "createFirst": "Create your first Kin"
+    },
+    "shortcutHint": "to quickly find a Kin"
   },
   "quickChat": {
     "title": "Quick Session",
