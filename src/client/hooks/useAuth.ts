@@ -48,11 +48,13 @@ export function useAuth() {
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw error
+      const body = await response.json().catch(() => ({}))
+      throw new Error(body?.message ?? 'Login failed')
     }
 
-    await fetchUser()
+    // Verify the session was actually established — throws if not
+    const user = await api.get<UserProfile>('/me')
+    setState({ user, isLoading: false, isAuthenticated: true })
   }
 
   const register = async (data: {
