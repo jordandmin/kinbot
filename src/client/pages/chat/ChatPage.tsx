@@ -16,7 +16,8 @@ import { UserMenu } from '@/client/components/common/UserMenu'
 import { NotificationBell } from '@/client/components/notifications/NotificationBell'
 import { SSEStatusIndicator } from '@/client/components/common/SSEStatusIndicator'
 import { CommandPalette } from '@/client/components/common/CommandPalette'
-import { MessageSquare } from 'lucide-react'
+import { Button } from '@/client/components/ui/button'
+import { Bot, Command, MessageSquare, Plus, Sparkles } from 'lucide-react'
 
 export function ChatPage() {
   const { t } = useTranslation()
@@ -167,14 +168,44 @@ export function ChatPage() {
                   />
                 ) : (
                   <div className="surface-chat flex flex-1 flex-col items-center justify-center p-6">
-                    <div className="text-center animate-fade-in-up">
-                      <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
-                        <MessageSquare className="size-8 text-primary" />
+                    {kins.length === 0 ? (
+                      /* ── First-time: no Kins yet ── */
+                      <div className="text-center animate-fade-in-up max-w-md space-y-6">
+                        <div className="mx-auto flex size-20 items-center justify-center rounded-3xl bg-primary/10">
+                          <Sparkles className="size-10 text-primary" />
+                        </div>
+                        <div className="space-y-2">
+                          <h2 className="text-xl font-semibold">{t('chat.welcome.title')}</h2>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {t('chat.welcome.description')}
+                          </p>
+                        </div>
+                        <Button
+                          size="lg"
+                          className="btn-shine gradient-primary text-white"
+                          onClick={handleOpenCreateModal}
+                        >
+                          <Plus className="size-4" />
+                          {t('chat.welcome.createFirst')}
+                        </Button>
                       </div>
-                      <p className="text-muted-foreground">
-                        {t('chat.selectKin')}
-                      </p>
-                    </div>
+                    ) : (
+                      /* ── Has Kins, none selected ── */
+                      <div className="text-center animate-fade-in-up space-y-4">
+                        <div className="mx-auto mb-2 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
+                          <Bot className="size-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground">
+                          {t('chat.selectKin')}
+                        </p>
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground/60">
+                          <kbd className="inline-flex items-center gap-0.5 rounded border border-border/60 bg-muted/50 px-1.5 py-0.5 font-mono text-[10px]">
+                            <Command className="size-2.5" />K
+                          </kbd>
+                          <span>{t('chat.shortcutHint')}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               }
