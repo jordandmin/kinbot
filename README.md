@@ -307,6 +307,77 @@ site/               # GitHub Pages landing site
 
 ---
 
+## 🔧 Troubleshooting
+
+<details>
+<summary><strong>Common issues and solutions</strong></summary>
+
+#### Port already in use
+
+```
+Error: listen EADDRINUSE :::3000
+```
+
+Another process is using port 3000. Either stop it or change KinBot's port:
+
+```bash
+PORT=3001 bun src/server/index.ts
+# or with Docker:
+docker run -d -p 3001:3000 ghcr.io/marlburrow/kinbot:latest
+```
+
+#### Database migration errors after update
+
+If you see migration errors after updating KinBot:
+
+```bash
+# Backup first
+cp data/kinbot.db data/kinbot.db.bak
+
+# Re-run migrations
+bun run db:migrate
+```
+
+#### Docker container won't start
+
+Check logs for details:
+
+```bash
+docker logs kinbot
+```
+
+Common causes:
+- **Permission issues on volume:** Ensure the data directory is writable (`chmod 777 ./data` or match UID)
+- **Missing encryption key:** If you previously set `ENCRYPTION_KEY`, you must provide it on every restart (vault data is encrypted with it)
+
+#### Provider connection fails
+
+- Verify your API key is correct and has sufficient credits
+- For self-hosted providers (Ollama), ensure the base URL is reachable from the KinBot container (use `host.docker.internal` or the host's LAN IP, not `localhost`)
+- Check provider status pages for outages
+
+#### Memory search returns no results
+
+Memory extraction runs asynchronously after each LLM turn. If you just started a conversation:
+- Wait a few seconds for the extraction pipeline to complete
+- Check that you have an embedding provider configured in Settings > Providers
+
+#### Blank page / frontend not loading
+
+```bash
+# Rebuild the frontend
+bun run build
+
+# Then restart
+bun src/server/index.ts
+```
+
+For Docker, pull the latest image which includes pre-built frontend assets.
+
+</details>
+
+---
+
 ## Contributing
 
 Contributions are welcome! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide: setup, adding providers/channels, code style, and commit conventions.
