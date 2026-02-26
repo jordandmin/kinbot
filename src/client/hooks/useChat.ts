@@ -296,25 +296,14 @@ export function useChat(kinId: string | null) {
     'task:done': (data) => {
       if (data.kinId !== kinId) return
       const taskId = data.taskId as string
-      const status = data.status as TaskStatus
       const title = (data.title as string) ?? ''
 
       // Track title → taskId for message enrichment
       if (title) taskIdByTitleRef.current.set(title, taskId)
 
-      // Update live task to final state
-      setLiveTasks((prev) =>
-        prev.map((t) =>
-          t.taskId === taskId
-            ? {
-                ...t,
-                status,
-                result: (data.result as string) ?? null,
-                error: (data.error as string) ?? null,
-              }
-            : t,
-        ),
-      )
+      // Eagerly remove the live task card to avoid a double-flash when the
+      // persisted message arrives from fetchMessages shortly after.
+      setLiveTasks((prev) => prev.filter((t) => t.taskId !== taskId))
 
       // Refresh messages after a short delay to pick up the task result message
       // (for await mode it may take longer; fetchMessages on chat:done handles that)
