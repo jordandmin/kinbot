@@ -371,14 +371,41 @@ install_or_update() {
 
     # Save current commit for rollback on failure
     ROLLBACK_COMMIT="$(git -C "$KINBOT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
+    local old_version
+    old_version="$(get_installed_version)"
     if [ -n "$ROLLBACK_COMMIT" ]; then
-      info "Saved rollback point: ${ROLLBACK_COMMIT:0:8}"
+      info "Current version: $old_version (rollback point: ${ROLLBACK_COMMIT:0:8})"
     fi
 
     git -C "$KINBOT_DIR" fetch origin
     git -C "$KINBOT_DIR" checkout "$KINBOT_BRANCH"
     git -C "$KINBOT_DIR" pull origin "$KINBOT_BRANCH"
-    success "Updated to latest"
+
+    local new_version
+    new_version="$(get_installed_version)"
+    if [ "$old_version" = "$new_version" ]; then
+      success "Already up to date ($new_version)"
+    else
+      success "Updated: $old_version → $new_version"
+      # Show what changed
+      if [ -n "$ROLLBACK_COMMIT" ]; then
+        local changes
+        changes="$(git -C "$KINBOT_DIR" log --oneline "${ROLLBACK_COMMIT}..HEAD" 2>/dev/null | head -10)"
+        if [ -n "$changes" ]; then
+          echo ""
+          echo -e "  ${DIM}Recent changes:${NC}"
+          echo "$changes" | while IFS= read -r line; do
+            echo -e "  ${DIM}  $line${NC}"
+          done
+          local total
+          total="$(git -C "$KINBOT_DIR" rev-list "${ROLLBACK_COMMIT}..HEAD" --count 2>/dev/null || echo "0")"
+          if [ "$total" -gt 10 ] 2>/dev/null; then
+            echo -e "  ${DIM}  ... and $((total - 10)) more${NC}"
+          fi
+          echo ""
+        fi
+      fi
+    fi
     IS_UPDATE=true
   else
     mkdir -p "$(dirname "$KINBOT_DIR")"
@@ -665,8 +692,11 @@ print_summary() {
   ACTION="installed"
   [ "${IS_UPDATE:-false}" = true ] && ACTION="updated"
 
+  local version
+  version="$(get_installed_version)"
+
   echo ""
-  local msg="KinBot ${ACTION} successfully!"
+  local msg="KinBot ${version} ${ACTION} successfully!"
   local pad_len=$(( 40 - ${#msg} ))
   local padding=""
   for (( i=0; i<pad_len; i++ )); do padding+=" "; done
@@ -789,6 +819,81 @@ uninstall() {
   echo ""
 }
 
+# ─── Version info ─────────────────────────────────────────────────────────────
+get_installed_version() {
+  if [ -d "$KINBOT_DIR/.git" ]; then
+    git -C "$KINBOT_DIR" describe --tags 2>/dev/null || \
+      git -C "$KINBOT_DIR" rev-parse --short HEAD 2>/dev/null || \
+      echo "unknown"
+  else
+    echo "not installed"
+  fi
+}
+
+get_installed_branch() {
+  if [ -d "$KINBOT_DIR/.git" ]; then
+    git -C "$KINBOT_DIR" branch --show-current 2>/dev/null || echo "unknown"
+  else
+    echo "n/a"
+  fi
+}
+
+get_installed_date() {
+  if [ -d "$KINBOT_DIR/.git" ]; then
+    git -C "$KINBOT_DIR" log -1 --format='%ci' 2>/dev/null | cut -d' ' -f1 || echo "unknown"
+  else
+    echo "n/a"
+  fi
+}
+
+show_version() {
+  # Detect OS first for correct default dirs
+  OS="$(uname -s)"
+  IS_ROOT=false
+  [ "$(id -u)" -eq 0 ] && IS_ROOT=true
+  if [ "$IS_ROOT" = true ]; then
+    KINBOT_DIR="${KINBOT_DIR:-/opt/kinbot}"
+  else
+    KINBOT_DIR="${KINBOT_DIR:-$HOME/kinbot}"
+  fi
+
+  local version
+  version="$(get_installed_version)"
+
+  if [ "$version" = "not installed" ]; then
+    echo "KinBot is not installed at $KINBOT_DIR"
+    exit 1
+  fi
+
+  local branch date_str commit_count
+  branch="$(get_installed_branch)"
+  date_str="$(get_installed_date)"
+  commit_count="$(git -C "$KINBOT_DIR" rev-list HEAD --count 2>/dev/null || echo "?")"
+
+  echo -e "${BOLD}KinBot${NC} $version"
+  echo -e "  Branch: $branch"
+  echo -e "  Last update: $date_str"
+  echo -e "  Commits: $commit_count"
+  echo -e "  Install: $KINBOT_DIR"
+
+  # Check if updates are available
+  if git -C "$KINBOT_DIR" fetch --dry-run origin "$branch" 2>&1 | grep -q "$branch"; then
+    local remote_version
+    remote_version="$(git -C "$KINBOT_DIR" describe --tags "origin/$branch" 2>/dev/null || \
+      git -C "$KINBOT_DIR" rev-parse --short "origin/$branch" 2>/dev/null || echo "unknown")"
+    local behind
+    behind="$(git -C "$KINBOT_DIR" rev-list HEAD.."origin/$branch" --count 2>/dev/null || echo "0")"
+    if [ "$behind" -gt 0 ] 2>/dev/null; then
+      echo ""
+      echo -e "  ${YELLOW}⚠ $behind commit(s) behind${NC} → $remote_version"
+      echo -e "  ${DIM}Run install.sh to update${NC}"
+    else
+      echo ""
+      echo -e "  ${GREEN}✓ Up to date${NC}"
+    fi
+  fi
+}
+
 # ─── Help ────────────────────────────────────────────────────────────────────
 show_help() {
   echo ""
@@ -800,6 +905,7 @@ show_help() {
   echo ""
   echo -e "${BOLD}OPTIONS${NC}"
   echo "  --help          Show this help message"
+  echo "  --version       Show installed version and check for updates"
   echo "  --dry-run       Show what would happen without making changes"
   echo "  --status        Check current KinBot installation health"
   echo "  --uninstall     Remove KinBot (keeps data unless confirmed)"
@@ -1094,6 +1200,11 @@ main() {
       --status|status)
         trap - INT TERM
         check_status
+        exit 0
+        ;;
+      --version|-v|version)
+        trap - INT TERM
+        show_version
         exit 0
         ;;
       --dry-run|dry-run)
