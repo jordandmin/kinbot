@@ -202,6 +202,12 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
   }, [])
 
+  // Quote reply: insert quoted text into the draft and focus the input
+  const handleQuoteReply = useCallback((quotedText: string) => {
+    setDraftContent(draftContent ? `${draftContent}\n${quotedText}` : quotedText)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [setDraftContent, draftContent])
+
   // Resolve kin info for the currently open task detail modal
   const detailTask = detailTaskId ? liveTasks.find((t) => t.taskId === detailTaskId) : null
 
@@ -353,6 +359,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                       toolCalls={toolCallsByMessage.get(msg.id)}
                       injectedMemories={msg.injectedMemories}
                       onOpenTaskDetail={isTask && msg.resolvedTaskId ? () => setDetailTaskId(msg.resolvedTaskId) : undefined}
+                      onQuoteReply={handleQuoteReply}
                     />
                     </div>
                   )

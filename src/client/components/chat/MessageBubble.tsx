@@ -10,7 +10,14 @@ import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { ImageLightbox } from '@/client/components/chat/ImageLightbox'
 import { cn } from '@/client/lib/utils'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
-import { FileIcon, Download, Brain, ChevronDown, ChevronUp, Copy, Check, RefreshCw } from 'lucide-react'
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from '@/client/components/ui/context-menu'
+import { FileIcon, Download, Brain, ChevronDown, ChevronUp, Copy, Check, RefreshCw, Quote } from 'lucide-react'
 import type { ToolCallViewItem } from '@/client/hooks/useToolCalls'
 import { useRelativeTime } from '@/client/hooks/useRelativeTime'
 import type { MessageFile } from '@/shared/types'
@@ -34,6 +41,7 @@ interface MessageBubbleProps {
   files?: MessageFile[]
   onOpenTaskDetail?: () => void
   onRegenerate?: () => void
+  onQuoteReply?: (text: string) => void
 }
 
 /** A content part is either a text segment or a group of tool calls at the same offset. */
@@ -348,6 +356,70 @@ function CollapsibleLongContent({
   )
 }
 
+// ─── Message context menu ─────────────────────────────────────────────────────
+
+function MessageContextMenu({
+  children,
+  content,
+  isUser,
+  onRegenerate,
+  onQuoteReply,
+}: {
+  children: React.ReactNode
+  content: string
+  isUser: boolean
+  onRegenerate?: () => void
+  onQuoteReply?: (text: string) => void
+}) {
+  const { t } = useTranslation()
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(content)
+      toast.success(t('chat.copied'))
+    } catch {
+      toast.error(t('chat.copyFailed'))
+    }
+  }, [content, t])
+
+  const handleQuote = useCallback(() => {
+    if (onQuoteReply) {
+      // Build a blockquote from first 3 lines of content
+      const lines = content.split('\n').filter((l) => l.trim())
+      const preview = lines.slice(0, 3).map((l) => `> ${l}`).join('\n')
+      const suffix = lines.length > 3 ? '\n> ...' : ''
+      onQuoteReply(`${preview}${suffix}\n\n`)
+    }
+  }, [content, onQuoteReply])
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem onClick={handleCopy}>
+          <Copy className="size-4" />
+          {t('chat.contextMenu.copy')}
+        </ContextMenuItem>
+        {onQuoteReply && (
+          <ContextMenuItem onClick={handleQuote}>
+            <Quote className="size-4" />
+            {t('chat.contextMenu.quote')}
+          </ContextMenuItem>
+        )}
+        {!isUser && onRegenerate && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={onRegenerate}>
+              <RefreshCw className="size-4" />
+              {t('chat.regenerate')}
+            </ContextMenuItem>
+          </>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
 // ─── Message bubble ───────────────────────────────────────────────────────────
 
 export const MessageBubble = memo(function MessageBubble({
@@ -362,6 +434,7 @@ export const MessageBubble = memo(function MessageBubble({
   files,
   onOpenTaskDetail,
   onRegenerate,
+  onQuoteReply,
 }: MessageBubbleProps) {
   const isUser = role === 'user' && sourceType === 'user'
   const isFromOtherKin = sourceType === 'kin' && role === 'user'
@@ -404,6 +477,7 @@ export const MessageBubble = memo(function MessageBubble({
   // Assistant messages with tool calls: interleaved layout
   if (!isUser && contentParts) {
     return (
+      <MessageContextMenu content={content} isUser={false} onRegenerate={onRegenerate} onQuoteReply={onQuoteReply}>
       <div className="flex gap-3 px-4 py-2 animate-fade-in-up">
         <Avatar className="size-8 shrink-0">
           {avatarUrl ? (
@@ -458,11 +532,13 @@ export const MessageBubble = memo(function MessageBubble({
           </div>
         </div>
       </div>
+      </MessageContextMenu>
     )
   }
 
   // Standard message (user or assistant without tool calls)
   return (
+    <MessageContextMenu content={content} isUser={isUser} onRegenerate={isUser ? undefined : onRegenerate} onQuoteReply={onQuoteReply}>
     <div
       className={cn(
         'flex gap-3 px-4 py-2 animate-fade-in-up',
@@ -523,5 +599,6 @@ export const MessageBubble = memo(function MessageBubble({
         </div>
       </div>
     </div>
+    </MessageContextMenu>
   )
 })

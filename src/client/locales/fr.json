@@ -436,7 +436,12 @@
         "Explique-moi un sujet complexe simplement"
       ],
       "hint": "Écrivez un message ou choisissez une suggestion pour commencer"
-    }
+    },
+    "contextMenu": {
+      "copy": "Copier le message",
+      "quote": "Citer en réponse"
+    },
+    "regenerate": "Régénérer"
   },
   "quickChat": {
     "title": "Session rapide",
