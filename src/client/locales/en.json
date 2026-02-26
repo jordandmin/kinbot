@@ -348,7 +348,8 @@
     "selectKin": "Select a Kin to start chatting",
     "empty": "No messages yet. Say hello!",
     "streaming": "Thinking...",
-    "contextUsage": "Context: ~{{tokens}} / {{max}} tokens ({{percent}}%)",
+    "contextUsage": "Context: ~{{tokens}} / {{max}} tokens ({{percent}}%) — includes system prompt, history & tools",
+    "contextNoData": "Context usage will appear after the first message is processed",
     "forceCompact": "Force compaction",
     "compacting": {
       "title": "Compacting conversation",
