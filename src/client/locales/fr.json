@@ -214,7 +214,8 @@
       "roleTip": "Un résumé en une ligne de ce que fait ce Kin. Affiché sous le nom dans la barre latérale.",
       "modelTip": "Le modèle IA qui anime ce Kin. Les modèles plus grands sont plus intelligents mais plus lents et coûteux.",
       "characterTip": "Définit la personnalité du Kin : comment il parle, son ton, ses particularités. C'est en quelque sorte l'\"âme\" du Kin.",
-      "expertiseTip": "Décrit ce que le Kin sait et sur quoi il doit se concentrer. Guide ses réponses et domaines de compétence."
+      "expertiseTip": "Décrit ce que le Kin sait et sur quoi il doit se concentrer. Guide ses réponses et domaines de compétence.",
+      "slugPlaceholder": "mon-kin-slug"
     },
     "settings": {
       "title": "Paramètres du Kin",
