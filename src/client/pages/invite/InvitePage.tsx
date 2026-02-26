@@ -8,13 +8,7 @@ import { Label } from '@/client/components/ui/label'
 import { Alert, AlertDescription } from '@/client/components/ui/alert'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { AlertCircle, Camera, Loader2, ArrowLeft } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/client/components/ui/select'
+import { LanguageSelector } from '@/client/components/common/LanguageSelector'
 import { getErrorMessage } from '@/client/lib/api'
 
 export function InvitePage() {
@@ -334,15 +328,7 @@ export function InvitePage() {
             {/* Language */}
             <div className="space-y-2">
               <Label>{t('invite.language')}</Label>
-              <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
-                </SelectContent>
-              </Select>
+              <LanguageSelector value={language} onValueChange={setLanguage} />
             </div>
 
             {/* Submit */}

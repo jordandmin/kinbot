@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/client/components/ui/select'
+import { LanguageSelector } from '@/client/components/common/LanguageSelector'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { usePalette, useTheme, PALETTES } from '@/client/components/theme-provider'
 
@@ -31,15 +31,7 @@ export function StepPreferences({ onComplete, onBack }: StepPreferencesProps) {
       {/* Language */}
       <div className="space-y-2">
         <Label>{t('onboarding.preferences.language')}</Label>
-        <Select value={language} onValueChange={(v) => { setLanguage(v); i18n.changeLanguage(v) }}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">English</SelectItem>
-            <SelectItem value="fr">Français</SelectItem>
-          </SelectContent>
-        </Select>
+        <LanguageSelector value={language} onValueChange={(v) => { setLanguage(v); i18n.changeLanguage(v) }} />
       </div>
 
       {/* Color theme */}

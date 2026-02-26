@@ -3,13 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Input } from '@/client/components/ui/input'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/client/components/ui/select'
+import { LanguageSelector } from '@/client/components/common/LanguageSelector'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { Alert, AlertDescription } from '@/client/components/ui/alert'
 import { Camera, CheckCircle2, Loader2 } from 'lucide-react'
@@ -154,15 +148,7 @@ export function AccountPage() {
 
           <div className="space-y-2">
             <Label>{t('account.language')}</Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="fr">Français</SelectItem>
-              </SelectContent>
-            </Select>
+            <LanguageSelector value={language} onValueChange={setLanguage} />
           </div>
 
           <Button
