@@ -12,6 +12,13 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/client/components/ui/sidebar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/client/components/ui/select'
 import { GeneralSettings } from '@/client/pages/settings/GeneralSettings'
 import { ProvidersSettings } from '@/client/pages/settings/ProvidersSettings'
 import { SearchProvidersSettings } from '@/client/pages/settings/SearchProvidersSettings'
@@ -125,7 +132,7 @@ export function SettingsModal({ open, onOpenChange, initialSection }: SettingsMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[min(85vh,720px)] max-h-[85vh] flex-col overflow-hidden p-0 sm:max-w-5xl">
+      <DialogContent className="flex h-[min(90vh,720px)] max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-5xl">
         {/* Header */}
         <DialogHeader className="shrink-0 border-b px-6 py-4">
           <DialogTitle>{t('settings.title')}</DialogTitle>
@@ -135,9 +142,47 @@ export function SettingsModal({ open, onOpenChange, initialSection }: SettingsMo
         </DialogHeader>
 
         {/* Body: sidebar + content */}
-        <div className="flex min-h-0 flex-1">
-          {/* Settings sidebar */}
-          <nav className="w-56 shrink-0 border-r surface-sidebar overflow-y-auto py-4 px-3">
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          {/* Mobile section selector */}
+          <div className="shrink-0 border-b px-4 py-3 md:hidden">
+            <Select value={activeSection} onValueChange={(v) => setActiveSection(v)}>
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {(() => {
+                    const section = allSections.find((s) => s.id === activeSection)
+                    if (!section) return null
+                    const Icon = section.icon
+                    return (
+                      <span className="flex items-center gap-2">
+                        <Icon className="size-4" />
+                        {t(section.labelKey)}
+                      </span>
+                    )
+                  })()}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {sectionGroups.map((group) => (
+                  <div key={group.groupKey}>
+                    <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      {t(group.groupKey)}
+                    </p>
+                    {group.items.map(({ id, icon: Icon, labelKey }) => (
+                      <SelectItem key={id} value={id}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="size-4" />
+                          {t(labelKey)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </div>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Desktop settings sidebar */}
+          <nav className="hidden md:block w-56 shrink-0 border-r surface-sidebar overflow-y-auto py-4 px-3">
             {sectionGroups.map((group, gi) => (
               <div key={group.groupKey} className={gi > 0 ? 'mt-4' : ''}>
                 <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
@@ -162,7 +207,7 @@ export function SettingsModal({ open, onOpenChange, initialSection }: SettingsMo
           </nav>
 
           {/* Main content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="mx-auto max-w-2xl">
               <ActiveComponent />
             </div>
