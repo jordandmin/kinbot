@@ -22,7 +22,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/client/components/ui/collapsible'
-import { KinSelectItem, type KinOption } from '@/client/components/common/KinSelectItem'
+import { KinSelector } from '@/client/components/common/KinSelector'
+import type { KinOption } from '@/client/components/common/KinSelectItem'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
 import { ChevronRight, HelpCircle, Lightbulb, Loader2 } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
@@ -178,18 +179,12 @@ export function ChannelFormDialog({
           {/* Kin selector */}
           <div className="space-y-2">
             <Label className="inline-flex items-center gap-1.5">{t('settings.channels.kinLabel')} <InfoTip content={t('settings.channels.kinTip')} /></Label>
-            <Select value={selectedKinId} onValueChange={setSelectedKinId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('settings.channels.kinPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {kins.map((k) => (
-                  <SelectItem key={k.id} value={k.id} className="py-2">
-                    <KinSelectItem kin={k} />
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <KinSelector
+              value={selectedKinId}
+              onValueChange={setSelectedKinId}
+              kins={kins}
+              placeholder={t('settings.channels.kinPlaceholder')}
+            />
           </div>
 
           {/* Platform selector (only for create) */}

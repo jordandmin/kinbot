@@ -20,7 +20,8 @@ import {
 } from '@/client/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
-import { KinSelectItem, type KinOption } from '@/client/components/common/KinSelectItem'
+import { KinSelector } from '@/client/components/common/KinSelector'
+import type { KinOption } from '@/client/components/common/KinSelectItem'
 import { MEMORY_CATEGORIES } from '@/shared/constants'
 import type { MemorySummary, MemoryCategory } from '@/shared/types'
 
@@ -96,7 +97,6 @@ export function MemoryFormDialog({
 
   const showKinPicker = !kinId && !isEdit
   const canSubmit = content.trim() && category && (kinId || selectedKinId || isEdit)
-  const selectedKin = kins?.find((k) => k.id === selectedKinId)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,22 +111,12 @@ export function MemoryFormDialog({
           {showKinPicker && kins && kins.length > 0 && (
             <div className="space-y-2">
               <Label className="inline-flex items-center gap-1.5">{t('settings.memories.kin')} <InfoTip content={t('settings.memories.kinTip')} /></Label>
-              <Select value={selectedKinId} onValueChange={setSelectedKinId}>
-                <SelectTrigger className="h-auto min-h-9">
-                  {selectedKinId && selectedKin ? (
-                    <KinSelectItem kin={selectedKin} />
-                  ) : (
-                    <SelectValue placeholder={t('settings.memories.kinPlaceholder')} />
-                  )}
-                </SelectTrigger>
-                <SelectContent>
-                  {kins.map((k) => (
-                    <SelectItem key={k.id} value={k.id} className="py-2">
-                      <KinSelectItem kin={k} />
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <KinSelector
+                value={selectedKinId}
+                onValueChange={setSelectedKinId}
+                kins={kins}
+                placeholder={t('settings.memories.kinPlaceholder')}
+              />
             </div>
           )}
 
