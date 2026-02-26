@@ -21,7 +21,7 @@ export function EmptyState({ icon: Icon, title, description, actionLabel, onActi
         <p className="mt-1 max-w-sm text-xs text-muted-foreground">{description}</p>
       )}
       {actionLabel && onAction && (
-        <Button variant="outline" size="sm" className="mt-4" onClick={onAction}>
+        <Button type="button" variant="outline" size="sm" className="mt-4" onClick={onAction}>
           <Plus className="size-3.5" />
           {actionLabel}
         </Button>

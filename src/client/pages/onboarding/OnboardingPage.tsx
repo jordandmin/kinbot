@@ -29,6 +29,7 @@ export function OnboardingPage({ onComplete, initialStep = 1 }: OnboardingPagePr
       <div className="relative z-10 w-full max-w-lg animate-fade-in-up">
         {/* Header */}
         <div className="mb-8 text-center">
+          <img src="/kinbot.svg" alt="KinBot" width={64} height={64} className="mx-auto mb-3 rounded-2xl drop-shadow-lg" />
           <h1 className="gradient-primary-text text-3xl font-bold tracking-tight">
             KinBot
           </h1>

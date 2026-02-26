@@ -419,7 +419,9 @@ export function KinFormModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[min(85vh,720px)] max-h-[85vh] flex-col overflow-hidden p-0 sm:max-w-5xl">
+        <DialogContent
+          className="flex h-[min(85vh,720px)] max-h-[85vh] flex-col overflow-hidden p-0 sm:max-w-5xl"
+        >
           {/* ─── WIZARD: Describe step ─── */}
           {hasWizard && wizardStep === 'describe' ? (
             <>
