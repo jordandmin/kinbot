@@ -19,6 +19,7 @@ import { useQuickSession } from '@/client/hooks/useQuickSession'
 import { useAuth } from '@/client/hooks/useAuth'
 import { useDraftMessage } from '@/client/hooks/useDraftMessage'
 import { useFileUpload } from '@/client/hooks/useFileUpload'
+import { useExportConversation } from '@/client/hooks/useExportConversation'
 import { MessageSquare, ArrowDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/client/lib/api'
@@ -59,6 +60,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   const { content: draftContent, setContent: setDraftContent, clearDraft } = useDraftMessage(kin.id)
   const { pendingFiles, addFiles, removeFile, clearFiles, isUploading } = useFileUpload(kin.id)
   const { activeSession, isOpen: isQuickOpen, setIsOpen: setQuickOpen, createSession, closeSession } = useQuickSession(kin.id)
+  const { exportAsMarkdown, exportAsJSON } = useExportConversation(messages, kin.name)
   const [isToolCallsOpen, setIsToolCallsOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
@@ -182,6 +184,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
         isCompacting={isCompacting}
         onEdit={onEditKin}
         onQuickSession={handleQuickSession}
+        onExportMarkdown={exportAsMarkdown}
+        onExportJSON={exportAsJSON}
       />
 
       {/* Middle: messages + optional tool calls panel */}

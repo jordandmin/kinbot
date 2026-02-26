@@ -5,7 +5,13 @@ import { Badge } from '@/client/components/ui/badge'
 import { Progress } from '@/client/components/ui/progress'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
 import { ModelPicker } from '@/client/components/common/ModelPicker'
-import { AlertTriangle, Bot, Settings2, MessageSquare, Loader2, Wrench, Archive, Zap } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/client/components/ui/dropdown-menu'
+import { AlertTriangle, Bot, Settings2, MessageSquare, Loader2, Wrench, Archive, Zap, Download, FileText, FileJson } from 'lucide-react'
 import { cn } from '@/client/lib/utils'
 
 interface LLMModel {
@@ -35,6 +41,8 @@ interface ConversationHeaderProps {
   isCompacting?: boolean
   onEdit: () => void
   onQuickSession?: () => void
+  onExportMarkdown?: () => void
+  onExportJSON?: () => void
 }
 
 function formatTokenCount(n: number): string {
@@ -61,6 +69,8 @@ export function ConversationHeader({
   isCompacting = false,
   onEdit,
   onQuickSession,
+  onExportMarkdown,
+  onExportJSON,
 }: ConversationHeaderProps) {
   const { t } = useTranslation()
 
@@ -200,6 +210,36 @@ export function ConversationHeader({
           </TooltipTrigger>
           <TooltipContent side="bottom">{t('quickChat.open')}</TooltipContent>
         </Tooltip>
+      )}
+
+      {/* Export dropdown */}
+      {(onExportMarkdown || onExportJSON) && (
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm">
+                  <Download className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{t('chat.export.title')}</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end">
+            {onExportMarkdown && (
+              <DropdownMenuItem onClick={onExportMarkdown}>
+                <FileText className="mr-2 size-4" />
+                {t('chat.export.markdown')}
+              </DropdownMenuItem>
+            )}
+            {onExportJSON && (
+              <DropdownMenuItem onClick={onExportJSON}>
+                <FileJson className="mr-2 size-4" />
+                {t('chat.export.json')}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
 
       {/* Settings button */}

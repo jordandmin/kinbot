@@ -382,7 +382,14 @@
       "yesterday": "yesterday",
       "daysAgo": "{{count}}d ago"
     },
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "export": {
+      "title": "Export conversation",
+      "markdown": "Export as Markdown",
+      "json": "Export as JSON",
+      "success": "Conversation exported",
+      "empty": "No messages to export"
+    }
   },
   "quickChat": {
     "title": "Quick Session",
