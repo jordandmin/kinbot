@@ -12,7 +12,7 @@ Self-hosted. Persistent memory. Real collaboration.
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/MarlBurroW/kinbot/pkgs/container/kinbot)
 
-[Website](https://marlburrow.github.io/kinbot/) · [Quick Start](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [Configuration](#configuration) · [Development](#development) · [Contributing](#contributing)
+[Website](https://marlburrow.github.io/kinbot/) · [Quick Start](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [Changelog](CHANGELOG.md) · [Contributing](#contributing)
 
 </div>
 
