@@ -10,7 +10,7 @@ import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { ImageLightbox } from '@/client/components/chat/ImageLightbox'
 import { cn } from '@/client/lib/utils'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
-import { FileIcon, Download, Brain, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react'
+import { FileIcon, Download, Brain, ChevronDown, ChevronUp, Copy, Check, RefreshCw } from 'lucide-react'
 import type { ToolCallViewItem } from '@/client/hooks/useToolCalls'
 import { useRelativeTime } from '@/client/hooks/useRelativeTime'
 import type { MessageFile } from '@/shared/types'
@@ -33,6 +33,7 @@ interface MessageBubbleProps {
   injectedMemories?: InjectedMemory[] | null
   files?: MessageFile[]
   onOpenTaskDetail?: () => void
+  onRegenerate?: () => void
 }
 
 /** A content part is either a text segment or a group of tool calls at the same offset. */
@@ -231,6 +232,28 @@ function CopyMessageButton({ content, isUser }: { content: string; isUser: boole
   )
 }
 
+// ─── Regenerate button ────────────────────────────────────────────────────────
+
+function RegenerateButton({ onRegenerate }: { onRegenerate: () => void }) {
+  const { t } = useTranslation()
+
+  return (
+    <button
+      type="button"
+      onClick={onRegenerate}
+      className={cn(
+        'opacity-0 group-hover/msg:opacity-100 transition-opacity',
+        'rounded-md p-1 hover:bg-muted/80 active:scale-95',
+        'text-muted-foreground hover:text-foreground',
+      )}
+      title={t('chat.regenerate')}
+      aria-label={t('chat.regenerate')}
+    >
+      <RefreshCw className="size-3.5" />
+    </button>
+  )
+}
+
 // ─── Relative timestamp ───────────────────────────────────────────────────────
 
 function RelativeTimestamp({ timestamp, className }: { timestamp: string; className?: string }) {
@@ -338,6 +361,7 @@ export const MessageBubble = memo(function MessageBubble({
   injectedMemories,
   files,
   onOpenTaskDetail,
+  onRegenerate,
 }: MessageBubbleProps) {
   const isUser = role === 'user' && sourceType === 'user'
   const isFromOtherKin = sourceType === 'kin' && role === 'user'
@@ -426,9 +450,12 @@ export const MessageBubble = memo(function MessageBubble({
           {/* Injected memories indicator */}
           {hasMemories && <InjectedMemoriesIndicator memories={injectedMemories} />}
 
-          {timestamp && (
-            <RelativeTimestamp timestamp={timestamp} className="text-[10px] text-muted-foreground/70" />
-          )}
+          <div className="flex items-center gap-1.5">
+            {timestamp && (
+              <RelativeTimestamp timestamp={timestamp} className="text-[10px] text-muted-foreground/70" />
+            )}
+            {onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
+          </div>
         </div>
       </div>
     )
@@ -482,15 +509,18 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Injected memories indicator */}
         {hasMemories && <InjectedMemoriesIndicator memories={injectedMemories} />}
 
-        {timestamp && (
-          <RelativeTimestamp
-            timestamp={timestamp}
-            className={cn(
-              'mt-1 text-[10px]',
-              isUser ? 'text-primary-foreground/50' : 'text-muted-foreground/70',
-            )}
-          />
-        )}
+        <div className="flex items-center gap-1.5 mt-1">
+          {timestamp && (
+            <RelativeTimestamp
+              timestamp={timestamp}
+              className={cn(
+                'text-[10px]',
+                isUser ? 'text-primary-foreground/50' : 'text-muted-foreground/70',
+              )}
+            />
+          )}
+          {!isUser && onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
+        </div>
       </div>
     </div>
   )

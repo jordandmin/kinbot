@@ -203,6 +203,26 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     [sendMessage, clearDraft, clearFiles, pendingFiles, t],
   )
 
+  // Regenerate: find the last user message and re-send it
+  const handleRegenerate = useCallback(() => {
+    // Find the last user message (walking backwards)
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]
+      if (msg.role === 'user' && msg.sourceType === 'user') {
+        sendMessage(msg.content)
+        return
+      }
+    }
+  }, [messages, sendMessage])
+
+  // Determine the last assistant message id (for showing the regenerate button)
+  const lastAssistantMsgId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') return messages[i].id
+    }
+    return null
+  }, [messages])
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Conversation header */}
