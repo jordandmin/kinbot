@@ -12,6 +12,7 @@ export type NotificationType =
   | 'cron:pending-approval'
   | 'mcp:pending-approval'
   | 'kin:error'
+  | 'kin:alert'
 
 export type NotificationRelatedType = 'prompt' | 'channel' | 'cron' | 'mcp' | 'kin'
 
