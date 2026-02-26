@@ -28,8 +28,16 @@ export function ChannelCard({ channel, expanded, testing, onToggleExpand, onEdit
     <Card className={cn('surface-card', expanded && 'rounded-b-none border-b-0')}>
       <CardContent className="flex items-center justify-between py-3 px-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0">
+          <div className="relative shrink-0">
             <PlatformIcon platform={channel.platform} variant="color" className="size-5" />
+            <span
+              className={cn(
+                'absolute -right-0.5 -bottom-0.5 size-2 rounded-full ring-2 ring-card',
+                channel.status === 'active' && 'bg-emerald-500',
+                channel.status === 'inactive' && 'bg-muted-foreground/50',
+                channel.status === 'error' && 'bg-destructive',
+              )}
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -37,6 +45,17 @@ export function ChannelCard({ channel, expanded, testing, onToggleExpand, onEdit
               <KinBadge name={channel.kinName} avatarUrl={channel.kinAvatarUrl} />
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 capitalize">
                 {channel.platform}
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  'text-[10px] px-1.5 py-0 shrink-0 capitalize',
+                  channel.status === 'active' && 'text-emerald-600 border-emerald-300 dark:text-emerald-400 dark:border-emerald-600/40',
+                  channel.status === 'error' && 'text-destructive border-destructive/30',
+                  channel.status === 'inactive' && 'text-muted-foreground border-muted-foreground/30',
+                )}
+              >
+                {t(`settings.channels.status_${channel.status}`, channel.status)}
               </Badge>
               {channel.pendingApprovalCount > 0 && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-600/40">
