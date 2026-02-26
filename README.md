@@ -280,10 +280,12 @@ site/               # GitHub Pages landing site
 
 ## Contributing
 
-Contributions are welcome. Please:
+Contributions are welcome! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide: setup, adding providers/channels, code style, and commit conventions.
+
+Quick version:
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
+2. Create a feature branch: `git checkout -b feat/my-feature`
 3. Follow existing code conventions:
    - Files: `kebab-case.ts` / Components: `PascalCase.tsx`
    - Shared types in `src/shared/types.ts`; shared constants in `src/shared/constants.ts`

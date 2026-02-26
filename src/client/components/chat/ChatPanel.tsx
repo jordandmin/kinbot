@@ -110,7 +110,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   const detailTask = detailTaskId ? liveTasks.find((t) => t.taskId === detailTaskId) : null
 
   const handleSend = useCallback(
-    (content: string, fileIds?: string[]) => {
+    async (content: string, fileIds?: string[]) => {
       // Build optimistic MessageFile[] from pending files so images show immediately
       // Use serverUrl (already uploaded) — previewUrl (blob:) gets revoked by clearFiles
       const optimisticFiles = pendingFiles
@@ -123,11 +123,15 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
           url: f.serverUrl!,
         }))
 
-      sendMessage(content, fileIds, optimisticFiles.length > 0 ? optimisticFiles : undefined)
-      clearDraft()
-      clearFiles()
+      const success = await sendMessage(content, fileIds, optimisticFiles.length > 0 ? optimisticFiles : undefined)
+      if (success) {
+        clearDraft()
+        clearFiles()
+      } else {
+        toast.error(t('chat.sendFailed'))
+      }
     },
-    [sendMessage, clearDraft, clearFiles, pendingFiles],
+    [sendMessage, clearDraft, clearFiles, pendingFiles, t],
   )
 
   return (

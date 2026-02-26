@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { toast } from 'sonner'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import type { ToolCallEntry, TaskStatus, MessageFile } from '@/shared/types'
@@ -103,7 +104,7 @@ export function useChat(kinId: string | null) {
         )
       }
     } catch {
-      // Ignore errors
+      toast.error('Failed to load messages')
     } finally {
       setIsLoading(false)
     }
@@ -348,11 +349,11 @@ export function useChat(kinId: string | null) {
     },
   })
 
-  // Send a message
+  // Send a message. Returns true on success, false on failure.
   const sendMessage = useCallback(
-    async (content: string, fileIds?: string[], optimisticFiles?: MessageFile[]) => {
+    async (content: string, fileIds?: string[], optimisticFiles?: MessageFile[]): Promise<boolean> => {
       const hasFiles = fileIds && fileIds.length > 0
-      if (!kinId || (!content.trim() && !hasFiles)) return
+      if (!kinId || (!content.trim() && !hasFiles)) return false
 
       // Optimistic update — add user message immediately (with file previews)
       const tempId = `temp-${Date.now()}`
@@ -377,9 +378,11 @@ export function useChat(kinId: string | null) {
 
       try {
         await api.post(`/kins/${kinId}/messages`, { content, fileIds })
+        return true
       } catch {
         // Remove optimistic message on error
         setMessages((prev) => prev.filter((m) => m.id !== tempId))
+        return false
       }
     },
     [kinId],

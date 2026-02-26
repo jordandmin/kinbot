@@ -223,6 +223,7 @@ function CopyMessageButton({ content, isUser }: { content: string; isUser: boole
         isUser ? '-left-8 top-1' : '-right-8 top-1',
       )}
       title={t('chat.copyMessage')}
+      aria-label={t('chat.copyMessage')}
     >
       {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
     </button>
