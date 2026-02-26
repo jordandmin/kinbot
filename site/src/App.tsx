@@ -1,19 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
-import { Features } from './components/Features'
-import { Comparison } from './components/Comparison'
-import { Providers } from './components/Providers'
-import { Architecture } from './components/Architecture'
-import { Install } from './components/Install'
-import { FAQ } from './components/FAQ'
-import { Channels } from './components/Channels'
-import { Changelog } from './components/Changelog'
-import { GitHubCTA } from './components/GitHubCTA'
-import { Footer } from './components/Footer'
-import { Stats } from './components/Stats'
-import { WhatIsKin } from './components/WhatIsKin'
 import { ScrollReveal } from './components/ScrollReveal'
+import { Footer } from './components/Footer'
+
+// Lazy-load below-the-fold sections for faster initial paint
+const Stats = lazy(() => import('./components/Stats').then(m => ({ default: m.Stats })))
+const WhatIsKin = lazy(() => import('./components/WhatIsKin').then(m => ({ default: m.WhatIsKin })))
+const Features = lazy(() => import('./components/Features').then(m => ({ default: m.Features })))
+const Comparison = lazy(() => import('./components/Comparison').then(m => ({ default: m.Comparison })))
+const Providers = lazy(() => import('./components/Providers').then(m => ({ default: m.Providers })))
+const Channels = lazy(() => import('./components/Channels').then(m => ({ default: m.Channels })))
+const Architecture = lazy(() => import('./components/Architecture').then(m => ({ default: m.Architecture })))
+const Install = lazy(() => import('./components/Install').then(m => ({ default: m.Install })))
+const FAQ = lazy(() => import('./components/FAQ').then(m => ({ default: m.FAQ })))
+const Changelog = lazy(() => import('./components/Changelog').then(m => ({ default: m.Changelog })))
+const GitHubCTA = lazy(() => import('./components/GitHubCTA').then(m => ({ default: m.GitHubCTA })))
+
+function SectionFallback() {
+  return <div className="py-24" />
+}
 
 export default function App() {
   const [dark, setDark] = useState(() => {
@@ -32,39 +38,61 @@ export default function App() {
       <Navbar dark={dark} onToggleDark={() => setDark(d => !d)} />
       <main>
         <Hero />
-        <ScrollReveal>
-          <Stats />
-        </ScrollReveal>
-        <ScrollReveal>
-          <WhatIsKin />
-        </ScrollReveal>
-        <ScrollReveal>
-          <Features />
-        </ScrollReveal>
-        <ScrollReveal>
-          <Comparison />
-        </ScrollReveal>
-        <ScrollReveal>
-          <Providers />
-        </ScrollReveal>
-        <ScrollReveal>
-          <Channels />
-        </ScrollReveal>
-        <ScrollReveal>
-          <Architecture />
-        </ScrollReveal>
-        <ScrollReveal>
-          <Install />
-        </ScrollReveal>
-        <ScrollReveal>
-          <FAQ />
-        </ScrollReveal>
-        <ScrollReveal>
-          <Changelog />
-        </ScrollReveal>
-        <ScrollReveal>
-          <GitHubCTA />
-        </ScrollReveal>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Stats />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <WhatIsKin />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Features />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Comparison />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Providers />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Channels />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Architecture />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Install />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <FAQ />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Changelog />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <GitHubCTA />
+          </ScrollReveal>
+        </Suspense>
       </main>
       <Footer />
     </div>
