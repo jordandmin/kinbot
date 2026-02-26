@@ -10,7 +10,7 @@ import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { CompactingCard } from '@/client/components/chat/CompactingCard'
 import { HumanPromptCard } from '@/client/components/chat/HumanPromptCard'
 import { TaskDetailModal } from '@/client/components/sidebar/TaskDetailModal'
-import { Sheet, SheetContent } from '@/client/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/client/components/ui/sheet'
 import { QuickChatPanel } from '@/client/components/chat/QuickChatPanel'
 import { useChat } from '@/client/hooks/useChat'
 import { useToolCalls } from '@/client/hooks/useToolCalls'
@@ -48,12 +48,10 @@ interface ChatPanelProps {
   kin: KinInfo
   llmModels: LLMModel[]
   modelUnavailable?: boolean
-  queueState?: { isProcessing: boolean; queueSize: number }
+  queueState?: { isProcessing: boolean; queueSize: number; contextTokens?: number; contextWindow?: number }
   onModelChange: (model: string) => void
   onEditKin: () => void
 }
-
-const COMPACTING_TOKEN_THRESHOLD = 30_000
 
 export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState, onModelChange, onEditKin }: ChatPanelProps) {
   const { t } = useTranslation()
@@ -130,12 +128,6 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       }
     }
   }, [kin.id, t])
-
-  // Estimate token usage from message content (rough: ~4 chars per token)
-  const estimatedTokens = useMemo(
-    () => messages.reduce((sum, m) => sum + Math.ceil(m.content.length / 4), 0),
-    [messages],
-  )
 
   // Ctrl+F to open search
   useEffect(() => {
@@ -326,8 +318,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
         llmModels={llmModels}
         modelUnavailable={modelUnavailable}
         messageCount={messages.length}
-        estimatedTokens={estimatedTokens}
-        maxTokens={COMPACTING_TOKEN_THRESHOLD}
+        estimatedTokens={queueState?.contextTokens ?? 0}
+        maxTokens={queueState?.contextWindow ?? 0}
         toolCallCount={toolCallCount}
         isToolCallsOpen={isToolCallsOpen}
         queueState={queueState}
@@ -545,6 +537,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       {/* Quick session side panel */}
       <Sheet open={isQuickOpen} onOpenChange={setQuickOpen}>
         <SheetContent side="right" className="w-[500px] sm:max-w-lg p-0" showCloseButton={false}>
+          <SheetTitle className="sr-only">Quick Chat</SheetTitle>
           {activeSession && (
             <QuickChatPanel
               kinId={kin.id}

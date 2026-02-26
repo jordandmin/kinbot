@@ -348,7 +348,8 @@
     "selectKin": "Sélectionnez un Kin pour commencer",
     "empty": "Aucun message. Dites bonjour !",
     "streaming": "Réflexion...",
-    "contextUsage": "Contexte : ~{{tokens}} / {{max}} tokens ({{percent}} %)",
+    "contextUsage": "Contexte : ~{{tokens}} / {{max}} tokens ({{percent}} %) — inclut prompt système, historique et outils",
+    "contextNoData": "L'utilisation du contexte apparaîtra après le premier message traité",
     "forceCompact": "Forcer la compaction",
     "compacting": {
       "title": "Compaction de la conversation",

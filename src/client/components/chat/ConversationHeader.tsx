@@ -82,7 +82,11 @@ export function ConversationHeader({
 
   const isProcessing = queueState?.isProcessing ?? false
   const queueSize = queueState?.queueSize ?? 0
-  const contextPercent = maxTokens > 0 ? Math.min(100, Math.round((estimatedTokens / maxTokens) * 100)) : 0
+  const hasContextData = maxTokens > 0
+  const contextPercent = hasContextData ? Math.min(100, Math.round((estimatedTokens / maxTokens) * 100)) : 0
+  const contextLabel = hasContextData
+    ? `${formatTokenCount(estimatedTokens)} / ${formatTokenCount(maxTokens)}`
+    : '— / —'
 
   const selectedModelName = llmModels.find((m) => m.id === model)?.name ?? model
 
@@ -168,7 +172,7 @@ export function ConversationHeader({
                   <MessageSquare className="size-3" />
                   {messageCount} {t('chat.mobileInfo.messages')}
                 </span>
-                <span>{formatTokenCount(estimatedTokens)} / {formatTokenCount(maxTokens)}</span>
+                <span>{contextLabel}</span>
               </div>
               <Progress
                 value={contextPercent}
@@ -176,11 +180,13 @@ export function ConversationHeader({
                 className="h-2"
               />
               <p className="text-[10px] text-muted-foreground/70">
-                {t('chat.contextUsage', {
-                  tokens: formatTokenCount(estimatedTokens),
-                  max: formatTokenCount(maxTokens),
-                  percent: contextPercent,
-                })}
+                {hasContextData
+                  ? t('chat.contextUsage', {
+                      tokens: formatTokenCount(estimatedTokens),
+                      max: formatTokenCount(maxTokens),
+                      percent: contextPercent,
+                    })
+                  : t('chat.contextNoData')}
               </p>
             </div>
           </PopoverContent>
@@ -206,7 +212,7 @@ export function ConversationHeader({
                   <MessageSquare className="size-3" />
                   {messageCount}
                 </span>
-                <span>{formatTokenCount(estimatedTokens)} / {formatTokenCount(maxTokens)}</span>
+                <span>{contextLabel}</span>
               </div>
               <Progress
                 value={contextPercent}
@@ -216,11 +222,13 @@ export function ConversationHeader({
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {t('chat.contextUsage', {
-              tokens: formatTokenCount(estimatedTokens),
-              max: formatTokenCount(maxTokens),
-              percent: contextPercent,
-            })}
+            {hasContextData
+              ? t('chat.contextUsage', {
+                  tokens: formatTokenCount(estimatedTokens),
+                  max: formatTokenCount(maxTokens),
+                  percent: contextPercent,
+                })
+              : t('chat.contextNoData')}
           </TooltipContent>
         </Tooltip>
       </div>

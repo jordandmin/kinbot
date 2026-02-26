@@ -36,6 +36,7 @@ import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getAc
 import { getGlobalPrompt } from '@/server/services/app-settings'
 import { channelAdapters } from '@/server/channels/index'
 import type { ChannelPlatform } from '@/shared/types'
+import { getModelContextWindow } from '@/shared/model-context-windows'
 
 const log = createLogger('kin-engine')
 
@@ -53,6 +54,73 @@ const activeAbortControllers = new Map<string, AbortController>()
 
 // AbortController registry for quick sessions — keyed by sessionId
 const quickAbortControllers = new Map<string, AbortController>()
+
+/**
+ * Extract a human-readable message from a raw API error object.
+ * Handles nested structures like { error: { message: "..." } } from Anthropic/OpenAI.
+ */
+function extractApiErrorMessage(err: unknown): string {
+  if (typeof err === 'string') return err
+  if (typeof err !== 'object' || err === null) return String(err)
+  const obj = err as Record<string, unknown>
+  // Direct .message (e.g. Error-like objects)
+  if (typeof obj.message === 'string') return obj.message
+  // Nested .error.message (e.g. Anthropic/OpenAI raw API responses)
+  if (typeof obj.error === 'object' && obj.error !== null) {
+    const nested = obj.error as Record<string, unknown>
+    if (typeof nested.message === 'string') return nested.message
+  }
+  return JSON.stringify(err)
+}
+
+/**
+ * Convert a raw error message into a user-friendly display message.
+ */
+function friendlyErrorMessage(errorMsg: string): string {
+  const lower = errorMsg.toLowerCase()
+  if (lower.includes('rate limit') || errorMsg.includes('429') || lower.includes('too many requests')) {
+    return 'Rate limit reached — please wait a moment and try again.'
+  }
+  if (lower.includes('context_length_exceeded') || lower.includes('context window') || lower.includes('maximum context length')) {
+    return 'The conversation is too long for this model\'s context window. Try compacting or starting a new topic.'
+  }
+  return errorMsg
+}
+
+/**
+ * Rough token estimation (~4 chars per token).
+ */
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
+}
+
+/**
+ * Estimate the total token count of a full LLM request payload.
+ */
+function estimateContextTokens(
+  systemPrompt: string,
+  messageHistory: ModelMessage[],
+  tools: Record<string, unknown> | undefined,
+): number {
+  let total = estimateTokens(systemPrompt)
+  for (const msg of messageHistory) {
+    if (typeof msg.content === 'string') {
+      total += estimateTokens(msg.content)
+    } else if (Array.isArray(msg.content)) {
+      for (const part of msg.content) {
+        if ('text' in part && typeof part.text === 'string') {
+          total += estimateTokens(part.text)
+        } else if ('type' in part && part.type === 'image') {
+          total += 85 // rough per-image overhead
+        }
+      }
+    }
+  }
+  if (tools && Object.keys(tools).length > 0) {
+    total += estimateTokens(JSON.stringify(tools))
+  }
+  return total
+}
 
 /**
  * Abort the active LLM stream for a Kin, if any.
@@ -252,7 +320,19 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     }
 
     const hasTools = Object.keys(tools).length > 0
-    log.debug({ kinId, toolCount: Object.keys(tools).length, modelId: kin.model }, 'Starting LLM stream')
+
+    // Estimate total context tokens and resolve model context window
+    const contextTokens = estimateContextTokens(systemPrompt, messageHistory, hasTools ? tools : undefined)
+    const contextWindow = getModelContextWindow(kin.model)
+    log.debug({ kinId, toolCount: Object.keys(tools).length, modelId: kin.model, contextTokens, contextWindow }, 'Starting LLM stream')
+
+    // Update the queue event with real context usage (the initial queue:update
+    // was sent before system prompt/tools were built — now we have the full picture)
+    sseManager.sendToKin(kinId, {
+      type: 'queue:update',
+      kinId,
+      data: { kinId, queueSize: 0, isProcessing: true, contextTokens, contextWindow },
+    })
 
     // Send typing indicator on the channel when LLM processing starts (fire-and-forget)
     if (queueItem.sourceType === 'channel') {
@@ -357,6 +437,15 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
             break
           }
 
+          case 'error': {
+            // API-level errors (e.g. context_length_exceeded) arrive as stream parts,
+            // not as thrown exceptions. Re-throw so the outer catch handles them
+            // with proper user-visible feedback.
+            const err = part.error
+            if (err instanceof Error) throw err
+            throw new Error(extractApiErrorMessage(err))
+          }
+
           default:
             log.debug({ kinId, partType: part.type }, 'Unhandled stream part type')
         }
@@ -457,17 +546,9 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     activeAbortControllers.delete(kinId)
 
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-    const isRateLimit =
-      errorMsg.toLowerCase().includes('rate limit') ||
-      errorMsg.includes('429') ||
-      errorMsg.toLowerCase().includes('too many requests')
+    const displayError = friendlyErrorMessage(errorMsg)
 
-    log.error({ kinId, error: errorMsg, isRateLimit }, 'Kin engine error')
-
-    // For rate limits, emit a friendlier message
-    const displayError = isRateLimit
-      ? 'Rate limit reached — please wait a moment and try again.'
-      : errorMsg
+    log.error({ kinId, error: errorMsg }, 'Kin engine error')
 
     // Send error as a system message visible in the chat
     const errorMessageId = uuid()
@@ -756,6 +837,11 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
             })
             break
           }
+          case 'error': {
+            const err = part.error
+            if (err instanceof Error) throw err
+            throw new Error(extractApiErrorMessage(err))
+          }
           default:
             break
         }
@@ -802,15 +888,8 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     quickAbortControllers.delete(queueItem?.sessionId ?? '')
 
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    const displayError = friendlyErrorMessage(errorMsg)
     log.error({ kinId, sessionId: queueItem?.sessionId, error: errorMsg }, 'Quick session engine error')
-
-    const isRateLimit =
-      errorMsg.toLowerCase().includes('rate limit') ||
-      errorMsg.includes('429') ||
-      errorMsg.toLowerCase().includes('too many requests')
-    const displayError = isRateLimit
-      ? 'Rate limit reached — please wait a moment and try again.'
-      : errorMsg
 
     // Send error as system message in the quick session
     if (queueItem?.sessionId) {

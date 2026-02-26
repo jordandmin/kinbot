@@ -133,7 +133,7 @@ export function useKins() {
   }, [sseStatus, fetchKins])
 
   // Track which kins are currently processing (queue state from SSE)
-  const [kinQueueState, setKinQueueState] = useState<Map<string, { isProcessing: boolean; queueSize: number }>>(new Map())
+  const [kinQueueState, setKinQueueState] = useState<Map<string, { isProcessing: boolean; queueSize: number; contextTokens?: number; contextWindow?: number }>>(new Map())
 
   // Listen for kin lifecycle and queue updates via SSE to keep the list in sync
   useSSE({
@@ -187,7 +187,14 @@ export function useKins() {
       const queueSize = data.queueSize as number
       setKinQueueState((prev) => {
         const next = new Map(prev)
-        next.set(kinId, { isProcessing, queueSize })
+        const existing = prev.get(kinId)
+        next.set(kinId, {
+          isProcessing,
+          queueSize,
+          // Keep previous context info when not provided (end-of-processing events omit it)
+          contextTokens: (data.contextTokens as number | undefined) ?? existing?.contextTokens,
+          contextWindow: (data.contextWindow as number | undefined) ?? existing?.contextWindow,
+        })
         return next
       })
     },
