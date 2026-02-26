@@ -360,6 +360,7 @@
     "copyMessage": "Copy message",
     "copied": "Copied to clipboard",
     "copyFailed": "Failed to copy",
+    "sendFailed": "Failed to send message",
     "shortcutsHint": "to view all keyboard shortcuts"
   },
   "quickChat": {
