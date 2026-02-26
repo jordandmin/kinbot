@@ -52,12 +52,16 @@ export function AppSidebar({
     <Sidebar className="surface-sidebar">
       {/* Header */}
       <SidebarHeader className="px-4 py-4">
-        <h1
-          className="gradient-primary-text cursor-pointer text-xl font-bold tracking-tight"
+        <button
+          type="button"
+          className="flex items-center gap-2.5"
           onClick={() => navigate('/')}
         >
-          KinBot
-        </h1>
+          <img src="/kinbot.svg" alt="" width={28} height={28} className="rounded-lg" />
+          <span className="gradient-primary-text text-xl font-bold tracking-tight">
+            KinBot
+          </span>
+        </button>
       </SidebarHeader>
 
       {/* System health indicators */}

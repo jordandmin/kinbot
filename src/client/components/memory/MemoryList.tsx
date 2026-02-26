@@ -216,7 +216,7 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
       )}
 
       {/* Add button */}
-      <Button variant="outline" onClick={openAdd} className="w-full">
+      <Button type="button" variant="outline" onClick={openAdd} className="w-full">
         <Plus className="size-4" />
         {t('settings.memories.add')}
       </Button>
