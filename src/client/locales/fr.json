@@ -90,7 +90,7 @@
       "baseUrlHint": "Laisser vide pour la valeur par défaut",
       "apiKeyEditHint": "Laisser vide pour conserver l'actuelle",
       "credentialsPath": "Fichier de credentials",
-      "credentialsPathHint": "Auto-détecté — ne remplir que si nécessaire",
+      "credentialsPathHint": "Auto-détecté - ne remplir que si nécessaire",
       "testing": "Test de connexion...",
       "testSuccess": "Connexion réussie",
       "testFailed": "Échec de la connexion",
@@ -220,7 +220,7 @@
       "autoEnabled": "Auto",
       "noMcp": "Aucun serveur MCP configuré.",
       "saveMcpHint": "Enregistrez le Kin d'abord pour configurer les outils MCP.",
-      "connectionFailed": "Connexion échouée — impossible de découvrir les outils de ce serveur.",
+      "connectionFailed": "Connexion échouée - impossible de découvrir les outils de ce serveur.",
       "enableAll": "Tout activer",
       "disableAll": "Tout désactiver",
       "optIn": "Opt-in",
@@ -229,7 +229,7 @@
       "searchProviderDefault": "Défaut (paramètre global)"
     },
     "defaults": {
-      "character": "Tu es un assistant amical, réfléchi et polyvalent. Tu communiques clairement et tu adaptes ton ton au contexte — décontracté quand c'est approprié, précis quand c'est nécessaire.\n\nTu es patient, curieux et tu prends plaisir à aider. Quand tu ne sais pas quelque chose, tu le dis honnêtement. Tu poses des questions de clarification quand la demande est ambiguë.\n\nTu gardes tes réponses concises sauf si l'utilisateur demande explicitement plus de détails.",
+      "character": "Tu es un assistant amical, réfléchi et polyvalent. Tu communiques clairement et tu adaptes ton ton au contexte - décontracté quand c'est approprié, précis quand c'est nécessaire.\n\nTu es patient, curieux et tu prends plaisir à aider. Quand tu ne sais pas quelque chose, tu le dis honnêtement. Tu poses des questions de clarification quand la demande est ambiguë.\n\nTu gardes tes réponses concises sauf si l'utilisateur demande explicitement plus de détails.",
       "expertise": "Tu as des connaissances générales étendues et tu peux aider sur un large éventail de sujets :\n- Rédaction, édition et synthèse de texte\n- Recherche, analyse et résolution de problèmes\n- Brainstorming et tâches créatives\n- Explication de concepts complexes de manière simple\n- Planification et organisation\n\nTu adaptes ton niveau de détail et de technicité en fonction des besoins de l'utilisateur."
     },
     "avatar": {
@@ -237,7 +237,7 @@
       "upload": "Importer",
       "auto": "Auto",
       "prompt": "Prompt",
-      "autoDescription": "Le Kin génère son propre portrait à partir de son identité. Son nom, son rôle et sa personnalité influencent le résultat — assurez-vous de les remplir d'abord.",
+      "autoDescription": "Le Kin génère son propre portrait à partir de son identité. Son nom, son rôle et sa personnalité influencent le résultat - assurez-vous de les remplir d'abord.",
       "promptPlaceholder": "Décrivez l'avatar souhaité...",
       "generate": "Générer",
       "regenerate": "Régénérer",
@@ -266,7 +266,7 @@
     "processing": "En cours...",
     "modelUnavailable": "Modèle indisponible",
     "modelUnavailableHint": "Le modèle de ce Kin n'est plus disponible. Modifiez le modèle dans les paramètres du Kin ou réajoutez le fournisseur.",
-    "modelUnavailableInput": "Envoi impossible — le modèle de ce Kin est indisponible"
+    "modelUnavailableInput": "Envoi impossible - le modèle de ce Kin est indisponible"
   },
   "cron": {
     "create": {
@@ -338,8 +338,8 @@
       "done": "Compacté",
       "memories": "{{count}} souvenir(s) extrait(s)",
       "showSummary": "Voir le résumé",
-      "inputDisabled": "Veuillez patienter — compaction de l'historique...",
-      "nothingToCompact": "Rien à compacter — pas assez de messages"
+      "inputDisabled": "Veuillez patienter - compaction de l'historique...",
+      "nothingToCompact": "Rien à compacter - pas assez de messages"
     },
     "taskResult": {
       "showResult": "Voir le résultat",
@@ -705,7 +705,7 @@
       "never": "Jamais",
       "copyUrl": "Copier l'URL",
       "urlCopied": "URL du webhook copiée",
-      "tokenWarning": "Enregistrez ce token maintenant — il ne sera plus affiché.",
+      "tokenWarning": "Enregistrez ce token maintenant - il ne sera plus affiché.",
       "copyToken": "Copier le token",
       "tokenCopied": "Token copié",
       "regenerateToken": "Régénérer le token",

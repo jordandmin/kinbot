@@ -90,7 +90,7 @@
       "baseUrlHint": "Leave empty for default",
       "apiKeyEditHint": "Leave empty to keep current",
       "credentialsPath": "Credentials file",
-      "credentialsPathHint": "Auto-detected — override only if needed",
+      "credentialsPathHint": "Auto-detected - override only if needed",
       "testing": "Testing connection...",
       "testSuccess": "Connection successful",
       "testFailed": "Connection failed",
@@ -195,7 +195,7 @@
       "roleHint": "A brief description of what this Kin does (shown in the sidebar).",
       "nameTip": "A short, recognizable name. This is how the Kin appears in the sidebar and in conversations.",
       "roleTip": "A one-line summary of what this Kin does. Shown under the name in the sidebar.",
-      "modelTip": "The AI model powering this Kin. Different models have different strengths — larger models are smarter but slower and more expensive.",
+      "modelTip": "The AI model powering this Kin. Different models have different strengths - larger models are smarter but slower and more expensive.",
       "characterTip": "Defines the Kin's personality: how it talks, its tone, quirks, and communication style. Think of it as the Kin's \"soul\".",
       "expertiseTip": "Describes what the Kin knows and should focus on. This guides its answers, priorities, and areas of competence."
     },
@@ -220,7 +220,7 @@
       "autoEnabled": "Auto",
       "noMcp": "No MCP servers configured.",
       "saveMcpHint": "Save the Kin first to configure MCP tools.",
-      "connectionFailed": "Connection failed — unable to discover tools from this server.",
+      "connectionFailed": "Connection failed - unable to discover tools from this server.",
       "enableAll": "Enable all",
       "disableAll": "Disable all",
       "optIn": "Opt-in",
@@ -229,7 +229,7 @@
       "searchProviderDefault": "Default (global setting)"
     },
     "defaults": {
-      "character": "You are a friendly, thoughtful, and versatile assistant. You communicate clearly and adapt your tone to the context — casual when appropriate, precise when needed.\n\nYou are patient, curious, and genuinely enjoy helping. When you don't know something, you say so honestly. You ask clarifying questions when the request is ambiguous.\n\nYou keep your responses concise unless the user explicitly asks for detail.",
+      "character": "You are a friendly, thoughtful, and versatile assistant. You communicate clearly and adapt your tone to the context - casual when appropriate, precise when needed.\n\nYou are patient, curious, and genuinely enjoy helping. When you don't know something, you say so honestly. You ask clarifying questions when the request is ambiguous.\n\nYou keep your responses concise unless the user explicitly asks for detail.",
       "expertise": "You have broad general knowledge and can help with a wide range of topics:\n- Writing, editing, and summarizing text\n- Research, analysis, and problem-solving\n- Brainstorming and creative tasks\n- Explaining complex concepts simply\n- Planning and organizing\n\nYou adapt your level of detail and technicality based on what the user needs."
     },
     "avatar": {
@@ -237,7 +237,7 @@
       "upload": "Upload",
       "auto": "Auto",
       "prompt": "Prompt",
-      "autoDescription": "The Kin generates its own portrait based on its identity. Its name, role, and personality all influence the result — make sure they're filled in first.",
+      "autoDescription": "The Kin generates its own portrait based on its identity. Its name, role, and personality all influence the result - make sure they're filled in first.",
       "promptPlaceholder": "Describe the avatar you want...",
       "generate": "Generate",
       "regenerate": "Regenerate",
@@ -266,7 +266,7 @@
     "processing": "Processing...",
     "modelUnavailable": "Model unavailable",
     "modelUnavailableHint": "This Kin's model is no longer available. Update the model in Kin settings or add the provider back.",
-    "modelUnavailableInput": "Cannot send messages — this Kin's model is unavailable"
+    "modelUnavailableInput": "Cannot send messages - this Kin's model is unavailable"
   },
   "cron": {
     "create": {
@@ -338,8 +338,8 @@
       "done": "Compacted",
       "memories": "{{count}} memories extracted",
       "showSummary": "Show summary",
-      "inputDisabled": "Please wait — compacting conversation history...",
-      "nothingToCompact": "Nothing to compact — not enough messages yet"
+      "inputDisabled": "Please wait - compacting conversation history...",
+      "nothingToCompact": "Nothing to compact - not enough messages yet"
     },
     "taskResult": {
       "showResult": "Show result",
@@ -705,7 +705,7 @@
       "never": "Never",
       "copyUrl": "Copy URL",
       "urlCopied": "Webhook URL copied",
-      "tokenWarning": "Save this token now — it will not be shown again.",
+      "tokenWarning": "Save this token now - it will not be shown again.",
       "copyToken": "Copy token",
       "tokenCopied": "Token copied",
       "regenerateToken": "Regenerate token",
