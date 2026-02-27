@@ -48,6 +48,35 @@ function StatBadge({ icon, label, value }: { icon: React.ReactNode; label: strin
   )
 }
 
+function RotatingText({ phrases }: { phrases: string[] }) {
+  const [index, setIndex] = useState(0)
+  const [phase, setPhase] = useState<'in' | 'out'>('in')
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhase('out')
+      setTimeout(() => {
+        setIndex(i => (i + 1) % phrases.length)
+        setPhase('in')
+      }, 400)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [phrases.length])
+
+  return (
+    <span
+      className="inline-block gradient-text transition-all duration-400"
+      style={{
+        opacity: phase === 'in' ? 1 : 0,
+        transform: phase === 'in' ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 0.4s ease, transform 0.4s ease',
+      }}
+    >
+      {phrases[index]}
+    </span>
+  )
+}
+
 export function Hero() {
   const [copied, setCopied] = useState(false)
   const stats = useGitHubStats()
@@ -123,7 +152,16 @@ export function Hero() {
           </h1>
         </div>
         <p className="text-2xl sm:text-3xl font-semibold mb-4" style={{ color: 'var(--color-foreground)' }}>
-          AI agents that actually remember you.
+          AI agents that{' '}
+          <RotatingText
+            phrases={[
+              'actually remember you.',
+              'work together.',
+              'live on your server.',
+              'never forget context.',
+              'learn over time.',
+            ]}
+          />
         </p>
         <p className="text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
           Create AI agents that live on your server, remember everything, and work together.
