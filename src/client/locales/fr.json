@@ -1275,6 +1275,7 @@
       "navigation": "Navigation",
       "kins": "Kins",
       "chat": "Chat",
+      "formatting": "Mise en forme",
       "general": "Général"
     },
     "commandPalette": "Palette de commandes",
@@ -1286,7 +1287,14 @@
     "sendMessage": "Envoyer le message",
     "newLine": "Nouvelle ligne",
     "focusInput": "Activer la zone de message",
-    "focusMode": "Basculer le mode focus"
+    "focusMode": "Basculer le mode focus",
+    "searchConversation": "Rechercher dans la conversation",
+    "inputHistory": "Parcourir les messages envoyés",
+    "formatBold": "Gras",
+    "formatItalic": "Italique",
+    "formatCode": "Code en ligne",
+    "formatCodeBlock": "Bloc de code",
+    "formatStrikethrough": "Barré"
   },
   "theme": {
     "palette": "Palette",

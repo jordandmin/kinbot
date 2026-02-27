@@ -1275,6 +1275,7 @@
       "navigation": "Navigation",
       "kins": "Kins",
       "chat": "Chat",
+      "formatting": "Text Formatting",
       "general": "General"
     },
     "commandPalette": "Command palette",
@@ -1286,7 +1287,14 @@
     "sendMessage": "Send message",
     "newLine": "New line",
     "focusInput": "Focus message input",
-    "focusMode": "Toggle focus mode"
+    "focusMode": "Toggle focus mode",
+    "searchConversation": "Search in conversation",
+    "inputHistory": "Browse sent messages",
+    "formatBold": "Bold",
+    "formatItalic": "Italic",
+    "formatCode": "Inline code",
+    "formatCodeBlock": "Code block",
+    "formatStrikethrough": "Strikethrough"
   },
   "theme": {
     "palette": "Palette",

@@ -46,6 +46,18 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ['Enter'], labelKey: 'shortcuts.sendMessage' },
       { keys: ['Shift', 'Enter'], labelKey: 'shortcuts.newLine' },
       { keys: ['Esc'], labelKey: 'shortcuts.focusInput' },
+      { keys: [MOD, 'F'], labelKey: 'shortcuts.searchConversation' },
+      { keys: ['↑'], labelKey: 'shortcuts.inputHistory' },
+    ],
+  },
+  {
+    titleKey: 'shortcuts.group.formatting',
+    shortcuts: [
+      { keys: [MOD, 'B'], labelKey: 'shortcuts.formatBold' },
+      { keys: [MOD, 'I'], labelKey: 'shortcuts.formatItalic' },
+      { keys: [MOD, 'E'], labelKey: 'shortcuts.formatCode' },
+      { keys: [MOD, 'Shift', 'E'], labelKey: 'shortcuts.formatCodeBlock' },
+      { keys: [MOD, 'Shift', 'X'], labelKey: 'shortcuts.formatStrikethrough' },
     ],
   },
 ]
