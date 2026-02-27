@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/client/components/ui/sidebar'
 import { AppSidebar } from '@/client/components/sidebar/AppSidebar'
+import { MiniAppProvider } from '@/client/contexts/MiniAppContext'
 import { KinFormModal } from '@/client/components/kin/KinFormModal'
 import { ChatPanel } from '@/client/components/chat/ChatPanel'
 import { SettingsModal } from '@/client/pages/settings/SettingsPage'
@@ -159,8 +160,10 @@ export function ChatPage() {
   }, [kins, navigate, handleOpenSettings])
 
   return (
+    <MiniAppProvider>
     <SidebarProvider data-focus-mode={focusMode || undefined}>
       <AppSidebar
+        selectedKinId={selectedKin?.id ?? null}
         kins={kins}
         llmModels={llmModels}
         selectedKinSlug={selectedKinSlug}
@@ -345,5 +348,6 @@ export function ChatPage() {
       {/* Real-time status change notifications */}
       <StatusNotifications />
     </SidebarProvider>
+    </MiniAppProvider>
   )
 }

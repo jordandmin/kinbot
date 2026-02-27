@@ -1,0 +1,311 @@
+import { z } from 'zod'
+import { tool } from 'ai'
+import { createLogger } from '@/server/logger'
+import {
+  createMiniApp,
+  getMiniApp,
+  listMiniApps,
+  updateMiniApp,
+  deleteMiniApp,
+  writeAppFile,
+  readAppFile,
+  deleteAppFile,
+  listAppFiles,
+  getMiniAppRow,
+} from '@/server/services/mini-apps'
+import { sseManager } from '@/server/sse/index'
+import type { ToolRegistration } from '@/server/tools/types'
+
+const log = createLogger('tools:mini-apps')
+
+// ─── create_mini_app ────────────────────────────────────────────────────────
+
+export const createMiniAppTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Create a new mini web application. The app will appear in the KinBot sidebar and can be opened in a side panel. ' +
+        'Provide the full HTML content for the initial index.html. ' +
+        'The KinBot design system CSS is automatically injected — use CSS variables like ' +
+        'var(--color-primary), var(--color-background), var(--color-foreground), var(--color-muted), var(--color-card), var(--color-border) ' +
+        'and utility classes like .glass-strong, .surface-card, .gradient-primary, .btn-shine, .card-hover, .animate-fade-in-up. ' +
+        'The theme (light/dark) and palette are automatically synced from the parent app. ' +
+        'For additional files (CSS, JS, images), use write_mini_app_file after creation.',
+      inputSchema: z.object({
+        name: z.string().describe('Display name of the app (e.g. "Todo Tracker")'),
+        slug: z.string().regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/).describe('URL-safe identifier in kebab-case (e.g. "todo-tracker"). Must be unique among your apps.'),
+        description: z.string().optional().describe('Short description shown in the app list'),
+        icon: z.string().optional().describe('Single emoji for the app icon (e.g. "📊", "🎮", "📝")'),
+        html: z.string().describe('Full HTML content for index.html. Do NOT include a <link> to kinbot-sdk.css — it is injected automatically.'),
+      }),
+      execute: async ({ name, slug, description, icon, html }) => {
+        log.debug({ kinId: ctx.kinId, name, slug }, 'create_mini_app invoked')
+
+        try {
+          const app = await createMiniApp({
+            kinId: ctx.kinId,
+            name,
+            slug,
+            description,
+            icon,
+          })
+
+          // Write the initial HTML
+          await writeAppFile(app.id, 'index.html', html)
+
+          // Re-fetch to get updated version
+          const updated = await getMiniApp(app.id)
+          sseManager.broadcast({ type: 'miniapp:created', kinId: ctx.kinId, data: { app: updated } })
+
+          return {
+            appId: app.id,
+            name: app.name,
+            slug: app.slug,
+            message: `App "${name}" created successfully. It is now visible in the sidebar.`,
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to create app'
+          log.warn({ kinId: ctx.kinId, name, error: message }, 'create_mini_app failed')
+          return { error: message }
+        }
+      },
+    }),
+}
+
+// ─── update_mini_app ────────────────────────────────────────────────────────
+
+export const updateMiniAppTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'Update the metadata of a mini app (name, description, icon, active status).',
+      inputSchema: z.object({
+        app_id: z.string().describe('ID of the app to update'),
+        name: z.string().optional().describe('New display name'),
+        description: z.string().nullable().optional().describe('New description (null to clear)'),
+        icon: z.string().nullable().optional().describe('New icon emoji (null to clear)'),
+        entry_file: z.string().optional().describe('Change the entry file path (default: index.html)'),
+        is_active: z.boolean().optional().describe('Set to false to hide the app from the sidebar'),
+      }),
+      execute: async (args) => {
+        log.debug({ kinId: ctx.kinId, appId: args.app_id }, 'update_mini_app invoked')
+
+        // Verify ownership
+        const existing = await getMiniApp(args.app_id)
+        if (!existing) return { error: 'App not found' }
+        if (existing.kinId !== ctx.kinId) return { error: 'You can only update your own apps' }
+
+        try {
+          const app = await updateMiniApp(args.app_id, {
+            name: args.name,
+            description: args.description,
+            icon: args.icon,
+            entryFile: args.entry_file,
+            isActive: args.is_active,
+          })
+
+          sseManager.broadcast({ type: 'miniapp:updated', kinId: ctx.kinId, data: { app } })
+          return { appId: args.app_id, message: 'App updated successfully' }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to update app'
+          return { error: message }
+        }
+      },
+    }),
+}
+
+// ─── delete_mini_app ────────────────────────────────────────────────────────
+
+export const deleteMiniAppTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'Delete a mini app and all its files permanently.',
+      inputSchema: z.object({
+        app_id: z.string().describe('ID of the app to delete'),
+      }),
+      execute: async ({ app_id }) => {
+        log.debug({ kinId: ctx.kinId, appId: app_id }, 'delete_mini_app invoked')
+
+        const existing = await getMiniApp(app_id)
+        if (!existing) return { error: 'App not found' }
+        if (existing.kinId !== ctx.kinId) return { error: 'You can only delete your own apps' }
+
+        await deleteMiniApp(app_id)
+        sseManager.broadcast({ type: 'miniapp:deleted', kinId: ctx.kinId, data: { appId: app_id } })
+
+        return { message: `App "${existing.name}" deleted successfully` }
+      },
+    }),
+}
+
+// ─── list_mini_apps ─────────────────────────────────────────────────────────
+
+export const listMiniAppsTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'List all your mini apps.',
+      inputSchema: z.object({}),
+      execute: async () => {
+        const apps = await listMiniApps(ctx.kinId)
+        return {
+          apps: apps.map((a) => ({
+            id: a.id,
+            name: a.name,
+            slug: a.slug,
+            description: a.description,
+            icon: a.icon,
+            isActive: a.isActive,
+            hasBackend: a.hasBackend,
+            version: a.version,
+          })),
+        }
+      },
+    }),
+}
+
+// ─── write_mini_app_file ────────────────────────────────────────────────────
+
+export const writeMiniAppFileTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Write or overwrite a file in a mini app. Use this to add or update CSS, JavaScript, images, ' +
+        'or modify index.html. After writing, the app reloads automatically in the UI. ' +
+        'Path must be relative (e.g. "styles.css", "js/app.js", "img/logo.png"). ' +
+        'For binary files (images), set is_base64 to true and pass base64-encoded content. ' +
+        'To add a backend, write a file named "_server.js" (see create_mini_app docs).',
+      inputSchema: z.object({
+        app_id: z.string().describe('ID of the mini app'),
+        path: z.string().describe('Relative file path within the app (e.g. "styles.css", "js/app.js")'),
+        content: z.string().describe('File content (text or base64-encoded binary)'),
+        is_base64: z.boolean().optional().describe('Set true if content is base64-encoded binary data'),
+      }),
+      execute: async ({ app_id, path, content, is_base64 }) => {
+        log.debug({ kinId: ctx.kinId, appId: app_id, path }, 'write_mini_app_file invoked')
+
+        const existing = await getMiniApp(app_id)
+        if (!existing) return { error: 'App not found' }
+        if (existing.kinId !== ctx.kinId) return { error: 'You can only write to your own apps' }
+
+        try {
+          const buffer = is_base64 ? Buffer.from(content, 'base64') : content
+          const result = await writeAppFile(app_id, path, buffer)
+
+          const row = await getMiniAppRow(app_id)
+          if (row) {
+            sseManager.broadcast({
+              type: 'miniapp:file-updated',
+              kinId: ctx.kinId,
+              data: { appId: app_id, path, version: row.version },
+            })
+          }
+
+          return { success: true, path: result.path, size: result.size }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to write file'
+          return { error: message }
+        }
+      },
+    }),
+}
+
+// ─── read_mini_app_file ─────────────────────────────────────────────────────
+
+export const readMiniAppFileTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'Read the content of a file from a mini app. Returns text content for text files, or base64 for binary files.',
+      inputSchema: z.object({
+        app_id: z.string().describe('ID of the mini app'),
+        path: z.string().describe('Relative file path (e.g. "index.html", "styles.css")'),
+      }),
+      execute: async ({ app_id, path }) => {
+        const existing = await getMiniApp(app_id)
+        if (!existing) return { error: 'App not found' }
+        if (existing.kinId !== ctx.kinId) return { error: 'You can only read your own apps' }
+
+        try {
+          const buffer = await readAppFile(app_id, path)
+          // Determine if text or binary
+          const textExtensions = new Set(['html', 'htm', 'css', 'js', 'ts', 'json', 'svg', 'txt', 'md', 'xml'])
+          const ext = path.split('.').pop()?.toLowerCase() ?? ''
+          if (textExtensions.has(ext)) {
+            return { path, content: buffer.toString('utf-8') }
+          }
+          return { path, content: buffer.toString('base64'), isBase64: true }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to read file'
+          return { error: message }
+        }
+      },
+    }),
+}
+
+// ─── delete_mini_app_file ───────────────────────────────────────────────────
+
+export const deleteMiniAppFileTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'Delete a specific file from a mini app.',
+      inputSchema: z.object({
+        app_id: z.string().describe('ID of the mini app'),
+        path: z.string().describe('Relative file path to delete'),
+      }),
+      execute: async ({ app_id, path }) => {
+        const existing = await getMiniApp(app_id)
+        if (!existing) return { error: 'App not found' }
+        if (existing.kinId !== ctx.kinId) return { error: 'You can only modify your own apps' }
+
+        try {
+          const deleted = await deleteAppFile(app_id, path)
+          if (!deleted) return { error: 'File not found' }
+
+          const row = await getMiniAppRow(app_id)
+          if (row) {
+            sseManager.broadcast({
+              type: 'miniapp:file-updated',
+              kinId: ctx.kinId,
+              data: { appId: app_id, path, version: row.version },
+            })
+          }
+
+          return { message: `File "${path}" deleted` }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to delete file'
+          return { error: message }
+        }
+      },
+    }),
+}
+
+// ─── list_mini_app_files ────────────────────────────────────────────────────
+
+export const listMiniAppFilesTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description: 'List all files in a mini app with their sizes and MIME types.',
+      inputSchema: z.object({
+        app_id: z.string().describe('ID of the mini app'),
+      }),
+      execute: async ({ app_id }) => {
+        const existing = await getMiniApp(app_id)
+        if (!existing) return { error: 'App not found' }
+        if (existing.kinId !== ctx.kinId) return { error: 'You can only list your own apps' }
+
+        try {
+          const files = await listAppFiles(app_id)
+          return { files }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to list files'
+          return { error: message }
+        }
+      },
+    }),
+}

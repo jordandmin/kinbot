@@ -168,5 +168,13 @@ export const config = {
     maxDelaySeconds: 2_592_000, // 30 days
   },
 
+  miniApps: {
+    dir: process.env.MINI_APPS_DIR ?? `${dataDir}/mini-apps`,
+    maxAppsPerKin: Number(process.env.MINI_APPS_MAX_PER_KIN ?? 20),
+    maxFileSizeMb: Number(process.env.MINI_APPS_MAX_FILE_SIZE ?? 5),
+    maxTotalSizeMbPerApp: Number(process.env.MINI_APPS_MAX_TOTAL_SIZE ?? 50),
+    backendEnabled: process.env.MINI_APPS_BACKEND_ENABLED !== 'false', // default: true
+  },
+
   publicUrl: process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3333}`,
 } as const

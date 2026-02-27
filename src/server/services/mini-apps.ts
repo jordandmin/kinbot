@@ -1,0 +1,330 @@
+import { eq, and, desc } from 'drizzle-orm'
+import { v4 as uuid } from 'uuid'
+import { join, resolve, extname, dirname } from 'path'
+import { mkdir, unlink, readdir, stat, rm } from 'fs/promises'
+import { existsSync } from 'fs'
+import { db } from '@/server/db/index'
+import { createLogger } from '@/server/logger'
+import { miniApps, kins } from '@/server/db/schema'
+import { config } from '@/server/config'
+import type { MiniAppSummary } from '@/shared/types'
+
+const log = createLogger('mini-apps')
+
+const MAX_FILE_SIZE = config.miniApps.maxFileSizeMb * 1024 * 1024
+
+type MiniAppRow = typeof miniApps.$inferSelect
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function appDir(kinId: string, appId: string): string {
+  return join(config.miniApps.dir, kinId, appId)
+}
+
+/** Validate that a resolved path stays within the app directory */
+function validatePath(base: string, relativePath: string): string {
+  const absoluteBase = resolve(base)
+  const resolved = resolve(base, relativePath)
+  if (!resolved.startsWith(absoluteBase + '/') && resolved !== absoluteBase) {
+    throw new Error('Invalid path: path traversal detected')
+  }
+  return resolved
+}
+
+function guessMimeType(filename: string): string {
+  const ext = extname(filename).slice(1).toLowerCase()
+  const map: Record<string, string> = {
+    html: 'text/html', htm: 'text/html',
+    css: 'text/css', js: 'application/javascript',
+    json: 'application/json', svg: 'image/svg+xml',
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    gif: 'image/gif', webp: 'image/webp', ico: 'image/x-icon',
+    woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf',
+    txt: 'text/plain', md: 'text/markdown', xml: 'application/xml',
+    mp3: 'audio/mpeg', mp4: 'video/mp4', pdf: 'application/pdf',
+  }
+  return map[ext] ?? 'application/octet-stream'
+}
+
+function serializeApp(row: MiniAppRow, kinName: string, kinAvatarUrl: string | null): MiniAppSummary {
+  return {
+    id: row.id,
+    kinId: row.kinId,
+    kinName,
+    kinAvatarUrl,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    icon: row.icon,
+    entryFile: row.entryFile,
+    hasBackend: row.hasBackend,
+    isActive: row.isActive,
+    version: row.version,
+    createdAt: (row.createdAt as unknown as Date).getTime(),
+    updatedAt: (row.updatedAt as unknown as Date).getTime(),
+  }
+}
+
+// ─── Create ─────────────────────────────────────────────────────────────────
+
+export interface CreateMiniAppParams {
+  kinId: string
+  name: string
+  slug: string
+  description?: string
+  icon?: string
+  entryFile?: string
+}
+
+export async function createMiniApp(params: CreateMiniAppParams): Promise<MiniAppSummary> {
+  const { kinId, name, slug, description, icon, entryFile } = params
+
+  // Check max apps per kin
+  const existing = await db.select().from(miniApps).where(eq(miniApps.kinId, kinId)).all()
+  if (existing.length >= config.miniApps.maxAppsPerKin) {
+    throw new Error(`Maximum of ${config.miniApps.maxAppsPerKin} apps per Kin reached`)
+  }
+
+  // Check slug uniqueness within kin
+  const slugExists = await db.select().from(miniApps)
+    .where(and(eq(miniApps.kinId, kinId), eq(miniApps.slug, slug)))
+    .get()
+  if (slugExists) {
+    throw new Error(`An app with slug "${slug}" already exists for this Kin`)
+  }
+
+  const id = uuid()
+  const dir = appDir(kinId, id)
+  await mkdir(dir, { recursive: true })
+
+  const now = new Date()
+  await db.insert(miniApps).values({
+    id,
+    kinId,
+    name,
+    slug,
+    description: description ?? null,
+    icon: icon ?? null,
+    entryFile: entryFile ?? 'index.html',
+    hasBackend: false,
+    isActive: true,
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  log.info({ kinId, appId: id, name, slug }, 'Mini-app created')
+
+  const kin = await db.select().from(kins).where(eq(kins.id, kinId)).get()
+  return serializeApp(
+    (await db.select().from(miniApps).where(eq(miniApps.id, id)).get())!,
+    kin?.name ?? 'Unknown',
+    kin?.avatarPath ? `/api/uploads/kins/${kinId}/avatar${extname(kin.avatarPath)}` : null,
+  )
+}
+
+// ─── Read ───────────────────────────────────────────────────────────────────
+
+export async function getMiniApp(id: string): Promise<MiniAppSummary | null> {
+  const row = await db.select().from(miniApps).where(eq(miniApps.id, id)).get()
+  if (!row) return null
+  const kin = await db.select().from(kins).where(eq(kins.id, row.kinId)).get()
+  return serializeApp(row, kin?.name ?? 'Unknown', kin?.avatarPath ? `/api/uploads/kins/${row.kinId}/avatar${extname(kin.avatarPath)}` : null)
+}
+
+export async function getMiniAppBySlug(kinId: string, slug: string): Promise<MiniAppSummary | null> {
+  const row = await db.select().from(miniApps)
+    .where(and(eq(miniApps.kinId, kinId), eq(miniApps.slug, slug)))
+    .get()
+  if (!row) return null
+  const kin = await db.select().from(kins).where(eq(kins.id, kinId)).get()
+  return serializeApp(row, kin?.name ?? 'Unknown', kin?.avatarPath ? `/api/uploads/kins/${kinId}/avatar${extname(kin.avatarPath)}` : null)
+}
+
+// ─── List ───────────────────────────────────────────────────────────────────
+
+export async function listMiniApps(kinId: string): Promise<MiniAppSummary[]> {
+  const rows = await db.select().from(miniApps)
+    .where(eq(miniApps.kinId, kinId))
+    .orderBy(desc(miniApps.createdAt))
+    .all()
+
+  if (rows.length === 0) return []
+
+  const kin = await db.select().from(kins).where(eq(kins.id, kinId)).get()
+  const kinName = kin?.name ?? 'Unknown'
+  const kinAvatarUrl = kin?.avatarPath ? `/api/uploads/kins/${kinId}/avatar${extname(kin.avatarPath)}` : null
+
+  return rows.map((row) => serializeApp(row, kinName, kinAvatarUrl))
+}
+
+// ─── Update ─────────────────────────────────────────────────────────────────
+
+export interface UpdateMiniAppParams {
+  name?: string
+  description?: string | null
+  icon?: string | null
+  entryFile?: string
+  isActive?: boolean
+}
+
+export async function updateMiniApp(id: string, params: UpdateMiniAppParams): Promise<MiniAppSummary | null> {
+  const existing = await db.select().from(miniApps).where(eq(miniApps.id, id)).get()
+  if (!existing) return null
+
+  const updates: Record<string, unknown> = { updatedAt: new Date() }
+  if (params.name !== undefined) updates.name = params.name
+  if (params.description !== undefined) updates.description = params.description
+  if (params.icon !== undefined) updates.icon = params.icon
+  if (params.entryFile !== undefined) updates.entryFile = params.entryFile
+  if (params.isActive !== undefined) updates.isActive = params.isActive
+
+  await db.update(miniApps).set(updates).where(eq(miniApps.id, id))
+  log.info({ appId: id }, 'Mini-app updated')
+  return getMiniApp(id)
+}
+
+// ─── Delete ─────────────────────────────────────────────────────────────────
+
+export async function deleteMiniApp(id: string): Promise<boolean> {
+  const app = await db.select().from(miniApps).where(eq(miniApps.id, id)).get()
+  if (!app) return false
+
+  // Delete files from disk
+  const dir = appDir(app.kinId, id)
+  try {
+    if (existsSync(dir)) {
+      await rm(dir, { recursive: true, force: true })
+    }
+  } catch (err) {
+    log.warn({ appId: id, dir, error: err }, 'Failed to delete app directory from disk')
+  }
+
+  await db.delete(miniApps).where(eq(miniApps.id, id))
+  log.info({ appId: id, name: app.name }, 'Mini-app deleted')
+  return true
+}
+
+// ─── File operations ────────────────────────────────────────────────────────
+
+export async function writeAppFile(
+  appId: string,
+  relativePath: string,
+  content: string | Buffer,
+): Promise<{ path: string; size: number }> {
+  const app = await db.select().from(miniApps).where(eq(miniApps.id, appId)).get()
+  if (!app) throw new Error('App not found')
+
+  const dir = appDir(app.kinId, appId)
+  const filePath = validatePath(dir, relativePath)
+
+  const buffer = typeof content === 'string' ? Buffer.from(content, 'utf-8') : content
+  if (buffer.length > MAX_FILE_SIZE) {
+    throw new Error(`File too large: max ${config.miniApps.maxFileSizeMb} MB`)
+  }
+
+  // Ensure parent directory exists
+  await mkdir(dirname(filePath), { recursive: true })
+  await Bun.write(filePath, buffer)
+
+  // Increment version + update hasBackend if _server.js
+  const updates: Record<string, unknown> = {
+    version: app.version + 1,
+    updatedAt: new Date(),
+  }
+  if (relativePath === '_server.js' || relativePath === '_server.ts') {
+    updates.hasBackend = true
+  }
+  await db.update(miniApps).set(updates).where(eq(miniApps.id, appId))
+
+  log.debug({ appId, path: relativePath, size: buffer.length }, 'App file written')
+  return { path: relativePath, size: buffer.length }
+}
+
+export async function readAppFile(appId: string, relativePath: string): Promise<Buffer> {
+  const app = await db.select().from(miniApps).where(eq(miniApps.id, appId)).get()
+  if (!app) throw new Error('App not found')
+
+  const dir = appDir(app.kinId, appId)
+  const filePath = validatePath(dir, relativePath)
+
+  if (!existsSync(filePath)) {
+    throw new Error(`File not found: ${relativePath}`)
+  }
+
+  return Buffer.from(await Bun.file(filePath).arrayBuffer())
+}
+
+export async function deleteAppFile(appId: string, relativePath: string): Promise<boolean> {
+  const app = await db.select().from(miniApps).where(eq(miniApps.id, appId)).get()
+  if (!app) throw new Error('App not found')
+
+  const dir = appDir(app.kinId, appId)
+  const filePath = validatePath(dir, relativePath)
+
+  if (!existsSync(filePath)) return false
+
+  await unlink(filePath)
+
+  // If deleting _server.js, update hasBackend
+  const updates: Record<string, unknown> = {
+    version: app.version + 1,
+    updatedAt: new Date(),
+  }
+  if (relativePath === '_server.js' || relativePath === '_server.ts') {
+    updates.hasBackend = false
+  }
+  await db.update(miniApps).set(updates).where(eq(miniApps.id, appId))
+
+  log.debug({ appId, path: relativePath }, 'App file deleted')
+  return true
+}
+
+export interface AppFileInfo {
+  path: string
+  size: number
+  mimeType: string
+}
+
+export async function listAppFiles(appId: string): Promise<AppFileInfo[]> {
+  const app = await db.select().from(miniApps).where(eq(miniApps.id, appId)).get()
+  if (!app) throw new Error('App not found')
+
+  const dir = appDir(app.kinId, appId)
+  if (!existsSync(dir)) return []
+
+  const files: AppFileInfo[] = []
+  await walkDir(dir, dir, files)
+  return files
+}
+
+async function walkDir(base: string, current: string, results: AppFileInfo[]): Promise<void> {
+  const entries = await readdir(current, { withFileTypes: true })
+  for (const entry of entries) {
+    const fullPath = join(current, entry.name)
+    if (entry.isDirectory()) {
+      await walkDir(base, fullPath, results)
+    } else {
+      const fileStat = await stat(fullPath)
+      results.push({
+        path: fullPath.slice(base.length + 1), // relative path
+        size: fileStat.size,
+        mimeType: guessMimeType(entry.name),
+      })
+    }
+  }
+}
+
+// ─── Serve helpers ──────────────────────────────────────────────────────────
+
+/** Get the absolute path of the app directory on disk */
+export function getAppDir(kinId: string, appId: string): string {
+  return appDir(kinId, appId)
+}
+
+/** Get the raw DB row (for routes that need kinId) */
+export async function getMiniAppRow(id: string): Promise<MiniAppRow | null> {
+  return db.select().from(miniApps).where(eq(miniApps.id, id)).get() ?? null
+}
+
+export { guessMimeType }

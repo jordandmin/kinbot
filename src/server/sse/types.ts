@@ -38,6 +38,10 @@ export type SSEEventType =
   | 'provider:created'
   | 'provider:updated'
   | 'provider:deleted'
+  | 'miniapp:created'
+  | 'miniapp:updated'
+  | 'miniapp:deleted'
+  | 'miniapp:file-updated'
   | 'connected'
 
 export interface SSEEvent {

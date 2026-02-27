@@ -6,6 +6,7 @@ import { MessageInput, type MessageInputHandle } from '@/client/components/chat/
 import { TypingIndicator } from '@/client/components/chat/TypingIndicator'
 import { ConversationHeader } from '@/client/components/chat/ConversationHeader'
 import { ToolCallsViewer } from '@/client/components/chat/ToolCallsViewer'
+import { MiniAppViewer } from '@/client/components/mini-app/MiniAppViewer'
 import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { CompactingCard } from '@/client/components/chat/CompactingCard'
 import { HumanPromptCard } from '@/client/components/chat/HumanPromptCard'
@@ -594,6 +595,9 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
             onClose={toggleToolCalls}
           />
         </div>
+
+        {/* Mini-app side panel */}
+        <MiniAppViewer />
       </div>
 
       {/* Input */}

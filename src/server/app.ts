@@ -34,6 +34,7 @@ import { userRoutes } from '@/server/routes/users'
 import { invitationRoutes } from '@/server/routes/invitations'
 import { notificationRoutes } from '@/server/routes/notifications'
 import { settingsRoutes } from '@/server/routes/settings'
+import { miniAppRoutes, miniAppSdkRoutes } from '@/server/routes/mini-apps'
 
 export type AppVariables = {
   session: { id: string; userId: string; token: string }
@@ -157,6 +158,8 @@ app.route('/api/channels/signal/webhook', channelSignalRoutes)
 app.route('/api/channels', channelRoutes)
 app.route('/api/kins/:kinId/quick-sessions', quickSessionKinRoutes)
 app.route('/api/quick-sessions', quickSessionDetailRoutes)
+app.route('/api/mini-apps/sdk', miniAppSdkRoutes)
+app.route('/api/mini-apps', miniAppRoutes)
 app.route('/s', sharedRoutes)
 
 export { app }

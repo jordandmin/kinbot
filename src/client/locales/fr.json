@@ -184,6 +184,11 @@
       "noResults": "Aucun job trouvé",
       "emptyDescription": "Planifiez des tâches récurrentes pour vos Kins"
     },
+    "miniApps": {
+      "title": "Mini-Apps",
+      "empty": "Aucune app",
+      "emptyDescription": "Demandez à un Kin d'en créer une"
+    },
     "account": "Mon compte",
     "settings": "Paramètres",
     "logout": "Se déconnecter",
@@ -1174,7 +1179,8 @@
       "system": "Système",
       "channels": "Canaux",
       "users": "Utilisateurs",
-      "database": "Base de données"
+      "database": "Base de données",
+      "mini-apps": "Mini-Apps"
     },
     "names": {
       "web_search": "Recherche web",
@@ -1244,7 +1250,15 @@
       "list_users": "Lister les utilisateurs",
       "get_user": "Obtenir un utilisateur",
       "create_invitation": "Créer une invitation",
-      "execute_sql": "Exécuter SQL"
+      "execute_sql": "Exécuter SQL",
+      "create_mini_app": "Créer une Mini-App",
+      "update_mini_app": "Modifier une Mini-App",
+      "delete_mini_app": "Supprimer une Mini-App",
+      "list_mini_apps": "Lister les Mini-Apps",
+      "write_mini_app_file": "Écrire un fichier",
+      "read_mini_app_file": "Lire un fichier",
+      "delete_mini_app_file": "Supprimer un fichier",
+      "list_mini_app_files": "Lister les fichiers"
     }
   },
   "invite": {
@@ -1394,5 +1408,14 @@
       "removed": "Supprimé",
       "deprecated": "Déprécié"
     }
+  },
+  "miniApps": {
+    "openPanel": "Ouvrir l'app",
+    "closePanel": "Fermer",
+    "refresh": "Recharger",
+    "delete": "Supprimer l'app",
+    "deleteTitle": "Supprimer la mini-app",
+    "deleteConfirm": "« {{name}} » et tous ses fichiers seront supprimés définitivement.",
+    "deleteAction": "Supprimer"
   }
 }
