@@ -259,7 +259,7 @@
       "connectionFailed": "Connexion échouée - impossible de découvrir les outils de ce serveur.",
       "enableAll": "Tout activer",
       "disableAll": "Tout désactiver",
-      "optIn": "Opt-in",
+      "optIn": "Activation manuelle",
       "searchProvider": "Fournisseur de recherche",
       "searchProviderDescription": "Remplace le fournisseur de recherche par défaut pour ce Kin.",
       "searchProviderDefault": "Défaut (paramètre global)"
@@ -1296,7 +1296,7 @@
     "group": {
       "navigation": "Navigation",
       "kins": "Kins",
-      "chat": "Chat",
+      "chat": "Discussion",
       "formatting": "Mise en forme",
       "general": "Général"
     },
@@ -1381,7 +1381,7 @@
     "description": "Vous utilisez la v{{version}}",
     "descriptionGeneric": "Changements et améliorations récents",
     "empty": "Aucun changelog disponible",
-    "unreleased": "A venir",
+    "unreleased": "À venir",
     "category": {
       "added": "Ajouté",
       "changed": "Modifié",
