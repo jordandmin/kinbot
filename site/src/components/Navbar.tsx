@@ -49,8 +49,14 @@ export function Navbar({ dark, onToggleDark }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const activeSection = useActiveSection()
 
+  const [scrollProgress, setScrollProgress] = useState(0)
+
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20)
+    const handler = () => {
+      setScrolled(window.scrollY > 20)
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight
+      setScrollProgress(docHeight > 0 ? Math.min(window.scrollY / docHeight, 1) : 0)
+    }
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
@@ -139,6 +145,16 @@ export function Navbar({ dark, onToggleDark }: NavbarProps) {
           </button>
         </div>
       </nav>
+
+      {/* Scroll progress bar */}
+      <div
+        className="absolute bottom-0 left-0 h-[2px] transition-opacity duration-300"
+        style={{
+          width: `${scrollProgress * 100}%`,
+          background: 'linear-gradient(90deg, var(--color-glow-1), var(--color-glow-2))',
+          opacity: scrolled ? 1 : 0,
+        }}
+      />
 
       {/* Mobile menu */}
       {mobileOpen && (
