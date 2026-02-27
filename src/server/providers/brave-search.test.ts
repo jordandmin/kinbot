@@ -94,7 +94,8 @@ describe('braveSearchProvider', () => {
       globalThis.fetch = fetchMock as unknown as typeof fetch
       const { braveSearchProvider } = await import('@/server/providers/brave-search')
       await braveSearchProvider.testConnection({ apiKey: 'test-key' })
-      const calledUrl = fetchMock.mock.calls[0][0] as string
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const calledUrl = (fetchMock.mock.calls as any)[0][0] as string
       expect(calledUrl).toStartWith('https://api.search.brave.com/res/v1/')
     })
 
@@ -108,7 +109,8 @@ describe('braveSearchProvider', () => {
       globalThis.fetch = fetchMock as unknown as typeof fetch
       const { braveSearchProvider } = await import('@/server/providers/brave-search')
       await braveSearchProvider.testConnection({ apiKey: 'test-key', baseUrl: 'https://custom.brave.example' })
-      const calledUrl = fetchMock.mock.calls[0][0] as string
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const calledUrl = (fetchMock.mock.calls as any)[0][0] as string
       expect(calledUrl).toStartWith('https://custom.brave.example/')
     })
 
@@ -122,7 +124,8 @@ describe('braveSearchProvider', () => {
       globalThis.fetch = fetchMock as unknown as typeof fetch
       const { braveSearchProvider } = await import('@/server/providers/brave-search')
       await braveSearchProvider.testConnection({ apiKey: 'my-secret-token' })
-      const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const headers = (fetchMock.mock.calls as any)[0][1]?.headers as Record<string, string>
       expect(headers['X-Subscription-Token']).toBe('my-secret-token')
       expect(headers['Accept']).toBe('application/json')
     })
