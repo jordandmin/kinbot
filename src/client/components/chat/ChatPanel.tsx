@@ -506,6 +506,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                       onOpenTaskDetail={isTask && msg.resolvedTaskId ? () => setDetailTaskId(msg.resolvedTaskId) : undefined}
                       onQuoteReply={handleQuoteReply}
                       onEditResend={handleEditResend}
+                      onRegenerate={msg.id === lastAssistantMsgId && !isStreaming && !isProcessing ? handleRegenerate : undefined}
                     />
                     </div>
                     </React.Fragment>
