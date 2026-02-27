@@ -454,6 +454,13 @@ body {
   padding-left: 2.5em;
 }
 
+.markdown-content pre.code-wrapped,
+.markdown-content pre.code-wrapped code {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
 .dark .markdown-content pre {
   background: color-mix(in oklch, var(--color-foreground) 5%, transparent);
 }

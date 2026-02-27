@@ -407,7 +407,9 @@
     "codeBlock": {
       "copy": "Copier le code",
       "copied": "Code copié dans le presse-papiers",
-      "copyFailed": "Échec de la copie du code"
+      "copyFailed": "Échec de la copie du code",
+      "wrap": "Retour à la ligne automatique",
+      "unwrap": "Désactiver le retour à la ligne"
     },
     "sendFailed": "Échec de l'envoi du message",
     "shortcutsHint": "pour voir tous les raccourcis clavier",

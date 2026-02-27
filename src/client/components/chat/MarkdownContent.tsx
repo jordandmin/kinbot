@@ -1,11 +1,11 @@
-import { memo, useCallback, useMemo, type HTMLAttributes } from 'react'
+import { memo, useCallback, useMemo, useState, type HTMLAttributes } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeKatex from 'rehype-katex'
 import { useTranslation } from 'react-i18next'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, WrapText } from 'lucide-react'
 import { useCopyToClipboard } from '@/client/hooks/useCopyToClipboard'
 import { cn } from '@/client/lib/utils'
 import { HighlightText } from '@/client/components/chat/HighlightText'
@@ -104,11 +104,38 @@ function langDisplayName(lang: string): string {
 /** Minimum number of lines before showing line numbers. */
 const LINE_NUMBER_THRESHOLD = 4
 
+/** Minimum longest-line length before showing the wrap toggle. */
+const WRAP_TOGGLE_THRESHOLD = 80
+
+function CodeBlockWrapButton({ wrapped, onToggle }: { wrapped: boolean; onToggle: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={cn(
+        'absolute top-2 right-10 rounded-md p-1.5 transition-all',
+        'opacity-0 group-hover/codeblock:opacity-100',
+        'bg-background/60 hover:bg-background/90 backdrop-blur-sm',
+        wrapped ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+        'active:scale-95',
+      )}
+      title={wrapped ? t('chat.codeBlock.unwrap') : t('chat.codeBlock.wrap')}
+      aria-label={wrapped ? t('chat.codeBlock.unwrap') : t('chat.codeBlock.wrap')}
+    >
+      <WrapText className="size-3.5" />
+    </button>
+  )
+}
+
 function PreBlock({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
   const code = extractTextContent(children).replace(/\n$/, '')
   const language = extractLanguage(children)
   const lines = code.split('\n')
   const showLineNumbers = lines.length >= LINE_NUMBER_THRESHOLD
+  const longestLine = Math.max(...lines.map((l) => l.length))
+  const showWrapToggle = longestLine >= WRAP_TOGGLE_THRESHOLD
+  const [wrapped, setWrapped] = useState(false)
 
   return (
     <div className="group/codeblock relative">
@@ -121,7 +148,7 @@ function PreBlock({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
         </div>
       )}
       <div className={cn('relative', language && '[&>pre]:rounded-t-none [&>pre]:mt-0')}>
-        {showLineNumbers && (
+        {showLineNumbers && !wrapped && (
           <div
             className="absolute left-0 top-0 bottom-0 flex flex-col items-end select-none pointer-events-none py-[0.75em] pr-2 pl-2 text-[0.85em] leading-[1.5] font-mono text-muted-foreground/30 border-r border-border/30"
             aria-hidden="true"
@@ -133,11 +160,16 @@ function PreBlock({ children, ...props }: HTMLAttributes<HTMLPreElement>) {
         )}
         <pre
           {...props}
-          className={cn(props.className, showLineNumbers && 'code-with-line-numbers')}
+          className={cn(
+            props.className,
+            showLineNumbers && !wrapped && 'code-with-line-numbers',
+            wrapped && 'code-wrapped',
+          )}
         >
           {children}
         </pre>
       </div>
+      {showWrapToggle && <CodeBlockWrapButton wrapped={wrapped} onToggle={() => setWrapped((w) => !w)} />}
       {code && <CodeBlockCopyButton code={code} />}
     </div>
   )
