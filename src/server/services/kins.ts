@@ -245,6 +245,7 @@ export async function deleteKin(kinId: string): Promise<boolean> {
   const kinCronIds = db.select({ id: crons.id }).from(crons).where(eq(crons.kinId, kinId)).all().map((c) => c.id)
   const kinWebhookIds = db.select({ id: webhooks.id }).from(webhooks).where(eq(webhooks.kinId, kinId)).all().map((w) => w.id)
   const kinChannelIds = db.select({ id: channels.id }).from(channels).where(eq(channels.kinId, kinId)).all().map((ch) => ch.id)
+  const kinMemoryIds = db.select({ id: memories.id }).from(memories).where(eq(memories.kinId, kinId)).all().map((m) => m.id)
 
   // Clean up all related records — topological order (leaves first)
   // humanPrompts must come before messages and tasks (references both)
@@ -309,6 +310,9 @@ export async function deleteKin(kinId: string): Promise<boolean> {
   }
   for (const channelId of kinChannelIds) {
     sseManager.broadcast({ type: 'channel:deleted', kinId, data: { channelId, kinId } })
+  }
+  for (const memoryId of kinMemoryIds) {
+    sseManager.broadcast({ type: 'memory:deleted', kinId, data: { memoryId, kinId } })
   }
 
   sseManager.broadcast({
