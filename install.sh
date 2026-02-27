@@ -317,6 +317,45 @@ preflight_checks() {
     fi
   fi
 
+  # Check available memory (Bun builds can OOM on small machines)
+  if [ "$OS" = "Linux" ] && [ -f /proc/meminfo ]; then
+    local mem_total_kb mem_avail_kb swap_total_kb
+    mem_total_kb="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo "")"
+    mem_avail_kb="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo "")"
+    swap_total_kb="$(awk '/^SwapTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo "")"
+
+    if [ -n "$mem_total_kb" ]; then
+      local mem_total_mb=$((mem_total_kb / 1024))
+      local mem_avail_mb=0
+      [ -n "$mem_avail_kb" ] && mem_avail_mb=$((mem_avail_kb / 1024))
+      local swap_total_mb=0
+      [ -n "$swap_total_kb" ] && swap_total_mb=$((swap_total_kb / 1024))
+      local effective_mb=$((mem_avail_mb + swap_total_mb))
+
+      if [ "$mem_total_mb" -lt 512 ] 2>/dev/null; then
+        warn "Low total RAM: ${mem_total_mb}MB (minimum 512MB recommended for builds)"
+        if [ "$swap_total_mb" -lt 256 ] 2>/dev/null; then
+          warn "No swap or very little swap (${swap_total_mb}MB). The build may fail with out-of-memory."
+          info "Consider adding swap: sudo fallocate -l 1G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile"
+        else
+          info "Swap available (${swap_total_mb}MB) — should help during build"
+        fi
+      elif [ "$effective_mb" -lt 384 ] 2>/dev/null; then
+        warn "Low available memory: ${mem_avail_mb}MB RAM + ${swap_total_mb}MB swap"
+        info "Close other processes or add swap if the build fails"
+      else
+        success "Memory OK (${mem_avail_mb}MB available, ${mem_total_mb}MB total)"
+      fi
+    fi
+  elif [ "$OS" = "Darwin" ]; then
+    local mem_bytes
+    mem_bytes="$(sysctl -n hw.memsize 2>/dev/null || echo "")"
+    if [ -n "$mem_bytes" ]; then
+      local mem_total_mb=$((mem_bytes / 1024 / 1024))
+      success "Memory OK (${mem_total_mb}MB total)"
+    fi
+  fi
+
   # Check internet connectivity (needed for git clone and bun install)
   if curl -fsSL --max-time 5 https://github.com >/dev/null 2>&1; then
     success "Internet connectivity OK"
@@ -1537,17 +1576,43 @@ dry_run() {
     info "Bun — ${YELLOW}will be installed${NC} from https://bun.sh"
   fi
 
-  # Disk space
-  header "Disk space"
+  # Disk space & memory
+  header "Resources"
   local install_parent
   install_parent="$(dirname "$KINBOT_DIR")"
   local avail_kb
   if avail_kb="$(df -k "$install_parent" 2>/dev/null | awk 'NR==2 {print $4}')"; then
     local avail_mb=$((avail_kb / 1024))
     if [ "$avail_mb" -lt 500 ] 2>/dev/null; then
-      warn "Only ${avail_mb}MB available (need 500MB+)"
+      warn "Disk: only ${avail_mb}MB available (need 500MB+)"
     else
-      success "${avail_mb}MB available"
+      success "Disk: ${avail_mb}MB available"
+    fi
+  fi
+
+  if [ "$OS" = "Linux" ] && [ -f /proc/meminfo ]; then
+    local mem_total_kb mem_avail_kb swap_total_kb
+    mem_total_kb="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo "")"
+    mem_avail_kb="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo "")"
+    swap_total_kb="$(awk '/^SwapTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo "")"
+    if [ -n "$mem_total_kb" ]; then
+      local mem_total_mb=$((mem_total_kb / 1024))
+      local mem_avail_mb=0
+      [ -n "$mem_avail_kb" ] && mem_avail_mb=$((mem_avail_kb / 1024))
+      local swap_total_mb=0
+      [ -n "$swap_total_kb" ] && swap_total_mb=$((swap_total_kb / 1024))
+      if [ "$mem_total_mb" -lt 512 ] 2>/dev/null && [ "$swap_total_mb" -lt 256 ] 2>/dev/null; then
+        warn "RAM: ${mem_total_mb}MB total, ${swap_total_mb}MB swap — build may OOM"
+      else
+        success "RAM: ${mem_avail_mb}MB available / ${mem_total_mb}MB total"
+      fi
+    fi
+  elif [ "$OS" = "Darwin" ]; then
+    local mem_bytes
+    mem_bytes="$(sysctl -n hw.memsize 2>/dev/null || echo "")"
+    if [ -n "$mem_bytes" ]; then
+      local mem_total_mb=$((mem_bytes / 1024 / 1024))
+      success "RAM: ${mem_total_mb}MB total"
     fi
   fi
 
