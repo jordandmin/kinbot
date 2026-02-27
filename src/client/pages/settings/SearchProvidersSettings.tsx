@@ -22,6 +22,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus, Search } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
+import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { ProviderCard, type ProviderData } from '@/client/components/kin/ProviderCard'
@@ -124,6 +125,17 @@ export function SearchProvidersSettings() {
           {t('settings.searchProviders.description')}
         </p>
       </div>
+
+      <HelpPanel
+        contentKey="settings.searchProviders.help.content"
+        bulletKeys={[
+          'settings.searchProviders.help.bullet1',
+          'settings.searchProviders.help.bullet2',
+          'settings.searchProviders.help.bullet3',
+          'settings.searchProviders.help.bullet4',
+        ]}
+        storageKey="help.searchProviders.open"
+      />
 
       {/* Default provider selector */}
       {providers.length > 0 && (

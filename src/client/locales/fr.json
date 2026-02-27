@@ -578,7 +578,14 @@
       "defaultProvider": "Fournisseur par défaut",
       "defaultProviderDescription": "Utilisé par tous les Kins sauf s'ils le remplacent individuellement.",
       "defaultProviderAutomatic": "Automatique (premier valide)",
-      "defaultProviderSaved": "Fournisseur de recherche par défaut mis à jour"
+      "defaultProviderSaved": "Fournisseur de recherche par défaut mis à jour",
+      "help": {
+        "content": "Les fournisseurs de recherche donnent à vos Kins la capacité de chercher des informations sur le web pendant les conversations. Quand un Kin a besoin d'informations actuelles, il utilise le fournisseur de recherche configuré.",
+        "bullet1": "Ajoutez des fournisseurs comme Brave Search, Tavily, Serper ou Perplexity pour la recherche web",
+        "bullet2": "Définissez un fournisseur par défaut ou laissez KinBot choisir automatiquement le premier valide",
+        "bullet3": "Chaque Kin peut surcharger le fournisseur de recherche par défaut dans ses paramètres",
+        "bullet4": "La plupart des fournisseurs de recherche nécessitent une clé API depuis le site du fournisseur"
+      }
     },
     "mcp": {
       "title": "Serveurs MCP",
@@ -999,7 +1006,14 @@
       "kinLabel": "Kin",
       "kinPlaceholder": "Sélectionner un Kin...",
       "nameTip": "Un nom pour cette connexion. Aide à distinguer plusieurs canaux de la même plateforme.",
-      "kinTip": "Le Kin qui répondra aux messages sur ce canal. Chaque canal est géré par un seul Kin."
+      "kinTip": "Le Kin qui répondra aux messages sur ce canal. Chaque canal est géré par un seul Kin.",
+      "help": {
+        "content": "Les canaux connectent vos Kins aux plateformes de messagerie externes comme Telegram, Discord, Slack et d'autres. Chaque canal achemine les messages d'une plateforme vers un Kin spécifique.",
+        "bullet1": "Chaque canal est lié à un Kin qui gère tous les messages entrants",
+        "bullet2": "Testez votre connexion après la configuration pour vérifier que le token du bot est valide",
+        "bullet3": "Gérez les approbations d'utilisateurs pour contrôler qui peut discuter avec votre Kin sur chaque plateforme",
+        "bullet4": "Utilisez les IDs de chat autorisés pour restreindre les groupes ou chats auxquels le Kin répond"
+      }
     },
     "notifications": {
       "title": "Notifications",

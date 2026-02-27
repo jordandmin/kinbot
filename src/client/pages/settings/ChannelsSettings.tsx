@@ -15,6 +15,7 @@ import {
 import { Collapsible, CollapsibleContent } from '@/client/components/ui/collapsible'
 import { Plus , MessageCircle} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
+import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
@@ -160,6 +161,17 @@ export function ChannelsSettings() {
           {t('settings.channels.description')}
         </p>
       </div>
+
+      <HelpPanel
+        contentKey="settings.channels.help.content"
+        bulletKeys={[
+          'settings.channels.help.bullet1',
+          'settings.channels.help.bullet2',
+          'settings.channels.help.bullet3',
+          'settings.channels.help.bullet4',
+        ]}
+        storageKey="help.channels.open"
+      />
 
       {channels.length === 0 && (
         <EmptyState
