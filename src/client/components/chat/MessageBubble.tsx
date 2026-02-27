@@ -17,7 +17,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/client/components/ui/context-menu'
-import { FileIcon, Download, Brain, ChevronDown, ChevronUp, Copy, Check, RefreshCw, Quote, Pencil, Volume2, VolumeX } from 'lucide-react'
+import { FileIcon, Download, Brain, ChevronDown, ChevronUp, Copy, Check, RefreshCw, Quote, Pencil, Volume2, VolumeX, BookOpen } from 'lucide-react'
 import type { ToolCallViewItem } from '@/client/hooks/useToolCalls'
 import { useRelativeTime } from '@/client/hooks/useRelativeTime'
 import type { MessageFile } from '@/shared/types'
@@ -385,6 +385,39 @@ function RelativeTimestamp({ timestamp, className }: { timestamp: string; classN
   )
 }
 
+// ─── Reading time estimate ────────────────────────────────────────────────
+
+/** Average reading speed in words per minute. */
+const WORDS_PER_MINUTE = 200
+/** Minimum word count before showing reading time. */
+const READING_TIME_THRESHOLD = 100
+
+function ReadingTime({ content }: { content: string }) {
+  const { t } = useTranslation()
+
+  const minutes = useMemo(() => {
+    // Strip code blocks and markdown noise for a more accurate word count
+    const cleaned = content
+      .replace(/```[\s\S]*?```/g, '') // remove code blocks
+      .replace(/`[^`]+`/g, '') // remove inline code
+      .replace(/!\[.*?\]\(.*?\)/g, '') // remove images
+      .replace(/\[([^\]]+)\]\(.*?\)/g, '$1') // links → text
+      .replace(/[#*_~>|]/g, '') // strip markdown symbols
+    const words = cleaned.trim().split(/\s+/).filter(Boolean).length
+    if (words < READING_TIME_THRESHOLD) return 0
+    return Math.max(1, Math.round(words / WORDS_PER_MINUTE))
+  }, [content])
+
+  if (minutes === 0) return null
+
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/50">
+      <BookOpen className="size-2.5" />
+      {t('chat.readingTime', { minutes })}
+    </span>
+  )
+}
+
 // ─── Collapsible long content ─────────────────────────────────────────────
 
 /** Max collapsed height in pixels before showing "Show more" */
@@ -671,6 +704,7 @@ export const MessageBubble = memo(function MessageBubble({
             {timestamp && (
               <RelativeTimestamp timestamp={timestamp} className="text-[10px] text-muted-foreground/70" />
             )}
+            <ReadingTime content={content} />
             {onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
             <ReadAloudButton content={content} />
           </div>
@@ -746,6 +780,7 @@ export const MessageBubble = memo(function MessageBubble({
               )}
             />
           )}
+          {!isUser && <ReadingTime content={content} />}
           {!isUser && onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
           {!isUser && <ReadAloudButton content={content} />}
         </div>
