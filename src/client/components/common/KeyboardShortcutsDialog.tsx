@@ -30,6 +30,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: [MOD, 'B'], labelKey: 'shortcuts.toggleSidebar' },
       { keys: [MOD, ','], labelKey: 'shortcuts.openSettings' },
       { keys: ['?'], labelKey: 'shortcuts.showShortcuts' },
+      { keys: [MOD, 'Shift', 'F'], labelKey: 'shortcuts.focusMode' },
     ],
   },
   {

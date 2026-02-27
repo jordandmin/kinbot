@@ -1245,7 +1245,8 @@
     "group": {
       "navigation": "Navigation",
       "kins": "Kins",
-      "chat": "Chat"
+      "chat": "Chat",
+      "general": "General"
     },
     "commandPalette": "Command palette",
     "toggleSidebar": "Toggle sidebar",
@@ -1255,7 +1256,8 @@
     "createKin": "Create new Kin",
     "sendMessage": "Send message",
     "newLine": "New line",
-    "focusInput": "Focus message input"
+    "focusInput": "Focus message input",
+    "focusMode": "Toggle focus mode"
   },
   "theme": {
     "palette": "Palette",
@@ -1299,5 +1301,9 @@
   "chat.stats.duration": "Duration",
   "chat.stats.avgResponse": "Avg. response time",
   "chat.stats.totalWords": "Total words",
-  "chat.newMessages": "{{count}} new message(s)"
+  "chat.newMessages": "{{count}} new message(s)",
+  "focusMode": {
+    "enter": "Focus mode (⌘⇧F)",
+    "exit": "Exit focus mode (⌘⇧F)"
+  }
 }
