@@ -26,7 +26,8 @@ import { api, getErrorMessage } from '@/client/lib/api'
 import { useMemories } from '@/client/hooks/useMemories'
 import { MemoryCard } from '@/client/components/memory/MemoryCard'
 import { MemoryFormDialog } from '@/client/components/memory/MemoryFormDialog'
-import { KinSelectItem, type KinOption } from '@/client/components/common/KinSelectItem'
+import { KinSelector } from '@/client/components/common/KinSelector'
+import type { KinOption } from '@/client/components/common/KinSelectItem'
 import { MEMORY_CATEGORIES } from '@/shared/constants'
 import type { MemorySummary, MemoryCategory } from '@/shared/types'
 
@@ -124,8 +125,6 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
     setModalOpen(true)
   }
 
-  const selectedKinForFilter = kins.find((k) => k.id === kinFilter)
-
   return (
     <div className="space-y-4">
       {/* Filters row */}
@@ -153,23 +152,15 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
           </SelectContent>
         </Select>
         {!kinId && (
-          <Select value={kinFilter} onValueChange={setKinFilter}>
-            <SelectTrigger className="w-[200px] h-auto min-h-9">
-              {kinFilter !== 'all' && selectedKinForFilter ? (
-                <KinSelectItem kin={selectedKinForFilter} />
-              ) : (
-                <SelectValue placeholder={t('settings.memories.filterAllKins')} />
-              )}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('settings.memories.filterAllKins')}</SelectItem>
-              {kins.map((k) => (
-                <SelectItem key={k.id} value={k.id} className="py-2">
-                  <KinSelectItem kin={k} />
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <KinSelector
+            value={kinFilter}
+            onValueChange={setKinFilter}
+            kins={kins}
+            placeholder={t('settings.memories.filterAllKins')}
+            noneLabel={t('settings.memories.filterAllKins')}
+            noneValue="all"
+            triggerClassName="w-[200px] h-auto min-h-9"
+          />
         )}
       </div>
 
