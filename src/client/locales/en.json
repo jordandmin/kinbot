@@ -1245,5 +1245,6 @@
   "chat.stats.memoriesExtracted": "Memories extracted",
   "chat.stats.duration": "Duration",
   "chat.stats.avgResponse": "Avg. response time",
-  "chat.stats.totalWords": "Total words"
+  "chat.stats.totalWords": "Total words",
+  "chat.newMessages": "{{count}} new message(s)"
 }

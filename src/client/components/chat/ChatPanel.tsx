@@ -67,6 +67,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   const [isToolCallsOpen, setIsToolCallsOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const [newMessageCount, setNewMessageCount] = useState(0)
+  const prevMessageCountRef = useRef(messages.length)
   const [autoScroll, setAutoScroll] = useState(() => {
     try {
       const stored = localStorage.getItem('chat.autoScroll')
@@ -197,10 +199,23 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       const nearBottom = scrollHeight - scrollTop - clientHeight < 100
       isNearBottomRef.current = nearBottom
       setShowScrollBottom(!nearBottom)
+      if (nearBottom) setNewMessageCount(0)
     }
     viewport.addEventListener('scroll', handleScroll)
     return () => viewport.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Track new messages arriving while scrolled up
+  useEffect(() => {
+    const diff = messages.length - prevMessageCountRef.current
+    if (diff > 0 && !isNearBottomRef.current) {
+      setNewMessageCount((prev) => prev + diff)
+    }
+    if (isNearBottomRef.current) {
+      setNewMessageCount(0)
+    }
+    prevMessageCountRef.current = messages.length
+  }, [messages.length])
 
   // Auto-scroll to bottom on new messages / streaming tokens / processing start / live tasks
   const isProcessing = queueState?.isProcessing ?? false
@@ -212,6 +227,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+    setNewMessageCount(0)
   }, [])
 
   // Quote reply: insert quoted text into the draft and focus the input
@@ -525,7 +541,9 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
               title={t('chat.scrollToBottom')}
             >
               <ArrowDown className="size-3.5" />
-              {t('chat.scrollToBottom')}
+              {newMessageCount > 0
+                ? t('chat.newMessages', { count: newMessageCount })
+                : t('chat.scrollToBottom')}
             </button>
           )}
           {/* Auto-scroll toggle — pinned bottom-right */}
