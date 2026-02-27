@@ -1332,9 +1332,55 @@ uninstall() {
   local remove_data="n"
   if [ "${KINBOT_NO_PROMPT:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
     remove_data="n"
-  else
-    echo -en "  ${YELLOW}?${NC} ${BOLD}Remove data directory ($KINBOT_DATA_DIR)?${NC} ${DIM}This deletes your database and config [y/N]${NC}: " >/dev/tty
+  elif [ -d "$KINBOT_DATA_DIR" ]; then
+    # Show what's in the data directory before asking
+    local data_size
+    data_size="$(du -sh "$KINBOT_DATA_DIR" 2>/dev/null | awk '{print $1}' || echo "unknown")"
+    local has_db=false
+    [ -f "$KINBOT_DATA_DIR/kinbot.db" ] && has_db=true
+
+    echo -e "  ${DIM}Data directory: $KINBOT_DATA_DIR ($data_size)${NC}"
+    if [ "$has_db" = true ]; then
+      local db_size
+      db_size="$(du -h "$KINBOT_DATA_DIR/kinbot.db" 2>/dev/null | awk '{print $1}' || echo "?")"
+      echo -e "  ${DIM}  Database: $db_size${NC}"
+    fi
+    [ -f "$KINBOT_DATA_DIR/kinbot.env" ] && echo -e "  ${DIM}  Config: kinbot.env${NC}"
+    local backup_count=0
+    if [ -d "$KINBOT_DATA_DIR/backups" ]; then
+      backup_count="$(find "$KINBOT_DATA_DIR/backups" -maxdepth 1 -name 'kinbot-*.db' -type f 2>/dev/null | wc -l)"
+      [ "$backup_count" -gt 0 ] && echo -e "  ${DIM}  Backups: $backup_count${NC}"
+    fi
+    echo ""
+
+    echo -en "  ${YELLOW}?${NC} ${BOLD}Remove data directory?${NC} ${DIM}This deletes your database and config [y/N]${NC}: " >/dev/tty
     read -r remove_data </dev/tty || remove_data="n"
+
+    # If user wants to delete data and a database exists, offer a backup first
+    if [[ "$remove_data" =~ ^[Yy]$ ]] && [ "$has_db" = true ]; then
+      echo ""
+      local do_backup="y"
+      echo -en "  ${CYAN}?${NC} ${BOLD}Create a backup before deleting?${NC} ${DIM}[Y/n]${NC}: " >/dev/tty
+      read -r do_backup </dev/tty || do_backup="y"
+      [ -z "$do_backup" ] && do_backup="y"
+
+      if [[ "$do_backup" =~ ^[Yy]$ ]]; then
+        local backup_dest
+        backup_dest="$HOME/kinbot-backup-$(date +%Y%m%d-%H%M%S).db"
+        if cp "$KINBOT_DATA_DIR/kinbot.db" "$backup_dest" 2>/dev/null; then
+          # Also copy the config alongside the DB
+          if [ -f "$KINBOT_DATA_DIR/kinbot.env" ]; then
+            cp "$KINBOT_DATA_DIR/kinbot.env" "${backup_dest%.db}.env" 2>/dev/null || true
+          fi
+          success "Backup saved to $backup_dest"
+        else
+          warn "Could not create backup. Aborting data removal for safety."
+          remove_data="n"
+        fi
+      fi
+    fi
+  else
+    info "$KINBOT_DATA_DIR not found — nothing to remove"
   fi
 
   if [[ "$remove_data" =~ ^[Yy]$ ]]; then
@@ -1342,7 +1388,7 @@ uninstall() {
       rm -rf "$KINBOT_DATA_DIR"
       success "Removed $KINBOT_DATA_DIR"
     fi
-  else
+  elif [ -d "$KINBOT_DATA_DIR" ]; then
     info "Data kept at $KINBOT_DATA_DIR"
   fi
 
