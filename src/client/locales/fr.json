@@ -492,7 +492,8 @@
       "confirm": "Effacer tous les messages",
       "success": "Conversation effacée",
       "error": "Impossible d'effacer la conversation"
-    }
+    },
+    "readingTime": "~{{minutes}} min de lecture"
   },
   "quickChat": {
     "title": "Session rapide",

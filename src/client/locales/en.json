@@ -492,7 +492,8 @@
       "confirm": "Clear all messages",
       "success": "Conversation cleared",
       "error": "Failed to clear conversation"
-    }
+    },
+    "readingTime": "~{{minutes}} min read"
   },
   "quickChat": {
     "title": "Quick Session",
