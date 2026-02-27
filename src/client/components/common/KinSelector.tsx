@@ -20,6 +20,8 @@ interface KinSelectorProps {
   required?: boolean
   /** Optional "none" option label — if set, adds a none/empty option at the top */
   noneLabel?: string
+  /** Value used for the "none" option (default: "none") */
+  noneValue?: string
   /** Custom className for the trigger */
   triggerClassName?: string
   /** If true, the trigger auto-sizes height for the avatar row */
@@ -33,11 +35,12 @@ export function KinSelector({
   placeholder = '',
   required,
   noneLabel,
+  noneValue = 'none',
   triggerClassName,
   autoHeight = true,
 }: KinSelectorProps) {
   const selectedKin = kins.find((k) => k.id === value)
-  const isNone = !value || value === 'none'
+  const isNone = !value || value === noneValue
 
   return (
     <Select value={value} onValueChange={onValueChange} required={required}>
@@ -49,7 +52,7 @@ export function KinSelector({
         )}
       </SelectTrigger>
       <SelectContent position="popper">
-        {noneLabel != null && <SelectItem value="none">{noneLabel}</SelectItem>}
+        {noneLabel != null && <SelectItem value={noneValue}>{noneLabel}</SelectItem>}
         {kins.map((kin) => (
           <SelectItem key={kin.id} value={kin.id} className="py-2">
             <KinSelectItem kin={kin} />
