@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   Brain,
   Database,
@@ -88,27 +89,49 @@ const features = [
   },
 ]
 
-export function Features() {
-  return (
-    <section id="features" className="px-6 py-24 max-w-7xl mx-auto">
-      <div className="text-center mb-16">
-        <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-          <span className="gradient-text">Everything you need.</span>
-          <br />
-          <span style={{ color: 'var(--color-foreground)' }}>Nothing you don't.</span>
-        </h2>
-        <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
-          KinBot is a complete self-hosted AI platform — not a wrapper, not a demo.
-          Built for real, long-term use on hardware you control.
-        </p>
-      </div>
+function FeatureGrid() {
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [visibleSet, setVisibleSet] = useState<Set<number>>(new Set())
+  const observedRef = useRef(false)
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {features.map(({ icon: Icon, title, description }) => (
+  useEffect(() => {
+    const el = gridRef.current
+    if (!el || observedRef.current) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observedRef.current = true
+          observer.unobserve(el)
+          // Stagger each card with 60ms delay
+          features.forEach((_, i) => {
+            setTimeout(() => {
+              setVisibleSet(prev => new Set(prev).add(i))
+            }, i * 60)
+          })
+        }
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' },
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {features.map(({ icon: Icon, title, description }, i) => {
+        const visible = visibleSet.has(i)
+        return (
           <div
             key={title}
             className="glass-strong gradient-border rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group"
-            style={{ boxShadow: 'var(--shadow-md)' }}
+            style={{
+              boxShadow: 'var(--shadow-md)',
+              opacity: visible ? 1 : 0,
+              transform: visible ? 'translateY(0) scale(1)' : 'translateY(24px) scale(0.97)',
+              transition: 'opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s, scale 0.3s',
+            }}
           >
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
@@ -126,8 +149,28 @@ export function Features() {
               {description}
             </p>
           </div>
-        ))}
+        )
+      })}
+    </div>
+  )
+}
+
+export function Features() {
+  return (
+    <section id="features" className="px-6 py-24 max-w-7xl mx-auto">
+      <div className="text-center mb-16">
+        <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+          <span className="gradient-text">Everything you need.</span>
+          <br />
+          <span style={{ color: 'var(--color-foreground)' }}>Nothing you don't.</span>
+        </h2>
+        <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
+          KinBot is a complete self-hosted AI platform — not a wrapper, not a demo.
+          Built for real, long-term use on hardware you control.
+        </p>
       </div>
+
+      <FeatureGrid />
     </section>
   )
 }
