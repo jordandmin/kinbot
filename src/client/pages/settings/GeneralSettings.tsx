@@ -9,6 +9,7 @@ import { ModelPicker } from '@/client/components/common/ModelPicker'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { Skeleton } from '@/client/components/ui/skeleton'
 import { InfoTip } from '@/client/components/common/InfoTip'
+import { HelpPanel } from '@/client/components/common/HelpPanel'
 
 interface ProviderModel {
   id: string
@@ -237,6 +238,17 @@ export function GeneralSettings() {
           </Button>
         </div>
       </div>
+
+      <HelpPanel
+        contentKey="settings.general.help.content"
+        bulletKeys={[
+          'settings.general.help.bullet1',
+          'settings.general.help.bullet2',
+          'settings.general.help.bullet3',
+          'settings.general.help.bullet4',
+        ]}
+        storageKey="help.general.open"
+      />
     </div>
   )
 }

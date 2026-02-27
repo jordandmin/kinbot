@@ -544,7 +544,14 @@
       "modelSaved": "Model saved",
       "globalPromptTip": "Instructions injected into every Kin's system prompt. Use this for rules or guidelines all your Kins should follow.",
       "extractionModelTip": "The LLM used to extract key facts from conversations for long-term memory. If unset, each Kin uses its own model.",
-      "embeddingModelTip": "Converts text into vectors for semantic memory search. Changing this requires re-embedding all existing memories."
+      "embeddingModelTip": "Converts text into vectors for semantic memory search. Changing this requires re-embedding all existing memories.",
+      "help": {
+        "content": "General settings control platform-wide behavior that applies to all your Kins. The global prompt lets you define instructions every Kin follows, while model configuration determines how memories are extracted and searched.",
+        "bullet1": "The global prompt is injected into every Kin's system prompt — use it for universal rules or guidelines",
+        "bullet2": "The extraction model handles converting conversations into long-term memories during compacting",
+        "bullet3": "The embedding model converts text into vectors for semantic memory search — changing it requires re-embedding all memories",
+        "bullet4": "If no extraction model is set, each Kin uses its own chat model for memory extraction"
+      }
     },
     "providers": {
       "title": "AI Providers",

@@ -544,7 +544,14 @@
       "modelSaved": "Modèle sauvegardé",
       "globalPromptTip": "Instructions injectées dans le prompt système de chaque Kin. Utilisez-le pour des règles ou directives communes.",
       "extractionModelTip": "Le LLM utilisé pour extraire les faits clés des conversations en mémoire long terme. Si vide, chaque Kin utilise son propre modèle.",
-      "embeddingModelTip": "Convertit le texte en vecteurs pour la recherche sémantique en mémoire. Changer ce modèle nécessite de recalculer tous les embeddings existants."
+      "embeddingModelTip": "Convertit le texte en vecteurs pour la recherche sémantique en mémoire. Changer ce modèle nécessite de recalculer tous les embeddings existants.",
+      "help": {
+        "content": "Les paramètres généraux contrôlent le comportement global de la plateforme, applicable à tous vos Kins. Le prompt global permet de définir des instructions suivies par chaque Kin, et la configuration des modèles détermine comment les souvenirs sont extraits et recherchés.",
+        "bullet1": "Le prompt global est injecté dans le prompt système de chaque Kin — utilisez-le pour des règles ou directives universelles",
+        "bullet2": "Le modèle d'extraction convertit les conversations en souvenirs long-terme lors du compactage",
+        "bullet3": "Le modèle d'embedding convertit le texte en vecteurs pour la recherche sémantique — le changer nécessite de re-générer tous les embeddings existants",
+        "bullet4": "Si aucun modèle d'extraction n'est défini, chaque Kin utilise son propre modèle de chat"
+      }
     },
     "providers": {
       "title": "Fournisseurs IA",
