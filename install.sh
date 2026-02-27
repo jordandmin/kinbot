@@ -24,6 +24,7 @@ KINBOT_PUBLIC_URL="${KINBOT_PUBLIC_URL:-}"
 KINBOT_REPO="MarlBurroW/kinbot"
 KINBOT_BRANCH="${KINBOT_BRANCH:-main}"
 KINBOT_DRY_RUN=false
+KINBOT_QUIET="${KINBOT_QUIET:-false}"
 
 # ─── Colors (auto-detect terminal support) ───────────────────────────────────
 setup_colors() {
@@ -44,11 +45,11 @@ setup_colors() {
 }
 setup_colors
 
-info()    { echo -e "${CYAN}▸${NC} $*"; }
-success() { echo -e "${GREEN}✓${NC} $*"; }
-warn()    { echo -e "${YELLOW}⚠${NC} $*"; }
+info()    { [ "$KINBOT_QUIET" = true ] && return; echo -e "${CYAN}▸${NC} $*"; }
+success() { [ "$KINBOT_QUIET" = true ] && return; echo -e "${GREEN}✓${NC} $*"; }
+warn()    { echo -e "${YELLOW}⚠${NC} $*" >&2; }
 error()   { echo -e "${RED}✗ ERROR:${NC} $*" >&2; exit 1; }
-header()  { echo -e "\n${BOLD}$*${NC}"; }
+header()  { [ "$KINBOT_QUIET" = true ] && return; echo -e "\n${BOLD}$*${NC}"; }
 
 # ─── Step progress (for main install flow) ───────────────────────────────────
 STEP_CURRENT=0
@@ -56,6 +57,7 @@ STEP_TOTAL=0
 
 step() {
   STEP_CURRENT=$((STEP_CURRENT + 1))
+  [ "$KINBOT_QUIET" = true ] && return
   local progress=""
   if [ "$STEP_TOTAL" -gt 0 ] 2>/dev/null; then
     progress="${DIM}[${STEP_CURRENT}/${STEP_TOTAL}]${NC} "
@@ -100,7 +102,11 @@ run_with_spinner() {
   local label="$1"
   shift
 
-  # If not a terminal, just run normally with a simple message
+  # If not a terminal or quiet mode, just run silently
+  if [ "$KINBOT_QUIET" = true ]; then
+    "$@" >/dev/null 2>&1
+    return
+  fi
   if [ ! -t 1 ] && [ ! -t 2 ]; then
     info "$label"
     "$@"
@@ -1127,6 +1133,9 @@ verify_running() {
   local attempts=0
   local max_attempts=15
 
+  # In quiet mode, reduce wait time
+  [ "$KINBOT_QUIET" = true ] && max_attempts=10
+
   while [ $attempts -lt $max_attempts ]; do
     local http_code
     http_code="$(curl -s -o /dev/null -w '%{http_code}' "${url}/" --max-time 2 2>/dev/null || echo "000")"
@@ -1165,6 +1174,14 @@ print_summary() {
 
   local version
   version="$(get_installed_version)"
+
+  # In quiet mode, just print the essential one-liner
+  if [ "$KINBOT_QUIET" = true ]; then
+    local status_icon="●"
+    [ "$KINBOT_HEALTHY" = true ] && status_icon="${GREEN}●${NC}" || status_icon="${YELLOW}●${NC}"
+    echo -e "${status_icon} KinBot ${version} ${ACTION} — ${KINBOT_PUBLIC_URL}"
+    return
+  fi
 
   echo ""
   local msg="KinBot ${version} ${ACTION} successfully!"
@@ -1427,6 +1444,7 @@ show_help() {
   echo "  --logs          Tail KinBot logs (works across all platforms)"
   echo "  --backup [path] Back up database (and config) to a file"
   echo "  --restore [path] Restore database from a backup (interactive picker if no path)"
+  echo "  --quiet, -q     Suppress non-essential output (only errors and final summary)"
   echo "  --no-color      Disable colored output (also: NO_COLOR=1)"
   echo "  --config        Re-run the configuration wizard (change port, URL)"
   echo "  --reset         Fix broken install: re-clone & rebuild, keep data"
@@ -1441,6 +1459,7 @@ show_help() {
   echo "  KINBOT_PUBLIC_URL   Public URL for webhooks & invite links"
   echo "  KINBOT_BRANCH       Git branch to install (default: main)"
   echo "  KINBOT_NO_PROMPT    Skip interactive prompts (default: false)"
+  echo "  KINBOT_QUIET        Suppress non-essential output (same as --quiet)"
   echo ""
   echo -e "${BOLD}EXAMPLES${NC}"
   echo "  # Install with defaults"
@@ -1454,6 +1473,9 @@ show_help() {
   echo ""
   echo "  # Update existing installation (just run again)"
   echo "  bash install.sh"
+  echo ""
+  echo "  # Scripted install (no prompts, minimal output)"
+  echo "  KINBOT_PORT=8080 bash install.sh --quiet"
   echo ""
   echo "  # Reconfigure (change port, URL)"
   echo "  bash install.sh --config"
@@ -3167,6 +3189,10 @@ main() {
         docker_install
         exit 0
         ;;
+      --quiet|-q)
+        KINBOT_QUIET=true
+        KINBOT_NO_PROMPT=true
+        ;;
       --no-color)
         NO_COLOR=1
         setup_colors
@@ -3183,11 +3209,13 @@ main() {
   # Enable rollback trap for actual install/update
   trap rollback EXIT
 
-  echo ""
-  echo -e "${BOLD}KinBot Installer${NC}"
-  echo -e "Self-hosted AI agent platform"
-  echo -e "https://github.com/MarlBurroW/kinbot"
-  echo ""
+  if [ "$KINBOT_QUIET" != true ]; then
+    echo ""
+    echo -e "${BOLD}KinBot Installer${NC}"
+    echo -e "Self-hosted AI agent platform"
+    echo -e "https://github.com/MarlBurroW/kinbot"
+    echo ""
+  fi
 
   STEP_TOTAL=9
   STEP_CURRENT=0
