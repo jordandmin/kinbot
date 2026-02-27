@@ -111,6 +111,16 @@ import {
   cancelWakeupTool,
   listWakeupsTool,
 } from '@/server/tools/wakeup-tools'
+import {
+  createMiniAppTool,
+  updateMiniAppTool,
+  deleteMiniAppTool,
+  listMiniAppsTool,
+  writeMiniAppFileTool,
+  readMiniAppFileTool,
+  deleteMiniAppFileTool,
+  listMiniAppFilesTool,
+} from '@/server/tools/mini-app-tools'
 
 const log = createLogger('tools')
 
@@ -246,6 +256,16 @@ export function registerAllTools(): void {
   toolRegistry.register('wake_me_in', wakeMeInTool)
   toolRegistry.register('cancel_wakeup', cancelWakeupTool)
   toolRegistry.register('list_wakeups', listWakeupsTool)
+
+  // Mini-App tools (main only)
+  toolRegistry.register('create_mini_app', createMiniAppTool)
+  toolRegistry.register('update_mini_app', updateMiniAppTool)
+  toolRegistry.register('delete_mini_app', deleteMiniAppTool)
+  toolRegistry.register('list_mini_apps', listMiniAppsTool)
+  toolRegistry.register('write_mini_app_file', writeMiniAppFileTool)
+  toolRegistry.register('read_mini_app_file', readMiniAppFileTool)
+  toolRegistry.register('delete_mini_app_file', deleteMiniAppFileTool)
+  toolRegistry.register('list_mini_app_files', listMiniAppFilesTool)
 
   log.info({ count: toolRegistry.registeredCount }, 'Native tools registered')
 }

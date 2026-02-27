@@ -524,6 +524,26 @@ export const appSettings = sqliteTable('app_settings', {
   updatedAt: integer('updated_at').notNull(), // Unix ms
 })
 
+// ─── Mini-Apps ──────────────────────────────────────────────────────────────
+
+export const miniApps = sqliteTable('mini_apps', {
+  id: text('id').primaryKey(),
+  kinId: text('kin_id').notNull().references(() => kins.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  slug: text('slug').notNull(),
+  description: text('description'),
+  icon: text('icon'),                        // emoji or Lucide icon name
+  entryFile: text('entry_file').notNull().default('index.html'),
+  hasBackend: integer('has_backend', { mode: 'boolean' }).notNull().default(false),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  version: integer('version').notNull().default(1),     // incremented on each file write (cache busting)
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+}, (table) => [
+  uniqueIndex('idx_mini_apps_kin_slug').on(table.kinId, table.slug),
+  index('idx_mini_apps_kin_id').on(table.kinId),
+])
+
 // ─── File Storage ────────────────────────────────────────────────────────────
 
 export const fileStorage = sqliteTable('file_storage', {

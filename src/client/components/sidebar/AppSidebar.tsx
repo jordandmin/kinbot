@@ -9,6 +9,7 @@ import {
 import { KinList } from '@/client/components/sidebar/KinList'
 import { TaskList } from '@/client/components/sidebar/TaskList'
 import { CronList } from '@/client/components/sidebar/CronList'
+import { MiniAppList } from '@/client/components/sidebar/MiniAppList'
 import { SidebarFooterContent } from '@/client/components/sidebar/SidebarFooterContent'
 import { SystemHealthBar } from '@/client/components/sidebar/SystemHealthBar'
 
@@ -25,6 +26,7 @@ interface AppSidebarProps {
   kins: KinSummary[]
   llmModels: { id: string; name: string; providerId: string; providerType: string; capability: string }[]
   selectedKinSlug: string | null
+  selectedKinId: string | null
   unavailableKinIds: Set<string>
   kinQueueState: Map<string, { isProcessing: boolean; queueSize: number }>
   onSelectKin: (slug: string) => void
@@ -39,6 +41,7 @@ export function AppSidebar({
   kins,
   llmModels,
   selectedKinSlug,
+  selectedKinId,
   unavailableKinIds,
   kinQueueState,
   onSelectKin,
@@ -96,6 +99,10 @@ export function AppSidebar({
           kins={kins.map((k) => ({ id: k.id, name: k.name, role: k.role, avatarUrl: k.avatarUrl }))}
           llmModels={llmModels}
         />
+
+        <SidebarSeparator />
+
+        <MiniAppList selectedKinId={selectedKinId} />
       </SidebarContent>
 
       {/* Footer */}

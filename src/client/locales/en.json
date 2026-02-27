@@ -184,6 +184,11 @@
       "noResults": "No matching jobs",
       "emptyDescription": "Schedule recurring tasks for your Kins"
     },
+    "miniApps": {
+      "title": "Mini-Apps",
+      "empty": "No apps yet",
+      "emptyDescription": "Ask a Kin to create one"
+    },
     "account": "My account",
     "settings": "Settings",
     "logout": "Sign out",
@@ -1174,7 +1179,8 @@
       "system": "System",
       "channels": "Channels",
       "users": "Users",
-      "database": "Database"
+      "database": "Database",
+      "mini-apps": "Mini-Apps"
     },
     "names": {
       "web_search": "Web Search",
@@ -1244,7 +1250,15 @@
       "list_users": "List Users",
       "get_user": "Get User",
       "create_invitation": "Create Invitation",
-      "execute_sql": "Execute SQL"
+      "execute_sql": "Execute SQL",
+      "create_mini_app": "Create Mini-App",
+      "update_mini_app": "Update Mini-App",
+      "delete_mini_app": "Delete Mini-App",
+      "list_mini_apps": "List Mini-Apps",
+      "write_mini_app_file": "Write App File",
+      "read_mini_app_file": "Read App File",
+      "delete_mini_app_file": "Delete App File",
+      "list_mini_app_files": "List App Files"
     }
   },
   "invite": {
@@ -1394,5 +1408,14 @@
       "removed": "Removed",
       "deprecated": "Deprecated"
     }
+  },
+  "miniApps": {
+    "openPanel": "Open app",
+    "closePanel": "Close",
+    "refresh": "Reload",
+    "delete": "Delete app",
+    "deleteTitle": "Delete mini-app",
+    "deleteConfirm": "\"{{name}}\" and all its files will be permanently deleted.",
+    "deleteAction": "Delete"
   }
 }

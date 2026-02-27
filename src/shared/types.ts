@@ -369,6 +369,24 @@ export interface VaultAttachmentSummary {
   createdAt: number
 }
 
+/** Mini-app summary as returned by GET /api/mini-apps */
+export interface MiniAppSummary {
+  id: string
+  kinId: string
+  kinName: string
+  kinAvatarUrl: string | null
+  name: string
+  slug: string
+  description: string | null
+  icon: string | null
+  entryFile: string
+  hasBackend: boolean
+  isActive: boolean
+  version: number
+  createdAt: number
+  updatedAt: number
+}
+
 /** Tool domain categories for UI grouping and color coding */
 export type ToolDomain =
   | 'search'
@@ -390,3 +408,4 @@ export type ToolDomain =
   | 'system'
   | 'users'
   | 'database'
+  | 'mini-apps'
