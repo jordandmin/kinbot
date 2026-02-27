@@ -558,7 +558,14 @@
       "invalid": "Connection failed",
       "added": "Provider added successfully",
       "deleted": "Provider deleted",
-      "emptyDescription": "Add an AI provider like OpenAI, Anthropic, or Gemini to power your Kins."
+      "emptyDescription": "Add an AI provider like OpenAI, Anthropic, or Gemini to power your Kins.",
+      "help": {
+        "content": "AI providers are the services that power your Kins. Each provider gives access to language models, embedding models, or image generation capabilities.",
+        "bullet1": "Add multiple providers to access different models (GPT, Claude, Gemini, etc.)",
+        "bullet2": "Each Kin can use a different model depending on your needs",
+        "bullet3": "OpenAI-compatible providers (Groq, Together, etc.) work with the same configuration pattern",
+        "bullet4": "Test the connection after adding to verify the API key is valid"
+      }
     },
     "searchProviders": {
       "title": "Search",
@@ -754,7 +761,14 @@
       "categoryTip": "Categorize the memory for better organization and retrieval.",
       "subjectTip": "Optional tag to group related memories (e.g. a person's name, a project, a topic).",
       "emptyDescription": "Memories help your Kins remember important information across conversations. Add one manually or let your Kins create them automatically.",
-      "noResults": "No memories match your filters"
+      "noResults": "No memories match your filters",
+      "help": {
+        "content": "Memories let your Kins retain important information across conversations. They are extracted automatically during chats or added manually by you.",
+        "bullet1": "Memories are categorized (fact, preference, decision, knowledge) for better organization",
+        "bullet2": "Each Kin has its own isolated memory space",
+        "bullet3": "Memories are searched semantically: the Kin finds relevant info even if the exact words differ",
+        "bullet4": "Use the \"subject\" field to group related memories by theme (person, project, etc.)"
+      }
     },
     "contacts": {
       "title": "Contacts",
@@ -800,7 +814,14 @@
       "deleteNoteConfirm": "Permanently delete this note?",
       "typeTip": "\"Human\" for real people, \"Kin\" for other AI agents. This helps Kins understand who they are talking to.",
       "linkToUserTip": "Link this contact to an existing KinBot user account. Lets Kins recognize them across channels.",
-      "identifiersTip": "Platform-specific identifiers (email, Telegram ID, Discord username, etc.) so Kins can recognize this contact on different channels."
+      "identifiersTip": "Platform-specific identifiers (email, Telegram ID, Discord username, etc.) so Kins can recognize this contact on different channels.",
+      "help": {
+        "content": "The contact registry lets your Kins recognize the people they interact with across different platforms and personalize their responses.",
+        "bullet1": "Link platform identifiers (Telegram, Discord, etc.) so the Kin automatically recognizes users",
+        "bullet2": "Kins can add private notes on each contact to remember context",
+        "bullet3": "Link a contact to a KinBot user account to unify identity across all channels",
+        "bullet4": "Contacts of type \"Kin\" represent other AI agents in multi-agent conversations"
+      }
     },
     "webhooks": {
       "title": "Webhooks",
@@ -880,7 +901,13 @@
         "expiresAt": "Expires {{date}}",
         "createdBy": "Created by {{name}}"
       },
-      "emptyDescription": "Invite others to collaborate and use your Kins."
+      "emptyDescription": "Invite others to collaborate and use your Kins.",
+      "help": {
+        "content": "Manage users who have access to your KinBot instance. Invite friends or colleagues so they can chat with your Kins.",
+        "bullet1": "Create invitation links with a configurable expiration time",
+        "bullet2": "Each user has their own account and conversations",
+        "bullet3": "Invitations can be revoked at any time before they are used"
+      }
     },
     "channels": {
       "title": "Channels",

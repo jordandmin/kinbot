@@ -27,6 +27,7 @@ import { Input } from '@/client/components/ui/input'
 import { Label } from '@/client/components/ui/label'
 import { UserPlus, Copy, Trash2, Link2, Clock, CheckCircle2, XCircle, Users } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
+import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { useAuth } from '@/client/hooks/useAuth'
 import type { UserSummary, InvitationSummary } from '@/shared/types'
@@ -135,6 +136,16 @@ export function UsersSettings() {
       <p className="text-sm text-muted-foreground">
         {t('settings.users.description')}
       </p>
+
+      <HelpPanel
+        contentKey="settings.users.help.content"
+        bulletKeys={[
+          'settings.users.help.bullet1',
+          'settings.users.help.bullet2',
+          'settings.users.help.bullet3',
+        ]}
+        storageKey="help.users.open"
+      />
 
       {/* Users list */}
       <div className="space-y-3">

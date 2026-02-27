@@ -14,6 +14,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus, Cpu } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
+import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { ProviderCard, type ProviderData } from '@/client/components/kin/ProviderCard'
@@ -85,6 +86,17 @@ export function ProvidersSettings() {
           {t('settings.providers.description')}
         </p>
       </div>
+
+      <HelpPanel
+        contentKey="settings.providers.help.content"
+        bulletKeys={[
+          'settings.providers.help.bullet1',
+          'settings.providers.help.bullet2',
+          'settings.providers.help.bullet3',
+          'settings.providers.help.bullet4',
+        ]}
+        storageKey="help.providers.open"
+      />
 
       {/* Provider list */}
       {providers.length === 0 && (
