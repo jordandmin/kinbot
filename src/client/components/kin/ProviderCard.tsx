@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
 import { Badge } from '@/client/components/ui/badge'
 import { Card, CardContent } from '@/client/components/ui/card'
-import { Brain, Globe, Image, Loader2, Pencil, RefreshCw, Search } from 'lucide-react'
+import { AlertTriangle, Brain, Globe, Image, Loader2, Pencil, RefreshCw, Search } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/client/components/ui/tooltip'
 import { PROVIDER_DISPLAY_NAMES } from '@/shared/constants'
 import { ProviderIcon } from '@/client/components/common/ProviderIcon'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
@@ -20,6 +21,7 @@ export interface ProviderData {
   type: string
   capabilities: string[]
   isValid: boolean
+  lastError?: string | null
 }
 
 interface ProviderCardProps {
@@ -45,9 +47,24 @@ export function ProviderCard({ provider, isTesting, onTest, onEdit, onDelete }: 
               }`}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-medium">{provider.name}</p>
             <p className="text-xs text-muted-foreground">{PROVIDER_DISPLAY_NAMES[provider.type] ?? provider.type}</p>
+            {!provider.isValid && provider.lastError && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-destructive truncate max-w-[280px]">
+                      <AlertTriangle className="size-3 shrink-0" />
+                      <span className="truncate">{provider.lastError}</span>
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-sm">
+                    {provider.lastError}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5">

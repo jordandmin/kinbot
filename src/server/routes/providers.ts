@@ -26,6 +26,7 @@ providerRoutes.get('/', async (c) => {
       type: p.type,
       capabilities: JSON.parse(p.capabilities),
       isValid: p.isValid,
+      lastError: p.lastError ?? null,
       createdAt: p.createdAt,
     })),
   })
@@ -82,6 +83,7 @@ providerRoutes.post('/', async (c) => {
     configEncrypted,
     capabilities: JSON.stringify(capabilities),
     isValid: testResult.valid,
+    lastError: testResult.valid ? null : (testResult.error ?? null),
     createdAt: new Date(),
     updatedAt: new Date(),
   })
@@ -122,6 +124,7 @@ providerRoutes.patch('/:id', async (c) => {
     // Re-test connection
     const testResult = await testProviderConnection(existing.type, mergedConfig)
     updates.isValid = testResult.valid
+    updates.lastError = testResult.valid ? null : (testResult.error ?? null)
     if (testResult.valid) {
       updates.capabilities = JSON.stringify(getCapabilitiesForType(existing.type))
     }
@@ -139,6 +142,7 @@ providerRoutes.patch('/:id', async (c) => {
       providerType: updated!.type,
       capabilities: JSON.parse(updated!.capabilities),
       isValid: updated!.isValid,
+      lastError: updated!.lastError ?? null,
     },
   })
 
@@ -233,10 +237,10 @@ providerRoutes.post('/:id/test', async (c) => {
   const providerConfig = JSON.parse(await decrypt(existing.configEncrypted))
   const result = await testProviderConnection(existing.type, providerConfig)
 
-  // Update validity status
+  // Update validity status and error
   await db
     .update(providers)
-    .set({ isValid: result.valid, updatedAt: new Date() })
+    .set({ isValid: result.valid, lastError: result.valid ? null : (result.error ?? null), updatedAt: new Date() })
     .where(eq(providers.id, id))
 
   sseManager.broadcast({
@@ -247,6 +251,7 @@ providerRoutes.post('/:id/test', async (c) => {
       providerType: existing.type,
       capabilities: JSON.parse(existing.capabilities),
       isValid: result.valid,
+      lastError: result.valid ? null : (result.error ?? null),
     },
   })
 

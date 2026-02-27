@@ -64,6 +64,7 @@ export const providers = sqliteTable('providers', {
   configEncrypted: text('config_encrypted').notNull(),
   capabilities: text('capabilities').notNull(), // JSON array
   isValid: integer('is_valid', { mode: 'boolean' }).notNull().default(true),
+  lastError: text('last_error'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
