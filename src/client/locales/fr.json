@@ -558,7 +558,14 @@
       "invalid": "Connexion échouée",
       "added": "Fournisseur ajouté avec succès",
       "deleted": "Fournisseur supprimé",
-      "emptyDescription": "Ajoutez un fournisseur d'IA comme OpenAI, Anthropic ou Gemini pour alimenter vos Kins."
+      "emptyDescription": "Ajoutez un fournisseur d'IA comme OpenAI, Anthropic ou Gemini pour alimenter vos Kins.",
+      "help": {
+        "content": "Les providers IA sont les services qui alimentent vos Kins en intelligence. Chaque provider fournit des modèles de langage, d'embedding ou de génération d'images.",
+        "bullet1": "Ajoutez plusieurs providers pour accéder à différents modèles (GPT, Claude, Gemini, etc.)",
+        "bullet2": "Chaque Kin peut utiliser un modèle différent selon vos besoins",
+        "bullet3": "Les providers compatibles OpenAI (Groq, Together, etc.) fonctionnent avec la même configuration",
+        "bullet4": "Testez la connexion après ajout pour vérifier que la clé API est valide"
+      }
     },
     "searchProviders": {
       "title": "Recherche",
@@ -754,7 +761,14 @@
       "categoryTip": "Catégorisez le souvenir pour une meilleure organisation et recherche.",
       "subjectTip": "Tag optionnel pour regrouper les souvenirs liés (ex : nom de personne, projet, sujet).",
       "emptyDescription": "Les souvenirs aident vos Kins à retenir les informations importantes d'une conversation à l'autre. Ajoutez-en manuellement ou laissez vos Kins les créer automatiquement.",
-      "noResults": "Aucun souvenir ne correspond à vos filtres"
+      "noResults": "Aucun souvenir ne correspond à vos filtres",
+      "help": {
+        "content": "Les mémoires permettent à vos Kins de retenir des informations importantes entre les conversations. Elles sont extraites automatiquement ou ajoutées manuellement.",
+        "bullet1": "Les mémoires sont catégorisées (fait, préférence, décision, connaissance) pour une meilleure organisation",
+        "bullet2": "Chaque Kin a son propre espace mémoire isolé des autres",
+        "bullet3": "Les mémoires sont recherchées sémantiquement : le Kin retrouve les infos pertinentes même si les mots exacts diffèrent",
+        "bullet4": "Utilisez le champ \"sujet\" pour regrouper les mémoires par thème (personne, projet, etc.)"
+      }
     },
     "contacts": {
       "title": "Contacts",
@@ -800,7 +814,14 @@
       "deleteNoteConfirm": "Supprimer définitivement cette note ?",
       "typeTip": "\"Humain\" pour les vraies personnes, \"Kin\" pour les autres agents IA. Aide les Kins à comprendre à qui ils parlent.",
       "linkToUserTip": "Lie ce contact à un compte utilisateur KinBot existant. Permet aux Kins de le reconnaître sur tous les canaux.",
-      "identifiersTip": "Identifiants par plateforme (email, ID Telegram, pseudo Discord, etc.) pour que les Kins reconnaissent ce contact sur différents canaux."
+      "identifiersTip": "Identifiants par plateforme (email, ID Telegram, pseudo Discord, etc.) pour que les Kins reconnaissent ce contact sur différents canaux.",
+      "help": {
+        "content": "Le registre de contacts permet à vos Kins de reconnaître les personnes avec qui ils interagissent sur différentes plateformes et de personnaliser leurs réponses.",
+        "bullet1": "Associez des identifiants de plateforme (Telegram, Discord, etc.) pour que le Kin reconnaisse automatiquement les utilisateurs",
+        "bullet2": "Les Kins peuvent ajouter des notes privées sur chaque contact pour se souvenir du contexte",
+        "bullet3": "Liez un contact à un compte utilisateur KinBot pour unifier l'identité sur tous les canaux",
+        "bullet4": "Les contacts de type \"Kin\" représentent d'autres agents IA dans des conversations multi-agents"
+      }
     },
     "webhooks": {
       "title": "Webhooks",
@@ -880,7 +901,13 @@
         "expiresAt": "Expire le {{date}}",
         "createdBy": "Créée par {{name}}"
       },
-      "emptyDescription": "Invitez d'autres personnes à collaborer et utiliser vos Kins."
+      "emptyDescription": "Invitez d'autres personnes à collaborer et utiliser vos Kins.",
+      "help": {
+        "content": "Gérez les utilisateurs qui ont accès à votre instance KinBot. Invitez des proches ou collègues pour qu'ils puissent discuter avec vos Kins.",
+        "bullet1": "Créez des liens d'invitation avec une durée de validité configurable",
+        "bullet2": "Chaque utilisateur a son propre compte et ses propres conversations",
+        "bullet3": "Les invitations peuvent être révoquées à tout moment avant utilisation"
+      }
     },
     "channels": {
       "title": "Canaux",

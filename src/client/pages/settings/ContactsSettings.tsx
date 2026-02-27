@@ -14,6 +14,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Plus , Users} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
+import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { useKinList } from '@/client/hooks/useKinList'
@@ -84,6 +85,17 @@ export function ContactsSettings() {
           {t('settings.contacts.description')}
         </p>
       </div>
+
+      <HelpPanel
+        contentKey="settings.contacts.help.content"
+        bulletKeys={[
+          'settings.contacts.help.bullet1',
+          'settings.contacts.help.bullet2',
+          'settings.contacts.help.bullet3',
+          'settings.contacts.help.bullet4',
+        ]}
+        storageKey="help.contacts.open"
+      />
 
       {contacts.length === 0 && (
         <EmptyState
