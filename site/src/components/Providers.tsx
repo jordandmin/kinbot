@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import Claude from '@lobehub/icons/es/Claude'
 import OpenAI from '@lobehub/icons/es/OpenAI'
 import Gemini from '@lobehub/icons/es/Gemini'
@@ -194,28 +195,48 @@ const capabilityColors: Record<string, string> = {
   Search: 'var(--color-accent, var(--color-glow-1))',
 }
 
-export function Providers() {
-  return (
-    <section id="providers" className="px-6 py-24 max-w-7xl mx-auto">
-      <div className="text-center mb-16">
-        <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-          <span className="gradient-text">Your models, your choice.</span>
-        </h2>
-        <p
-          className="text-lg max-w-2xl mx-auto"
-          style={{ color: 'var(--color-muted-foreground)' }}
-        >
-          Connect any combination of providers. Capabilities are auto-detected.
-          Add an API key and you're ready to go.
-        </p>
-      </div>
+function ProvidersGrid() {
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [visibleSet, setVisibleSet] = useState<Set<number>>(new Set())
+  const observedRef = useRef(false)
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {providers.map((provider) => (
+  useEffect(() => {
+    const el = gridRef.current
+    if (!el || observedRef.current) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observedRef.current = true
+          observer.unobserve(el)
+          providers.forEach((_, i) => {
+            setTimeout(() => {
+              setVisibleSet(prev => new Set(prev).add(i))
+            }, i * 40)
+          })
+        }
+      },
+      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' },
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {providers.map((provider, i) => {
+        const visible = visibleSet.has(i)
+        return (
           <div
             key={provider.name}
             className="glass-strong gradient-border rounded-2xl p-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg group text-center"
-            style={{ boxShadow: 'var(--shadow-md)' }}
+            style={{
+              boxShadow: 'var(--shadow-md)',
+              opacity: visible ? 1 : 0,
+              transform: visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.96)',
+              transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s, scale 0.3s',
+            }}
           >
             <div className="flex justify-center mb-3">
               {provider.imgFallback ? (
@@ -261,8 +282,29 @@ export function Providers() {
               ))}
             </div>
           </div>
-        ))}
+        )
+      })}
+    </div>
+  )
+}
+
+export function Providers() {
+  return (
+    <section id="providers" className="px-6 py-24 max-w-7xl mx-auto">
+      <div className="text-center mb-16">
+        <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+          <span className="gradient-text">Your models, your choice.</span>
+        </h2>
+        <p
+          className="text-lg max-w-2xl mx-auto"
+          style={{ color: 'var(--color-muted-foreground)' }}
+        >
+          Connect any combination of providers. Capabilities are auto-detected.
+          Add an API key and you're ready to go.
+        </p>
       </div>
+
+      <ProvidersGrid />
 
       <p
         className="text-center mt-8 text-sm"
