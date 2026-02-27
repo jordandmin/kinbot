@@ -21,7 +21,10 @@ import { KeyboardShortcutsDialog } from '@/client/components/common/KeyboardShor
 import { Button } from '@/client/components/ui/button'
 import { GettingStartedChecklist } from '@/client/components/common/GettingStartedChecklist'
 import { useDocumentTitle } from '@/client/hooks/useDocumentTitle'
-import { Bot, Command, MessageSquare, Plus, Sparkles } from 'lucide-react'
+import { Bot, Command, Maximize2, MessageSquare, Minimize2, Plus, Sparkles } from 'lucide-react'
+import { cn } from '@/client/lib/utils'
+import { useFocusMode } from '@/client/hooks/useFocusMode'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
 
 export function ChatPage() {
   const { t } = useTranslation()
@@ -56,6 +59,8 @@ export function ChatPage() {
       kins.filter((k) => !llmModels.some((m) => m.id === k.model)).map((k) => k.id),
     )
   }, [kins, llmModels])
+
+  const { focusMode, toggleFocusMode, exitFocusMode } = useFocusMode()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -149,7 +154,7 @@ export function ChatPage() {
   }, [kins, navigate, handleOpenSettings])
 
   return (
-    <SidebarProvider>
+    <SidebarProvider data-focus-mode={focusMode || undefined}>
       <AppSidebar
         kins={kins}
         llmModels={llmModels}
@@ -165,14 +170,25 @@ export function ChatPage() {
 
       <SidebarInset>
         <div className="flex h-svh flex-col">
-          {/* Shared header — always visible */}
-          <header className="surface-header sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b px-4">
+          {/* Shared header — hidden in focus mode */}
+          <header className={cn(
+            'surface-header sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b px-4 transition-all duration-200',
+            focusMode && 'hidden',
+          )}>
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-5" />
             <div className="flex flex-1 items-center justify-between">
               <h2 className="text-sm text-muted-foreground">KinBot</h2>
               <div className="flex items-center gap-1">
                 <SSEStatusIndicator />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="size-8" onClick={toggleFocusMode}>
+                      <Maximize2 className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t('focusMode.enter')}</TooltipContent>
+                </Tooltip>
                 <PaletteToggle />
                 <ThemeToggle />
                 {user && <NotificationBell onOpenSettings={handleOpenSettings} />}
@@ -191,6 +207,25 @@ export function ChatPage() {
               </div>
             </div>
           </header>
+
+          {/* Focus mode floating exit button */}
+          {focusMode && (
+            <div className="absolute top-2 right-2 z-50 animate-fade-in">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-8 opacity-30 hover:opacity-100 transition-opacity shadow-md"
+                    onClick={exitFocusMode}
+                  >
+                    <Minimize2 className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t('focusMode.exit')}</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
 
           {/* Connection lost banner */}
           <ConnectionBanner />

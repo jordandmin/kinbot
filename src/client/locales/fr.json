@@ -1255,7 +1255,8 @@
     "createKin": "Créer un nouveau Kin",
     "sendMessage": "Envoyer le message",
     "newLine": "Nouvelle ligne",
-    "focusInput": "Activer la zone de message"
+    "focusInput": "Activer la zone de message",
+    "focusMode": "Basculer le mode focus"
   },
   "theme": {
     "palette": "Palette",
@@ -1299,5 +1300,9 @@
   "chat.stats.duration": "Durée",
   "chat.stats.avgResponse": "Temps de réponse moy.",
   "chat.stats.totalWords": "Mots au total",
-  "chat.newMessages": "{{count}} nouveau(x) message(s)"
+  "chat.newMessages": "{{count}} nouveau(x) message(s)",
+  "focusMode": {
+    "enter": "Mode focus (⌘⇧F)",
+    "exit": "Quitter le mode focus (⌘⇧F)"
+  }
 }

@@ -2065,6 +2065,16 @@ body {
   --shadow-xl: 0 16px 48px oklch(0 0 0 / 0.55), 0 4px 12px oklch(0 0 0 / 0.28);
 }
 
+/* ─── FOCUS MODE ──────────────────────────────────────── */
+
+[data-focus-mode] > [data-slot="sidebar-wrapper"] {
+  display: none !important;
+}
+
+[data-focus-mode] [data-slot="sidebar-rail"] {
+  display: none !important;
+}
+
 /* ─── REDUCED MOTION ─────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
