@@ -131,7 +131,7 @@ miniAppRoutes.get('/:id/files/*', async (c) => {
 
   try {
     const buffer = await readAppFile(c.req.param('id'), filePath)
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer), {
       headers: { 'Content-Type': guessMimeType(filePath) },
     })
   } catch (err) {
