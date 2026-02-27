@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/client/components/ui/input'
+import { PasswordInput } from '@/client/components/ui/password-input'
 import { Textarea } from '@/client/components/ui/textarea'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
@@ -245,13 +246,21 @@ export function VaultEntryFormDialog({
                   placeholder={field.placeholder}
                   rows={3}
                 />
+              ) : field.type === 'password' ? (
+                <PasswordInput
+                  id={`vault-field-${field.name}`}
+                  value={fieldValues[field.name] ?? ''}
+                  onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                  placeholder={field.placeholder ?? (isEditing ? '••••••••' : undefined)}
+                  autoComplete="off"
+                />
               ) : (
                 <Input
                   id={`vault-field-${field.name}`}
-                  type={field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : 'text'}
+                  type={field.type === 'number' ? 'number' : 'text'}
                   value={fieldValues[field.name] ?? ''}
                   onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                  placeholder={field.placeholder ?? (isEditing && field.type === 'password' ? '••••••••' : undefined)}
+                  placeholder={field.placeholder}
                   autoComplete="off"
                 />
               )}
