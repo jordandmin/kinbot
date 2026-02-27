@@ -1,4 +1,4 @@
-import { Check, Infinity, Server, Heart } from 'lucide-react'
+import { Check, Infinity, Server } from 'lucide-react'
 
 const FREE_FEATURES = [
   'Unlimited Kins (agents)',
@@ -13,12 +13,6 @@ const FREE_FEATURES = [
   'Cron jobs & webhooks',
   'Full source code (AGPL-3.0)',
   'Community support',
-]
-
-const CLOUD_COSTS = [
-  { service: 'ChatGPT Plus', price: '$20/mo', note: 'per user' },
-  { service: 'Claude Pro', price: '$20/mo', note: 'per user' },
-  { service: 'Gemini Advanced', price: '$20/mo', note: 'per user' },
 ]
 
 export function Pricing() {
@@ -169,72 +163,6 @@ export function Pricing() {
             </div>
           </div>
 
-          {/* Cloud comparison */}
-          <div
-            className="glass-strong rounded-2xl p-6"
-            style={{
-              border:
-                '1px solid color-mix(in oklch, var(--color-border) 50%, transparent)',
-            }}
-          >
-            <div className="flex items-center gap-2.5 mb-4">
-              <Heart
-                size={18}
-                style={{ color: 'var(--color-muted-foreground)' }}
-              />
-              <h4
-                className="text-sm font-semibold uppercase tracking-wider"
-                style={{ color: 'var(--color-muted-foreground)' }}
-              >
-                Meanwhile, cloud AI
-              </h4>
-            </div>
-            <div className="space-y-2">
-              {CLOUD_COSTS.map(({ service, price, note }) => (
-                <div
-                  key={service}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg"
-                  style={{
-                    background:
-                      'color-mix(in oklch, var(--color-muted-foreground) 5%, transparent)',
-                  }}
-                >
-                  <span
-                    className="text-sm"
-                    style={{ color: 'var(--color-foreground)' }}
-                  >
-                    {service}
-                  </span>
-                  <div className="text-right">
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: 'var(--color-muted-foreground)' }}
-                    >
-                      {price}
-                    </span>
-                    <span
-                      className="text-xs ml-1"
-                      style={{
-                        color: 'var(--color-muted-foreground)',
-                        opacity: 0.6,
-                      }}
-                    >
-                      {note}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p
-              className="text-xs mt-3 text-center"
-              style={{
-                color: 'var(--color-muted-foreground)',
-                opacity: 0.7,
-              }}
-            >
-              No memory. No autonomy. No self-hosting. Usage caps.
-            </p>
-          </div>
         </div>
       </div>
     </section>
