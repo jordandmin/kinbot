@@ -1254,6 +1254,7 @@ show_help() {
   echo "  --version       Show installed version and check for updates"
   echo "  --update        Check for updates and apply if available"
   echo "  --status        Check current KinBot installation health"
+  echo "  --test          Run self-tests to validate the installation works"
   echo "  --logs          Tail KinBot logs (works across all platforms)"
   echo "  --backup [path] Back up database (and config) to a file"
   echo "  --restore [path] Restore database from a backup (interactive picker if no path)"
@@ -1303,6 +1304,9 @@ show_help() {
   echo ""
   echo "  # Check installation health"
   echo "  bash install.sh --status"
+  echo ""
+  echo "  # Run self-tests (validates DB, build, API)"
+  echo "  bash install.sh --test"
   echo ""
   echo "  # Tail logs"
   echo "  bash install.sh --logs"
@@ -2374,6 +2378,320 @@ do_update() {
   print_summary
 }
 
+# ─── Self-test ────────────────────────────────────────────────────────────────
+do_test() {
+  echo ""
+  echo -e "${BOLD}KinBot Self-Test${NC}"
+  echo -e "${DIM}Validates that the installation is functional, not just present.${NC}"
+  echo ""
+
+  # Minimal env setup
+  OS="$(uname -s)"
+  IS_ROOT=false
+  [ "$(id -u)" -eq 0 ] && IS_ROOT=true
+  if [ "$IS_ROOT" = true ]; then
+    KINBOT_DIR="${KINBOT_DIR:-/opt/kinbot}"
+    KINBOT_DATA_DIR="${KINBOT_DATA_DIR:-/var/lib/kinbot}"
+  else
+    KINBOT_DIR="${KINBOT_DIR:-$HOME/kinbot}"
+    KINBOT_DATA_DIR="${KINBOT_DATA_DIR:-$HOME/.local/share/kinbot}"
+  fi
+
+  local passed=0
+  local failed=0
+  local warned=0
+
+  test_pass() { passed=$((passed + 1)); success "PASS: $*"; }
+  test_fail() { failed=$((failed + 1)); echo -e "${RED}✗ FAIL:${NC} $*" >&2; }
+  test_warn() { warned=$((warned + 1)); warn "WARN: $*"; }
+
+  # ── 1. Installation directory ──
+  header "Source code"
+  if [ -d "$KINBOT_DIR/.git" ]; then
+    test_pass "Git repository exists at $KINBOT_DIR"
+  else
+    test_fail "No git repository at $KINBOT_DIR"
+    echo ""
+    echo -e "${RED}${BOLD}Cannot continue tests without an installation.${NC}"
+    echo -e "${DIM}Run: bash install.sh${NC}"
+    echo ""
+    exit 1
+  fi
+
+  # Check for uncommitted changes / dirty state
+  if git -C "$KINBOT_DIR" diff --quiet HEAD 2>/dev/null; then
+    test_pass "Working tree is clean"
+  else
+    test_warn "Working tree has uncommitted changes"
+  fi
+
+  # Check package.json exists
+  if [ -f "$KINBOT_DIR/package.json" ]; then
+    test_pass "package.json exists"
+  else
+    test_fail "package.json missing"
+  fi
+
+  # ── 2. Build artifacts ──
+  header "Build artifacts"
+  local build_dir="$KINBOT_DIR/.output"
+  if [ ! -d "$build_dir" ]; then
+    build_dir="$KINBOT_DIR/dist"
+  fi
+
+  if [ -d "$build_dir" ]; then
+    local file_count
+    file_count="$(find "$build_dir" -type f 2>/dev/null | wc -l)"
+    if [ "$file_count" -gt 0 ] 2>/dev/null; then
+      test_pass "Build output exists ($file_count files in $(basename "$build_dir")/)"
+    else
+      test_fail "Build directory exists but is empty"
+    fi
+  else
+    # Check for server entry point directly (some setups run from source)
+    if [ -f "$KINBOT_DIR/src/server/index.ts" ]; then
+      test_pass "Server entry point exists (src/server/index.ts)"
+    else
+      test_fail "No build output and no server entry point found"
+    fi
+  fi
+
+  # Check node_modules
+  if [ -d "$KINBOT_DIR/node_modules" ]; then
+    local mod_count
+    mod_count="$(find "$KINBOT_DIR/node_modules" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)"
+    if [ "$mod_count" -gt 10 ] 2>/dev/null; then
+      test_pass "Dependencies installed ($mod_count packages)"
+    else
+      test_warn "node_modules exists but looks sparse ($mod_count packages)"
+    fi
+  else
+    test_fail "node_modules missing (run: cd $KINBOT_DIR && bun install)"
+  fi
+
+  # ── 3. Runtime ──
+  header "Runtime"
+  BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+  export PATH="$BUN_INSTALL/bin:$PATH"
+  if command -v bun &>/dev/null; then
+    local bun_ver
+    bun_ver="$(bun --version 2>/dev/null || echo "0.0.0")"
+    BUN_MIN_VERSION="${BUN_MIN_VERSION:-1.2.0}"
+    if version_gte "$bun_ver" "$BUN_MIN_VERSION"; then
+      test_pass "Bun v${bun_ver} (meets v${BUN_MIN_VERSION}+ requirement)"
+    else
+      test_fail "Bun v${bun_ver} is below minimum v${BUN_MIN_VERSION}"
+    fi
+
+    # Verify Bun can actually execute (not just present on PATH)
+    if bun -e "console.log('ok')" 2>/dev/null | grep -q "ok"; then
+      test_pass "Bun runtime is functional"
+    else
+      test_fail "Bun is on PATH but cannot execute JavaScript"
+    fi
+  else
+    test_fail "Bun not found on PATH"
+  fi
+
+  # ── 4. Configuration ──
+  header "Configuration"
+  local env_file="$KINBOT_DATA_DIR/kinbot.env"
+  if [ -f "$env_file" ]; then
+    test_pass "Config file exists: $env_file"
+
+    # Check file permissions (should be 600)
+    local perms
+    perms="$(stat -c '%a' "$env_file" 2>/dev/null || stat -f '%Lp' "$env_file" 2>/dev/null || echo "unknown")"
+    if [ "$perms" = "600" ]; then
+      test_pass "Config file permissions are secure (600)"
+    elif [ "$perms" != "unknown" ]; then
+      test_warn "Config file permissions are $perms (expected 600)"
+    fi
+
+    # Validate env file syntax (no obvious errors)
+    local bad_lines=0
+    while IFS= read -r line; do
+      [[ -z "$line" ]] && continue
+      [[ "$line" =~ ^#.*$ ]] && continue
+      if [[ ! "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+        bad_lines=$((bad_lines + 1))
+      fi
+    done < "$env_file"
+    if [ "$bad_lines" -eq 0 ]; then
+      test_pass "Config file syntax is valid"
+    else
+      test_warn "Config file has $bad_lines suspicious line(s)"
+    fi
+
+    # Check required vars are set
+    # shellcheck disable=SC1090
+    if ( . "$env_file" 2>/dev/null; [ -n "${PORT:-}" ] && echo "PORT_OK" ) | grep -q "PORT_OK"; then
+      test_pass "PORT is configured"
+    else
+      test_warn "PORT not set in config"
+    fi
+  else
+    test_fail "Config file missing: $env_file"
+  fi
+
+  # ── 5. Database ──
+  header "Database"
+  local db_file="$KINBOT_DATA_DIR/kinbot.db"
+  if [ -f "$db_file" ]; then
+    local db_size
+    db_size="$(du -h "$db_file" 2>/dev/null | awk '{print $1}')"
+    test_pass "Database file exists ($db_size)"
+
+    # Integrity check
+    if command -v sqlite3 &>/dev/null; then
+      local integrity
+      integrity="$(sqlite3 "$db_file" "PRAGMA integrity_check;" 2>/dev/null || echo "error")"
+      if [ "$integrity" = "ok" ]; then
+        test_pass "Database integrity check passed"
+      else
+        test_fail "Database integrity check failed: $integrity"
+      fi
+
+      # Test read capability
+      local table_count
+      table_count="$(sqlite3 "$db_file" "SELECT count(*) FROM sqlite_master WHERE type='table';" 2>/dev/null || echo "error")"
+      if [[ "$table_count" =~ ^[0-9]+$ ]] && [ "$table_count" -gt 0 ] 2>/dev/null; then
+        test_pass "Database is readable ($table_count tables)"
+      elif [ "$table_count" = "0" ]; then
+        test_warn "Database has no tables (migrations may not have run)"
+      else
+        test_fail "Cannot read database: $table_count"
+      fi
+
+      # Test write capability (create and drop a temp table)
+      if sqlite3 "$db_file" "CREATE TABLE IF NOT EXISTS _selftest_tmp (id INTEGER); DROP TABLE IF EXISTS _selftest_tmp;" 2>/dev/null; then
+        test_pass "Database is writable"
+      else
+        test_fail "Database is not writable (check permissions)"
+      fi
+    else
+      test_warn "sqlite3 not available, cannot verify database integrity"
+    fi
+
+    # Check WAL mode (recommended for concurrent access)
+    if command -v sqlite3 &>/dev/null; then
+      local journal_mode
+      journal_mode="$(sqlite3 "$db_file" "PRAGMA journal_mode;" 2>/dev/null || echo "unknown")"
+      if [ "$journal_mode" = "wal" ]; then
+        test_pass "Database uses WAL mode (good for concurrent access)"
+      elif [ "$journal_mode" != "unknown" ]; then
+        info "Database journal mode: $journal_mode"
+      fi
+    fi
+  else
+    test_fail "Database file missing: $db_file"
+  fi
+
+  # Check backups
+  local backup_dir="$KINBOT_DATA_DIR/backups"
+  if [ -d "$backup_dir" ]; then
+    local backup_count
+    backup_count="$(find "$backup_dir" -maxdepth 1 -name 'kinbot-*.db' -type f 2>/dev/null | wc -l)"
+    if [ "$backup_count" -gt 0 ] 2>/dev/null; then
+      test_pass "Backups available: $backup_count"
+    else
+      test_warn "Backup directory exists but no backups found"
+    fi
+  else
+    test_warn "No backup directory (run --backup to create one)"
+  fi
+
+  # ── 6. Service & HTTP ──
+  header "Service & HTTP"
+
+  # Read port from config
+  local port="${KINBOT_PORT:-3000}"
+  if [ -f "$env_file" ]; then
+    # shellcheck disable=SC1090
+    . "$env_file" 2>/dev/null || true
+    port="${PORT:-$port}"
+  fi
+
+  # Check if port is listening
+  local port_listening=false
+  if command -v ss &>/dev/null; then
+    ss -tlnp 2>/dev/null | grep -q ":${port} " && port_listening=true
+  elif command -v lsof &>/dev/null; then
+    lsof -i ":${port}" -sTCP:LISTEN &>/dev/null && port_listening=true
+  fi
+
+  if [ "$port_listening" = true ]; then
+    test_pass "Port $port is listening"
+  else
+    test_fail "Port $port is not listening (service may not be running)"
+  fi
+
+  # HTTP health check
+  if command -v curl &>/dev/null; then
+    local http_code body
+    body="$(curl -s -w '\n%{http_code}' "http://localhost:${port}/" --max-time 5 2>/dev/null || echo -e "\n000")"
+    http_code="$(echo "$body" | tail -1)"
+
+    if [ "$http_code" != "000" ]; then
+      test_pass "HTTP responding (status $http_code)"
+    else
+      test_fail "HTTP not responding on localhost:${port}"
+    fi
+
+    # Try the API health endpoint
+    local api_code
+    api_code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/api/health" --max-time 5 2>/dev/null || echo "000")"
+    if [ "$api_code" = "200" ]; then
+      test_pass "API health endpoint responding (200)"
+    elif [ "$api_code" != "000" ]; then
+      test_warn "API health endpoint returned $api_code (expected 200)"
+    else
+      if [ "$port_listening" = true ]; then
+        test_warn "API health endpoint not responding (server may still be starting)"
+      fi
+    fi
+
+    # Check response time
+    if [ "$port_listening" = true ]; then
+      local time_total
+      time_total="$(curl -s -o /dev/null -w '%{time_total}' "http://localhost:${port}/" --max-time 10 2>/dev/null || echo "0")"
+      if [ -n "$time_total" ] && [ "$time_total" != "0" ]; then
+        # Convert to ms (bash can't do float math, use awk)
+        local time_ms
+        time_ms="$(awk "BEGIN {printf \"%.0f\", $time_total * 1000}" 2>/dev/null || echo "?")"
+        if [ "$time_ms" != "?" ] && [ "$time_ms" -lt 2000 ] 2>/dev/null; then
+          test_pass "Response time: ${time_ms}ms"
+        elif [ "$time_ms" != "?" ] && [ "$time_ms" -lt 5000 ] 2>/dev/null; then
+          test_warn "Slow response time: ${time_ms}ms"
+        elif [ "$time_ms" != "?" ]; then
+          test_fail "Very slow response: ${time_ms}ms (possible issue)"
+        fi
+      fi
+    fi
+  else
+    test_warn "curl not available, cannot test HTTP"
+  fi
+
+  # ── Summary ──
+  echo ""
+  echo -e "${BOLD}────────────────────────────────────────${NC}"
+  local total=$((passed + failed + warned))
+  echo -e "  ${GREEN}$passed passed${NC}  ${RED}$failed failed${NC}  ${YELLOW}$warned warnings${NC}  ($total tests)"
+  echo ""
+
+  if [ "$failed" -eq 0 ] && [ "$warned" -eq 0 ]; then
+    echo -e "  ${GREEN}${BOLD}All tests passed! Your KinBot installation is healthy.${NC}"
+  elif [ "$failed" -eq 0 ]; then
+    echo -e "  ${GREEN}${BOLD}All critical tests passed.${NC} Check warnings above for potential improvements."
+  else
+    echo -e "  ${RED}${BOLD}$failed test(s) failed.${NC} See above for details."
+    echo -e "  ${DIM}Run 'bash install.sh' to fix most issues.${NC}"
+  fi
+  echo ""
+
+  exit "$( [ "$failed" -gt 0 ] && echo 1 || echo 0 )"
+}
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 main() {
   # Handle flags
@@ -2392,6 +2710,11 @@ main() {
       --status|status)
         trap - INT TERM
         check_status
+        exit 0
+        ;;
+      --test|test)
+        trap - INT TERM
+        do_test
         exit 0
         ;;
       --logs|logs)
