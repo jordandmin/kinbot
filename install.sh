@@ -1260,6 +1260,7 @@ show_help() {
   echo "  --restore [path] Restore database from a backup (interactive picker if no path)"
   echo "  --no-color      Disable colored output (also: NO_COLOR=1)"
   echo "  --config        Re-run the configuration wizard (change port, URL)"
+  echo "  --reset         Fix broken install: re-clone & rebuild, keep data"
   echo "  --dry-run       Show what would happen without making changes"
   echo "  --docker        Docker Compose setup (no Bun/build needed)"
   echo "  --uninstall     Remove KinBot (keeps data unless confirmed)"
@@ -1310,6 +1311,9 @@ show_help() {
   echo ""
   echo "  # Tail logs"
   echo "  bash install.sh --logs"
+  echo ""
+  echo "  # Fix a broken installation (keeps your data)"
+  echo "  bash install.sh --reset"
   echo ""
   echo "  # Preview what would happen"
   echo "  bash install.sh --dry-run"
@@ -2378,6 +2382,197 @@ do_update() {
   print_summary
 }
 
+# ─── Reset (fix broken install, keep data) ────────────────────────────────────
+do_reset() {
+  echo ""
+  echo -e "${BOLD}KinBot Reset${NC}"
+  echo -e "${DIM}Fixes broken installations by re-cloning and rebuilding.${NC}"
+  echo -e "${DIM}Your database, config, and backups are preserved.${NC}"
+  echo ""
+
+  # Minimal env setup
+  OS="$(uname -s)"
+  IS_ROOT=false
+  [ "$(id -u)" -eq 0 ] && IS_ROOT=true
+  if [ "$IS_ROOT" = true ]; then
+    KINBOT_DIR="${KINBOT_DIR:-/opt/kinbot}"
+    KINBOT_DATA_DIR="${KINBOT_DATA_DIR:-/var/lib/kinbot}"
+    KINBOT_USER="${KINBOT_USER:-kinbot}"
+  else
+    KINBOT_DIR="${KINBOT_DIR:-$HOME/kinbot}"
+    KINBOT_DATA_DIR="${KINBOT_DATA_DIR:-$HOME/.local/share/kinbot}"
+  fi
+
+  if [ ! -d "$KINBOT_DIR" ] && [ ! -d "$KINBOT_DATA_DIR" ]; then
+    error "No KinBot installation found. Run the installer first: bash install.sh"
+  fi
+
+  detect_os
+
+  # Show what we'll do
+  header "Plan"
+  if [ -d "$KINBOT_DIR" ]; then
+    local current_version="unknown"
+    if [ -d "$KINBOT_DIR/.git" ]; then
+      current_version="$(git -C "$KINBOT_DIR" describe --tags 2>/dev/null || git -C "$KINBOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+    fi
+    info "Will remove: $KINBOT_DIR (currently $current_version)"
+  fi
+  info "Will re-clone from: https://github.com/$KINBOT_REPO ($KINBOT_BRANCH)"
+  info "Will rebuild: dependencies + build + migrations"
+  if [ -d "$KINBOT_DATA_DIR" ]; then
+    success "Will keep: $KINBOT_DATA_DIR (database, config, backups)"
+  fi
+
+  # Diagnose what might be wrong (informational)
+  if [ -d "$KINBOT_DIR" ]; then
+    header "Diagnosis"
+    local issues=0
+
+    # Check git state
+    if [ -d "$KINBOT_DIR/.git" ]; then
+      if ! git -C "$KINBOT_DIR" status &>/dev/null; then
+        warn "Git repository is corrupted"
+        issues=$((issues + 1))
+      elif [ -n "$(git -C "$KINBOT_DIR" diff --stat HEAD 2>/dev/null)" ]; then
+        warn "Working tree has uncommitted changes"
+        issues=$((issues + 1))
+      fi
+    else
+      warn "Not a git repository (missing .git/)"
+      issues=$((issues + 1))
+    fi
+
+    # Check node_modules
+    if [ ! -d "$KINBOT_DIR/node_modules" ]; then
+      warn "node_modules is missing"
+      issues=$((issues + 1))
+    elif [ ! -f "$KINBOT_DIR/node_modules/.package-lock.json" ] && [ ! -f "$KINBOT_DIR/bun.lockb" ]; then
+      warn "node_modules may be incomplete"
+      issues=$((issues + 1))
+    fi
+
+    # Check build output
+    if [ ! -d "$KINBOT_DIR/.output" ] && [ ! -d "$KINBOT_DIR/dist" ]; then
+      warn "No build output found"
+      issues=$((issues + 1))
+    fi
+
+    if [ "$issues" -eq 0 ]; then
+      info "No obvious issues detected (reset will still do a clean rebuild)"
+    else
+      info "$issues issue(s) found — reset should fix them"
+    fi
+  fi
+
+  # Confirm
+  echo ""
+  if [ "${KINBOT_NO_PROMPT:-}" != "true" ] && [ "${CI:-}" != "true" ]; then
+    echo -en "  ${YELLOW}?${NC} ${BOLD}Proceed with reset?${NC} ${DIM}[y/N]${NC}: " >/dev/tty
+    local confirm
+    read -r confirm </dev/tty || confirm="n"
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+      info "Cancelled"
+      exit 0
+    fi
+  fi
+
+  echo ""
+  STEP_TOTAL=7
+  STEP_CURRENT=0
+
+  # 1. Back up the database
+  step "Backing up database"
+  backup_database
+
+  # 2. Stop the service
+  step "Stopping service"
+  if [ "$INIT_SYSTEM" = "launchd" ]; then
+    local plist="$HOME/Library/LaunchAgents/io.kinbot.server.plist"
+    if [ -f "$plist" ] && launchctl list 2>/dev/null | grep -q io.kinbot.server; then
+      launchctl unload "$plist" 2>/dev/null || true
+      success "Service stopped"
+    else
+      info "Service was not running"
+    fi
+  elif [ "$INIT_SYSTEM" = "script" ]; then
+    local script_path="$KINBOT_DIR/kinbot"
+    local pid_file="$KINBOT_DATA_DIR/kinbot.pid"
+    if [ -f "$pid_file" ] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
+      if [ -x "$script_path" ]; then
+        "$script_path" stop 2>/dev/null || kill "$(cat "$pid_file")" 2>/dev/null || true
+      else
+        kill "$(cat "$pid_file")" 2>/dev/null || true
+      fi
+      rm -f "$pid_file"
+      success "Service stopped"
+    else
+      rm -f "$pid_file" 2>/dev/null
+      info "Service was not running"
+    fi
+  elif [ "$IS_ROOT" = true ]; then
+    if systemctl is-active --quiet kinbot 2>/dev/null; then
+      systemctl stop kinbot
+      success "Service stopped"
+    else
+      info "Service was not running"
+    fi
+  else
+    if systemctl --user is-active --quiet kinbot 2>/dev/null; then
+      systemctl --user stop kinbot
+      success "Service stopped"
+    else
+      info "Service was not running"
+    fi
+  fi
+
+  # 3. Remove app directory
+  step "Removing old installation"
+  if [ -d "$KINBOT_DIR" ]; then
+    rm -rf "$KINBOT_DIR"
+    success "Removed $KINBOT_DIR"
+  fi
+
+  # 4. Fresh clone
+  step "Cloning KinBot"
+  mkdir -p "$(dirname "$KINBOT_DIR")"
+  run_with_spinner "Cloning from GitHub..." retry 3 "git clone" git clone "https://github.com/$KINBOT_REPO.git" "$KINBOT_DIR" --branch "$KINBOT_BRANCH" --depth 1
+  local new_version
+  new_version="$(git -C "$KINBOT_DIR" describe --tags 2>/dev/null || git -C "$KINBOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+  success "Cloned $new_version"
+
+  # 5. Rebuild
+  ensure_bun
+  IS_UPDATE=true
+  build_kinbot
+  setup_database
+
+  # 6. Fix permissions + service
+  setup_system_user
+  resolve_bun_path
+  create_service
+
+  # 7. Verify
+  verify_running
+
+  # Summary
+  echo ""
+  echo -e "${GREEN}${BOLD}Reset complete!${NC}"
+  echo ""
+  echo -e "  ${CYAN}Version:${NC}    $new_version"
+  echo -e "  ${CYAN}Install:${NC}    $KINBOT_DIR"
+  echo -e "  ${CYAN}Data:${NC}       $KINBOT_DATA_DIR (preserved)"
+  if [ -n "${BACKUP_DB_PATH:-}" ] && [ -f "${BACKUP_DB_PATH:-}" ]; then
+    echo -e "  ${CYAN}DB backup:${NC}  $(basename "$BACKUP_DB_PATH")"
+  fi
+  if [ "$KINBOT_HEALTHY" = true ]; then
+    echo -e "  ${GREEN}●${NC} ${BOLD}Status:${NC}     Running"
+  else
+    echo -e "  ${YELLOW}●${NC} ${BOLD}Status:${NC}     Starting (check logs)"
+  fi
+  echo ""
+}
+
 # ─── Self-test ────────────────────────────────────────────────────────────────
 do_test() {
   echo ""
@@ -2752,6 +2947,11 @@ main() {
       --config|config)
         trap - INT TERM
         do_config
+        exit 0
+        ;;
+      --reset|reset)
+        trap - INT TERM
+        do_reset
         exit 0
         ;;
       --update|update)
