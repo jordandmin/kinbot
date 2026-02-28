@@ -12,9 +12,9 @@ import { Input } from '@/client/components/ui/input'
 import { PasswordInput } from '@/client/components/ui/password-input'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import { Alert, AlertDescription } from '@/client/components/ui/alert'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { Switch } from '@/client/components/ui/switch'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { KinSelector } from '@/client/components/common/KinSelector'
 import { api, getErrorMessage } from '@/client/lib/api'
@@ -146,12 +146,7 @@ export function FileStorageFormDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <FormErrorAlert error={error} />
 
           {!isEditing && (
             <>

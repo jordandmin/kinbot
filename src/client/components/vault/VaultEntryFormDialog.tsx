@@ -5,7 +5,7 @@ import { PasswordInput } from '@/client/components/ui/password-input'
 import { Textarea } from '@/client/components/ui/textarea'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import { Alert, AlertDescription } from '@/client/components/ui/alert'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/client/components/ui/select'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { VAULT_BUILTIN_TYPES, VAULT_TYPE_META } from '@/shared/constants'
@@ -183,12 +183,7 @@ export function VaultEntryFormDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <FormErrorAlert error={error} />
 
           {/* Entry type selector (only for new entries) */}
           {!isEditing && (

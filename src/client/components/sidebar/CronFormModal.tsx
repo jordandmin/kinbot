@@ -10,12 +10,12 @@ import { Input } from '@/client/components/ui/input'
 import { Button } from '@/client/components/ui/button'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { Label } from '@/client/components/ui/label'
-import { Alert, AlertDescription } from '@/client/components/ui/alert'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { MarkdownEditor } from '@/client/components/ui/markdown-editor'
 import { ModelPicker } from '@/client/components/common/ModelPicker'
 import { KinSelector } from '@/client/components/common/KinSelector'
 import { KinSelectItem, type KinOption } from '@/client/components/common/KinSelectItem'
-import { AlertCircle, Loader2, Trash2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { UnsavedChangesDialog } from '@/client/components/common/UnsavedChangesDialog'
 import { useUnsavedChanges } from '@/client/hooks/useUnsavedChanges'
@@ -186,10 +186,7 @@ export function CronFormModal({
           {/* Error alert */}
           {error && (
             <div className="shrink-0 px-6 pt-4">
-              <Alert variant="destructive" className="animate-scale-in">
-                <AlertCircle className="size-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <FormErrorAlert error={error} animate />
             </div>
           )}
 

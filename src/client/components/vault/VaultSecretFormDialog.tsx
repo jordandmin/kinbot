@@ -4,7 +4,7 @@ import { Input } from '@/client/components/ui/input'
 import { PasswordInput } from '@/client/components/ui/password-input'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import { Alert, AlertDescription } from '@/client/components/ui/alert'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/client/components/ui/dialog'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { api, getErrorMessage } from '@/client/lib/api'
 import type { VaultSecretData } from '@/client/components/vault/VaultSecretCard'
 
@@ -99,12 +99,7 @@ export function VaultSecretFormDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <FormErrorAlert error={error} />
 
           <div className="space-y-2">
             <Label htmlFor="vault-key">{t('settings.vault.key')}</Label>

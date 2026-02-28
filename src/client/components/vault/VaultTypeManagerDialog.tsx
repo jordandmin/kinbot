@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Input } from '@/client/components/ui/input'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import { Alert, AlertDescription } from '@/client/components/ui/alert'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/client/components/ui/select'
-import { AlertCircle, Loader2, Plus, Trash2, GripVertical } from 'lucide-react'
+import { Loader2, Plus, Trash2, GripVertical } from 'lucide-react'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { api, getErrorMessage } from '@/client/lib/api'
 import type { VaultTypeSummary, VaultTypeField, VaultFieldType } from '@/shared/types'
@@ -177,12 +177,7 @@ export function VaultTypeManagerDialog({
           {/* Create new type form */}
           {showCreateForm ? (
             <div className="space-y-3 rounded-lg border p-3">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="size-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+              <FormErrorAlert error={error} />
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">

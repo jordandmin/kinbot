@@ -15,11 +15,11 @@ import { ModelPicker } from '@/client/components/common/ModelPicker'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { ProviderSelector } from '@/client/components/common/ProviderSelector'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
-import { Alert, AlertDescription } from '@/client/components/ui/alert'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { AvatarPickerModal, type AvatarPickerResult } from '@/client/components/kin/AvatarPickerModal'
 import { KinToolsTab } from '@/client/components/kin/KinToolsTab'
 import { MemoryList } from '@/client/components/memory/MemoryList'
-import { AlertCircle, ArrowLeft, Brain, Camera, Loader2, Settings, Sparkles, Trash2, Wrench } from 'lucide-react'
+import { ArrowLeft, Brain, Camera, Loader2, Settings, Sparkles, Trash2, Wrench } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { UnsavedChangesDialog } from '@/client/components/common/UnsavedChangesDialog'
 import { useUnsavedChanges } from '@/client/hooks/useUnsavedChanges'
@@ -452,12 +452,7 @@ export function KinFormModal({
                     }}
                   />
 
-                  {error && (
-                    <Alert variant="destructive" className="animate-scale-in">
-                      <AlertCircle className="size-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
+                  <FormErrorAlert error={error} animate />
 
                   <div className="flex items-center justify-between">
                     <Button
@@ -530,10 +525,7 @@ export function KinFormModal({
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                   {error && (
                     <div className="shrink-0 px-6 pt-4">
-                      <Alert variant="destructive" className="animate-scale-in">
-                        <AlertCircle className="size-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
+                      <FormErrorAlert error={error} animate />
                     </div>
                   )}
 
