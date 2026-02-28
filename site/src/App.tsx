@@ -9,6 +9,7 @@ import { BackToTop } from './components/BackToTop'
 const Stats = lazy(() => import('./components/Stats').then(m => ({ default: m.Stats })))
 const HowItWorks = lazy(() => import('./components/HowItWorks').then(m => ({ default: m.HowItWorks })))
 const WhatIsKin = lazy(() => import('./components/WhatIsKin').then(m => ({ default: m.WhatIsKin })))
+const InteractiveDemo = lazy(() => import('./components/InteractiveDemo').then(m => ({ default: m.InteractiveDemo })))
 const Features = lazy(() => import('./components/Features').then(m => ({ default: m.Features })))
 const UseCases = lazy(() => import('./components/UseCases').then(m => ({ default: m.UseCases })))
 const Screenshots = lazy(() => import('./components/Screenshots').then(m => ({ default: m.Screenshots })))
@@ -59,6 +60,11 @@ export default function App() {
         <Suspense fallback={<SectionFallback />}>
           <ScrollReveal>
             <WhatIsKin />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <InteractiveDemo />
           </ScrollReveal>
         </Suspense>
         <Suspense fallback={<SectionFallback />}>
