@@ -106,10 +106,10 @@ function buildContext(appId: string, kinId: string, appName: string): MiniAppBac
       clear: () => storageClear(appId),
     },
     log: {
-      info: (...args: unknown[]) => appLog.info({ appId }, ...args),
-      warn: (...args: unknown[]) => appLog.warn({ appId }, ...args),
-      error: (...args: unknown[]) => appLog.error({ appId }, ...args),
-      debug: (...args: unknown[]) => appLog.debug({ appId }, ...args),
+      info: (...args: unknown[]) => appLog.info({ appId }, String(args[0]), ...args.slice(1)),
+      warn: (...args: unknown[]) => appLog.warn({ appId }, String(args[0]), ...args.slice(1)),
+      error: (...args: unknown[]) => appLog.error({ appId }, String(args[0]), ...args.slice(1)),
+      debug: (...args: unknown[]) => appLog.debug({ appId }, String(args[0]), ...args.slice(1)),
     },
   }
 }
