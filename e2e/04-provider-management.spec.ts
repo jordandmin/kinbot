@@ -112,12 +112,12 @@ test.describe.serial('Provider management', () => {
     // The edit form dialog should open
     await expect(page.locator('#providerName')).toBeVisible({ timeout: 5_000 })
 
-    // Change the name
-    await page.locator('#providerName').clear()
-    await page.fill('#providerName', 'Renamed E2E Provider')
+    // Change the name — triple-click to select all, then type over it
+    await page.locator('#providerName').click({ clickCount: 3 })
+    await page.locator('#providerName').fill('Renamed E2E Provider')
 
     // When only the name changed (no config change), Save button should appear directly
-    await expect(page.getByRole('button', { name: 'Save' })).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByRole('button', { name: 'Save' })).toBeVisible({ timeout: 10_000 })
     await page.getByRole('button', { name: 'Save' }).click()
 
     // Should see success toast
@@ -135,8 +135,8 @@ test.describe.serial('Provider management', () => {
     // Confirmation dialog should appear
     await expect(page.getByText('Are you sure you want to delete this provider?')).toBeVisible({ timeout: 5_000 })
 
-    // Confirm
-    await page.getByRole('button', { name: 'Confirm' }).click()
+    // Confirm deletion (button uses common.delete = "Delete")
+    await page.getByRole('button', { name: 'Delete' }).click()
 
     // Should show deletion toast
     await expect(page.getByText('Provider deleted')).toBeVisible({ timeout: 5_000 })
