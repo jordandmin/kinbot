@@ -8,8 +8,8 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
+  { label: 'Compare', href: '#comparison' },
   { label: 'Providers', href: '#providers' },
-  { label: 'Architecture', href: '#architecture' },
   { label: 'Install', href: '#install' },
   { label: 'FAQ', href: '#faq' },
   { label: 'Changelog', href: '#changelog' },
