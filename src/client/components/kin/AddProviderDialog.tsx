@@ -14,7 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/client/components/ui/dialog'
-import { AlertCircle, CheckCircle2, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
+import { CheckCircle2, ExternalLink, Loader2, RefreshCw } from 'lucide-react'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { ProviderIcon } from '@/client/components/common/ProviderIcon'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { api, getErrorMessage } from '@/client/lib/api'
@@ -186,12 +187,7 @@ export function ProviderFormDialog({ open, onOpenChange, onSaved, provider, prov
         </DialogHeader>
 
         <div className="space-y-4">
-          {error && (
-            <Alert variant="destructive" className="animate-scale-in">
-              <AlertCircle className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <FormErrorAlert error={error} animate />
 
           {testPassed && (
             <Alert className="animate-scale-in border-primary/30 bg-primary/5 text-primary">

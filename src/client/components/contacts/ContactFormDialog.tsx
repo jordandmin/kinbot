@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Input } from '@/client/components/ui/input'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import { Alert, AlertDescription } from '@/client/components/ui/alert'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/client/components/ui/popover'
-import { AlertCircle, Check, ChevronsUpDown, Loader2, Plus, X } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2, Plus, X } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { CONTACT_IDENTIFIER_SUGGESTIONS } from '@/shared/constants'
@@ -262,12 +262,7 @@ export function ContactFormDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          <FormErrorAlert error={error} />
 
           <div className="space-y-2">
             <Label htmlFor="contact-name">{t('settings.contacts.name')}</Label>
