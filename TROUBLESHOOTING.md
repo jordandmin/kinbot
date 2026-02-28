@@ -196,11 +196,44 @@ For Docker:
 docker run -e LOG_LEVEL=debug ...
 ```
 
+## Diagnostic Report
+
+The installer includes a `--doctor` command that generates a comprehensive diagnostic report covering your system, KinBot installation, runtime, providers, and database health:
+
+```bash
+bash install.sh --doctor
+```
+
+This outputs a Markdown report you can paste directly into a GitHub issue. To save it to a file:
+
+```bash
+bash install.sh --doctor > report.md
+```
+
+The report includes:
+- System info (OS, kernel, memory, disk, container detection)
+- Bun and Git versions
+- KinBot installation status, version, and configuration
+- Service health (systemd/launchd/Docker)
+- Database integrity and stats
+- Provider configuration summary
+- Recent log entries
+
+## Viewing Logs
+
+The installer also provides a cross-platform way to tail KinBot logs:
+
+```bash
+bash install.sh --logs
+```
+
+This works whether KinBot is running via systemd, launchd, or Docker.
+
 ## Still stuck?
 
+- Run `bash install.sh --doctor` and include the output
 - Check [existing issues](https://github.com/MarlBurroW/kinbot/issues) for similar problems
 - Open a [new issue](https://github.com/MarlBurroW/kinbot/issues/new/choose) with:
-  - KinBot version (`bun run start` prints it)
-  - OS and architecture
-  - Relevant log output
+  - Diagnostic report (`bash install.sh --doctor`)
   - Steps to reproduce
+  - Any additional log output

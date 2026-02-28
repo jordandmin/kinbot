@@ -512,6 +512,14 @@ bun src/server/index.ts
 
 For Docker, pull the latest image which includes pre-built frontend assets.
 
+#### Generate a diagnostic report
+
+If you're stuck, generate a report to include in bug reports:
+
+```bash
+bash install.sh --doctor
+```
+
 </details>
 
 ---
