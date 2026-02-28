@@ -22,7 +22,7 @@ async function mockCronApis(page: Page) {
  */
 async function openCreateJobModal(page: Page) {
   // The Scheduled Jobs section has a plus button with title="New job"
-  const plusBtn = page.getByRole('button', { name: 'New job' })
+  const plusBtn = page.getByTitle('New job')
   await plusBtn.click()
 
   // Wait for the create modal
