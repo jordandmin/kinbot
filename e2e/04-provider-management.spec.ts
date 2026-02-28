@@ -83,21 +83,17 @@ test.describe.serial('Provider management', () => {
   })
 
   test('should test an existing provider connection', async ({ page }) => {
-    // Also mock the test endpoint explicitly for any provider ID
-    await page.route(/\/api\/providers\/[a-f0-9-]+\/test$/, (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill({
-          contentType: 'application/json',
-          body: JSON.stringify({ valid: true }),
-        })
-      }
-      return route.continue()
-    })
-
     await openProviderSettings(page)
 
-    // Find test buttons (RefreshCw icon)
-    const testButton = page.getByRole('dialog').locator('button:has(.lucide-refresh-cw)').first()
+    // Find a per-provider test button (icon-only RefreshCw button).
+    // The "Test All" button also has RefreshCw but includes text; per-provider buttons are icon-only.
+    const allRefreshButtons = page.getByRole('dialog').locator('button:has(.lucide-refresh-cw)')
+    let testButton = allRefreshButtons.first()
+    const count = await allRefreshButtons.count()
+    // If multiple RefreshCw buttons exist (Test All + per-provider), skip the first one (Test All)
+    if (count > 1) {
+      testButton = allRefreshButtons.nth(1)
+    }
     await expect(testButton).toBeVisible({ timeout: 5_000 })
     await testButton.click()
 
@@ -160,9 +156,11 @@ test.describe.serial('Provider management', () => {
 
     await openProviderSettings(page)
 
-    // Click test on the first provider
-    const testButton = page.getByRole('dialog').locator('button:has(.lucide-refresh-cw)').first()
-    if (await testButton.isVisible()) {
+    // Click test on a provider (skip "Test All" button if present)
+    const allRefreshButtons = page.getByRole('dialog').locator('button:has(.lucide-refresh-cw)')
+    const count = await allRefreshButtons.count()
+    if (count > 0) {
+      const testButton = count > 1 ? allRefreshButtons.nth(1) : allRefreshButtons.first()
       await testButton.click()
 
       // Should show failure toast
