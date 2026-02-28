@@ -25,6 +25,7 @@ KINBOT_REPO="MarlBurroW/kinbot"
 KINBOT_BRANCH="${KINBOT_BRANCH:-main}"
 KINBOT_DRY_RUN=false
 KINBOT_QUIET="${KINBOT_QUIET:-false}"
+KINBOT_START_TIME=""
 
 # ─── Colors (auto-detect terminal support) ───────────────────────────────────
 setup_colors() {
@@ -50,6 +51,32 @@ success() { [ "$KINBOT_QUIET" = true ] && return; echo -e "${GREEN}✓${NC} $*";
 warn()    { echo -e "${YELLOW}⚠${NC} $*" >&2; }
 error()   { echo -e "${RED}✗ ERROR:${NC} $*" >&2; exit 1; }
 header()  { [ "$KINBOT_QUIET" = true ] && return; echo -e "\n${BOLD}$*${NC}"; }
+
+# ─── Elapsed time tracking ──────────────────────────────────────────────────
+start_timer() { KINBOT_START_TIME="$(date +%s)"; }
+
+# Returns human-readable elapsed time since start_timer() was called
+format_elapsed() {
+  [ -z "$KINBOT_START_TIME" ] && return
+  local now elapsed
+  now="$(date +%s)"
+  elapsed=$((now - KINBOT_START_TIME))
+  if [ "$elapsed" -lt 5 ] 2>/dev/null; then
+    echo "< 5s"
+  elif [ "$elapsed" -lt 60 ] 2>/dev/null; then
+    echo "${elapsed}s"
+  elif [ "$elapsed" -lt 3600 ] 2>/dev/null; then
+    local m=$((elapsed / 60)) s=$((elapsed % 60))
+    if [ "$s" -gt 0 ]; then
+      echo "${m}m ${s}s"
+    else
+      echo "${m}m"
+    fi
+  else
+    local h=$((elapsed / 3600)) m=$(( (elapsed % 3600) / 60 ))
+    echo "${h}h ${m}m"
+  fi
+}
 
 # ─── Step progress (for main install flow) ───────────────────────────────────
 STEP_CURRENT=0
@@ -1403,11 +1430,16 @@ print_summary() {
   local version
   version="$(get_installed_version)"
 
+  local elapsed=""
+  elapsed="$(format_elapsed)"
+
   # In quiet mode, just print the essential one-liner
   if [ "$KINBOT_QUIET" = true ]; then
     local status_icon="●"
     [ "$KINBOT_HEALTHY" = true ] && status_icon="${GREEN}●${NC}" || status_icon="${YELLOW}●${NC}"
-    echo -e "${status_icon} KinBot ${version} ${ACTION} — ${KINBOT_PUBLIC_URL}"
+    local quiet_extra=""
+    [ -n "$elapsed" ] && quiet_extra=" in ${elapsed}"
+    echo -e "${status_icon} KinBot ${version} ${ACTION}${quiet_extra} — ${KINBOT_PUBLIC_URL}"
     return
   fi
 
@@ -1431,6 +1463,9 @@ print_summary() {
     echo -e "  ${GREEN}●${NC} ${BOLD}Status:${NC}       Running"
   else
     echo -e "  ${YELLOW}●${NC} ${BOLD}Status:${NC}       Starting (check logs if it doesn't come up)"
+  fi
+  if [ -n "$elapsed" ]; then
+    echo -e "  ${CYAN}Completed in:${NC} $elapsed"
   fi
   echo ""
 
@@ -1759,11 +1794,10 @@ show_help() {
   echo "  # Check for updates and apply"
   echo "  bash install.sh --update"
   echo ""
-  echo "  # Set a config variable (scriptable)"
   echo "  # Show all config variables"
   echo "  bash install.sh --env"
   echo ""
-  echo "  # Set a config variable (scriptable)"
+  echo "  # Set a config variable"
   echo "  bash install.sh --env LOG_LEVEL=debug"
   echo "  bash install.sh --env ENCRYPTION_KEY=\$(openssl rand -hex 32)"
   echo ""
@@ -3005,6 +3039,8 @@ do_update() {
 
   echo ""
 
+  start_timer
+
   # Detect OS fully for the install flow
   STEP_TOTAL=7
   STEP_CURRENT=0
@@ -3127,6 +3163,8 @@ do_reset() {
   fi
 
   echo ""
+  start_timer
+
   STEP_TOTAL=7
   STEP_CURRENT=0
 
@@ -3205,6 +3243,9 @@ do_reset() {
   verify_running
 
   # Summary
+  local elapsed=""
+  elapsed="$(format_elapsed)"
+
   echo ""
   echo -e "${GREEN}${BOLD}Reset complete!${NC}"
   echo ""
@@ -3218,6 +3259,9 @@ do_reset() {
     echo -e "  ${GREEN}●${NC} ${BOLD}Status:${NC}     Running"
   else
     echo -e "  ${YELLOW}●${NC} ${BOLD}Status:${NC}     Starting (check logs)"
+  fi
+  if [ -n "$elapsed" ]; then
+    echo -e "  ${CYAN}Completed in:${NC} $elapsed"
   fi
   echo ""
 }
@@ -3662,6 +3706,8 @@ main() {
     echo -e "https://github.com/MarlBurroW/kinbot"
     echo ""
   fi
+
+  start_timer
 
   STEP_TOTAL=9
   STEP_CURRENT=0
