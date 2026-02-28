@@ -2,18 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { Button } from '@/client/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
+import { timeAgo } from '@/client/lib/time'
 import type { NotificationSummary } from '@/shared/types'
-
-function timeAgo(timestamp: number): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000)
-  if (seconds < 60) return '<1m'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h`
-  const days = Math.floor(hours / 24)
-  return `${days}d`
-}
 
 interface NotificationItemProps {
   notification: NotificationSummary

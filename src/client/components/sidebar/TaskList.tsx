@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/client/co
 import { Input } from '@/client/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { cn } from '@/client/lib/utils'
+import { formatDurationBetween, formatElapsed } from '@/client/lib/time'
 import { Loader2, CheckCircle2, XCircle, Clock, Ban, UserCheck, Search, ChevronRight, ListTodo } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { TaskDetailModal } from '@/client/components/sidebar/TaskDetailModal'
@@ -65,24 +66,6 @@ const STATUS_CONFIG: Record<TaskStatus, {
   },
 }
 
-function formatDuration(start: string, end: string): string {
-  const ms = new Date(end).getTime() - new Date(start).getTime()
-  if (ms < 1000) return '<1s'
-  const seconds = Math.floor(ms / 1000)
-  if (seconds < 60) return `${seconds}s`
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
-}
-
-function formatElapsed(start: string): string {
-  const ms = Date.now() - new Date(start).getTime()
-  const seconds = Math.floor(ms / 1000)
-  if (seconds < 60) return `${seconds}s`
-  const minutes = Math.floor(seconds / 60)
-  return `${minutes}m`
-}
-
 function TaskCard({ task, onClick }: { task: TaskSummary; onClick: () => void }) {
   const { t } = useTranslation()
   const config = STATUS_CONFIG[task.status]
@@ -93,7 +76,7 @@ function TaskCard({ task, onClick }: { task: TaskSummary; onClick: () => void })
   const isCancelled = task.status === 'cancelled'
   const isFinished = task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled'
   const duration = isFinished
-    ? formatDuration(task.createdAt, task.updatedAt)
+    ? formatDurationBetween(task.createdAt, task.updatedAt)
     : formatElapsed(task.createdAt)
 
   return (
