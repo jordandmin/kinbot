@@ -33,9 +33,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "test": "bun test",
+    "test:e2e": "npx playwright test",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "latest",
     "@types/react": "^19.2.14",
