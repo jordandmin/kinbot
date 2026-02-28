@@ -14,6 +14,7 @@ import { MarkdownEditor } from '@/client/components/ui/markdown-editor'
 import { ModelPicker } from '@/client/components/common/ModelPicker'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { ProviderSelector } from '@/client/components/common/ProviderSelector'
+import { EmptyState } from '@/client/components/common/EmptyState'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { AvatarPickerModal, type AvatarPickerResult } from '@/client/components/kin/AvatarPickerModal'
@@ -706,9 +707,7 @@ export function KinFormModal({
                       )}
 
                       {activeTab === 'memory' && !isEdit && (
-                        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-                          {t('settings.memories.saveKinFirst')}
-                        </div>
+                        <EmptyState minimal title={t('settings.memories.saveKinFirst')} />
                       )}
                     </div>
                   </div>

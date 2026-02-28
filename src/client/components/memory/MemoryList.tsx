@@ -173,14 +173,10 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
 
       {/* Memory list */}
       {isLoading ? (
-        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          {t('common.loading')}
-        </div>
+        <EmptyState minimal title={t('common.loading')} />
       ) : filteredMemories.length === 0 ? (
         searchQuery || categoryFilter !== 'all' || kinFilter !== 'all' ? (
-          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            {t('settings.memories.noResults')}
-          </div>
+          <EmptyState minimal title={t('settings.memories.noResults')} />
         ) : (
           <EmptyState
             icon={Brain}

@@ -212,9 +212,7 @@ export function UsersSettings() {
         </div>
 
         {invitations.length === 0 && (
-          <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-            {t('settings.users.invitations.empty')}
-          </div>
+          <EmptyState minimal title={t('settings.users.invitations.empty')} />
         )}
 
         {invitations.map((inv) => {
