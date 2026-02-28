@@ -241,7 +241,7 @@ export function WebhooksSettings() {
           {revealedToken && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>URL</Label>
+                <Label>{t('common.url')}</Label>
                 <div className="flex gap-2">
                   <Input value={revealedToken.url} readOnly className="font-mono text-xs" />
                   <Button
