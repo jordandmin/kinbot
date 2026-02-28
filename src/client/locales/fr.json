@@ -28,7 +28,8 @@
       "description": "Vous avez des modifications non enregistrées qui seront perdues si vous fermez cette fenêtre. Voulez-vous les abandonner ?",
       "keepEditing": "Continuer",
       "discard": "Abandonner"
-    }
+    },
+    "url": "URL"
   },
   "errors": {
     "backendUnavailable": "Impossible de joindre le serveur. Vérifiez que le backend est en cours d'exécution et réessayez.",
