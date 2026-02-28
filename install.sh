@@ -1518,6 +1518,61 @@ print_summary() {
   fi
   echo ""
 
+  # Security hints for non-localhost HTTP URLs
+  local show_security_hints=false
+  local url_is_http=false
+  local url_is_remote=false
+
+  if [[ "$KINBOT_PUBLIC_URL" =~ ^http:// ]]; then
+    url_is_http=true
+  fi
+  # Check if URL points to a non-localhost address
+  local url_host
+  url_host="$(echo "$KINBOT_PUBLIC_URL" | sed -E 's|^https?://||; s|[:/].*||')"
+  case "$url_host" in
+    localhost|127.0.0.1|::1) ;;
+    *) url_is_remote=true ;;
+  esac
+
+  if [ "$url_is_http" = true ] && [ "$url_is_remote" = true ]; then
+    show_security_hints=true
+  fi
+
+  # Check if ENCRYPTION_KEY is missing from config
+  local has_encryption_key=false
+  local env_file_path="$KINBOT_DATA_DIR/kinbot.env"
+  if [ -f "$env_file_path" ] && grep -q '^ENCRYPTION_KEY=.\+' "$env_file_path" 2>/dev/null; then
+    has_encryption_key=true
+  fi
+
+  if [ "$show_security_hints" = true ] || [ "$has_encryption_key" = false ]; then
+    echo -e "  ${YELLOW}${BOLD}⚡ Secure your installation:${NC}"
+    echo ""
+
+    if [ "$show_security_hints" = true ]; then
+      echo -e "  ${YELLOW}▸${NC} Your public URL uses ${BOLD}HTTP${NC} on a non-localhost address."
+      echo -e "    API keys and credentials will be sent in plain text!"
+      echo -e "    Set up HTTPS with a reverse proxy:"
+      echo ""
+      echo -e "    ${BOLD}Caddy${NC} ${DIM}(easiest, auto-HTTPS with Let's Encrypt):${NC}"
+      echo -e "    ${DIM}    # Install: https://caddyserver.com/docs/install${NC}"
+      echo -e "    ${DIM}    # Caddyfile:${NC}"
+      echo -e "    ${DIM}    your-domain.com {${NC}"
+      echo -e "    ${DIM}        reverse_proxy localhost:${KINBOT_PORT}${NC}"
+      echo -e "    ${DIM}    }${NC}"
+      echo ""
+      echo -e "    ${BOLD}Nginx${NC}${DIM} + certbot, ${BOLD}Traefik${NC}${DIM}, or any reverse proxy also work.${NC}"
+      echo -e "    ${DIM}Then update your URL: bash install.sh --env PUBLIC_URL=https://your-domain.com${NC}"
+      echo ""
+    fi
+
+    if [ "$has_encryption_key" = false ]; then
+      echo -e "  ${YELLOW}▸${NC} Set an ${BOLD}encryption key${NC} to protect stored API keys at rest:"
+      echo -e "    ${DIM}bash install.sh --env ENCRYPTION_KEY=\$(openssl rand -hex 32)${NC}"
+      echo ""
+    fi
+  fi
+
   if [ "$INIT_SYSTEM" = "script" ]; then
     echo -e "  ${BOLD}Service commands:${NC}"
     echo -e "    $KINBOT_DIR/kinbot status"
