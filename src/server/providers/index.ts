@@ -66,6 +66,13 @@ export async function testProviderConnection(
   type: string,
   config: ProviderConfig,
 ): Promise<{ valid: boolean; capabilities: string[]; error?: string }> {
+  // In E2E test mode, skip real provider connection tests
+  if (process.env.E2E_SKIP_PROVIDER_TEST === 'true') {
+    const capabilities = [...(PROVIDER_META[type as ProviderType]?.capabilities ?? [])]
+    log.info({ type, capabilities }, 'E2E mode: skipping real provider test')
+    return { valid: true, capabilities }
+  }
+
   const definition = registry[type]
   if (!definition) {
     log.error({ type }, 'Unknown provider type')

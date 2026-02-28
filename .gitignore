@@ -39,6 +39,10 @@ data/
 # VSCode
 .vscode/
 
+# Playwright
+playwright-report/
+test-results/
+
 # Claude Code
 .claude/
 .marlbot-context.md
