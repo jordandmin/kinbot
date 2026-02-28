@@ -172,6 +172,57 @@ export function MiniAppViewer() {
           }
           break
         }
+        case 'clipboard-write': {
+          const callbackId = String(msg.callbackId)
+          const text = String(msg.text || '')
+          navigator.clipboard.writeText(text)
+            .then(() => {
+              if (iframeRef.current?.contentWindow) {
+                iframeRef.current.contentWindow.postMessage({
+                  source: 'kinbot-parent',
+                  type: 'dialog-result',
+                  callbackId,
+                  value: true,
+                }, '*')
+              }
+            })
+            .catch(() => {
+              if (iframeRef.current?.contentWindow) {
+                iframeRef.current.contentWindow.postMessage({
+                  source: 'kinbot-parent',
+                  type: 'dialog-result',
+                  callbackId,
+                  value: false,
+                }, '*')
+              }
+            })
+          break
+        }
+        case 'clipboard-read': {
+          const cbId = String(msg.callbackId)
+          navigator.clipboard.readText()
+            .then((text) => {
+              if (iframeRef.current?.contentWindow) {
+                iframeRef.current.contentWindow.postMessage({
+                  source: 'kinbot-parent',
+                  type: 'dialog-result',
+                  callbackId: cbId,
+                  value: text,
+                }, '*')
+              }
+            })
+            .catch(() => {
+              if (iframeRef.current?.contentWindow) {
+                iframeRef.current.contentWindow.postMessage({
+                  source: 'kinbot-parent',
+                  type: 'dialog-result',
+                  callbackId: cbId,
+                  value: null,
+                }, '*')
+              }
+            })
+          break
+        }
         case 'open-app': {
           const slug = String(msg.slug || '')
           if (!slug || !app?.kinId) break

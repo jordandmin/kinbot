@@ -18,6 +18,8 @@
  *   KinBot.setTitle(title) — dynamically update the panel header title
  *   KinBot.setBadge(value) — show a badge on the app in the sidebar (number, string, or null to clear)
  *   KinBot.openApp(slug) — open another mini-app from the same Kin by its slug
+ *   KinBot.clipboard.write(text) — copy text to system clipboard (bypasses iframe restrictions)
+ *   KinBot.clipboard.read() — read text from system clipboard (may require permission)
  */
 ;(function () {
   'use strict'
@@ -391,6 +393,55 @@
     }
   }
 
+  // ─── Clipboard ─────────────────────────────────────────────────────────
+
+  /**
+   * Clipboard access via the parent window (bypasses iframe sandbox restrictions).
+   */
+  var clipboard = {
+    /**
+     * Write text to the system clipboard.
+     * @param {string} text — text to copy
+     * @returns {Promise<boolean>} — true if copied successfully
+     */
+    write: function (text) {
+      var id = String(++_dialogCounter)
+      try {
+        parent.postMessage({
+          source: 'kinbot-sdk',
+          type: 'clipboard-write',
+          callbackId: id,
+          text: String(text),
+        }, '*')
+      } catch (e) {
+        return Promise.resolve(false)
+      }
+      return new Promise(function (resolve) {
+        _pendingDialogs[id] = { resolve: resolve }
+      })
+    },
+
+    /**
+     * Read text from the system clipboard.
+     * @returns {Promise<string|null>} — clipboard text, or null if denied/failed
+     */
+    read: function () {
+      var id = String(++_dialogCounter)
+      try {
+        parent.postMessage({
+          source: 'kinbot-sdk',
+          type: 'clipboard-read',
+          callbackId: id,
+        }, '*')
+      } catch (e) {
+        return Promise.resolve(null)
+      }
+      return new Promise(function (resolve) {
+        _pendingDialogs[id] = { resolve: resolve }
+      })
+    },
+  }
+
   // ─── Public API ─────────────────────────────────────────────────────────
 
   window.KinBot = {
@@ -410,6 +461,7 @@
     setTitle: setTitle,
     setBadge: setBadge,
     openApp: openApp,
-    version: '1.6.0',
+    clipboard: clipboard,
+    version: '1.7.0',
   }
 })()
