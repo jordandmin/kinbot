@@ -30,6 +30,7 @@ import { CronFormModal } from '@/client/components/sidebar/CronFormModal'
 import { CronDetailModal } from '@/client/components/sidebar/CronDetailModal'
 import { useCrons } from '@/client/hooks/useCrons'
 import { cn } from '@/client/lib/utils'
+import { formatRelativeTime } from '@/client/lib/time'
 import { cronToHuman } from '@/client/lib/cron-human'
 import { cronNextRun, formatCountdown } from '@/client/lib/cron-next'
 import { Plus, Clock, CheckCircle2, Loader2, ChevronRight, Search, GripVertical, Timer, FastForward } from 'lucide-react'
@@ -56,14 +57,6 @@ interface LLMModel {
 interface CronListProps {
   kins: KinOption[]
   llmModels: LLMModel[]
-}
-
-function formatRelativeTime(ms: number): string {
-  const diff = Date.now() - ms
-  if (diff < 60_000) return '<1m'
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h`
-  return `${Math.floor(diff / 86_400_000)}d`
 }
 
 function CronCard({

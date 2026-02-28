@@ -4,6 +4,7 @@ import { Button } from '@/client/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/client/components/ui/popover'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
 import { BarChart3, MessageSquare, Bot, User, Wrench, Clock, FileIcon, Brain, Activity } from 'lucide-react'
+import { formatDurationMs } from '@/client/lib/time'
 import type { ChatMessage } from '@/client/hooks/useChat'
 
 interface ConversationStatsProps {
@@ -122,18 +123,6 @@ function ActivitySparkline({ messages }: { messages: ChatMessage[] }) {
   )
 }
 
-function formatDuration(ms: number): string {
-  if (ms < 60_000) return '<1m'
-  const minutes = Math.floor(ms / 60_000)
-  if (minutes < 60) return `${minutes}m`
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  if (hours < 24) return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
-  const days = Math.floor(hours / 24)
-  const remainingHours = hours % 24
-  return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`
-}
-
 function StatRow({ icon: Icon, label, value, iconClass }: {
   icon: typeof MessageSquare
   label: string
@@ -239,7 +228,7 @@ export function ConversationStats({ messages, toolCallCount }: ConversationStats
             <StatRow
               icon={Clock}
               label={t('chat.stats.duration')}
-              value={stats.duration > 0 ? formatDuration(stats.duration) : '—'}
+              value={stats.duration > 0 ? formatDurationMs(stats.duration) : '—'}
             />
             {stats.avgResponseTime > 0 && (
               <StatRow

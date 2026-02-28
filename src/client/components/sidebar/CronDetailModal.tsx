@@ -28,6 +28,7 @@ import {
   Copy,
 } from 'lucide-react'
 import { cn } from '@/client/lib/utils'
+import { formatRelativeTime, formatDurationBetween } from '@/client/lib/time'
 import { cronToHuman } from '@/client/lib/cron-human'
 import { cronNextRun, formatCountdown } from '@/client/lib/cron-next'
 import { api } from '@/client/lib/api'
@@ -68,24 +69,6 @@ const TASK_STATUS_CONFIG: Record<TaskStatus, {
   failed: { icon: XCircle, iconClass: 'text-destructive' },
   cancelled: { icon: Ban, iconClass: 'text-muted-foreground' },
   awaiting_human_input: { icon: UserCheck, iconClass: 'text-warning animate-pulse' },
-}
-
-function formatRelativeTime(ms: number): string {
-  const diff = Date.now() - ms
-  if (diff < 60_000) return '<1m ago'
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`
-  return `${Math.floor(diff / 86_400_000)}d ago`
-}
-
-function formatDuration(start: string, end: string): string {
-  const ms = new Date(end).getTime() - new Date(start).getTime()
-  if (ms < 1000) return '<1s'
-  const seconds = Math.floor(ms / 1000)
-  if (seconds < 60) return `${seconds}s`
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
 }
 
 export function CronDetailModal({
@@ -196,7 +179,7 @@ export function CronDetailModal({
                 </div>
                 {cron.lastTriggeredAt && (
                   <p className="text-[11px] text-muted-foreground">
-                    {t('sidebar.crons.lastRun', { time: formatRelativeTime(cron.lastTriggeredAt) })}
+                    {t('sidebar.crons.lastRun', { time: formatRelativeTime(cron.lastTriggeredAt, { suffix: true }) })}
                   </p>
                 )}
                 {cron.isActive && !cron.requiresApproval && (() => {
@@ -281,7 +264,7 @@ export function CronDetailModal({
                       const StatusIcon = statusCfg.icon
                       const isFinished = task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled'
                       const duration = isFinished
-                        ? formatDuration(task.createdAt, task.updatedAt)
+                        ? formatDurationBetween(task.createdAt, task.updatedAt)
                         : undefined
 
                       return (
@@ -303,7 +286,7 @@ export function CronDetailModal({
                             <span className="text-[10px] text-muted-foreground shrink-0">{duration}</span>
                           )}
                           <span className="text-[10px] text-muted-foreground shrink-0">
-                            {formatRelativeTime(new Date(task.createdAt).getTime())}
+                            {formatRelativeTime(new Date(task.createdAt).getTime(), { suffix: true })}
                           </span>
                         </div>
                       )
