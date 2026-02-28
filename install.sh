@@ -251,6 +251,12 @@ install_pkg() {
     sudo dnf install -y "$pkg" -q
   elif command -v yum &>/dev/null; then
     sudo yum install -y "$pkg" -q
+  elif command -v pacman &>/dev/null; then
+    sudo pacman -S --noconfirm "$pkg"
+  elif command -v apk &>/dev/null; then
+    sudo apk add --no-cache "$pkg"
+  elif command -v zypper &>/dev/null; then
+    sudo zypper install -y "$pkg"
   elif command -v brew &>/dev/null; then
     brew install "$pkg"
   else
@@ -362,11 +368,24 @@ preflight_checks() {
     fi
   fi
 
+  # Show proxy config if set (useful for debugging corporate/firewall setups)
+  if [ -n "${HTTP_PROXY:-}${HTTPS_PROXY:-}${http_proxy:-}${https_proxy:-}" ]; then
+    local proxy_url="${HTTPS_PROXY:-${https_proxy:-${HTTP_PROXY:-${http_proxy:-}}}}"
+    info "Using proxy: $proxy_url"
+  fi
+
   # Check internet connectivity (needed for git clone and bun install)
   if curl -fsSL --max-time 5 https://github.com >/dev/null 2>&1; then
     success "Internet connectivity OK"
   else
-    error "Cannot reach github.com. Check your internet connection and try again."
+    # Provide more helpful diagnostics
+    if ! host github.com &>/dev/null 2>&1 && ! nslookup github.com &>/dev/null 2>&1; then
+      error "DNS resolution failed for github.com. Check your network/DNS settings."
+    elif [ -n "${HTTP_PROXY:-}${HTTPS_PROXY:-}${http_proxy:-}${https_proxy:-}" ]; then
+      error "Cannot reach github.com through proxy. Verify your proxy settings."
+    else
+      error "Cannot reach github.com. Check your internet connection and firewall settings."
+    fi
   fi
 }
 
