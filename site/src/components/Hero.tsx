@@ -90,6 +90,17 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 overflow-hidden">
 
+      {/* Dot grid background */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(color-mix(in oklch, var(--color-glow-1) 25%, transparent) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          maskImage: 'radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)',
+        }}
+      />
+
       {/* Background glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
