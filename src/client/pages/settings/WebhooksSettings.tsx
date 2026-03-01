@@ -78,6 +78,7 @@ export function WebhooksSettings() {
       const webhookId = data.webhookId as string
       setWebhooks((prev) => prev.filter((w) => w.id !== webhookId))
     },
+    'webhook:triggered': () => fetchWebhooks(),
   })
 
   const handleCreate = async (kinId: string, data: { name: string; description?: string }) => {
