@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Github, Star, GitFork, ArrowRight, GitCommit, Clock } from 'lucide-react'
+import { Github, Star, GitFork, ArrowRight, Clock } from 'lucide-react'
+import { useGitHubData } from './GitHubDataProvider'
 
 interface RepoStats {
   stars: number
@@ -97,33 +97,14 @@ function ContributorAvatars({ contributors }: { contributors: Contributor[] }) {
 }
 
 export function GitHubCTA() {
-  const [stats, setStats] = useState<RepoStats | null>(null)
-  const [contributors, setContributors] = useState<Contributor[]>([])
-
-  useEffect(() => {
-    fetch('https://api.github.com/repos/MarlBurroW/kinbot')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data.stargazers_count === 'number') {
-          setStats({
-            stars: data.stargazers_count,
-            forks: data.forks_count,
-            openIssues: data.open_issues_count,
-            pushedAt: data.pushed_at,
-          })
-        }
-      })
-      .catch(() => {})
-
-    fetch('https://api.github.com/repos/MarlBurroW/kinbot/contributors?per_page=20')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setContributors(data.filter((c: any) => c.type === 'User'))
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const ghData = useGitHubData()
+  const stats: RepoStats | null = ghData.repo ? {
+    stars: ghData.repo.stars,
+    forks: ghData.repo.forks,
+    openIssues: ghData.repo.openIssues,
+    pushedAt: ghData.repo.pushedAt,
+  } : null
+  const contributors = ghData.contributors as Contributor[]
 
   return (
     <section className="px-6 py-24">

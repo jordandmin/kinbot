@@ -1,35 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Check, Copy, Github, ArrowRight, Star, GitFork, Tag } from 'lucide-react'
+import { useGitHubData } from './GitHubDataProvider'
 import previewVideo from '/preview1.mp4'
 
 const INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh | bash'
-
-interface RepoStats {
-  stars: number
-  forks: number
-  version: string
-}
-
-function useGitHubStats(): RepoStats | null {
-  const [stats, setStats] = useState<RepoStats | null>(null)
-
-  useEffect(() => {
-    Promise.all([
-      fetch('https://api.github.com/repos/MarlBurroW/kinbot').then(r => r.json()),
-      fetch('https://api.github.com/repos/MarlBurroW/kinbot/releases/latest').then(r => r.json()),
-    ])
-      .then(([repo, release]) => {
-        setStats({
-          stars: repo.stargazers_count ?? 0,
-          forks: repo.forks_count ?? 0,
-          version: release.tag_name ?? '',
-        })
-      })
-      .catch(() => {})
-  }, [])
-
-  return stats
-}
 
 function StatBadge({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
@@ -79,7 +53,8 @@ function RotatingText({ phrases }: { phrases: string[] }) {
 
 export function Hero() {
   const [copied, setCopied] = useState(false)
-  const stats = useGitHubStats()
+  const ghData = useGitHubData()
+  const stats = ghData.repo ? { stars: ghData.repo.stars, forks: ghData.repo.forks, version: ghData.latestVersion ?? '' } : null
 
   const copy = async () => {
     await navigator.clipboard.writeText(INSTALL_CMD)
