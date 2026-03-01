@@ -19,7 +19,7 @@ test.describe.serial('Chat flow', () => {
 
     // The wizard dialog should open with "Describe your Kin"
     await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByText('Describe your Kin')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Describe your Kin' })).toBeVisible()
 
     // Skip the AI wizard and go to manual form
     await page.getByRole('button', { name: 'Create manually' }).click()

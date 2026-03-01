@@ -31,7 +31,7 @@ async function openKinEditModal(page: Page, kinName: string) {
 async function createKin(page: Page, name: string, role: string) {
   await page.getByTitle('New Kin').click()
   await expect(page.getByRole('dialog')).toBeVisible()
-  await expect(page.getByText('Describe your Kin')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Describe your Kin' })).toBeVisible()
   await page.getByRole('button', { name: 'Create manually' }).click()
 
   await page.fill('#kinFormName', name)
@@ -169,7 +169,7 @@ test.describe.serial('Kin management', () => {
     // Open the new kin dialog
     await page.getByTitle('New Kin').click()
     await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByText('Describe your Kin')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Describe your Kin' })).toBeVisible()
 
     // Verify the wizard has a text area for describing the kin
     const descriptionInput = page.getByRole('dialog').locator('textarea').first()
