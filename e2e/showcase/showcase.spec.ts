@@ -118,22 +118,10 @@ test('KinBot showcase walkthrough', async ({ page }) => {
   await expect(messageInput).toBeVisible({ timeout: 10_000 })
   await pause(page, 1500)
 
-  // ── Type and send a message ──
+  // ── Type a message (don't send — no real LLM in CI) ──
   await messageInput.click()
   await messageInput.pressSequentially('What are the best herbs for Italian cooking?', {
     delay: 55,
   })
-  await pause(page, 800)
-
-  await page.locator('button:has(svg.lucide-send-horizontal)').click()
-  await expect(
-    page
-      .getByRole('paragraph')
-      .filter({ hasText: 'What are the best herbs' })
-      .first(),
-  ).toBeVisible({ timeout: 10_000 })
   await pause(page, 3000)
-
-  // ── Final pause on the chat view ──
-  await pause(page, 2000)
 })
