@@ -121,10 +121,35 @@
 
   // ─── Ready ──────────────────────────────────────────────────────────────
 
+  var _readyPromise = null
+
+  /**
+   * Signal that the app has finished loading and wait for app metadata.
+   * Returns a Promise that resolves with app metadata once the parent responds.
+   * Can be called with `await KinBot.ready()` or fire-and-forget `KinBot.ready()`.
+   * If app-meta was already received, resolves immediately.
+   * @returns {Promise<object>} — app metadata
+   */
   function ready() {
+    if (_readyPromise) return _readyPromise
+
+    _readyPromise = new Promise(function (resolve) {
+      // If app-meta was already received (e.g. ready() called late), resolve immediately
+      if (_appMeta) {
+        resolve(_appMeta)
+        return
+      }
+      // Otherwise wait for the app-meta event
+      on('app-meta', function onMeta(data) {
+        resolve(data)
+      })
+    })
+
     try {
       parent.postMessage({ source: 'kinbot-sdk', type: 'ready' }, '*')
     } catch (e) {}
+
+    return _readyPromise
   }
 
   /**
