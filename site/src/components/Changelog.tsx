@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Tag, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { useGitHubData } from './GitHubDataProvider'
 
 interface Release {
   tag_name: string
@@ -91,19 +92,10 @@ function ReleaseCard({ release, isLatest }: { release: Release; isLatest: boolea
 }
 
 export function Changelog() {
-  const [releases, setReleases] = useState<Release[]>([])
-  const [loading, setLoading] = useState(true)
+  const ghData = useGitHubData()
+  const releases = ghData.releases as Release[]
+  const loading = ghData.loading
   const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    fetch('https://api.github.com/repos/MarlBurroW/kinbot/releases?per_page=20')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setReleases(data)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
 
   const visible = expanded ? releases : releases.slice(0, 5)
 

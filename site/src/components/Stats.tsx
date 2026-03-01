@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Cpu, MessageSquare, Puzzle, Users, Star, GitFork, GitCommit, AlertCircle } from 'lucide-react'
+import { useGitHubData } from './GitHubDataProvider'
 
 interface StaticStat {
   icon: typeof Cpu
@@ -123,44 +124,13 @@ function StatCard({
 }
 
 export function Stats() {
-  const [gh, setGh] = useState<GitHubData>({ stars: null, forks: null, totalCommits: null, openIssues: null })
-
-  useEffect(() => {
-    // Fetch repo stats
-    fetch('https://api.github.com/repos/MarlBurroW/kinbot')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data.stargazers_count === 'number') {
-          setGh(prev => ({
-            ...prev,
-            stars: data.stargazers_count,
-            forks: data.forks_count ?? null,
-            openIssues: data.open_issues_count ?? null,
-          }))
-        }
-      })
-      .catch(() => {})
-
-    // Fetch total commit count from the default branch
-    fetch('https://api.github.com/repos/MarlBurroW/kinbot/commits?per_page=1')
-      .then((r) => {
-        // GitHub returns total count in the Link header's last page
-        const link = r.headers.get('Link')
-        if (link) {
-          const match = link.match(/page=(\d+)>;\s*rel="last"/)
-          if (match) {
-            return parseInt(match[1], 10)
-          }
-        }
-        return null
-      })
-      .then((count) => {
-        if (count) {
-          setGh(prev => ({ ...prev, totalCommits: count }))
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const ghData = useGitHubData()
+  const gh: GitHubData = {
+    stars: ghData.repo?.stars ?? null,
+    forks: ghData.repo?.forks ?? null,
+    openIssues: ghData.repo?.openIssues ?? null,
+    totalCommits: ghData.totalCommits,
+  }
 
   return (
     <section className="px-6 py-16 max-w-5xl mx-auto">
