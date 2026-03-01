@@ -48,5 +48,7 @@ jobs:
         with:
           branch: gh-pages
           folder: site/dist
-          clean-exclude: e2e-report
+          clean-exclude: |
+            e2e-report
+            showcase
           commit-message: 'chore: update landing site'

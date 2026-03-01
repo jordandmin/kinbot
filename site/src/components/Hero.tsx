@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Check, Copy, Github, ArrowRight, Star, GitFork, Tag } from 'lucide-react'
 import { useGitHubData } from './GitHubDataProvider'
-import previewVideo from '/preview1.mp4'
+import previewFallback from '/preview1.mp4'
+
+const PREVIEW_DARK = '/kinbot/showcase/preview-dark.mp4'
+const PREVIEW_LIGHT = '/kinbot/showcase/preview-light.mp4'
 
 const INSTALL_CMD = 'curl -fsSL https://raw.githubusercontent.com/MarlBurroW/kinbot/main/install.sh | bash'
 
@@ -144,10 +147,36 @@ function RotatingText({ phrases }: { phrases: string[] }) {
   )
 }
 
+function usePreviewVideo() {
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains('dark'),
+  )
+  const [useFallback, setUseFallback] = useState(false)
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+      setUseFallback(false)
+    })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+    return () => observer.disconnect()
+  }, [])
+
+  const src = useFallback
+    ? previewFallback
+    : isDark ? PREVIEW_DARK : PREVIEW_LIGHT
+
+  return { src, onError: () => setUseFallback(true) }
+}
+
 export function Hero() {
   const [copied, setCopied] = useState(false)
   const ghData = useGitHubData()
   const stats = ghData.repo ? { stars: ghData.repo.stars, forks: ghData.repo.forks, version: ghData.latestVersion ?? '' } : null
+  const preview = usePreviewVideo()
 
   const copy = async () => {
     await navigator.clipboard.writeText(INSTALL_CMD)
@@ -252,12 +281,14 @@ export function Hero() {
       <div className="animate-levitate animate-fade-in-up mt-10 w-full max-w-3xl" style={{ animationDelay: '0.2s' }}>
         <div className="glass-strong gradient-border rounded-2xl overflow-hidden shadow-xl">
           <video
-            src={previewVideo}
+            key={preview.src}
+            src={preview.src}
             autoPlay
             loop
             muted
             playsInline
             className="w-full block"
+            onError={preview.onError}
           />
         </div>
       </div>
