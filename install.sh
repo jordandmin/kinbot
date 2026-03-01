@@ -92,6 +92,75 @@ step() {
   echo -e "\n${progress}${BOLD}$*${NC}"
 }
 
+# ─── Installer self-update check ─────────────────────────────────────────────
+# When running from a local file (not piped via curl | bash), check if the
+# installer itself is outdated compared to the remote version on GitHub.
+# This prevents users from running stale install logic against a newer codebase.
+check_installer_update() {
+  # Skip if piped (no local file to update), quiet mode, CI, or no-prompt
+  [ ! -t 0 ] && return 0
+  [ "$KINBOT_QUIET" = true ] && return 0
+  [ "${KINBOT_NO_PROMPT:-}" = "true" ] && return 0
+  [ "${CI:-}" = "true" ] && return 0
+  [ "${KINBOT_SKIP_SELF_UPDATE:-}" = "true" ] && return 0
+
+  # Only check if we can identify the running script file
+  local self_path="${BASH_SOURCE[0]:-}"
+  [ -z "$self_path" ] && return 0
+  [ ! -f "$self_path" ] && return 0
+
+  # Compute local checksum
+  local local_hash=""
+  if command -v sha256sum &>/dev/null; then
+    local_hash="$(sha256sum "$self_path" 2>/dev/null | awk '{print $1}')"
+  elif command -v shasum &>/dev/null; then
+    local_hash="$(shasum -a 256 "$self_path" 2>/dev/null | awk '{print $1}')"
+  else
+    return 0  # can't compare without a hash tool
+  fi
+  [ -z "$local_hash" ] && return 0
+
+  # Fetch remote installer (lightweight: just the hash via a temp file)
+  local remote_url="https://raw.githubusercontent.com/$KINBOT_REPO/$KINBOT_BRANCH/install.sh"
+  local tmp_remote
+  tmp_remote="$(mktemp)"
+
+  if ! curl -fsSL --max-time 8 "$remote_url" -o "$tmp_remote" 2>/dev/null; then
+    rm -f "$tmp_remote"
+    return 0  # network issue, skip silently
+  fi
+
+  local remote_hash=""
+  if command -v sha256sum &>/dev/null; then
+    remote_hash="$(sha256sum "$tmp_remote" 2>/dev/null | awk '{print $1}')"
+  elif command -v shasum &>/dev/null; then
+    remote_hash="$(shasum -a 256 "$tmp_remote" 2>/dev/null | awk '{print $1}')"
+  fi
+
+  if [ -z "$remote_hash" ] || [ "$local_hash" = "$remote_hash" ]; then
+    rm -f "$tmp_remote"
+    return 0  # up to date or can't compare
+  fi
+
+  # Installer is outdated
+  echo -e "${YELLOW}⚠${NC} A newer version of the installer is available."
+  echo -en "  ${CYAN}?${NC} ${BOLD}Update installer and restart?${NC} ${DIM}[Y/n]${NC}: " >/dev/tty
+  local answer
+  read -r answer </dev/tty || answer="y"
+  [ -z "$answer" ] && answer="y"
+
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    cp "$tmp_remote" "$self_path"
+    chmod +x "$self_path"
+    rm -f "$tmp_remote"
+    success "Installer updated"
+    # Re-exec with same arguments, skip self-update to avoid loop
+    KINBOT_SKIP_SELF_UPDATE=true exec bash "$self_path" "$@"
+  fi
+
+  rm -f "$tmp_remote"
+}
+
 # ─── Cleanup & signal handling ───────────────────────────────────────────────
 SPINNER_PID=""
 SPINNER_LOG=""
@@ -1866,6 +1935,7 @@ show_help() {
   echo "  KINBOT_BRANCH       Git branch to install (default: main)"
   echo "  KINBOT_NO_PROMPT    Skip interactive prompts (default: false)"
   echo "  KINBOT_QUIET        Suppress non-essential output (same as --quiet)"
+  echo "  KINBOT_SKIP_SELF_UPDATE  Skip installer self-update check (default: false)"
   echo ""
   echo -e "${BOLD}EXAMPLES${NC}"
   echo "  # Install with defaults"
@@ -4291,6 +4361,9 @@ main() {
     echo -e "https://github.com/MarlBurroW/kinbot"
     echo ""
   fi
+
+  # Check if the installer script itself is outdated (local runs only)
+  check_installer_update "$@"
 
   start_timer
 
