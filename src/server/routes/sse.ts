@@ -13,11 +13,18 @@ sseRoutes.get('/', (c) => {
   return streamSSE(c, async (stream) => {
     const connectionId = uuid()
 
+    // Serialise writes so rapid-fire events (e.g. chat:token during LLM
+    // streaming) don't interleave in the SSE byte stream.  Each writeSSE()
+    // call waits for the previous one to complete before starting.
+    let writeQueue = Promise.resolve()
+
     sseManager.addConnection(connectionId, {
       write: (data: string) => {
-        stream.writeSSE({ data, event: 'message' }).catch(() => {
-          // stream might be closed
-        })
+        writeQueue = writeQueue.then(() =>
+          stream.writeSSE({ data, event: 'message' }).catch(() => {
+            // stream might be closed
+          }),
+        )
       },
       close: () => {
         stream.close()
