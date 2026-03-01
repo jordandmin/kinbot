@@ -13,6 +13,8 @@ const resourceLinks = [
   { label: 'Releases', href: 'https://github.com/MarlBurroW/kinbot/releases' },
   { label: 'Issues', href: 'https://github.com/MarlBurroW/kinbot/issues' },
   { label: 'Contributing', href: 'https://github.com/MarlBurroW/kinbot/blob/main/CONTRIBUTING.md' },
+  { label: 'Troubleshooting', href: 'https://github.com/MarlBurroW/kinbot/blob/main/TROUBLESHOOTING.md' },
+  { label: 'Security Policy', href: 'https://github.com/MarlBurroW/kinbot/blob/main/SECURITY.md' },
 ]
 
 const communityLinks = [
