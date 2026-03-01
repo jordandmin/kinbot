@@ -165,7 +165,7 @@ test.describe.serial('Mini App Gallery', () => {
     await expect(page.getByText('v1')).toBeVisible()
 
     // Verify API badge on Weather Dashboard (hasBackend: true)
-    await expect(page.getByText('API')).toBeVisible()
+    await expect(page.getByText('API', { exact: true })).toBeVisible()
   })
 
   test('should show empty state when no apps exist', async ({ page }) => {

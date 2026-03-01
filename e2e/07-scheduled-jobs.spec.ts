@@ -26,7 +26,7 @@ async function openCreateJobModal(page: Page) {
   await plusBtn.click()
 
   // Wait for the create modal
-  await expect(page.getByText('Create scheduled job')).toBeVisible({ timeout: 5_000 })
+  await expect(page.getByRole('heading', { name: 'Create scheduled job' })).toBeVisible({ timeout: 5_000 })
 }
 
 /**
