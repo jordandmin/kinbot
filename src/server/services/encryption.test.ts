@@ -1,16 +1,14 @@
 import { describe, it, expect, beforeAll } from 'bun:test'
-import { config } from '@/server/config'
-import { encrypt, decrypt, _resetKeyCache } from './encryption'
+import { encrypt, decrypt, _setTestKey } from './encryption'
 
-const TEST_KEY = 'a'.repeat(64)
+const TEST_KEY = 'a'.repeat(64) // 32-byte hex key
 
 describe('encryption service', () => {
-  beforeAll(() => {
-    // Directly set the encryption key on the real config object and reset
-    // the cached CryptoKey so our test key is used even if another test
-    // file already loaded encryption.ts with a different key.
-    ;(config as { encryptionKey: string }).encryptionKey = TEST_KEY
-    _resetKeyCache()
+  beforeAll(async () => {
+    // Directly set a known CryptoKey, bypassing config entirely.
+    // This avoids issues with module caching where encryption.ts
+    // may hold a reference to a different config-generated key.
+    await _setTestKey(TEST_KEY)
   })
 
   it('encrypts and decrypts a simple string', async () => {
