@@ -88,6 +88,20 @@ export function _resetKeyCache(): void {
   cachedKey = null
 }
 
+/** @internal Set a pre-built CryptoKey — for testing only */
+export async function _setTestKey(hexKey: string): Promise<void> {
+  const keyBytes = Uint8Array.from(
+    (hexKey.match(/.{2}/g) ?? []).map((byte: string) => parseInt(byte, 16)),
+  )
+  cachedKey = await crypto.subtle.importKey(
+    'raw',
+    keyBytes,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt', 'decrypt'],
+  )
+}
+
 async function getKey(): Promise<CryptoKey> {
   if (cachedKey) return cachedKey
 
