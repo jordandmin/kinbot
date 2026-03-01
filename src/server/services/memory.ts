@@ -338,29 +338,38 @@ function searchByFTS(
   limit: number,
 ): Promise<Array<{ id: string; content: string; category: string; subject: string | null; importance: number | null; rank: number; updatedAt: Date | null }>> {
   try {
-    // Escape FTS5 special characters and build query
-    const ftsQuery = query
-      .replace(/['"*()]/g, ' ')
+    // Escape FTS5 special characters, filter noise, build query with prefix matching
+    const terms = query
+      .replace(/['"*(){}[\]:^~!@#$%&]/g, ' ')
       .split(/\s+/)
-      .filter(Boolean)
-      .map((term) => `"${term}"`)
-      .join(' OR ')
+      .filter((t) => t.length >= 3) // skip very short terms (noise for FTS)
 
-    if (!ftsQuery) return Promise.resolve([])
+    if (terms.length === 0) return Promise.resolve([])
 
-    const rows = sqlite
-      .query<
-        { id: string; content: string; category: string; subject: string | null; importance: number | null; rank: number; updated_at: string | null },
-        [string, string, number]
-      >(
-        `SELECT m.id, m.content, m.category, m.subject, m.importance, fts.rank, m.updated_at
-         FROM memories_fts fts
-         JOIN memories m ON m.rowid = fts.rowid
-         WHERE memories_fts MATCH ? AND m.kin_id = ?
-         ORDER BY fts.rank
-         LIMIT ?`,
-      )
-      .all(ftsQuery, kinId, limit)
+    // Build AND query with prefix matching on each term for partial word matches
+    // e.g. "deploy kubernetes" → "deploy"* AND "kubernetes"*
+    const ftsQuery = terms.map((term) => `"${term}"*`).join(' AND ')
+
+    // Fallback: if AND is too strict, we'll catch empty results and retry with OR
+    const ftsQueryOr = terms.map((term) => `"${term}"*`).join(' OR ')
+
+    const stmt = sqlite.query<
+      { id: string; content: string; category: string; subject: string | null; importance: number | null; rank: number; updated_at: string | null },
+      [string, string, number]
+    >(
+      `SELECT m.id, m.content, m.category, m.subject, m.importance, fts.rank, m.updated_at
+       FROM memories_fts fts
+       JOIN memories m ON m.rowid = fts.rowid
+       WHERE memories_fts MATCH ? AND m.kin_id = ?
+       ORDER BY fts.rank
+       LIMIT ?`,
+    )
+
+    // Try AND first (precise), fall back to OR (broad) if no results
+    let rows = stmt.all(ftsQuery, kinId, limit)
+    if (rows.length === 0 && terms.length > 1) {
+      rows = stmt.all(ftsQueryOr, kinId, limit)
+    }
 
     return Promise.resolve(rows.map((r) => ({ ...r, updatedAt: r.updated_at ? new Date(r.updated_at) : null })))
   } catch {
