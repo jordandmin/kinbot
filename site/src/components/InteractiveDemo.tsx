@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bot, User, Brain, RotateCcw, ChevronRight } from 'lucide-react'
+import { Bot, User, Brain, RotateCcw, ChevronRight, Clock, Zap } from 'lucide-react'
 
 interface Message {
   role: 'user' | 'assistant'
   text: string
   memoryNote?: string
+  cronNote?: string
 }
 
 interface Scenario {
@@ -81,6 +82,30 @@ const scenarios: Scenario[] = [
       },
     ],
   },
+  {
+    title: 'Autonomy & cron',
+    description: 'Kins can work on their own, on a schedule',
+    messages: [
+      { role: 'user', text: "Atlas, I want you to monitor our API latency every hour and alert me if p95 goes above 500ms." },
+      {
+        role: 'assistant',
+        text: "On it. I'll set up a cron job to check your `/metrics` endpoint every hour. If p95 latency exceeds 500ms, I'll message you on Telegram immediately.",
+        cronNote: 'Cron created: check API latency every hour',
+      },
+      { role: 'user', text: "Perfect. Also, can you write a daily summary of all the alerts?" },
+      {
+        role: 'assistant',
+        text: "Done. Every day at 9 AM, I'll compile all incidents from the past 24h into a summary and send it to your Slack channel. If nothing happened, I'll just say \"all clear\" so you know I'm watching.",
+        cronNote: 'Cron created: daily alert summary at 9 AM → Slack',
+      },
+      { role: 'user', text: "What if I'm asleep and something critical happens?" },
+      {
+        role: 'assistant',
+        text: "I can escalate via webhook. If p95 stays above 1s for 3 consecutive checks, I'll trigger your PagerDuty webhook and send you a Telegram message with the full timeline. You set the rules, I handle the rest.",
+        memoryNote: 'Escalation policy: 3 consecutive p95 > 1s → PagerDuty + Telegram',
+      },
+    ],
+  },
 ]
 
 function TypingIndicator() {
@@ -113,6 +138,22 @@ function MemoryToast({ text }: { text: string }) {
     >
       <Brain size={12} className="flex-shrink-0" />
       <span className="opacity-80">Remembered: {text}</span>
+    </div>
+  )
+}
+
+function CronToast({ text }: { text: string }) {
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs mx-12 animate-fade-in-up"
+      style={{
+        background: 'color-mix(in oklch, var(--color-glow-2) 10%, transparent)',
+        border: '1px solid color-mix(in oklch, var(--color-glow-2) 20%, transparent)',
+        color: 'var(--color-gradient-mid)',
+      }}
+    >
+      <Clock size={12} className="flex-shrink-0" />
+      <span className="opacity-80">{text}</span>
     </div>
   )
 }
@@ -261,8 +302,8 @@ export function InteractiveDemo() {
           setIsTyping(false)
           setVisibleCount(step + 1)
 
-          // Show memory toast if applicable
-          if (msg.memoryNote) {
+          // Show memory/cron toast if applicable
+          if (msg.memoryNote || msg.cronNote) {
             timerRef.current = setTimeout(() => {
               setShowMemory(step)
               timerRef.current = setTimeout(() => {
@@ -410,6 +451,11 @@ export function InteractiveDemo() {
               {showMemory === i && msg.memoryNote && (
                 <div className="mt-2">
                   <MemoryToast text={msg.memoryNote} />
+                </div>
+              )}
+              {showMemory === i && msg.cronNote && (
+                <div className="mt-2">
+                  <CronToast text={msg.cronNote} />
                 </div>
               )}
             </div>
