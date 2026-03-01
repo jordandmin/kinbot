@@ -10,13 +10,7 @@ import {
 import { Button } from '@/client/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { Input } from '@/client/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/client/components/ui/select'
+import { KinSelector } from '@/client/components/common/KinSelector'
 import { api } from '@/client/lib/api'
 import { toast } from 'sonner'
 import { Copy, Search, AppWindow, Loader2 } from 'lucide-react'
@@ -109,18 +103,14 @@ export function MiniAppGallery({ open, onOpenChange, currentKinId, kins }: MiniA
               className="pl-8 h-8 text-sm"
             />
           </div>
-          <Select value={targetKinId} onValueChange={setTargetKinId}>
-            <SelectTrigger className="w-48 h-8 text-sm">
-              <SelectValue placeholder={t('miniApps.gallery.cloneTo')} />
-            </SelectTrigger>
-            <SelectContent>
-              {kins.map((kin) => (
-                <SelectItem key={kin.id} value={kin.id}>
-                  {kin.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <KinSelector
+            value={targetKinId}
+            onValueChange={setTargetKinId}
+            kins={kins.map((k) => ({ id: k.id, name: k.name, avatarUrl: k.avatarPath }))}
+            placeholder={t('miniApps.gallery.cloneTo')}
+            triggerClassName="w-48 h-8 text-sm"
+            autoHeight={false}
+          />
         </div>
 
         {/* App list */}
