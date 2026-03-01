@@ -4,6 +4,7 @@ import { db } from '@/server/db/index'
 import { messages, kins, compactingSnapshots, memories as kinMemories, files, humanPrompts } from '@/server/db/schema'
 import { enqueueMessage } from '@/server/services/queue'
 import { abortKinStream } from '@/server/services/kin-engine'
+import { sseManager } from '@/server/sse/index'
 import { getFilesForMessages, serializeFile } from '@/server/services/files'
 import { resolveKinId } from '@/server/services/kin-resolver'
 import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
@@ -201,6 +202,13 @@ messageRoutes.delete('/', async (c) => {
       )
 
     log.info({ kinId }, 'Conversation cleared')
+
+    sseManager.sendToKin(kinId, {
+      type: 'chat:cleared',
+      kinId,
+      data: { kinId },
+    })
+
     return c.json({ ok: true })
   } catch (err) {
     log.error({ kinId, err }, 'Failed to clear conversation')
