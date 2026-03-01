@@ -97,7 +97,29 @@ AES-256-GCM vault · Auth with roles · Invitation system · 100% self-hosted ·
 
 </details>
 
-> **🔍 How does KinBot compare?** See the [detailed feature comparison](https://marlburrow.github.io/kinbot/#comparison) with Open WebUI, LobeChat, AnythingLLM, and others.
+## 🔍 How does KinBot compare?
+
+| Feature | KinBot | Open WebUI | LobeChat | AnythingLLM |
+|---|:---:|:---:|:---:|:---:|
+| Persistent agent identity | ✅ | ❌ | ⚠️ | ❌ |
+| Long-term memory | ✅ | ❌ | ❌ | ⚠️ |
+| Multi-agent collaboration | ✅ | ❌ | ❌ | ❌ |
+| Sub-agent delegation | ✅ | ❌ | ❌ | ❌ |
+| Cron jobs & webhooks | ✅ | ❌ | ❌ | ❌ |
+| Chat integrations (6 platforms) | ✅ | ❌ | ❌ | ⚠️ |
+| MCP tool servers | ✅ | ⚠️ | ❌ | ❌ |
+| Custom tools (agent-created) | ✅ | ❌ | ❌ | ❌ |
+| Mini Apps (agent-built UIs) | ✅ | ❌ | ❌ | ❌ |
+| Encrypted secrets vault | ✅ | ❌ | ❌ | ❌ |
+| Zero-infra (SQLite only) | ✅ | ❌ | ⚠️ | ❌ |
+| Multi-provider (23+) | ✅ | ✅ | ✅ | ✅ |
+| Multi-user with roles | ✅ | ✅ | ⚠️ | ✅ |
+| RAG / document embedding | ❌ | ✅ | ⚠️ | ✅ |
+| Free & open source | ✅ | ✅ | ✅ | ✅ |
+
+✅ Full support · ⚠️ Partial · ❌ Not available · *Based on default capabilities as of Feb 2026*
+
+👉 [Full comparison with positioning details](https://marlburrow.github.io/kinbot/#comparison)
 
 ---
 
