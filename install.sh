@@ -26,6 +26,7 @@ KINBOT_BRANCH="${KINBOT_BRANCH:-main}"
 KINBOT_DRY_RUN=false
 KINBOT_QUIET="${KINBOT_QUIET:-false}"
 KINBOT_START_TIME=""
+KINBOT_YES="${KINBOT_YES:-false}"
 
 # ─── Colors (auto-detect terminal support) ───────────────────────────────────
 setup_colors() {
@@ -562,6 +563,12 @@ prompt_value() {
   local question="$2"
   local default="$3"
   local answer
+
+  # Auto-accept defaults in non-interactive / --yes mode
+  if [ "$KINBOT_YES" = true ] || [ "${KINBOT_NO_PROMPT:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
+    printf -v "$var_name" '%s' "$default"
+    return
+  fi
 
   echo -en "  ${CYAN}?${NC} ${BOLD}${question}${NC} ${DIM}[${default}]${NC}: " >/dev/tty
   read -r answer </dev/tty || answer=""
@@ -1917,6 +1924,7 @@ show_help() {
   echo "  --logs          Tail KinBot logs (works across all platforms)"
   echo "  --backup [path] Back up database (and config) to a file"
   echo "  --restore [path] Restore database from a backup (interactive picker if no path)"
+  echo "  --yes, -y       Auto-confirm all prompts (accept defaults, skip confirmations)"
   echo "  --quiet, -q     Suppress non-essential output (only errors and final summary)"
   echo "  --no-color      Disable colored output (also: NO_COLOR=1)"
   echo "  --config        Re-run the configuration wizard (change port, URL)"
@@ -1934,6 +1942,7 @@ show_help() {
   echo "  KINBOT_PUBLIC_URL   Public URL for webhooks & invite links"
   echo "  KINBOT_BRANCH       Git branch to install (default: main)"
   echo "  KINBOT_NO_PROMPT    Skip interactive prompts (default: false)"
+  echo "  KINBOT_YES          Auto-confirm all prompts (same as --yes)"
   echo "  KINBOT_QUIET        Suppress non-essential output (same as --quiet)"
   echo "  KINBOT_SKIP_SELF_UPDATE  Skip installer self-update check (default: false)"
   echo ""
@@ -1952,6 +1961,12 @@ show_help() {
   echo ""
   echo "  # Scripted install (no prompts, minimal output)"
   echo "  KINBOT_PORT=8080 bash install.sh --quiet"
+  echo ""
+  echo "  # Auto-update from crontab (no confirmations)"
+  echo "  bash install.sh --update -y"
+  echo ""
+  echo "  # Non-interactive install (accept all defaults)"
+  echo "  bash install.sh -y"
   echo ""
   echo "  # Reconfigure (change port, URL)"
   echo "  bash install.sh --config"
@@ -3185,7 +3200,7 @@ do_restore() {
   echo -e "  ${CYAN}$(basename "$backup_file")${NC} ($backup_size)"
   echo ""
 
-  if [ "${KINBOT_NO_PROMPT:-}" != "true" ] && [ "${CI:-}" != "true" ]; then
+  if [ "$KINBOT_YES" != true ] && [ "${KINBOT_NO_PROMPT:-}" != "true" ] && [ "${CI:-}" != "true" ]; then
     echo -en "  ${YELLOW}?${NC} ${BOLD}Continue?${NC} ${DIM}[y/N]${NC}: " >/dev/tty
     local confirm
     read -r confirm </dev/tty || confirm="n"
@@ -3546,9 +3561,11 @@ do_config() {
   if [ "$is_running" = true ]; then
     echo ""
     local do_restart="y"
-    echo -en "  ${CYAN}?${NC} ${BOLD}Restart KinBot now to apply changes?${NC} ${DIM}[Y/n]${NC}: " >/dev/tty
-    read -r do_restart </dev/tty || do_restart="y"
-    [ -z "$do_restart" ] && do_restart="y"
+    if [ "$KINBOT_YES" != true ]; then
+      echo -en "  ${CYAN}?${NC} ${BOLD}Restart KinBot now to apply changes?${NC} ${DIM}[Y/n]${NC}: " >/dev/tty
+      read -r do_restart </dev/tty || do_restart="y"
+      [ -z "$do_restart" ] && do_restart="y"
+    fi
 
     if [[ "$do_restart" =~ ^[Yy]$ ]]; then
       if [ "$INIT_SYSTEM" = "launchd" ]; then
@@ -3661,7 +3678,7 @@ do_update() {
   fi
 
   # Confirm
-  if [ "${KINBOT_NO_PROMPT:-}" != "true" ] && [ "${CI:-}" != "true" ]; then
+  if [ "$KINBOT_YES" != true ] && [ "${KINBOT_NO_PROMPT:-}" != "true" ] && [ "${CI:-}" != "true" ]; then
     local confirm="y"
     echo -en "  ${CYAN}?${NC} ${BOLD}Apply update?${NC} ${DIM}[Y/n]${NC}: " >/dev/tty
     read -r confirm </dev/tty || confirm="y"
@@ -3787,7 +3804,7 @@ do_reset() {
 
   # Confirm
   echo ""
-  if [ "${KINBOT_NO_PROMPT:-}" != "true" ] && [ "${CI:-}" != "true" ]; then
+  if [ "$KINBOT_YES" != true ] && [ "${KINBOT_NO_PROMPT:-}" != "true" ] && [ "${CI:-}" != "true" ]; then
     echo -en "  ${YELLOW}?${NC} ${BOLD}Proceed with reset?${NC} ${DIM}[y/N]${NC}: " >/dev/tty
     local confirm
     read -r confirm </dev/tty || confirm="n"
@@ -4336,6 +4353,10 @@ main() {
         ;;
       --quiet|-q)
         KINBOT_QUIET=true
+        KINBOT_NO_PROMPT=true
+        ;;
+      --yes|-y)
+        KINBOT_YES=true
         KINBOT_NO_PROMPT=true
         ;;
       --no-color)
