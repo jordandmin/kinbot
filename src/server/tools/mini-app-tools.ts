@@ -76,7 +76,7 @@ export const createMiniAppTool: ToolRegistration = {
         '`KinBot.fullpage(bool)` (request full-page mode (true) or side-panel mode (false) — the user can also toggle via the UI), ' +
         '`KinBot.isFullPage` (read-only, current full-page state), ' +
         '`KinBot.on("fullpage-changed", cb)` (listen for full-page mode changes, cb receives {isFullPage}), ' +
-        '`KinBot.ready()` (call when your app is loaded to receive app metadata — required before using storage). ' +
+        '`KinBot.ready()` → Promise<appMeta> (call when your app is loaded — returns a Promise that resolves with app metadata once the parent responds; MUST be awaited before using storage, api, or http: `await KinBot.ready()`). ' +
         '`KinBot.confirm(message, options?)` → Promise<boolean> (show a native confirmation dialog in KinBot UI; ' +
         'options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +
         '`KinBot.prompt(message, options?)` → Promise<string|null> (show a prompt dialog with text input; ' +
