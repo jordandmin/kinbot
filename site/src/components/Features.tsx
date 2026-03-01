@@ -12,6 +12,8 @@ import {
   MessageSquare,
   Wrench,
   Users,
+  Layers,
+  Bell,
 } from 'lucide-react'
 
 const features = [
@@ -28,6 +30,13 @@ const features = [
     description:
       'Dual-channel memory system: automatic extraction pipeline on every LLM turn + explicit memorization tools. Hybrid search (vector + full-text) across months of context.',
     accent: 'var(--color-glow-2)',
+  },
+  {
+    icon: Layers,
+    title: 'Session Compacting',
+    description:
+      'Automatic smart summarization keeps conversations within token limits without losing context. Original messages are always preserved, and snapshots are rollback-able. Months of history, zero context loss.',
+    accent: 'var(--color-glow-3)',
   },
   {
     icon: GitBranch,
@@ -98,6 +107,13 @@ const features = [
     description:
       'Kins build and deploy interactive web apps (HTML/CSS/JS) that live in the sidebar. Auto-injected design system with theme sync, toasts, and parent-child communication.',
     accent: 'var(--color-glow-3)',
+  },
+  {
+    icon: Bell,
+    title: 'Notifications & Contacts',
+    description:
+      'Kins push notifications to users and maintain a contacts directory. Human-in-the-loop prompts let Kins ask for approval before sensitive actions like creating cron jobs or managing MCP servers.',
+    accent: 'var(--color-glow-1)',
   },
 ]
 
