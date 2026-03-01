@@ -38,5 +38,25 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist/client'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core - rarely changes
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // UI framework
+          'vendor-ui': ['radix-ui', 'lucide-react', 'class-variance-authority', 'clsx', 'tailwind-merge', 'sonner', 'cmdk'],
+          // Markdown rendering (heavy)
+          'vendor-markdown': ['react-markdown', 'remark-gfm', 'remark-math', 'rehype-katex', 'rehype-highlight'],
+          // CodeMirror editor (heavy, used only in specific views)
+          'vendor-codemirror': ['@uiw/react-codemirror', '@codemirror/lang-markdown', '@codemirror/language-data', '@codemirror/view'],
+          // Forms
+          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          // i18n
+          'vendor-i18n': ['i18next', 'react-i18next'],
+          // DnD
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+        },
+      },
+    },
   },
 })
