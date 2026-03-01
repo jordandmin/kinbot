@@ -3,14 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/client/components/ui/select'
 import { Progress } from '@/client/components/ui/progress'
+import { ProviderSelector } from '@/client/components/common/ProviderSelector'
 import { Plus, Search, RefreshCw, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
@@ -165,24 +159,14 @@ export function SearchProvidersSettings() {
         <div className="surface-card rounded-lg p-4 space-y-2">
           <Label className="text-sm font-medium">{t('settings.searchProviders.defaultProvider')}</Label>
           <p className="text-xs text-muted-foreground">{t('settings.searchProviders.defaultProviderDescription')}</p>
-          <Select
+          <ProviderSelector
             value={defaultProviderId ?? '__automatic__'}
             onValueChange={handleDefaultProviderChange}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__automatic__">
-                {t('settings.searchProviders.defaultProviderAutomatic')}
-              </SelectItem>
-              {validProviders.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            providers={validProviders}
+            noneLabel={t('settings.searchProviders.defaultProviderAutomatic')}
+            noneValue="__automatic__"
+            triggerClassName="w-full"
+          />
         </div>
       )}
 
