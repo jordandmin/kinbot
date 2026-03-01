@@ -154,7 +154,55 @@ export function useTaskDetail(taskId: string | null) {
       fetchDetail()
     },
 
+    // Real-time message insertion (e.g. initial task description saved by backend)
+    'chat:message': (data) => {
+      if (data.taskId !== taskId) return
+
+      const msg: TaskMessage = {
+        id: data.id as string,
+        role: data.role as 'user' | 'assistant' | 'system',
+        content: (data.content as string) ?? '',
+        sourceType: (data.sourceType as string) ?? 'system',
+        sourceId: (data.sourceId as string) ?? null,
+        isRedacted: false,
+        toolCalls: null,
+        createdAt: data.createdAt as number,
+      }
+
+      setMessages((prev) => {
+        // Avoid duplicates (initial fetch may already have it)
+        if (prev.some((m) => m.id === msg.id)) return prev
+        return [...prev, msg]
+      })
+    },
+
     // Streaming events — filtered by taskId
+    'chat:tool-call-start': (data) => {
+      if (data.taskId !== taskId) return
+
+      const messageId = data.messageId as string
+
+      // Initialise streaming state on the very first LLM event (even if it's
+      // a tool call with no preceding text).  This switches the modal out of
+      // the "No messages yet" branch so the typing indicator becomes visible.
+      if (!streamingMessageIdRef.current) {
+        streamingMessageIdRef.current = messageId
+        streamingContentRef.current = ''
+        setIsStreaming(true)
+
+        setStreamingMessage({
+          id: messageId,
+          role: 'assistant',
+          content: '',
+          sourceType: 'kin',
+          sourceId: null,
+          isRedacted: false,
+          toolCalls: null,
+          createdAt: Date.now(),
+        })
+      }
+    },
+
     'chat:token': (data) => {
       if (data.taskId !== taskId) return
 
