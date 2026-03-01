@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Cpu, MessageSquare, Puzzle, Users, Star, GitFork, GitCommit, AlertCircle } from 'lucide-react'
 import { useGitHubData } from './GitHubDataProvider'
 

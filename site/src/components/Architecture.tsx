@@ -79,7 +79,7 @@ const layers = [
   },
 ]
 
-const providers = ['Anthropic', 'OpenAI', 'Gemini', 'Mistral', 'DeepSeek', '+ 16 more']
+const providers = ['Anthropic', 'OpenAI', 'Gemini', 'Mistral', 'DeepSeek', '+ 17 more']
 const integrations = ['Telegram', 'Discord', 'Slack', 'Webhooks', 'MCP Servers', 'Cron Jobs']
 
 export function Architecture() {
