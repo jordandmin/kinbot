@@ -85,6 +85,11 @@ export const createMiniAppTool: ToolRegistration = {
         '`KinBot.openApp(slug)` (open another mini-app from the same Kin by its slug — enables inter-app navigation), ' +
         '`KinBot.clipboard.write(text)` → Promise<boolean> (copy text to system clipboard — works even in sandboxed iframes), ' +
         '`KinBot.clipboard.read()` → Promise<string|null> (read text from system clipboard — may require user permission), ' +
+        '`KinBot.http(url, options?)` → Promise<{status, statusText, headers, body, ok, json(), text()}> (fetch external URLs through server proxy — bypasses CORS restrictions; ' +
+        'options: {method?, headers?, body?}), ' +
+        '`KinBot.http.json(url, headers?)` → Promise<any> (shorthand: GET and parse JSON), ' +
+        '`KinBot.http.post(url, data, headers?)` → Promise<any> (shorthand: POST JSON). ' +
+        'Rate limited to 60 requests/minute, 5MB max response, 15s timeout. ' +
         'For additional files (CSS, JS, images), use write_mini_app_file after creation. ' +
         'Relative paths work naturally: `<script src="app.js">`, `<link href="styles.css">`, `import "./utils.js"` — ' +
         'all resolve to the app\'s static directory. Multi-file apps are fully supported. ' +

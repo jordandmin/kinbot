@@ -393,6 +393,182 @@ miniAppRoutes.post('/:id/snapshots/:version/rollback', async (c) => {
   }
 })
 
+// ─── HTTP Proxy ─────────────────────────────────────────────────────────────
+
+// Rate-limit state: appId → { count, resetAt }
+const httpProxyLimits = new Map<string, { count: number; resetAt: number }>()
+const HTTP_PROXY_MAX_PER_MINUTE = 60
+const HTTP_PROXY_MAX_RESPONSE_BYTES = 5 * 1024 * 1024 // 5 MB
+const HTTP_PROXY_TIMEOUT_MS = 15_000
+
+/** Check if a hostname resolves to a private/internal IP */
+function isBlockedHost(hostname: string): boolean {
+  // Block obvious private/internal hostnames
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname === '0.0.0.0' ||
+    hostname.endsWith('.local') ||
+    hostname.endsWith('.internal')
+  ) return true
+
+  // Block private IP ranges
+  const parts = hostname.split('.')
+  if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p))) {
+    const a = parseInt(parts[0]!, 10)
+    const b = parseInt(parts[1]!, 10)
+    if (a === 10) return true                          // 10.0.0.0/8
+    if (a === 172 && b >= 16 && b <= 31) return true   // 172.16.0.0/12
+    if (a === 192 && b === 168) return true            // 192.168.0.0/16
+    if (a === 127) return true                         // 127.0.0.0/8
+    if (a === 169 && b === 254) return true            // link-local
+    if (a === 0) return true                           // 0.0.0.0/8
+  }
+
+  return false
+}
+
+/**
+ * HTTP proxy for mini-apps — lets them fetch external APIs without CORS issues.
+ * POST /api/mini-apps/:id/http
+ * Body: { url, method?, headers?, body? }
+ * Returns: { status, statusText, headers, body }
+ */
+miniAppRoutes.post('/:id/http', async (c) => {
+  const appId = c.req.param('id')
+  const app = await getMiniAppRow(appId)
+  if (!app) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'App not found' } }, 404)
+  }
+
+  // Rate limiting
+  const now = Date.now()
+  let limit = httpProxyLimits.get(appId)
+  if (!limit || now > limit.resetAt) {
+    limit = { count: 0, resetAt: now + 60_000 }
+    httpProxyLimits.set(appId, limit)
+  }
+  limit.count++
+  if (limit.count > HTTP_PROXY_MAX_PER_MINUTE) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: `Rate limited: max ${HTTP_PROXY_MAX_PER_MINUTE} requests per minute` } }, 429)
+  }
+
+  let body: { url: string; method?: string; headers?: Record<string, string>; body?: string }
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: { code: 'INVALID_BODY', message: 'Request body must be JSON with a "url" field' } }, 400)
+  }
+
+  if (!body.url || typeof body.url !== 'string') {
+    return c.json({ error: { code: 'MISSING_URL', message: '"url" field is required' } }, 400)
+  }
+
+  // Validate URL
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(body.url)
+  } catch {
+    return c.json({ error: { code: 'INVALID_URL', message: 'Invalid URL' } }, 400)
+  }
+
+  // Only allow http(s)
+  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+    return c.json({ error: { code: 'INVALID_PROTOCOL', message: 'Only http and https URLs are allowed' } }, 400)
+  }
+
+  // Block private IPs
+  if (isBlockedHost(parsedUrl.hostname)) {
+    return c.json({ error: { code: 'BLOCKED_HOST', message: 'Requests to private/internal hosts are not allowed' } }, 403)
+  }
+
+  // Validate method
+  const method = (body.method || 'GET').toUpperCase()
+  const allowedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
+  if (!allowedMethods.includes(method)) {
+    return c.json({ error: { code: 'INVALID_METHOD', message: `Method "${method}" is not allowed` } }, 400)
+  }
+
+  // Build headers (strip dangerous ones)
+  const outHeaders: Record<string, string> = {}
+  if (body.headers && typeof body.headers === 'object') {
+    for (const [k, v] of Object.entries(body.headers)) {
+      const lower = k.toLowerCase()
+      // Block hop-by-hop and dangerous headers
+      if (['host', 'cookie', 'set-cookie', 'transfer-encoding', 'connection', 'upgrade'].includes(lower)) continue
+      if (typeof v === 'string') outHeaders[k] = v
+    }
+  }
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), HTTP_PROXY_TIMEOUT_MS)
+
+    const resp = await fetch(body.url, {
+      method,
+      headers: outHeaders,
+      body: method !== 'GET' && method !== 'HEAD' ? body.body : undefined,
+      signal: controller.signal,
+      redirect: 'follow',
+    })
+
+    clearTimeout(timeout)
+
+    // Read response with size limit
+    const chunks: Uint8Array[] = []
+    let totalSize = 0
+
+    if (resp.body) {
+      const reader = resp.body.getReader()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        totalSize += value.byteLength
+        if (totalSize > HTTP_PROXY_MAX_RESPONSE_BYTES) {
+          reader.cancel()
+          return c.json({ error: { code: 'RESPONSE_TOO_LARGE', message: `Response exceeds ${HTTP_PROXY_MAX_RESPONSE_BYTES / 1024 / 1024}MB limit` } }, 502)
+        }
+        chunks.push(value)
+      }
+    }
+
+    // Combine chunks and encode to base64 or text
+    const combined = new Uint8Array(totalSize)
+    let offset = 0
+    for (const chunk of chunks) {
+      combined.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+
+    const contentType = resp.headers.get('content-type') || ''
+    const isText = contentType.includes('text') || contentType.includes('json') || contentType.includes('xml') || contentType.includes('javascript') || contentType.includes('html')
+
+    // Extract response headers (skip set-cookie and other sensitive ones)
+    const respHeaders: Record<string, string> = {}
+    resp.headers.forEach((v, k) => {
+      const lower = k.toLowerCase()
+      if (!['set-cookie', 'transfer-encoding', 'connection'].includes(lower)) {
+        respHeaders[k] = v
+      }
+    })
+
+    return c.json({
+      status: resp.status,
+      statusText: resp.statusText,
+      headers: respHeaders,
+      body: isText ? new TextDecoder().decode(combined) : Buffer.from(combined).toString('base64'),
+      isBase64: !isText,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Proxy request failed'
+    if (message.includes('abort')) {
+      return c.json({ error: { code: 'TIMEOUT', message: `Request timed out after ${HTTP_PROXY_TIMEOUT_MS / 1000}s` } }, 504)
+    }
+    return c.json({ error: { code: 'PROXY_ERROR', message } }, 502)
+  }
+})
+
 // ─── Backend SSE Events ─────────────────────────────────────────────────────
 
 // SSE endpoint for real-time events from mini-app backends

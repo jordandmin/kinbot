@@ -20,6 +20,9 @@
  *   KinBot.openApp(slug) — open another mini-app from the same Kin by its slug
  *   KinBot.clipboard.write(text) — copy text to system clipboard (bypasses iframe restrictions)
  *   KinBot.clipboard.read() — read text from system clipboard (may require permission)
+ *   KinBot.http(url, options) — fetch external URLs through server proxy (bypasses CORS)
+ *     .json(url, headers?) — shorthand: GET and parse JSON
+ *     .post(url, data, headers?) — shorthand: POST JSON and parse response
  *   KinBot.events — real-time event stream from backend (_server.js)
  *     .subscribe(callback) — receive all events from ctx.events.emit() in the backend
  *     .on(eventName, callback) — listen for a specific event name
@@ -542,6 +545,95 @@
     get connected() { return _eventsConnected },
   }
 
+  // ─── HTTP Proxy ──────────────────────────────────────────────────────────
+
+  /**
+   * Make HTTP requests to external URLs through the KinBot server proxy.
+   * Bypasses CORS restrictions — mini-apps can fetch any public API.
+   *
+   * @param {string} url — the URL to fetch
+   * @param {object} [options]
+   * @param {string} [options.method='GET'] — HTTP method
+   * @param {Record<string,string>} [options.headers] — request headers
+   * @param {string|object} [options.body] — request body (objects are JSON.stringify'd)
+   * @returns {Promise<{status: number, statusText: string, headers: Record<string,string>, body: string, isBase64: boolean, ok: boolean, json: function}>}
+   */
+  function http(url, options) {
+    if (!_appMeta || !_appMeta.id) return Promise.reject(new Error('App not ready — call KinBot.ready() first'))
+
+    var opts = options || {}
+    var reqBody = opts.body
+    if (reqBody && typeof reqBody === 'object') {
+      reqBody = JSON.stringify(reqBody)
+    }
+
+    return fetch('/api/mini-apps/' + _appMeta.id + '/http', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: url,
+        method: opts.method || 'GET',
+        headers: opts.headers,
+        body: reqBody,
+      }),
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (d) { throw new Error(d.error?.message || 'HTTP proxy error ' + r.status) })
+      return r.json()
+    }).then(function (data) {
+      // Decode base64 body for binary responses
+      var body = data.body
+      if (data.isBase64 && typeof atob === 'function') {
+        // Keep as base64 string — caller can decode if needed
+      }
+
+      return {
+        status: data.status,
+        statusText: data.statusText,
+        headers: data.headers || {},
+        body: body,
+        isBase64: !!data.isBase64,
+        ok: data.status >= 200 && data.status < 300,
+        /** Parse body as JSON */
+        json: function () {
+          try { return JSON.parse(body) } catch (e) { throw new Error('Failed to parse response as JSON') }
+        },
+        /** Get body as text (decodes base64 if needed) */
+        text: function () {
+          if (data.isBase64 && typeof atob === 'function') return atob(body)
+          return body
+        },
+      }
+    })
+  }
+
+  /**
+   * Shorthand: GET JSON from an external URL.
+   * @param {string} url
+   * @param {Record<string,string>} [headers]
+   * @returns {Promise<any>}
+   */
+  http.json = function (url, headers) {
+    return http(url, { headers: headers }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + r.statusText)
+      return r.json()
+    })
+  }
+
+  /**
+   * Shorthand: POST JSON to an external URL.
+   * @param {string} url
+   * @param {any} data — will be JSON.stringify'd
+   * @param {Record<string,string>} [headers]
+   * @returns {Promise<any>}
+   */
+  http.post = function (url, data, headers) {
+    var h = Object.assign({ 'Content-Type': 'application/json' }, headers || {})
+    return http(url, { method: 'POST', headers: h, body: JSON.stringify(data) }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + r.statusText)
+      return r.json()
+    })
+  }
+
   // ─── Public API ─────────────────────────────────────────────────────────
 
   window.KinBot = {
@@ -563,6 +655,7 @@
     openApp: openApp,
     clipboard: clipboard,
     events: events,
-    version: '1.8.0',
+    http: http,
+    version: '1.9.0',
   }
 })()
