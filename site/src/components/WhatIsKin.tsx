@@ -1,72 +1,18 @@
-import type { LucideIcon } from 'lucide-react'
-import { User, Github, Code2, Globe, Search, FileEdit, Lock, Send, MessageCircle, Hash, ShieldCheck, Slack } from 'lucide-react'
+import { User, Brain, Network, MessageCircle } from 'lucide-react'
 
-// Container fixed at 480px so SVG path endpoints align with CSS grid columns.
-// 3 columns with no CSS gap (spacing comes from px-2 inside each cell).
-// Column centers in SVG viewBox (0–480): 80, 240, 400 (i.e. 1/6, 1/2, 5/6 × 480).
-const CONTAINER_W = 480
-const FANOUT_H    = 52
-const COL_CX      = [80, 240, 400] as const  // SVG x of each sub-Kin center
-const MAIN_COLOR  = 'var(--color-primary)'
+const HUB_COLOR = 'var(--color-primary)'
 
-// The channel the message is shown flowing through
-const ACTIVE_CHANNEL_COLOR = '#5865F2'
-
-
-type Channel = { id: string; label: string; Icon: LucideIcon; color: string; active?: boolean }
-type Tool = { id: string; label: string; Icon: LucideIcon; color: string }
-type SubKin = {
-  id: string; label: string; sublabel: string; badge: string; color: string
-  fanDelays: string[]   // animated dot delays on the fan-out paths
-  toolDelays: string[]  // animated dot delays on tool fan-out (one per tool)
-  tools: Tool[]
-}
-
-const CHANNELS: Channel[] = [
-  { id: 'telegram', label: 'Telegram', Icon: Send,         color: '#3B9EDA' },
-  { id: 'whatsapp', label: 'WhatsApp', Icon: MessageCircle,color: '#25D366' },
-  { id: 'discord',  label: 'Discord',  Icon: Slack,        color: '#5865F2', active: true },
-  { id: 'signal',   label: 'Signal',   Icon: ShieldCheck,  color: '#3A76F0' },
-  { id: 'slack',    label: 'Slack',    Icon: Hash,         color: '#E01E5A' },
+const SPECIALISTS = [
+  { id: 'dev', label: 'Dev Kin', sublabel: 'Code & reviews', color: 'var(--color-glow-3)' },
+  { id: 'analyst', label: 'Analyst Kin', sublabel: 'Research & data', color: 'var(--color-glow-2)' },
+  { id: 'writer', label: 'Writer Kin', sublabel: 'Content & docs', color: 'var(--color-glow-1)' },
 ]
 
-const SUB_KINS: SubKin[] = [
-  {
-    id: 'dev', label: 'Dev Kin', sublabel: 'Code review', badge: 'Dev',
-    color: 'var(--color-glow-3)',
-    fanDelays: ['0.9s', '2.2s'], toolDelays: ['2.0s', '3.0s'],
-    tools: [
-      { id: 'github', label: 'GitHub', Icon: Github, color: 'var(--color-glow-3)' },
-      { id: 'code',   label: 'Code',   Icon: Code2,  color: 'var(--color-glow-3)' },
-    ],
-  },
-  {
-    id: 'analyst', label: 'Analyst Kin', sublabel: 'Research', badge: 'Research',
-    color: 'var(--color-glow-2)',
-    fanDelays: ['1.2s', '2.5s'], toolDelays: ['2.3s', '3.3s'],
-    tools: [
-      { id: 'web',    label: 'Web',    Icon: Globe,  color: 'var(--color-glow-2)' },
-      { id: 'search', label: 'Search', Icon: Search, color: 'var(--color-glow-2)' },
-    ],
-  },
-  {
-    id: 'editor', label: 'Editor Kin', sublabel: 'Writes summary', badge: 'Writing',
-    color: 'var(--color-glow-1)',
-    fanDelays: ['1.5s', '2.8s'], toolDelays: ['2.6s', '3.6s'],
-    tools: [
-      { id: 'edit',  label: 'Edit',  Icon: FileEdit, color: 'var(--color-glow-1)' },
-      { id: 'vault', label: 'Vault', Icon: Lock,     color: 'var(--color-glow-1)' },
-    ],
-  },
-]
-
-// ── Kin avatar ────────────────────────────────────────────────────────
-function KinAvatar({ color, size = 44 }: { color: string; size?: number }) {
-  const dot = Math.max(6, Math.round(size * 0.15))
-  const dotOffset = Math.round(size * 0.1)
+// ── Kin avatar ──────────────────────────────────────────────────────────
+function KinAvatar({ color, size = 40, letter = 'K' }: { color: string; size?: number; letter?: string }) {
   return (
     <div
-      className="relative flex-shrink-0 flex items-center justify-center rounded-full"
+      className="flex-shrink-0 flex items-center justify-center rounded-full"
       style={{
         width: size, height: size,
         background: `radial-gradient(circle at 35% 30%,
@@ -76,219 +22,59 @@ function KinAvatar({ color, size = 44 }: { color: string; size?: number }) {
         boxShadow: `0 0 18px color-mix(in oklch, ${color} 22%, transparent)`,
       }}
     >
-      <span style={{ color, fontSize: Math.round(size * 0.38), fontWeight: 900, lineHeight: 1 }}>K</span>
-      <span
-        className="absolute rounded-full"
-        style={{ top: dotOffset, right: dotOffset, width: dot, height: dot, background: '#10B981', boxShadow: '0 0 5px #10B981' }}
-      />
+      <span style={{ color, fontSize: Math.round(size * 0.38), fontWeight: 900, lineHeight: 1 }}>
+        {letter}
+      </span>
     </div>
   )
 }
 
-// ── Badge ─────────────────────────────────────────────────────────────
-function Badge({ label, color }: { label: string; color: string }) {
+// ── Vertical connector ──────────────────────────────────────────────────
+function Connector({ color, height = 32 }: { color: string; height?: number }) {
   return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0" style={{
-      background: `color-mix(in oklch, ${color} 14%, transparent)`,
-      color,
-    }}>
-      {label}
-    </span>
-  )
-}
-
-// ── Vertical animated connector ───────────────────────────────────────
-function FlowConnector({ color, label, dotDelays, height = 56 }: {
-  color: string; label?: string; dotDelays: string[]; height?: number
-}) {
-  return (
-    <div className="relative flex justify-center overflow-hidden" style={{ height }}>
+    <div className="flex justify-center" style={{ height }}>
       <div style={{
-        position: 'absolute', top: 0, bottom: 0, width: 0,
-        borderLeft: `1.5px dashed color-mix(in oklch, ${color} 30%, transparent)`,
+        width: 0, height: '100%',
+        borderLeft: `1.5px dashed color-mix(in oklch, ${color} 35%, transparent)`,
       }} />
-      {dotDelays.map((delay, i) => (
-        <div key={i} className="wik-flow-dot" style={{
-          background: color,
-          boxShadow: `0 0 8px ${color}`,
-          animationDuration: '1.8s',
-          animationDelay: delay,
-        }} />
-      ))}
-      {label && (
-        <span style={{
-          position: 'absolute', left: 'calc(50% + 14px)', top: '50%',
-          transform: 'translateY(-50%)', fontSize: 10, fontStyle: 'italic',
-          whiteSpace: 'nowrap', color: 'var(--color-muted-foreground)',
-        }}>
-          {label}
-        </span>
-      )}
     </div>
   )
 }
 
-// ── Channels row ──────────────────────────────────────────────────────
-function ChannelsRow() {
-  return (
-    <div className="flex justify-center gap-1.5 flex-wrap">
-      {CHANNELS.map(ch => (
-        <div
-          key={ch.id}
-          className="relative flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium"
-          style={{
-            background: `color-mix(in oklch, ${ch.color} ${ch.active ? '18' : '8'}%, transparent)`,
-            border: `1px solid color-mix(in oklch, ${ch.color} ${ch.active ? '55' : '22'}%, transparent)`,
-            color: ch.active ? ch.color : `color-mix(in oklch, ${ch.color} 70%, var(--color-muted-foreground))`,
-            boxShadow: ch.active ? `0 0 14px color-mix(in oklch, ${ch.color} 28%, transparent)` : undefined,
-            opacity: ch.active ? 1 : 0.55,
-          }}
-        >
-          <ch.Icon size={11} strokeWidth={1.5} />
-          <span>{ch.label}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Fan-out SVG: Main Kin → 3 Sub-Kins ───────────────────────────────
-// viewBox = 0 0 CONTAINER_W FANOUT_H with preserveAspectRatio="none"
-// Column centers (1/6, 1/2, 5/6) stay aligned with grid-cols-3 at any width.
-function DispatchFanOut() {
+// ── Fan-out SVG: Hub → 3 specialists ────────────────────────────────────
+function FanOut() {
+  const W = 300, H = 40
+  const targets = [50, 150, 250]
   return (
     <svg
-      style={{ width: '100%', height: FANOUT_H, display: 'block' }}
-      viewBox={`0 0 ${CONTAINER_W} ${FANOUT_H}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      {SUB_KINS.map((kin, i) => {
-        const cx = COL_CX[i]
-        const mid = CONTAINER_W / 2
-        const d = cx === mid
-          ? `M ${mid} 0 L ${mid} ${FANOUT_H}`
-          : `M ${mid} 0 C ${mid} ${FANOUT_H * 0.5} ${cx} ${FANOUT_H * 0.5} ${cx} ${FANOUT_H}`
-        return (
-          <g key={kin.id}>
-            <path d={d} fill="none" style={{
-              stroke: `color-mix(in oklch, ${kin.color} 35%, transparent)`,
-              strokeWidth: 1.5,
-              strokeDasharray: '4 5',
-            }} />
-            {kin.fanDelays.map((delay, j) => (
-              <circle key={j} r={3.5} style={{ fill: kin.color }}>
-                <animateMotion
-                  dur="1.5s" begin={delay} repeatCount="indefinite"
-                  keyPoints="0;1;1" keyTimes="0;0.65;1" calcMode="linear"
-                  path={d}
-                />
-                <animate
-                  attributeName="opacity" values="0;1;1;0;0"
-                  keyTimes="0;0.06;0.58;0.68;1"
-                  dur="1.5s" begin={delay} repeatCount="indefinite"
-                />
-              </circle>
-            ))}
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
-
-// ── Tool fan-out SVG: Sub-Kin → 2 tools ──────────────────────────────
-// Paths from (50,0) to (25,H) and (75,H); preserveAspectRatio="none"
-// stretches to column width — tool chips at flex-1 align with endpoints.
-function ToolFanOut({ color, toolDelays }: { color: string; toolDelays: string[] }) {
-  const H = 32
-  const W = 100
-  const paths = [
-    `M 50 0 C 50 ${H * 0.5} 25 ${H * 0.5} 25 ${H}`,
-    `M 50 0 C 50 ${H * 0.5} 75 ${H * 0.5} 75 ${H}`,
-  ]
-  return (
-    <svg
-      style={{ width: '100%', height: H, display: 'block' }}
       viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
+      className="w-full"
+      style={{ height: H, display: 'block' }}
       aria-hidden="true"
     >
-      {paths.map((d, i) => (
-        <g key={i}>
-          <path d={d} fill="none" style={{
-            stroke: `color-mix(in oklch, ${color} 35%, transparent)`,
+      {targets.map((x, i) => (
+        <path
+          key={i}
+          d={x === 150
+            ? `M 150 0 L 150 ${H}`
+            : `M 150 0 C 150 ${H * 0.55} ${x} ${H * 0.55} ${x} ${H}`}
+          fill="none"
+          style={{
+            stroke: `color-mix(in oklch, ${SPECIALISTS[i]!.color} 35%, transparent)`,
             strokeWidth: 1.5,
-            strokeDasharray: '3 4',
-          }} />
-          <circle r={3} style={{ fill: color }}>
-            <animateMotion
-              dur="1.2s" begin={toolDelays[i] ?? '0s'} repeatCount="indefinite"
-              keyPoints="0;1;1" keyTimes="0;0.65;1" calcMode="linear"
-              path={d}
-            />
-            <animate
-              attributeName="opacity" values="0;1;1;0;0"
-              keyTimes="0;0.1;0.55;0.65;1"
-              dur="1.2s" begin={toolDelays[i] ?? '0s'} repeatCount="indefinite"
-            />
-          </circle>
-        </g>
+            strokeDasharray: '4 5',
+          }}
+        />
       ))}
     </svg>
   )
 }
 
-// ── Compact sub-Kin card ──────────────────────────────────────────────
-function SubKinCard({ kin }: { kin: SubKin }) {
-  return (
-    <div className="relative w-full glass-strong rounded-xl p-2" style={{
-      border: `1px solid color-mix(in oklch, ${kin.color} 38%, transparent)`,
-      boxShadow: `0 0 18px color-mix(in oklch, ${kin.color} 14%, transparent)`,
-    }}>
-      <div className="flex items-center gap-1.5 mb-1">
-        <KinAvatar color={kin.color} size={28} />
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold leading-tight truncate" style={{ color: 'var(--color-foreground)' }}>
-            {kin.label}
-          </p>
-          <p className="text-[9px] leading-tight" style={{ color: 'var(--color-muted-foreground)' }}>
-            {kin.sublabel}
-          </p>
-        </div>
-      </div>
-      <Badge label={kin.badge} color={kin.color} />
-    </div>
-  )
-}
-
-// ── Tool chips (horizontal, 2 side by side) ───────────────────────────
-function ToolChips({ tools }: { tools: Tool[] }) {
-  return (
-    <div className="w-full flex gap-1">
-      {tools.map((t) => (
-        <div
-          key={t.id}
-          className="relative flex-1 flex items-center gap-1 rounded-lg px-1.5 py-1 text-[9px] font-medium min-w-0"
-          style={{
-            background: `color-mix(in oklch, var(--color-background) 80%, ${t.color} 20%)`,
-            border: `1px solid color-mix(in oklch, ${t.color} 35%, transparent)`,
-            color: t.color,
-          }}
-        >
-          <t.Icon size={10} strokeWidth={1.5} style={{ flexShrink: 0 }} />
-          <span className="truncate">{t.label}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Main component ────────────────────────────────────────────────────
+// ── Main component ──────────────────────────────────────────────────────
 export function WhatIsKin() {
   return (
     <section id="what-is-a-kin" className="py-24 px-6">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-4xl mx-auto">
 
         {/* Header */}
         <div className="text-center mb-16">
@@ -313,92 +99,126 @@ export function WhatIsKin() {
           <p className="text-lg max-w-2xl mx-auto leading-relaxed"
             style={{ color: 'var(--color-muted-foreground)' }}>
             A Kin is a specialized AI agent that lives on your server — with its own identity,
-            memory, and expertise. Kins delegate, collaborate, and call tools to get things done.
+            memory, and expertise. Create several, and they work as a team.
           </p>
         </div>
 
-        {/* ── Sequence diagram ── */}
-        <div style={{ maxWidth: CONTAINER_W, margin: '0 auto' }}>
+        {/* ── Hub pattern diagram ── */}
+        <div style={{ maxWidth: 460, margin: '0 auto' }}>
 
-          {/* 1 ─ User */}
-          <div className="glass-strong gradient-border rounded-2xl p-4 flex items-center gap-4">
+          {/* You */}
+          <div className="glass-strong gradient-border rounded-2xl p-4 flex items-center gap-3">
             <div
-              className="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center"
+              className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: 'var(--color-muted)', border: '1px solid var(--color-border)' }}
             >
-              <User size={20} style={{ color: 'var(--color-muted-foreground)' }} />
+              <User size={18} style={{ color: 'var(--color-muted-foreground)' }} />
             </div>
             <div>
               <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--color-foreground)' }}>You</p>
               <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-                "Can you review my PR and write release notes?"
+                &ldquo;Review my PR and write release notes&rdquo;
               </p>
             </div>
           </div>
 
-          {/* Short connector: You → Channels */}
-          <FlowConnector color="var(--color-muted-foreground)" dotDelays={['0s', '1.1s']} height={28} />
+          <Connector color={HUB_COLOR} />
 
-          {/* 2 ─ Channels (active channel gets a ping when the dot arrives) */}
-          <ChannelsRow />
-
-          {/* Connector: Channels → Main Kin (colored with active channel) */}
-          <FlowConnector
-            color={ACTIVE_CHANNEL_COLOR}
-            label="via Discord"
-            dotDelays={['0.3s', '1.4s']}
-            height={40}
-          />
-
-          {/* 3 ─ Main Kin (orchestrator) — pings when Discord's dot arrives */}
+          {/* Hub */}
           <div
-            className="relative glass-strong rounded-2xl p-4 flex items-center gap-3"
+            className="glass-strong rounded-2xl p-4 flex items-center gap-3"
             style={{
-              border: `1px solid color-mix(in oklch, ${MAIN_COLOR} 38%, transparent)`,
-              boxShadow: `0 0 30px color-mix(in oklch, ${MAIN_COLOR} 16%, transparent)`,
+              border: `1px solid color-mix(in oklch, ${HUB_COLOR} 40%, transparent)`,
+              boxShadow: `0 0 30px color-mix(in oklch, ${HUB_COLOR} 16%, transparent)`,
             }}
           >
-            <KinAvatar color={MAIN_COLOR} size={44} />
+            <KinAvatar color={HUB_COLOR} size={44} letter="H" />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-                  Main Kin
-                </p>
-                <Badge label="Orchestrator" color={MAIN_COLOR} />
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>Hub</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{
+                  background: `color-mix(in oklch, ${HUB_COLOR} 14%, transparent)`,
+                  color: HUB_COLOR,
+                }}>
+                  Coordinator
+                </span>
               </div>
               <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-                Routes your request to the right specialists
+                Understands your intent, routes to the right specialist
               </p>
-            </div>
-            {/* Dispatching indicator: 3 colored dots */}
-            <div className="flex-shrink-0 flex flex-col gap-1.5 items-center pr-1">
-              {SUB_KINS.map(k => (
-                <span key={k.id} className="w-2 h-2 rounded-full" style={{
-                  background: k.color, boxShadow: `0 0 6px ${k.color}`,
-                }} />
-              ))}
             </div>
           </div>
 
-          {/* 4 ─ Fan-out: Main Kin → 3 sub-Kin columns */}
-          <DispatchFanOut />
+          {/* Fan-out */}
+          <FanOut />
 
-          {/* 5 ─ Sub-Kin columns (no gap — spacing via px inside each cell) */}
-          <div className="grid grid-cols-3">
-            {SUB_KINS.map((kin, i) => (
-              <div key={kin.id} className={`flex flex-col items-center ${i === 0 ? 'pr-2' : i === 2 ? 'pl-2' : 'px-1'}`}>
-                <SubKinCard kin={kin} />
-                {/* Tool fan-out: Sub-Kin → 2 tools (SVG bezier paths with traveling dots) */}
-                <ToolFanOut color={kin.color} toolDelays={kin.toolDelays} />
-                <ToolChips tools={kin.tools} />
+          {/* Specialist cards */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {SPECIALISTS.map((s) => (
+              <div key={s.id} className="glass-strong rounded-xl p-2.5 sm:p-3 text-center" style={{
+                border: `1px solid color-mix(in oklch, ${s.color} 30%, transparent)`,
+                boxShadow: `0 0 14px color-mix(in oklch, ${s.color} 10%, transparent)`,
+              }}>
+                <div className="flex justify-center mb-2">
+                  <KinAvatar color={s.color} size={30} />
+                </div>
+                <p className="text-[11px] sm:text-xs font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                  {s.label}
+                </p>
+                <p className="text-[9px] sm:text-[10px]" style={{ color: 'var(--color-muted-foreground)' }}>
+                  {s.sublabel}
+                </p>
               </div>
             ))}
           </div>
 
-          {/* Caption */}
-          <p className="text-center text-xs mt-8" style={{ color: 'var(--color-muted-foreground)', opacity: 0.65 }}>
-            Spawn unlimited sub-Kins — each one remembers, each one specializes.
+          <p className="text-center text-xs mt-6" style={{ color: 'var(--color-muted-foreground)', opacity: 0.7 }}>
+            You can also talk to any Kin directly — the Hub is recommended, not required.
           </p>
+        </div>
+
+        {/* ── Feature highlights ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-16">
+          {([
+            {
+              icon: Brain,
+              title: 'Persistent memory',
+              desc: 'Every Kin remembers conversations, extracts facts, and builds context over months. Come back tomorrow — it knows where you left off.',
+              color: 'var(--color-glow-1)',
+            },
+            {
+              icon: Network,
+              title: 'Smart routing',
+              desc: "The Hub knows each specialist\u2019s expertise and delegates automatically. No manual Kin-switching — just talk naturally.",
+              color: 'var(--color-glow-2)',
+            },
+            {
+              icon: MessageCircle,
+              title: 'Any channel',
+              desc: 'Chat through the web UI, Telegram, Discord, Slack, WhatsApp, or Signal. Connect your channel to the Hub — it handles the rest.',
+              color: 'var(--color-glow-3)',
+            },
+          ] as const).map(({ icon: Icon, title, desc, color }) => (
+            <div key={title} className="glass-strong rounded-xl p-5 sm:p-6 text-center">
+              <div className="flex justify-center mb-3">
+                <div
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                  style={{
+                    background: `color-mix(in oklch, ${color} 14%, transparent)`,
+                    border: `1px solid color-mix(in oklch, ${color} 30%, transparent)`,
+                  }}
+                >
+                  <Icon size={20} style={{ color }} />
+                </div>
+              </div>
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--color-foreground)' }}>
+                {title}
+              </h3>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
+                {desc}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
