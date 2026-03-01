@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { api } from '@/client/lib/api'
+import { useSSE } from '@/client/hooks/useSSE'
 
 /** Model as returned by GET /api/providers/models */
 export interface ProviderModel {
@@ -35,6 +36,13 @@ export function useModels() {
   useEffect(() => {
     fetchModels()
   }, [fetchModels])
+
+  // Refresh model list when providers change
+  useSSE({
+    'provider:created': () => fetchModels(),
+    'provider:updated': () => fetchModels(),
+    'provider:deleted': () => fetchModels(),
+  })
 
   const llmModels = useMemo(() => models.filter((m) => m.capability === 'llm'), [models])
   const imageModels = useMemo(() => models.filter((m) => m.capability === 'image'), [models])
