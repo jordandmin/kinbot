@@ -199,7 +199,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   // never sees the old scroll position on a long conversation.
   const lastScrolledFirstMsgRef = useRef<string | null>(null)
   const justDidInstantScrollRef = useRef(false)
-  const firstMsgId = messages.length > 0 ? messages[0].id : null
+  const firstMsgId = messages.length > 0 ? messages[0]!.id : null
 
   useLayoutEffect(() => {
     if (firstMsgId && firstMsgId !== lastScrolledFirstMsgRef.current) {
