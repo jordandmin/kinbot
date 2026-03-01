@@ -1,6 +1,6 @@
 ## Description
 
-<!-- What does this PR do? Keep it concise. -->
+<!-- What does this PR do? Why is it needed? -->
 
 ## Type of change
 
@@ -9,6 +9,7 @@
 - [ ] Refactor / cleanup
 - [ ] Documentation
 - [ ] CI / tooling
+- [ ] Breaking change
 - [ ] Other: <!-- describe -->
 
 ## Related issues
@@ -29,8 +30,5 @@
 - [ ] The build passes (`bun run build`)
 - [ ] New code follows existing patterns and conventions
 - [ ] I've updated documentation if needed
+- [ ] User-facing strings use `useTranslation()` with keys in both `en.json` and `fr.json`
 - [ ] Breaking changes are noted above (if any)
-
-## Screenshots / recordings
-
-<!-- If this changes UI, add before/after screenshots or a short recording. -->
