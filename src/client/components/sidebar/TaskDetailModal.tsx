@@ -220,12 +220,16 @@ export function TaskDetailModal({
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
-            ) : visibleMessages.length === 0 && !streamingMessage ? (
-              <p className="text-center text-sm text-muted-foreground py-12">
-                {isActive
-                  ? t('taskDetail.conversationEmpty')
-                  : t('taskDetail.conversationEmpty')}
-              </p>
+            ) : visibleMessages.length === 0 && !streamingMessage && !isStreaming ? (
+              isActive ? (
+                <div className="py-6">
+                  <TypingIndicator kinName={kinName} kinAvatarUrl={kinAvatarUrl} />
+                </div>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground py-12">
+                  {t('taskDetail.conversationEmpty')}
+                </p>
+              )
             ) : (
               <div className="space-y-1">
                 {visibleMessages.map((msg) => (
