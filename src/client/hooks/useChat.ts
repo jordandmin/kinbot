@@ -338,6 +338,15 @@ export function useChat(kinId: string | null) {
       // Refresh messages — the persisted compacting trace will appear, then clear live card
       fetchMessages().then(() => setLiveCompacting(null))
     },
+
+    'chat:cleared': (data) => {
+      if (data.kinId !== kinId) return
+      setMessages([])
+      setIsStreaming(false)
+      setStreamingMessage(null)
+      streamingContentRef.current = ''
+      streamingMessageIdRef.current = null
+    },
   })
 
   // Send a message. Returns true on success, false on failure.
