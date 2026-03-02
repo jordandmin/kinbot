@@ -200,3 +200,33 @@
 2. DataGrid component (sortable/filterable table)
 3. `KinBot.navigate(path)` — parent UI navigation
 4. `KinBot.share(data)` improvements — add `KinBot.on('shared-data')` event
+
+## 2026-03-02 (run 5) — DataGrid component (30 total)
+
+**What:** Added a `DataGrid` component — a feature-rich data table replacing the need to combine `Table` + `Pagination` manually.
+
+**New component:**
+- **`DataGrid`** — All-in-one data table with:
+  - **Sorting** — Click sortable column headers. Locale-aware string compare, numeric-aware. Toggles asc/desc.
+  - **Column filters** — Per-column text filter inputs for columns marked `filterable: true`
+  - **Global search** — Optional `searchable` prop adds a search box that filters across all columns
+  - **Pagination** — Built-in with page size selector (`pageSizeOptions`), first/prev/next/last buttons
+  - **Row selection** — `selectable` prop adds checkboxes with select-all. `onSelectionChange` callback.
+  - **Styling** — `striped`, `compact`, `stickyHeader`, `maxHeight` props. Hover effects. Selected row highlighting.
+  - **Custom rendering** — `render?(value, row, index)` per column, same as Table
+  - **Accessibility** — `role="grid"`, `aria-sort` on sorted columns, `aria-label` on controls
+  - ~220 lines of code, zero dependencies beyond React
+
+**Column shape:** `{ key, label, sortable?, filterable?, align?, width?, render? }`
+
+**Props:** columns, data, pageSize (default 10), pageSizeOptions [5,10,25,50], selectable, onSelectionChange, onRowClick, searchable, searchPlaceholder, emptyText, striped, compact, stickyHeader, maxHeight, className, style
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-components.js` — added DataGrid (~220 lines)
+- `src/server/tools/mini-app-tools.ts` — added DataGrid to import list and documented all props
+
+**Next priorities:**
+1. New templates: chat interface, settings panel (showcase Form + DataGrid)
+2. `KinBot.navigate(path)` — parent UI navigation
+3. `KinBot.share(data)` improvements — add `KinBot.on('shared-data')` event
+4. CSS animations library in kinbot-sdk.css
