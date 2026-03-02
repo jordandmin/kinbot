@@ -128,7 +128,7 @@ export function FileStorageCard({ file, kinName, kinAvatarUrl, onEdit, onDelete 
             <Copy className="size-3.5" />
           </Button>
           {onEdit && (
-            <Button variant="ghost" size="icon-xs" onClick={onEdit}>
+            <Button variant="ghost" size="icon-xs" onClick={onEdit} aria-label="Edit">
               <Pencil className="size-3.5" />
             </Button>
           )}
