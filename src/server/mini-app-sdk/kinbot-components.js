@@ -6,7 +6,7 @@
  * All components use CSS variables from kinbot-sdk.css for automatic theme support.
  *
  * Usage in mini-apps:
- *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner } from '@kinbot/components'
+ *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu } from '@kinbot/components'
  */
 
 import React, { useState, useEffect, useRef, useCallback, useId, createContext, useContext } from 'react'
@@ -1701,6 +1701,198 @@ export function DataGrid({
           'aria-label': 'Last page',
         }, '»'),
       ),
+    ),
+  )
+}
+
+// ─── Accordion ──────────────────────────────────────────────────────────────
+
+/**
+ * Accordion — collapsible content sections.
+ *
+ * Props:
+ *   items: Array<{ id: string, title: string|ReactNode, content: ReactNode, disabled?: boolean }>
+ *   multiple?: boolean — allow multiple open (default false)
+ *   defaultOpen?: string[] — initially open item ids
+ *   className, style
+ *
+ * Usage:
+ *   <Accordion items={[
+ *     { id: 'a', title: 'Section 1', content: <p>Content 1</p> },
+ *     { id: 'b', title: 'Section 2', content: <p>Content 2</p> },
+ *   ]} />
+ */
+export function Accordion({ items = [], multiple = false, defaultOpen = [], className, style, ...rest }) {
+  const [openIds, setOpenIds] = React.useState(new Set(defaultOpen))
+
+  function toggle(id) {
+    setOpenIds(prev => {
+      const next = new Set(multiple ? prev : [])
+      if (prev.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  return React.createElement('div', {
+    className: ['accordion', className].filter(Boolean).join(' '),
+    style: { border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg, 0.5rem)', overflow: 'hidden', ...style },
+    role: 'presentation',
+    ...rest,
+  },
+    items.map((item, i) => {
+      const isOpen = openIds.has(item.id)
+      const isLast = i === items.length - 1
+      return React.createElement('div', { key: item.id },
+        // Header
+        React.createElement('button', {
+          type: 'button',
+          role: 'button',
+          'aria-expanded': isOpen,
+          'aria-controls': `accordion-panel-${item.id}`,
+          disabled: item.disabled,
+          onClick: () => !item.disabled && toggle(item.id),
+          className: 'accordion-trigger',
+          style: {
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            width: '100%', padding: '0.75rem 1rem',
+            background: 'transparent', border: 'none',
+            borderBottom: (isOpen || !isLast) ? '1px solid var(--color-border)' : 'none',
+            color: item.disabled ? 'var(--color-muted-foreground)' : 'var(--color-foreground)',
+            cursor: item.disabled ? 'not-allowed' : 'pointer',
+            fontSize: '0.875rem', fontWeight: 500, textAlign: 'left',
+            transition: 'background 0.15s',
+          },
+          onMouseEnter: (e) => { if (!item.disabled) e.currentTarget.style.background = 'var(--color-muted)' },
+          onMouseLeave: (e) => { e.currentTarget.style.background = 'transparent' },
+        },
+          React.createElement('span', { style: { flex: 1 } }, item.title),
+          React.createElement('span', {
+            style: {
+              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s',
+              fontSize: '0.75rem',
+              marginLeft: '0.5rem',
+            },
+          }, '▼'),
+        ),
+        // Panel
+        React.createElement('div', {
+          id: `accordion-panel-${item.id}`,
+          role: 'region',
+          'aria-labelledby': `accordion-trigger-${item.id}`,
+          style: {
+            overflow: 'hidden',
+            maxHeight: isOpen ? '9999px' : '0',
+            transition: 'max-height 0.3s ease',
+          },
+        },
+          React.createElement('div', {
+            style: {
+              padding: '0.75rem 1rem',
+              borderBottom: (!isLast && isOpen) ? '1px solid var(--color-border)' : 'none',
+            },
+          }, item.content),
+        ),
+      )
+    }),
+  )
+}
+
+// ─── DropdownMenu ───────────────────────────────────────────────────────────
+
+/**
+ * DropdownMenu — click-triggered dropdown with menu items.
+ *
+ * Props:
+ *   trigger: ReactNode — the button/element that opens the menu
+ *   items: Array<{ label: string, onClick?: fn, icon?: string|ReactNode, disabled?: boolean, destructive?: boolean, divider?: boolean }>
+ *   align?: 'start' | 'end' — horizontal alignment (default 'start')
+ *   className, style
+ *
+ * Usage:
+ *   <DropdownMenu
+ *     trigger={<Button variant="ghost">⋯</Button>}
+ *     items={[
+ *       { label: 'Edit', icon: '✏️', onClick: () => {} },
+ *       { divider: true },
+ *       { label: 'Delete', destructive: true, onClick: () => {} },
+ *     ]}
+ *   />
+ */
+export function DropdownMenu({ trigger, items = [], align = 'start', className, style, ...rest }) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef(null)
+
+  // Close on outside click or Escape
+  React.useEffect(() => {
+    if (!open) return
+    function onKey(e) { if (e.key === 'Escape') setOpen(false) }
+    function onClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onClick)
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick) }
+  }, [open])
+
+  return React.createElement('div', {
+    ref,
+    className: ['dropdown-menu-container', className].filter(Boolean).join(' '),
+    style: { position: 'relative', display: 'inline-block', ...style },
+    ...rest,
+  },
+    // Trigger
+    React.createElement('div', {
+      onClick: () => setOpen(o => !o),
+      style: { cursor: 'pointer' },
+    }, trigger),
+    // Menu
+    open && React.createElement('div', {
+      role: 'menu',
+      className: 'dropdown-menu',
+      style: {
+        position: 'absolute', top: '100%', marginTop: '0.25rem',
+        [align === 'end' ? 'right' : 'left']: 0,
+        minWidth: '10rem',
+        background: 'var(--color-popover, var(--color-card))',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg, 0.5rem)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        padding: '0.25rem',
+        zIndex: 50,
+        animation: 'fade-in 0.15s ease',
+      },
+    },
+      items.map((item, i) => {
+        if (item.divider) {
+          return React.createElement('div', {
+            key: `divider-${i}`,
+            role: 'separator',
+            style: { height: '1px', background: 'var(--color-border)', margin: '0.25rem 0' },
+          })
+        }
+        return React.createElement('button', {
+          key: item.label || i,
+          type: 'button',
+          role: 'menuitem',
+          disabled: item.disabled,
+          onClick: () => { if (!item.disabled && item.onClick) { item.onClick(); setOpen(false) } },
+          style: {
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            width: '100%', padding: '0.5rem 0.75rem',
+            background: 'transparent', border: 'none',
+            borderRadius: 'var(--radius-md, 0.375rem)',
+            color: item.destructive ? 'var(--color-destructive)' : item.disabled ? 'var(--color-muted-foreground)' : 'var(--color-foreground)',
+            cursor: item.disabled ? 'not-allowed' : 'pointer',
+            fontSize: '0.875rem', textAlign: 'left',
+            transition: 'background 0.1s',
+          },
+          onMouseEnter: (e) => { if (!item.disabled) e.currentTarget.style.background = 'var(--color-muted)' },
+          onMouseLeave: (e) => { e.currentTarget.style.background = 'transparent' },
+        },
+          item.icon && React.createElement('span', { style: { flexShrink: 0, width: '1.25rem', textAlign: 'center' } }, item.icon),
+          React.createElement('span', null, item.label),
+        )
+      }),
     ),
   )
 }

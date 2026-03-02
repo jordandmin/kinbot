@@ -65,7 +65,7 @@ export const createMiniAppTool: ToolRegistration = {
         '`events` (SSE from backend: `.on(event, cb)`, `.subscribe(cb)`, `.close()`, `.connected`). ' +
         '**@kinbot/components — React Component Library:** Add `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"` to app.json dependencies. ' +
         'Import: `import { Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, ' +
-        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid } from "@kinbot/components"`. ' +
+        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu } from "@kinbot/components"`. ' +
         'All components auto-adapt to light/dark theme. Key components: ' +
         '`Card` (+ Card.Header, Card.Title, Card.Description, Card.Content, Card.Footer), ' +
         '`Button` (variant: primary|secondary|destructive|ghost|shine, size: sm|md|lg|icon), ' +
@@ -87,7 +87,9 @@ export const createMiniAppTool: ToolRegistration = {
         'Form.Submit auto-disables during submit with loadingText; Form.Reset clears to initialValues; Form.Actions aligns buttons), ' +
         '`DataGrid` (feature-rich data table: columns [{key, label, sortable?, filterable?, align?, width?, render?}], data, pageSize, pageSizeOptions, selectable + onSelectionChange, ' +
         'onRowClick, searchable + searchPlaceholder, striped, compact, stickyHeader, maxHeight, emptyText; built-in sorting with locale-aware compare, per-column text filters, global search, ' +
-        'pagination with page size selector, checkbox row selection with select-all; use DataGrid instead of Table+Pagination for data-heavy apps). ' +
+        'pagination with page size selector, checkbox row selection with select-all; use DataGrid instead of Table+Pagination for data-heavy apps), ' +
+        '`Accordion` (items: [{id, title, content, disabled?}], multiple?: boolean for multi-open, defaultOpen?: string[]; collapsible content sections with smooth animation), ' +
+        '`DropdownMenu` (trigger: ReactNode, items: [{label, onClick?, icon?, disabled?, destructive?, divider?: boolean}], align: "start"|"end"; click-triggered context menu with keyboard support). ' +
         '**Design System CSS** (auto-injected): CSS variables like ' +
         'var(--color-primary), var(--color-background), var(--color-foreground), var(--color-muted), var(--color-card), var(--color-border). ' +
         'Utility classes: .glass-strong, .surface-card, .gradient-primary, .btn-shine, .card-hover, .animate-fade-in-up. ' +
