@@ -23,6 +23,15 @@ test.describe.serial('Users settings', () => {
     await page.goto('/')
     await loginAs(page)
     await expect(page.locator('button:has(.lucide-settings-2)')).toBeVisible({ timeout: 10_000 })
+
+    // Reset user profile to known state (handles dirty state from previous test suites)
+    await page.request.patch('/api/me', {
+      data: {
+        firstName: TEST_USER.firstName,
+        lastName: TEST_USER.lastName,
+        pseudonym: TEST_USER.pseudonym,
+      },
+    })
   })
 
   test('should navigate to Users settings and see current user', async ({ page }) => {

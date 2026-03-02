@@ -69,8 +69,8 @@ test.describe('Account Settings', () => {
 
     await dialog.getByRole('button', { name: /save/i }).click()
 
-    // Wait for the name to update in the hero section (confirms save succeeded)
-    await expect(dialog.getByText('Updated User')).toBeVisible({ timeout: 5000 })
+    // Dialog auto-closes on successful save
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 })
   })
 
   test('should persist changes after reopening', async ({ page }) => {
@@ -78,20 +78,18 @@ test.describe('Account Settings', () => {
     await openAccountDialog(page)
     let dialog = page.getByRole('dialog')
 
-    // First, update the name
+    // Update the name
     let firstNameInput = dialog.locator('#acctFirstName')
     await firstNameInput.clear()
     await firstNameInput.fill('Updated')
     await dialog.getByRole('button', { name: /save/i }).click()
-    await expect(dialog.getByText('Updated User')).toBeVisible({ timeout: 5000 })
 
-    // Close and reopen dialog
-    await dialog.getByRole('button', { name: /cancel/i }).click()
-    await expect(dialog).not.toBeVisible()
+    // Dialog auto-closes on save — wait for it to disappear
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 })
+
+    // Reopen and verify persistence
     await openAccountDialog(page)
     dialog = page.getByRole('dialog')
-
-    // Should show the updated name
     await expect(dialog.locator('#acctFirstName')).toHaveValue('Updated')
 
     // Restore original name
@@ -99,8 +97,7 @@ test.describe('Account Settings', () => {
     await firstNameInput.clear()
     await firstNameInput.fill(TEST_USER.firstName)
     await dialog.getByRole('button', { name: /save/i }).click()
-    // Wait for save to complete — hero name reverts to original
-    await expect(dialog.getByText(`${TEST_USER.firstName} ${TEST_USER.lastName}`)).toBeVisible({ timeout: 5000 })
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 })
   })
 
   test('should edit pseudonym', async ({ page }) => {
@@ -111,13 +108,11 @@ test.describe('Account Settings', () => {
     await pseudonymInput.clear()
     await pseudonymInput.fill('NewPseudo')
     await dialog.getByRole('button', { name: /save/i }).click()
-    // Wait for save to complete
-    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible({ timeout: 5000 })
 
-    // Close and reopen to verify persistence
-    await dialog.getByRole('button', { name: /cancel/i }).click()
-    await expect(dialog).not.toBeVisible()
+    // Dialog auto-closes on save
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 })
 
+    // Reopen to verify persistence
     await openAccountDialog(page)
     await expect(page.getByRole('dialog').locator('#acctPseudonym')).toHaveValue('NewPseudo')
 
@@ -126,7 +121,7 @@ test.describe('Account Settings', () => {
     await restoreInput.clear()
     await restoreInput.fill(TEST_USER.pseudonym)
     await page.getByRole('dialog').getByRole('button', { name: /save/i }).click()
-    await expect(page.locator('[data-sonner-toast]').first()).toBeVisible({ timeout: 5000 })
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 })
   })
 
   test('should close dialog via Cancel button', async ({ page }) => {
