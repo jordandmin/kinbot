@@ -67,6 +67,10 @@ interface PromptParams {
   compactingSummary?: string | null
   compactedUpTo?: Date | null
   participants?: Array<{ name: string; platform: string | null; messageCount: number; lastSeenAt: Date }>
+  currentMessageSource?: {
+    platform: string  // e.g. "telegram", "discord", "whatsapp", "web"
+    senderName?: string
+  }
 }
 
 /**
@@ -136,6 +140,31 @@ function buildContextBlock(): string {
     `ISO timestamp: ${iso}\n` +
     `Platform: KinBot`
   )
+}
+
+/**
+ * Build a one-line "Responding to" hint so the Kin knows the origin
+ * of the current message and can adapt formatting accordingly.
+ */
+function buildCurrentMessageHint(source: PromptParams['currentMessageSource']): string | null {
+  if (!source) return null
+  const parts = [`Current message from: **${source.platform}**`]
+  if (source.senderName) {
+    parts[0] += ` (sender: ${source.senderName})`
+  }
+  // Add a brief formatting reminder based on platform
+  const formatHints: Record<string, string> = {
+    discord: 'Supports Markdown. No tables — use lists. Wrap URLs in <> to suppress embeds.',
+    telegram: 'Supports Markdown. Keep moderate length.',
+    whatsapp: 'Very limited formatting (*bold*, _italic_, `code`). Keep short.',
+    slack: 'Supports mrkdwn (*bold*, _italic_, `code`). No headings.',
+    web: 'Full Markdown support (tables, headings, code blocks, LaTeX).',
+  }
+  const hint = formatHints[source.platform.toLowerCase()]
+  if (hint) {
+    parts.push(`Format: ${hint}`)
+  }
+  return parts.join('\n')
 }
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -504,6 +533,12 @@ export function buildSystemPrompt(params: PromptParams): string {
     `The current speaker's preferred language is ${languageName}.\n` +
     `Always respond in this language unless the user explicitly asks you to switch.`,
   )
+
+  // [7.5] Current message source hint
+  const messageHint = buildCurrentMessageHint(params.currentMessageSource)
+  if (messageHint) {
+    blocks.push(messageHint)
+  }
 
   // [8] Date and context
   blocks.push(

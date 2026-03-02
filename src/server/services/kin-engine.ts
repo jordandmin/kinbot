@@ -286,6 +286,25 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     // Build message history (also returns compacting summary for system prompt injection)
     const { messages: messageHistory, compactingSummary, compactedUpTo, participants } = await buildMessageHistory(kinId)
 
+    // Resolve the current message's originating platform for formatting hints
+    let currentMessageSource: { platform: string; senderName?: string } | undefined
+    if (queueItem.sourceType === 'channel') {
+      const meta = getChannelQueueMeta(queueItem.id)
+      if (meta) {
+        const ch = await getChannel(meta.channelId)
+        if (ch) {
+          currentMessageSource = { platform: ch.platform }
+          // Extract sender name from message prefix "[platform:Name] ..."
+          const prefixMatch = queueItem.content.match(/^\[[\w-]+:([^\]]+)\]/)
+          if (prefixMatch) {
+            currentMessageSource.senderName = prefixMatch[1].trim()
+          }
+        }
+      }
+    } else if (queueItem.sourceType === 'user') {
+      currentMessageSource = { platform: 'web' }
+    }
+
     const systemPrompt = buildSystemPrompt({
       kin: { name: kin.name, slug: kin.slug, role: kin.role, character: kin.character, expertise: kin.expertise },
       contacts: contactsWithSlug,
@@ -301,6 +320,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       compactingSummary,
       compactedUpTo,
       participants: participants.length > 0 ? participants : undefined,
+      currentMessageSource,
     })
 
     // ── E2E Mock LLM: stream a fake response without calling any provider ──

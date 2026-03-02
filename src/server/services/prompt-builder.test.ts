@@ -287,4 +287,35 @@ describe('buildSystemPrompt', () => {
     }))
     expect(result).toContain('system user "admin_user"')
   })
+
+  // --- Current message source ---
+
+  it('includes current message source hint for channel messages', () => {
+    const result = buildSystemPrompt(makeParams({
+      currentMessageSource: { platform: 'telegram', senderName: 'Nicolas' },
+    }))
+    expect(result).toContain('Current message from: **telegram**')
+    expect(result).toContain('sender: Nicolas')
+    expect(result).toContain('Keep moderate length')
+  })
+
+  it('includes current message source hint for web UI', () => {
+    const result = buildSystemPrompt(makeParams({
+      currentMessageSource: { platform: 'web' },
+    }))
+    expect(result).toContain('Current message from: **web**')
+    expect(result).toContain('Full Markdown support')
+  })
+
+  it('omits current message source hint when not provided', () => {
+    const result = buildSystemPrompt(makeParams())
+    expect(result).not.toContain('Current message from')
+  })
+
+  it('includes discord formatting hints', () => {
+    const result = buildSystemPrompt(makeParams({
+      currentMessageSource: { platform: 'discord' },
+    }))
+    expect(result).toContain('No tables')
+  })
 })
