@@ -244,3 +244,38 @@
 3. **ConversationSearch** (135 lines) — could lazy-load, shown conditionally
 4. **HumanPromptCard / CompactingCard** — conditionally rendered, small lazy-load candidates
 5. **Verify CI passes** on both recent commits
+
+---
+
+## 2026-03-02 20:28 UTC
+### Browser audit findings
+- **Browser unavailable** (sandbox browser disabled)
+- Skipped to code audit
+
+### Code audit findings
+- **Issue:** ConversationSearch (135 lines) statically imported in ChatPanel despite being conditionally rendered (only when search is open). ToolCallsViewer (53 lines) and ConversationSearch lacked React.memo.
+- **Root cause:** Static import bundles ConversationSearch into ChatPage chunk even though it's behind `{isSearchOpen && ...}` conditional.
+
+### Fix applied
+- **What:**
+  1. Lazy-load ConversationSearch using React.lazy + Suspense (conditionally rendered)
+  2. Wrapped ToolCallsViewer in React.memo (receives stable props from ChatPanel)
+  3. Wrapped ConversationSearch in React.memo
+- **Files changed:** ChatPanel.tsx, ConversationSearch.tsx, ToolCallsViewer.tsx
+- **Impact:**
+  - ConversationSearch: 2.24 KB on-demand chunk (only loads when user opens search)
+  - ChatPage: 407 KB → 405 KB
+  - ToolCallsViewer no longer re-renders when unrelated ChatPanel state changes
+
+### Cumulative progress (since journal start)
+- **Initial state:** Single 2,881 KB chunk (825 KB gzip)
+- **Current ChatPage:** 405 KB (from 590 KB)
+- **Lazy chunks created:** KinFormModal, SettingsPage, AccountDialog, CronFormModal, CronDetailModal, TaskDetailModal, MiniAppViewer, QuickChatPanel, ConversationSearch, ProviderIcon icons, rehype-highlight, remark-math, rehype-katex
+- **React.memo added:** 17 components (9 chat + 6 sidebar + ProviderIcon + ToolCallsViewer)
+
+### Next run priorities
+1. **Browser audit** — still needed when sandbox browser becomes available
+2. **ChatPage still 405 KB** — MessageBubble (812 lines) is the heaviest child but core to chat
+3. **vendor-markdown at 157 KB** — katex/highlight already lazy, not much more to do
+4. **Consider virtualizing long message lists** — React-window or similar for conversations with 100+ messages
+5. **Profile runtime performance** — most bundle optimizations done, shift to runtime (memo, callbacks, virtualization)

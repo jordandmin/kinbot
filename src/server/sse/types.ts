@@ -56,6 +56,7 @@ export type SSEEventType =
   | 'reaction:removed'
   | 'quick-session:closed'
   | 'settings:hub-changed'
+  | 'version:update-available'
   | 'connected'
 
 export interface SSEEvent {

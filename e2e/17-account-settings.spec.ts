@@ -74,14 +74,28 @@ test.describe('Account Settings', () => {
   })
 
   test('should persist changes after reopening', async ({ page }) => {
+    // Self-contained: save a change, close, reopen, verify persistence
     await openAccountDialog(page)
-    const dialog = page.getByRole('dialog')
+    let dialog = page.getByRole('dialog')
 
-    // Should show the updated name from previous test
+    // First, update the name
+    let firstNameInput = dialog.locator('#acctFirstName')
+    await firstNameInput.clear()
+    await firstNameInput.fill('Updated')
+    await dialog.getByRole('button', { name: /save/i }).click()
+    await expect(dialog.getByText('Updated User')).toBeVisible({ timeout: 5000 })
+
+    // Close and reopen dialog
+    await dialog.getByRole('button', { name: /cancel/i }).click()
+    await expect(dialog).not.toBeVisible()
+    await openAccountDialog(page)
+    dialog = page.getByRole('dialog')
+
+    // Should show the updated name
     await expect(dialog.locator('#acctFirstName')).toHaveValue('Updated')
 
     // Restore original name
-    const firstNameInput = dialog.locator('#acctFirstName')
+    firstNameInput = dialog.locator('#acctFirstName')
     await firstNameInput.clear()
     await firstNameInput.fill(TEST_USER.firstName)
     await dialog.getByRole('button', { name: /save/i }).click()

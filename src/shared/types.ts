@@ -391,6 +391,17 @@ export interface MiniAppSummary {
 }
 
 /** Tool domain categories for UI grouping and color coding */
+/** Version check info returned by the version-check API */
+export interface VersionInfo {
+  currentVersion: string
+  latestVersion: string | null
+  isUpdateAvailable: boolean
+  releaseUrl: string | null
+  releaseNotes: string | null
+  publishedAt: number | null
+  lastCheckedAt: number | null
+}
+
 export type ToolDomain =
   | 'search'
   | 'browse'

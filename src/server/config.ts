@@ -200,5 +200,11 @@ export const config = {
     backendEnabled: process.env.MINI_APPS_BACKEND_ENABLED !== 'false', // default: true
   },
 
+  versionCheck: {
+    enabled: process.env.VERSION_CHECK_ENABLED === 'true',
+    repo: process.env.VERSION_CHECK_REPO ?? 'MarlBurroW/kinbot',
+    intervalHours: Number(process.env.VERSION_CHECK_INTERVAL_HOURS ?? 12),
+  },
+
   publicUrl: process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3333}`,
 } as const
