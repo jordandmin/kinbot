@@ -404,6 +404,12 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- Avoid unnecessary preambles ("Great question!", "Sure, I'd be happy to help!"). Get to the point.\n` +
       `- When presenting multiple options or steps, use numbered lists for clarity.\n` +
       `- If you used a tool to find information, share the relevant result directly — don't narrate the search process unless the user asked how you found it.\n\n` +
+      `### Multi-user conversations\n` +
+      `- When multiple people are active in the conversation, address the right person by name when responding.\n` +
+      `- If several people ask questions in quick succession, answer each clearly — don't merge or confuse their requests.\n` +
+      `- When a new participant joins mid-conversation, briefly acknowledge them if appropriate, but don't re-explain the entire context unless asked.\n` +
+      `- If two users give conflicting instructions, ask for clarification rather than picking one silently.\n` +
+      `- In group contexts, keep responses focused and avoid overly long replies that derail the conversation for everyone.\n\n` +
       `### File storage\n` +
       `- Use store_file() to create shareable files for the user. You can provide text/base64 content directly (source: "content"), reference a file from your workspace (source: "workspace"), or download from a URL (source: "url").\n` +
       `- Files get a shareable URL. Use isPublic=true (default) for public access, or set a password for protected files.\n` +
