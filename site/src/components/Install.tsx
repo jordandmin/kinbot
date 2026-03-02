@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, UserPlus, Cpu, MessageCircle, Brain, ChevronRight } from 'lucide-react'
 
 type Tab = 'script' | 'docker' | 'compose' | 'manual'
 
@@ -175,6 +175,151 @@ export function Install() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+      {/* Post-install journey */}
+      <div className="mt-12">
+        <h3 className="text-center text-lg font-semibold mb-2" style={{ color: 'var(--color-foreground)' }}>
+          What happens next?
+        </h3>
+        <p className="text-center text-sm mb-8" style={{ color: 'var(--color-muted-foreground)' }}>
+          From install to &ldquo;wow&rdquo; in under 3 minutes.
+        </p>
+
+        <div className="relative">
+          {/* Vertical timeline line (desktop) */}
+          <div
+            className="hidden sm:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2"
+            style={{ background: 'linear-gradient(to bottom, color-mix(in oklch, var(--color-glow-1) 30%, transparent), color-mix(in oklch, var(--color-glow-2) 30%, transparent), transparent)' }}
+          />
+
+          <div className="space-y-4 sm:space-y-6">
+            {([
+              {
+                icon: UserPlus,
+                time: '30s',
+                title: 'Setup wizard starts',
+                desc: 'Create your admin account. No email verification, no third-party auth required.',
+                color: 'var(--color-glow-3)',
+              },
+              {
+                icon: Cpu,
+                time: '60s',
+                title: 'Connect a provider',
+                desc: 'Running Ollama? It\'s auto-detected. Otherwise, paste an API key from any of the 23+ supported providers.',
+                color: 'var(--color-glow-1)',
+              },
+              {
+                icon: MessageCircle,
+                time: '90s',
+                title: 'Create your first Kin',
+                desc: 'Give it a name, a role, a personality. Pick a model. Your agent is born.',
+                color: 'var(--color-glow-2)',
+              },
+              {
+                icon: Brain,
+                time: '3 min',
+                title: 'Memory kicks in',
+                desc: 'Chat naturally. Your Kin automatically extracts and remembers facts from the conversation. Come back tomorrow, it still knows.',
+                color: 'var(--color-glow-1)',
+              },
+            ] as const).map((step, i) => {
+              const Icon = step.icon
+              return (
+                <div key={i} className="relative flex items-start gap-4 sm:gap-6">
+                  {/* Timeline dot (desktop) */}
+                  <div className="hidden sm:flex absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full z-10 mt-4"
+                    style={{
+                      background: step.color,
+                      boxShadow: `0 0 10px color-mix(in oklch, ${step.color} 50%, transparent)`,
+                    }}
+                  />
+
+                  {/* Left side: time badge */}
+                  <div className="hidden sm:flex flex-1 justify-end pt-2.5">
+                    <span
+                      className="text-xs font-mono font-bold px-2.5 py-1 rounded-full"
+                      style={{
+                        background: `color-mix(in oklch, ${step.color} 10%, transparent)`,
+                        color: step.color,
+                        border: `1px solid color-mix(in oklch, ${step.color} 25%, transparent)`,
+                      }}
+                    >
+                      {step.time}
+                    </span>
+                  </div>
+
+                  {/* Mobile: icon + time inline */}
+                  <div className="sm:hidden flex-shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: `color-mix(in oklch, ${step.color} 15%, transparent)`,
+                        border: `1px solid color-mix(in oklch, ${step.color} 30%, transparent)`,
+                      }}
+                    >
+                      <Icon size={18} style={{ color: step.color }} />
+                    </div>
+                  </div>
+
+                  {/* Right side: content card */}
+                  <div
+                    className="flex-1 glass-strong rounded-xl p-4 transition-all duration-200 hover:scale-[1.01]"
+                    style={{
+                      border: `1px solid color-mix(in oklch, ${step.color} 20%, transparent)`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                      <div className="hidden sm:flex w-8 h-8 rounded-lg items-center justify-center flex-shrink-0"
+                        style={{
+                          background: `color-mix(in oklch, ${step.color} 15%, transparent)`,
+                          border: `1px solid color-mix(in oklch, ${step.color} 30%, transparent)`,
+                        }}
+                      >
+                        <Icon size={15} style={{ color: step.color }} />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="sm:hidden text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
+                          style={{
+                            background: `color-mix(in oklch, ${step.color} 10%, transparent)`,
+                            color: step.color,
+                          }}
+                        >
+                          {step.time}
+                        </span>
+                        <h4 className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
+                          {step.title}
+                        </h4>
+                      </div>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
+                      {step.desc}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Ollama fast path callout */}
+        <div
+          className="mt-8 glass-strong rounded-xl p-4 flex items-start gap-3"
+          style={{
+            background: 'color-mix(in oklch, var(--color-glow-1) 4%, var(--color-card))',
+            border: '1px solid color-mix(in oklch, var(--color-glow-1) 18%, transparent)',
+          }}
+        >
+          <ChevronRight size={16} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
+          <div>
+            <p className="text-sm font-medium mb-0.5" style={{ color: 'var(--color-foreground)' }}>
+              Already running Ollama?
+            </p>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
+              KinBot auto-detects Ollama on localhost:11434. No API key, no config, no data leaving your machine.
+              Just <code className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: 'color-mix(in oklch, var(--color-muted-foreground) 10%, transparent)' }}>docker run</code> and go.
+            </p>
+          </div>
         </div>
       </div>
     </section>
