@@ -18,6 +18,7 @@ import { useToolCalls } from '@/client/hooks/useToolCalls'
 import { useHumanPrompts } from '@/client/hooks/useHumanPrompts'
 import { useQuickSession } from '@/client/hooks/useQuickSession'
 import { useAuth } from '@/client/hooks/useAuth'
+import { useReactions } from '@/client/hooks/useReactions'
 import { useDraftMessage } from '@/client/hooks/useDraftMessage'
 import { useFileUpload } from '@/client/hooks/useFileUpload'
 import { useExportConversation } from '@/client/hooks/useExportConversation'
@@ -69,6 +70,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   const { activeSession, isOpen: isQuickOpen, setIsOpen: setQuickOpen, createSession, closeSession } = useQuickSession(kin.id)
   const { exportAsMarkdown, exportAsJSON } = useExportConversation(messages, kin.name)
   const { users: mentionableUsers, kins: mentionableKins } = useMentionables()
+  const { toggleReaction } = useReactions(kin.id)
   const [isToolCallsOpen, setIsToolCallsOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
@@ -598,6 +600,9 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                       injectedMemories={msg.injectedMemories}
                       isGrouped={isGrouped}
                       onOpenTaskDetail={isTask && msg.resolvedTaskId ? () => setDetailTaskId(msg.resolvedTaskId) : undefined}
+                      reactions={msg.reactions}
+                      currentUserId={user?.id}
+                      onToggleReaction={(emoji) => toggleReaction(msg.id, emoji)}
                       onQuoteReply={handleQuoteReply}
                       onEditResend={handleEditResend}
                       onRegenerate={msg.id === lastAssistantMsgId && !isStreaming && !isProcessing ? handleRegenerate : undefined}
