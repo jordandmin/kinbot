@@ -111,6 +111,8 @@ export const createMiniAppTool: ToolRegistration = {
         '`KinBot.shortcut(key, callback)` → register keyboard shortcuts (e.g. "ctrl+k", "meta+shift+p", "escape"). Returns unregister function. Pass null to remove. ' +
         '`KinBot.apps.list()` → Promise<Array> (list all mini-apps from the same Kin: {id, name, slug, description, icon, version}). ' +
         '`KinBot.apps.get(appId)` → Promise<object> (get details of a specific mini-app). ' +
+        '`KinBot.memory.search(query, limit?)` → Promise<Array> (semantic search the Kin\'s memories: {id, content, category, subject, score, updatedAt}; default 20, max 50). ' +
+        '`KinBot.memory.store(content, {category?, subject?})` → Promise<object> (store a new memory; category: fact|preference|decision|knowledge, default knowledge; max 2000 chars). ' +
         '`KinBot.conversation.history(limit?)` → Promise<Array> (get recent messages: {id, role, content, createdAt, sourceType}; default 20, max 100). ' +
         '`KinBot.conversation.send(text, options?)` → Promise<boolean> (send a message to the Kin; alias of sendMessage). ' +
         '`KinBot.share(targetSlug, data)` → Promise<boolean> (share JSON data with another mini-app and open it).',

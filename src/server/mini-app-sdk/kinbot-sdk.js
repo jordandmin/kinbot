@@ -36,6 +36,8 @@
  *   KinBot.notification(title, body?) — show a browser notification via the parent (returns Promise<boolean>)
  *   KinBot.apps.list() — list all mini-apps from the same Kin
  *   KinBot.apps.get(appId) — get details of a specific mini-app
+ *   KinBot.memory.search(query, limit?) — semantic search the Kin's memories
+ *   KinBot.memory.store(content, options?) — store a new memory for the Kin
  *   KinBot.conversation.history(limit?) — get recent conversation messages
  *   KinBot.conversation.send(text, options?) — send a message to the Kin's conversation
  *   KinBot.share(targetSlug, data) — share data with another mini-app and open it
@@ -902,6 +904,52 @@
     },
   }
 
+  // ─── Memory ──────────────────────────────────────────────────────────────
+
+  var memory = {
+    /**
+     * Search the Kin's memories using semantic + full-text hybrid search.
+     * @param {string} query — search query
+     * @param {number} [limit=20] — max results (1-50)
+     * @returns {Promise<Array<{id: string, content: string, category: string, subject: string|null, score: number, updatedAt: string}>>}
+     */
+    search: function (query, limit) {
+      if (!_appMeta || !_appMeta.id) return Promise.reject(new Error('App not ready — call KinBot.ready() first'))
+      if (!query || typeof query !== 'string') return Promise.reject(new Error('query (string) is required'))
+      var n = Math.min(Math.max(1, limit || 20), 50)
+      return fetch('/api/mini-apps/' + encodeURIComponent(_appMeta.id) + '/memories/search?q=' + encodeURIComponent(query) + '&limit=' + n)
+        .then(function (r) {
+          if (!r.ok) return r.json().then(function (d) { throw new Error(d.error?.message || 'Memory search failed') })
+          return r.json()
+        })
+        .then(function (d) { return d.memories || [] })
+    },
+
+    /**
+     * Store a new memory for the Kin.
+     * @param {string} content — memory text (max 2000 chars)
+     * @param {{category?: 'fact'|'preference'|'decision'|'knowledge', subject?: string}} [options]
+     * @returns {Promise<{id: string, content: string, category: string, subject: string|null, createdAt: string}>}
+     */
+    store: function (content, options) {
+      if (!_appMeta || !_appMeta.id) return Promise.reject(new Error('App not ready — call KinBot.ready() first'))
+      if (!content || typeof content !== 'string') return Promise.reject(new Error('content (string) is required'))
+      var body = { content: content }
+      if (options && options.category) body.category = options.category
+      if (options && options.subject) body.subject = options.subject
+      return fetch('/api/mini-apps/' + encodeURIComponent(_appMeta.id) + '/memories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(function (r) {
+          if (!r.ok) return r.json().then(function (d) { throw new Error(d.error?.message || 'Memory store failed') })
+          return r.json()
+        })
+        .then(function (d) { return d.memory })
+    },
+  }
+
   // ─── Conversation ────────────────────────────────────────────────────────
 
   var conversation = {
@@ -994,8 +1042,9 @@
     notification: notification,
     shortcut: shortcut,
     apps: apps,
+    memory: memory,
     conversation: conversation,
     share: share,
-    version: '1.14.0',
+    version: '1.15.0',
   }
 })()
