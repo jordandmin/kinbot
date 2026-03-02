@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/client/components/ui/input'
 import { Button } from '@/client/components/ui/button'
@@ -11,7 +11,7 @@ interface ConversationSearchProps {
   messages: Array<{ id: string; content: string }>
 }
 
-export function ConversationSearch({ onClose, onSearchChange, messages }: ConversationSearchProps) {
+export const ConversationSearch = React.memo(function ConversationSearch({ onClose, onSearchChange, messages }: ConversationSearchProps) {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -132,4 +132,4 @@ export function ConversationSearch({ onClose, onSearchChange, messages }: Conver
       </Button>
     </div>
   )
-}
+})

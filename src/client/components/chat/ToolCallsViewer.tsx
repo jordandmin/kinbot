@@ -1,3 +1,4 @@
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@/client/components/ui/scroll-area'
 import { Button } from '@/client/components/ui/button'
@@ -11,7 +12,7 @@ interface ToolCallsViewerProps {
   onClose: () => void
 }
 
-export function ToolCallsViewer({ toolCalls, toolCallCount, onClose }: ToolCallsViewerProps) {
+export const ToolCallsViewer = React.memo(function ToolCallsViewer({ toolCalls, toolCallCount, onClose }: ToolCallsViewerProps) {
   const { t } = useTranslation()
 
   return (
@@ -50,4 +51,4 @@ export function ToolCallsViewer({ toolCalls, toolCallCount, onClose }: ToolCalls
       )}
     </div>
   )
-}
+})

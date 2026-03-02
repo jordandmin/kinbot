@@ -22,7 +22,7 @@ import { useReactions } from '@/client/hooks/useReactions'
 import { useDraftMessage } from '@/client/hooks/useDraftMessage'
 import { useFileUpload } from '@/client/hooks/useFileUpload'
 import { useExportConversation } from '@/client/hooks/useExportConversation'
-import { ConversationSearch } from '@/client/components/chat/ConversationSearch'
+const ConversationSearch = lazy(() => import('@/client/components/chat/ConversationSearch').then(m => ({ default: m.ConversationSearch })))
 import { ChatEmptyState } from '@/client/components/chat/ChatEmptyState'
 import { DateSeparator } from '@/client/components/chat/DateSeparator'
 import { TimeGapIndicator } from '@/client/components/chat/TimeGapIndicator'
@@ -514,11 +514,13 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
 
       {/* Search bar */}
       {isSearchOpen && (
-        <ConversationSearch
-          onClose={toggleSearch}
-          onSearchChange={handleSearchChange}
-          messages={messages}
-        />
+        <Suspense fallback={null}>
+          <ConversationSearch
+            onClose={toggleSearch}
+            onSearchChange={handleSearchChange}
+            messages={messages}
+          />
+        </Suspense>
       )}
 
       {/* Middle: messages + optional tool calls panel */}
