@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { label: 'Demo', href: '#demo' },
   { label: 'Features', href: '#features' },
   { label: 'Use Cases', href: '#use-cases' },
+  { label: 'Privacy', href: '#privacy' },
   { label: 'Compare', href: '#comparison' },
   { label: 'Install', href: '#install' },
   { label: 'FAQ', href: '#faq' },

@@ -90,6 +90,7 @@ const WhatIsKin = lazy(() => import('./components/WhatIsKin').then(m => ({ defau
 const InteractiveDemo = lazy(() => import('./components/InteractiveDemo').then(m => ({ default: m.InteractiveDemo })))
 const Features = lazy(() => import('./components/Features').then(m => ({ default: m.Features })))
 const UseCases = lazy(() => import('./components/UseCases').then(m => ({ default: m.UseCases })))
+const Privacy = lazy(() => import('./components/Privacy').then(m => ({ default: m.Privacy })))
 const Screenshots = lazy(() => import('./components/Screenshots').then(m => ({ default: m.Screenshots })))
 const Comparison = lazy(() => import('./components/Comparison').then(m => ({ default: m.Comparison })))
 const Providers = lazy(() => import('./components/Providers').then(m => ({ default: m.Providers })))
@@ -159,6 +160,12 @@ export default function App() {
         <Suspense fallback={<SectionFallback />}>
           <ScrollReveal>
             <UseCases />
+          </ScrollReveal>
+        </Suspense>
+        <SectionDivider variant="fade" />
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <Privacy />
           </ScrollReveal>
         </Suspense>
         <SectionDivider variant="wave" flip />
