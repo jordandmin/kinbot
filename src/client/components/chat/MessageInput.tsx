@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react'
+import { useRef, useState, useCallback, forwardRef, useImperativeHandle, memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
 import { Textarea } from '@/client/components/ui/textarea'
@@ -40,7 +40,7 @@ interface MessageInputProps {
   mentionableKins?: MentionableKin[]
 }
 
-export const MessageInput = forwardRef<MessageInputHandle, MessageInputProps>(function MessageInput({
+export const MessageInput = memo(forwardRef<MessageInputHandle, MessageInputProps>(function MessageInput({
   onSend,
   onStop,
   isStreaming = false,
@@ -497,4 +497,4 @@ export const MessageInput = forwardRef<MessageInputHandle, MessageInputProps>(fu
       </div>
     </div>
   )
-})
+}))

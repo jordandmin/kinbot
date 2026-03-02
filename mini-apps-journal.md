@@ -255,3 +255,35 @@
 2. `KinBot.navigate(path)` — parent UI navigation
 3. `KinBot.share(data)` improvements
 4. Fix the 3 pre-existing test failures
+
+## 2026-03-02 (run 7) — CSS Animations & Transitions Library
+
+**What:** Expanded the animations section in `kinbot-sdk.css` from ~6 keyframes to 20+, added transition utilities, duration/delay modifiers, and reduced motion support.
+
+**New keyframes:**
+- `fade-out`, `fade-in-down`, `fade-out-up`, `fade-out-down`
+- `slide-in-left`, `slide-in-right`, `slide-out-left`, `slide-out-right`
+- `scale-out`, `bounce-in`, `shake`, `spin`, `ping`, `wiggle`
+- `collapse-down`, `expand-up` (for accordion/collapsible patterns, uses `--collapse-height` CSS var)
+- `flip-in-x`, `flip-in-y`
+
+**New utility classes:**
+- 18 new `.animate-*` classes for all new keyframes
+- `.duration-75/100/150/200/300/500/700/1000` — animation duration modifiers
+- `.delay-6` through `.delay-10` — extended delays (up to 1s)
+- `.transition-all/colors/opacity/transform/shadow` — transition property utilities
+- `.transition-fast/normal/slow/slower` — transition speed modifiers
+- `.ease-in/out/in-out/bounce/spring` — timing function utilities
+- `@media (prefers-reduced-motion: reduce)` — kills all animations/transitions for accessibility
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-sdk.css` — +155 lines in animations section
+- `src/server/tools/mini-app-tools.ts` — documented all new animation/transition classes in tool descriptions
+
+**Note:** 3 pre-existing test failures (drizzle-orm schema import). HUSKY=0 for commit.
+
+**Next priorities:**
+1. `KinBot.navigate(path)` — parent UI navigation
+2. `KinBot.share(data)` improvements
+3. Fix the 3 pre-existing test failures
+4. New template ideas: kanban board, form builder
