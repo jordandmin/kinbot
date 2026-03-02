@@ -181,3 +181,32 @@
 3. **vendor-markdown at 612 KB** — katex/highlight could be lazy-loaded for messages that don't use them
 4. **React.memo audit** — MessageInput (500 lines, forwardRef but no memo), ChatPanel candidates
 5. **Fix pre-existing test side effects** (files.test.ts, search.test.ts fail in full suite but pass alone)
+
+---
+
+## 2026-03-02 18:28 UTC
+### Browser audit findings
+- **Browser unavailable** (sandbox browser disabled)
+- Skipped to code audit
+
+### Pre-flight
+- CI was failing: E2E test `should revoke an invitation with confirmation` — selector `.lucide-x-circle` wrong (lucide-react v0.575 renamed XCircle to CircleX, class is `lucide-circle-x`). Uncommitted fix found in working tree, committed and pushed.
+
+### Code audit findings
+- **Issue:** All 6 sidebar components (KinList, TaskList, CronList, MiniAppList, SystemHealthBar, SidebarFooterContent) lacked React.memo, causing unnecessary re-renders on every parent state change
+- **Root cause:** AppSidebar re-renders when kin selection, queue state, or any prop changes — all children re-render even when their specific props haven't changed
+- **Additional issue:** `kins.map(...)` in AppSidebar created new array references on every render for MiniAppList and CronList props, which would defeat memo even if added
+
+### Fix applied
+- **What:** 
+  1. Wrapped all 6 sidebar components in `React.memo()`
+  2. Added `useMemo` in AppSidebar for derived `miniAppKins` and `cronKins` arrays
+- **Files changed:** AppSidebar.tsx, KinList.tsx, TaskList.tsx, CronList.tsx, MiniAppList.tsx, SystemHealthBar.tsx, SidebarFooterContent.tsx
+- **Impact:** Sidebar sections no longer re-render when unrelated state changes. Most noticeable when selecting different kins (TaskList/CronList/SystemHealthBar/Footer stay stable) or when queue state updates (only KinList re-renders).
+
+### Next run priorities
+1. **Browser audit** — still needed when sandbox browser becomes available
+2. **ChatPage still 412 KB** — could split ConversationSearch, QuickChatPanel
+3. **vendor-markdown at 154 KB** — already well-optimized (was 612 KB)
+4. **React.memo on remaining chat components** — ToolCallsViewer, QuickChatPanel
+5. **Monitor CI** — E2E fix pushed, verify it passes

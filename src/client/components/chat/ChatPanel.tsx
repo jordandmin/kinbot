@@ -6,13 +6,13 @@ import { MessageInput, type MessageInputHandle } from '@/client/components/chat/
 import { TypingIndicator } from '@/client/components/chat/TypingIndicator'
 import { ConversationHeader } from '@/client/components/chat/ConversationHeader'
 import { ToolCallsViewer } from '@/client/components/chat/ToolCallsViewer'
-import { MiniAppViewer } from '@/client/components/mini-app/MiniAppViewer'
+const MiniAppViewer = lazy(() => import('@/client/components/mini-app/MiniAppViewer').then(m => ({ default: m.MiniAppViewer })))
 import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { CompactingCard } from '@/client/components/chat/CompactingCard'
 import { HumanPromptCard } from '@/client/components/chat/HumanPromptCard'
 const TaskDetailModal = lazy(() => import('@/client/components/sidebar/TaskDetailModal').then(m => ({ default: m.TaskDetailModal })))
 import { Sheet, SheetContent, SheetTitle } from '@/client/components/ui/sheet'
-import { QuickChatPanel } from '@/client/components/chat/QuickChatPanel'
+const QuickChatPanel = lazy(() => import('@/client/components/chat/QuickChatPanel').then(m => ({ default: m.QuickChatPanel })))
 import { useChat } from '@/client/hooks/useChat'
 import { useToolCalls } from '@/client/hooks/useToolCalls'
 import { useHumanPrompts } from '@/client/hooks/useHumanPrompts'
@@ -714,7 +714,9 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
         </div>
 
         {/* Mini-app side panel */}
-        <MiniAppViewer />
+        <Suspense fallback={null}>
+          <MiniAppViewer />
+        </Suspense>
       </div>
 
       {/* Input */}
@@ -755,17 +757,19 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
         <SheetContent side="right" className="w-[500px] sm:max-w-lg p-0" showCloseButton={false}>
           <SheetTitle className="sr-only">{t('chat.quickChat')}</SheetTitle>
           {activeSession && (
-            <QuickChatPanel
-              kinId={kin.id}
-              kinName={kin.name}
-              kinAvatarUrl={kin.avatarUrl}
-              kinModel={kin.model}
-              llmModels={llmModels}
-              sessionId={activeSession.id}
-              onHide={() => setQuickOpen(false)}
-              onEnd={handleQuickClose}
-              onModelChange={onModelChange}
-            />
+            <Suspense fallback={null}>
+              <QuickChatPanel
+                kinId={kin.id}
+                kinName={kin.name}
+                kinAvatarUrl={kin.avatarUrl}
+                kinModel={kin.model}
+                llmModels={llmModels}
+                sessionId={activeSession.id}
+                onHide={() => setQuickOpen(false)}
+                onEnd={handleQuickClose}
+                onModelChange={onModelChange}
+              />
+            </Suspense>
           )}
         </SheetContent>
       </Sheet>
