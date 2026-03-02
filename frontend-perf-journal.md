@@ -1,5 +1,39 @@
 # Frontend Perf Journal
 
+## 2026-03-02 22:28 UTC
+### Browser audit findings
+- **Browser unavailable** (sandbox browser disabled)
+- Skipped to code audit
+
+### Code audit findings
+- **Issue:** Inline arrow closures in ChatPanel's message list created new function references per message on every render, defeating React.memo on MessageBubble
+- **Root cause:** `onToggleReaction={(emoji) => toggleReaction(msg.id, emoji)}` and `onOpenTaskDetail={() => setDetailTaskId(msg.resolvedTaskId)}` created per-message closures. Even though MessageBubble was wrapped in `React.memo`, these new function references caused every bubble to re-render when ChatPanel re-rendered (typing, streaming, etc.)
+- **Additional:** `onSendMessage={(content) => handleSend(content)}` on ChatEmptyState unnecessarily wrapped a stable callback
+
+### Fix applied
+- **What:**
+  1. Added `messageId` and `resolvedTaskId` props to MessageBubble
+  2. Changed `onToggleReaction` signature from `(emoji) => void` to `(messageId, emoji) => void`
+  3. Changed `onOpenTaskDetail` signature from `() => void` to `(taskId) => void`
+  4. MessageBubble internally creates stable handlers via `useCallback` using its own `messageId`/`resolvedTaskId`
+  5. ChatPanel now passes stable `toggleReaction` (from useReactions, already useCallback) and `setDetailTaskId` (from useState, inherently stable)
+  6. Removed unnecessary wrapper on `onSendMessage={handleSend}`
+- **Files changed:** MessageBubble.tsx, ChatPanel.tsx
+- **Impact:** All MessageBubble instances now correctly skip re-renders when their props haven't changed. Previously, every message re-rendered on every keystroke/streaming update due to new closure references. Most impactful during typing and message streaming in long conversations.
+
+### Cumulative progress (since journal start)
+- **Initial state:** Single 2,881 KB chunk (825 KB gzip)
+- **Current ChatPage:** 405 KB (from 590 KB)
+- **Lazy chunks created:** KinFormModal, SettingsPage, AccountDialog, CronFormModal, CronDetailModal, TaskDetailModal, MiniAppViewer, QuickChatPanel, ConversationSearch, ProviderIcon icons, rehype-highlight, remark-math, rehype-katex
+- **React.memo effectiveness:** 17 memoized components now have stable props (inline closure elimination)
+
+### Next run priorities
+1. **Browser audit** - still needed when sandbox browser becomes available
+2. **List virtualization** - react-window or @tanstack/virtual for conversations with 100+ messages
+3. **ChatPage still 405 KB** - MessageBubble (812 lines) is core, hard to split further
+4. **Pre-commit hook OOM** - vite build step OOMs in pre-commit (works fine standalone with bun)
+5. **Profile runtime performance** - most bundle + memo optimizations done, shift to runtime profiling
+
 ## 2026-03-01 22:28 UTC
 ### Browser audit findings
 - **Browser unavailable** (no sandbox browser, Chrome extension not attached)
