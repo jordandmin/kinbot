@@ -449,6 +449,16 @@ export function KinFormModal({
       <Dialog open={open} onOpenChange={(v) => { if (!v) guardedClose(); else onOpenChange(true) }}>
         <DialogContent
           className="flex h-[min(85vh,720px)] max-h-[85vh] flex-col overflow-hidden p-0 sm:max-w-5xl"
+          onPointerDownOutside={(e) => {
+            // Prevent parent dialog close when a nested dialog (e.g. MemoryFormDialog) is open
+            if (document.querySelectorAll('[role="dialog"][data-state="open"]').length > 1) e.preventDefault()
+          }}
+          onInteractOutside={(e) => {
+            if (document.querySelectorAll('[role="dialog"][data-state="open"]').length > 1) e.preventDefault()
+          }}
+          onFocusOutside={(e) => {
+            if (document.querySelectorAll('[role="dialog"][data-state="open"]').length > 1) e.preventDefault()
+          }}
         >
           {/* ─── WIZARD: Describe step ─── */}
           {hasWizard && wizardStep === 'describe' ? (

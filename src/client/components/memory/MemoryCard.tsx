@@ -65,12 +65,12 @@ export function MemoryCard({ memory, kinName, kinAvatarUrl, showKinName, onEdit,
         </div>
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
           {onEdit && (
-            <Button variant="ghost" size="icon-xs" onClick={onEdit}>
+            <Button type="button" variant="ghost" size="icon-xs" onClick={onEdit}>
               <Pencil className="size-3.5" />
             </Button>
           )}
           {onDelete && (
-            <Button variant="ghost" size="icon-xs" onClick={onDelete}>
+            <Button type="button" variant="ghost" size="icon-xs" onClick={onDelete}>
               <Trash2 className="size-3.5" />
             </Button>
           )}
