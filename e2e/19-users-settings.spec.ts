@@ -102,7 +102,7 @@ test.describe.serial('Users settings', () => {
     // The invitation should appear with the label
     await expect(page.getByText('For E2E Friend')).toBeVisible()
     // Should have Active badge
-    await expect(page.getByText('Active')).toBeVisible()
+    await expect(page.getByText('Active', { exact: true })).toBeVisible()
   })
 
   test('should create a second invitation without label', async ({ page }) => {

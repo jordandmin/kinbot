@@ -287,3 +287,44 @@
 2. `KinBot.share(data)` improvements
 3. Fix the 3 pre-existing test failures
 4. New template ideas: kanban board, form builder
+
+## 2026-03-02 (run 8) — Fix Inter-App Data Sharing + E2E Fix
+
+**What:** Two changes in one run.
+
+### 1. E2E Fix (CI was failing)
+- `e2e/19-users-settings.spec.ts` line 96: strict mode violation — two buttons matching `/close/i` in the invitation dialog (text "Close" button + X icon close button)
+- Fix: added `.first()` to resolve the ambiguity
+- Root cause: dialog has both a `<button>Close</button>` and a `<button data-slot="dialog-close">` with X icon
+
+### 2. Inter-App Data Sharing (`KinBot.share()` rewrite)
+**Problem:** `share()` was storing data in the sender's storage with a `__share__` key, but each app has its own storage namespace, so the target app could never read it. The `shared-data` event documented in comments was never actually emitted.
+
+**Solution:** Proper postMessage-based sharing flow:
+1. SDK `share(targetSlug, data)` → sends `{type: 'share', targetSlug, shareData: {from, fromName, data, ts}}` to parent
+2. Viewer receives `share` message → resolves target app via API, stores data in `pendingShareData` ref, opens target app
+3. When target app sends `ready` → Viewer forwards pending share data as `{type: 'shared-data', data: ...}` to iframe
+4. SDK receives `shared-data` message → dispatches `shared-data` event to listeners
+
+**Usage:**
+```js
+// Sender app:
+KinBot.share('other-app', { items: [1, 2, 3] })
+
+// Receiver app:
+KinBot.on('shared-data', ({ from, fromName, data, ts }) => {
+  console.log(`Received from ${fromName}:`, data)
+})
+```
+
+**Files changed:**
+- `e2e/19-users-settings.spec.ts` — strict mode fix
+- `src/server/mini-app-sdk/kinbot-sdk.js` — share() rewrite + shared-data listener
+- `src/client/components/mini-app/MiniAppViewer.tsx` — share message handler + pendingShareData forwarding
+- `src/server/tools/mini-app-tools.ts` — updated share docs
+
+**Next priorities:**
+1. Fix the 3 pre-existing test failures (drizzle-orm schema imports)
+2. New template ideas: form builder improvements
+3. `KinBot.shortcut(key, callback)` — keyboard shortcut registration
+4. `KinBot.apps.list()` — list other mini-apps from the same Kin
