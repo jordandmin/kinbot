@@ -81,7 +81,7 @@ test.describe.serial('Users settings', () => {
     await dialog.getByRole('button', { name: /invite/i }).last().click()
 
     // Toast
-    await expect(page.getByText('Invitation created')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('Invitation created').first()).toBeVisible({ timeout: 5_000 })
 
     // Revealed link dialog should appear
     await expect(page.getByText('Copy link')).toBeVisible({ timeout: 5_000 })
