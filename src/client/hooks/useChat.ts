@@ -5,6 +5,13 @@ import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import type { ToolCallEntry, TaskStatus, MessageFile } from '@/shared/types'
 
+export interface MessageReaction {
+  id: string
+  userId: string
+  emoji: string
+  createdAt: string
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
@@ -19,6 +26,7 @@ export interface ChatMessage {
   injectedMemories: Array<{ id: string; category: string; content: string; subject: string | null }> | null
   memoriesExtracted: number | null
   files: MessageFile[]
+  reactions: MessageReaction[]
   createdAt: string
 }
 
@@ -195,6 +203,7 @@ export function useChat(kinId: string | null) {
           injectedMemories: null,
           memoriesExtracted: null,
           files: [],
+          reactions: [],
           createdAt: new Date().toISOString(),
         })
       } else {
@@ -244,6 +253,7 @@ export function useChat(kinId: string | null) {
             injectedMemories: null,
             memoriesExtracted: null,
             files: [],
+            reactions: [],
             createdAt: new Date().toISOString(),
           },
         ])
@@ -289,6 +299,7 @@ export function useChat(kinId: string | null) {
         injectedMemories: null,
         memoriesExtracted: null,
         files: [],
+        reactions: [],
         createdAt: new Date(data.createdAt as number).toISOString(),
       }
       setMessages((prev) => [...prev, message])
@@ -385,6 +396,35 @@ export function useChat(kinId: string | null) {
       streamingContentRef.current = ''
       streamingMessageIdRef.current = null
     },
+
+    'reaction:added': (data) => {
+      if (data.kinId !== kinId) return
+      const { messageId, userId, userName, emoji, reactionId } = data as {
+        messageId: string; userId: string; userName: string; emoji: string; reactionId: string
+      }
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== messageId) return m
+          // Avoid duplicates
+          if (m.reactions.some((r) => r.id === reactionId)) return m
+          return {
+            ...m,
+            reactions: [...m.reactions, { id: reactionId, userId, emoji, createdAt: new Date().toISOString() }],
+          }
+        }),
+      )
+    },
+
+    'reaction:removed': (data) => {
+      if (data.kinId !== kinId) return
+      const { messageId, reactionId } = data as { messageId: string; reactionId: string }
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== messageId) return m
+          return { ...m, reactions: m.reactions.filter((r) => r.id !== reactionId) }
+        }),
+      )
+    },
   })
 
   // Send a message. Returns true on success, false on failure.
@@ -409,6 +449,7 @@ export function useChat(kinId: string | null) {
         injectedMemories: null,
         memoriesExtracted: null,
         files: optimisticFiles ?? [],
+        reactions: [],
         createdAt: new Date().toISOString(),
       }
 

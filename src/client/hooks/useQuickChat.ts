@@ -76,6 +76,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
           injectedMemories: null,
           memoriesExtracted: null,
           files: [],
+          reactions: [],
           createdAt: new Date().toISOString(),
         })
       } else {
@@ -118,6 +119,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
             injectedMemories: null,
             memoriesExtracted: null,
             files: [],
+          reactions: [],
             createdAt: new Date().toISOString(),
           },
         ])
@@ -151,6 +153,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
         injectedMemories: null,
         memoriesExtracted: null,
         files: [],
+          reactions: [],
         createdAt: new Date(data.createdAt as number).toISOString(),
       }
       setMessages((prev) => [...prev, message])
@@ -179,6 +182,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
         injectedMemories: null,
         memoriesExtracted: null,
         files: optimisticFiles ?? [],
+        reactions: [],
         createdAt: new Date().toISOString(),
       }
 

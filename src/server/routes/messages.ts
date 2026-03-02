@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { eq, and, isNull, lt, desc, inArray } from 'drizzle-orm'
 import { db } from '@/server/db/index'
-import { messages, kins, compactingSnapshots, memories as kinMemories, files, humanPrompts } from '@/server/db/schema'
+import { messages, kins, compactingSnapshots, memories as kinMemories, files, humanPrompts, messageReactions } from '@/server/db/schema'
 import { enqueueMessage } from '@/server/services/queue'
 import { abortKinStream } from '@/server/services/kin-engine'
 import { sseManager } from '@/server/sse/index'
@@ -88,9 +88,24 @@ messageRoutes.get('/', async (c) => {
   // Reverse for chronological order
   messageList.reverse()
 
-  // Fetch files for all messages
+  // Fetch files and reactions for all messages
   const messageIds = messageList.map((m) => m.id)
   const fileMap = await getFilesForMessages(messageIds)
+
+  // Fetch reactions for all messages
+  const reactionMap = new Map<string, Array<{ id: string; userId: string; emoji: string; createdAt: Date }>>()
+  if (messageIds.length > 0) {
+    const allReactions = await db
+      .select()
+      .from(messageReactions)
+      .where(inArray(messageReactions.messageId, messageIds))
+      .all()
+    for (const r of allReactions) {
+      const arr = reactionMap.get(r.messageId) ?? []
+      arr.push({ id: r.id, userId: r.userId, emoji: r.emoji, createdAt: r.createdAt })
+      reactionMap.set(r.messageId, arr)
+    }
+  }
 
   // Resolve source kin info for inter-kin and task messages
   const kinSourceIds = [
@@ -137,6 +152,7 @@ messageRoutes.get('/', async (c) => {
         injectedMemories: meta?.injectedMemories ?? null,
         memoriesExtracted: meta?.memoriesExtracted ?? null,
         files: (fileMap.get(m.id) ?? []).map(serializeFile),
+        reactions: reactionMap.get(m.id) ?? [],
         createdAt: m.createdAt,
       }
     }),

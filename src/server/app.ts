@@ -12,6 +12,7 @@ import { providerRoutes } from '@/server/routes/providers'
 import { sseRoutes } from '@/server/routes/sse'
 import { kinRoutes } from '@/server/routes/kins'
 import { messageRoutes } from '@/server/routes/messages'
+import { reactionRoutes } from '@/server/routes/reactions'
 import { vaultRoutes } from '@/server/routes/vault'
 import { contactRoutes } from '@/server/routes/contacts'
 import { taskRoutes } from '@/server/routes/tasks'
@@ -142,6 +143,7 @@ app.route('/api/providers', providerRoutes)
 app.route('/api/sse', sseRoutes)
 app.route('/api/kins', kinRoutes)
 app.route('/api/kins/:kinId/messages', messageRoutes)
+app.route('/api/kins/:kinId/messages/:messageId/reactions', reactionRoutes)
 app.route('/api/vault', vaultRoutes)
 app.route('/api/users', userRoutes)
 app.route('/api/invitations', invitationRoutes)

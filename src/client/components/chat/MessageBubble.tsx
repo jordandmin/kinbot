@@ -17,10 +17,12 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/client/components/ui/context-menu'
-import { FileIcon, Download, Brain, ChevronDown, Copy, Check, RefreshCw, Quote, Pencil, Volume2, VolumeX, BookOpen } from 'lucide-react'
+import { FileIcon, Download, Brain, ChevronDown, Copy, Check, RefreshCw, Quote, Pencil, Volume2, VolumeX, BookOpen, SmilePlus } from 'lucide-react'
 import type { ToolCallViewItem } from '@/client/hooks/useToolCalls'
 import { useRelativeTime } from '@/client/hooks/useRelativeTime'
 import type { MessageFile } from '@/shared/types'
+import type { MessageReaction } from '@/client/hooks/useChat'
+import { PRESET_EMOJIS } from '@/client/hooks/useReactions'
 
 interface InjectedMemory {
   id: string
@@ -39,12 +41,15 @@ interface MessageBubbleProps {
   toolCalls?: ToolCallViewItem[]
   injectedMemories?: InjectedMemory[] | null
   files?: MessageFile[]
+  reactions?: MessageReaction[]
+  currentUserId?: string
   /** When true, the message is part of a consecutive group from the same sender — avatar and name are hidden, spacing is tighter. */
   isGrouped?: boolean
   onOpenTaskDetail?: () => void
   onRegenerate?: () => void
   onQuoteReply?: (text: string) => void
   onEditResend?: (text: string) => void
+  onToggleReaction?: (emoji: string) => void
 }
 
 /** A content part is either a text segment or a group of tool calls at the same offset. */
@@ -419,6 +424,92 @@ function ReadingTime({ content }: { content: string }) {
 }
 
 
+// ─── Reaction display & picker ────────────────────────────────────────────────
+
+function ReactionPicker({ onSelect, isUser }: { onSelect: (emoji: string) => void; isUser: boolean }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'opacity-0 group-hover/msg:opacity-100 transition-opacity',
+          'rounded-md p-1 hover:bg-muted/80 active:scale-95',
+          'text-muted-foreground hover:text-foreground',
+        )}
+        title="React"
+        aria-label="React"
+      >
+        <SmilePlus className="size-3.5" />
+      </button>
+      {open && (
+        <div
+          className={cn(
+            'absolute z-50 flex gap-0.5 rounded-full bg-popover border border-border shadow-lg px-2 py-1',
+            isUser ? 'right-0' : 'left-0',
+            'bottom-full mb-1',
+          )}
+        >
+          {PRESET_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => { onSelect(emoji); setOpen(false) }}
+              className="hover:scale-125 transition-transform text-base px-0.5"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ReactionDisplay({
+  reactions,
+  currentUserId,
+  onToggle,
+}: {
+  reactions: MessageReaction[]
+  currentUserId?: string
+  onToggle?: (emoji: string) => void
+}) {
+  if (!reactions || reactions.length === 0) return null
+
+  // Group by emoji
+  const grouped = new Map<string, { count: number; hasOwn: boolean }>()
+  for (const r of reactions) {
+    const entry = grouped.get(r.emoji) ?? { count: 0, hasOwn: false }
+    entry.count++
+    if (r.userId === currentUserId) entry.hasOwn = true
+    grouped.set(r.emoji, entry)
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {Array.from(grouped.entries()).map(([emoji, { count, hasOwn }]) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={() => onToggle?.(emoji)}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors border',
+            hasOwn
+              ? 'bg-primary/15 border-primary/30 text-foreground'
+              : 'bg-muted/50 border-border/50 text-muted-foreground hover:bg-muted',
+          )}
+        >
+          <span>{emoji}</span>
+          {count > 1 && <span className="text-[10px]">{count}</span>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Message context menu ─────────────────────────────────────────────────────
 
 function MessageContextMenu({
@@ -526,11 +617,14 @@ export const MessageBubble = memo(function MessageBubble({
   toolCalls,
   injectedMemories,
   files,
+  reactions,
+  currentUserId,
   isGrouped = false,
   onOpenTaskDetail,
   onRegenerate,
   onQuoteReply,
   onEditResend,
+  onToggleReaction,
 }: MessageBubbleProps) {
   const isUser = role === 'user' && sourceType === 'user'
   const isFromOtherKin = sourceType === 'kin' && role === 'user'
@@ -622,6 +716,8 @@ export const MessageBubble = memo(function MessageBubble({
           {/* Injected memories indicator */}
           {hasMemories && <InjectedMemoriesIndicator memories={injectedMemories} />}
 
+          <ReactionDisplay reactions={reactions ?? []} currentUserId={currentUserId} onToggle={onToggleReaction} />
+
           <div className="flex items-center gap-1.5">
             {timestamp && (
               <RelativeTimestamp timestamp={timestamp} className="text-[10px] text-muted-foreground/70" />
@@ -629,6 +725,7 @@ export const MessageBubble = memo(function MessageBubble({
             <ReadingTime content={content} />
             {onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
             <ReadAloudButton content={content} />
+            {onToggleReaction && <ReactionPicker onSelect={onToggleReaction} isUser={false} />}
           </div>
         </div>
       </div>
@@ -690,6 +787,8 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Injected memories indicator */}
         {hasMemories && <InjectedMemoriesIndicator memories={injectedMemories} />}
 
+        <ReactionDisplay reactions={reactions ?? []} currentUserId={currentUserId} onToggle={onToggleReaction} />
+
         <div className="flex items-center gap-1.5 mt-1">
           {timestamp && (
             <RelativeTimestamp
@@ -703,6 +802,7 @@ export const MessageBubble = memo(function MessageBubble({
           {!isUser && <ReadingTime content={content} />}
           {!isUser && onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
           {!isUser && <ReadAloudButton content={content} />}
+          {onToggleReaction && <ReactionPicker onSelect={onToggleReaction} isUser={isUser} />}
         </div>
       </div>
     </div>

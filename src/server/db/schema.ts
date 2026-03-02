@@ -519,6 +519,19 @@ export const scheduledWakeups = sqliteTable('scheduled_wakeups', {
   index('idx_wakeups_caller').on(table.callerKinId),
 ])
 
+// ─── Message Reactions ───────────────────────────────────────────────────────
+
+export const messageReactions = sqliteTable('message_reactions', {
+  id: text('id').primaryKey(),
+  messageId: text('message_id').notNull().references(() => messages.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  emoji: text('emoji').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+}, (table) => [
+  uniqueIndex('idx_message_reactions_unique').on(table.messageId, table.userId, table.emoji),
+  index('idx_message_reactions_message').on(table.messageId),
+])
+
 // ─── App Settings ────────────────────────────────────────────────────────────
 
 export const appSettings = sqliteTable('app_settings', {
