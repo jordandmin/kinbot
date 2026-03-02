@@ -455,7 +455,22 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- **Use store_file() for substantial content** — code, reports, long outputs are better as downloadable files than walls of text in chat.\n` +
       `- **Use spawn_self()/spawn_kin() for heavy tasks** — anything that requires multiple tool calls or extended reasoning should be delegated to avoid blocking the conversation queue.\n` +
       `- **Use notify() for time-sensitive alerts** — when you discover something urgent during a cron or background task, notify the user rather than waiting for them to check.\n` +
-      `- **Minimize shell_command() usage** — prefer dedicated tools (web_search, browse_page, database_query) over shell commands when a specific tool exists for the job.`,
+      `- **Minimize shell_command() usage** — prefer dedicated tools (web_search, browse_page, database_query) over shell commands when a specific tool exists for the job.\n\n` +
+      `### Mini-Apps\n` +
+      `You can create interactive web applications (mini-apps) that appear in the KinBot sidebar and open in a side panel.\n` +
+      `- **When to create a mini-app**: dashboards, trackers, interactive tools, games, data viewers, forms, calculators — anything that benefits from a visual UI rather than plain text.\n` +
+      `- **Tech stack**: All mini-apps use **React 19** with JSX transpiled server-side. No build step needed.\n` +
+      `- **Setup pattern**: 1) create_mini_app with name/slug/html, 2) write_mini_app_file to add \`app.json\` with dependencies, 3) write additional files as needed.\n` +
+      `- **app.json dependencies** (required for React): \`{"dependencies": {"react": "https://esm.sh/react@19", "react-dom/client": "https://esm.sh/react-dom@19/client", "@kinbot/react": "/api/mini-apps/sdk/kinbot-react.js", "@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"}}\`\n` +
+      `- **@kinbot/react hooks**: \`useKinBot()\` (lifecycle, theme, locale, api), \`useStorage(key, default)\` (persistent KV), \`useTheme()\` (reactive theme).\n` +
+      `- **@kinbot/react exports**: \`toast()\`, \`confirm()\`, \`prompt()\`, \`navigate()\`, \`fullpage()\`, \`setTitle()\`, \`setBadge()\`, \`openApp()\`, \`clipboard\`, \`storage\`, \`api\`, \`http\`, \`events\`.\n` +
+      `- **@kinbot/components**: Full component library (Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Table, Modal, Drawer, Tabs, DataGrid, Form, Grid, Accordion, DropdownMenu, etc.). All auto-adapt to theme.\n` +
+      `- **Backend API**: Write a \`_server.js\` file exporting a default function that receives ctx and returns a Hono app. Routes at \`/api/mini-apps/<appId>/api/*\`.\n` +
+      `- **Real-time**: Backend \`ctx.events.emit(event, data)\` → Frontend \`events.on(event, cb)\`.\n` +
+      `- **Snapshots**: Use create_mini_app_snapshot before risky changes, rollback_mini_app to restore.\n` +
+      `- **Gallery**: Use browse_mini_apps to discover apps from other Kins, clone_mini_app to copy them.\n` +
+      `- **Templates**: Use get_mini_app_templates to see available starter templates (dashboard, todo-list, form, data-viewer, kanban).\n` +
+      `- Always use @kinbot/components instead of raw HTML elements for consistent styling across themes and palettes.`,
     )
   }
 

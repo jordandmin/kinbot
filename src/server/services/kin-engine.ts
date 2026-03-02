@@ -391,11 +391,14 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     }
 
     // Filter out defaultDisabled tools not explicitly opted-in
-    const allRegistered = toolRegistry.list()
-    const optInSet = new Set(toolConfig?.enabledOptInTools ?? [])
-    for (const reg of allRegistered) {
-      if (reg.defaultDisabled && !optInSet.has(reg.name)) {
-        delete nativeTools[reg.name]
+    // Hub Kin gets ALL opt-in tools automatically
+    if (!isHub) {
+      const allRegistered = toolRegistry.list()
+      const optInSet = new Set(toolConfig?.enabledOptInTools ?? [])
+      for (const reg of allRegistered) {
+        if (reg.defaultDisabled && !optInSet.has(reg.name)) {
+          delete nativeTools[reg.name]
+        }
       }
     }
 
