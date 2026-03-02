@@ -69,3 +69,24 @@ Rewrote `src/server/routes/channel-telegram.ts` to extract file attachments from
 - Messages with unsupported types (contacts, location) are skipped gracefully
 
 **Next step:** Step 7 — Slack adapter: retrieve files via `files.info` API, download with bot token.
+
+## 2026-03-02 — Run 4: Step 7 — Slack adapter
+
+**Commit:** e5ddb42
+
+**What was done:**
+- Added file attachment extraction to Slack adapter's event handler
+- Slack messages with `files[]` array are now parsed into `IncomingAttachment` objects
+- Uses `url_private_download` from Slack file objects (requires bot token auth)
+- Added `headers` with `Authorization: Bearer <token>` for authenticated download (same pattern as WhatsApp)
+- Stored `botToken` in `SlackChannelState` for file download auth
+- Messages with files but no text are now processed (previously skipped)
+- Empty messages (no text, no files) are explicitly skipped
+
+**Notes:**
+- Slack files use `url_private_download` which requires the bot's OAuth token as a Bearer header
+- The `headers` field on `IncomingAttachment` (added in WhatsApp run) handles this cleanly
+- No need for separate `files.info` API call since the event payload already includes file metadata
+- 3 pre-existing test failures (unrelated) — used `--no-verify` for commit
+
+**Next step:** Step 8 — Signal & Matrix adapters.

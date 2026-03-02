@@ -110,6 +110,7 @@ export function SidebarFooterContent({ onOpenSettings }: SidebarFooterContentPro
                 size="icon-xs"
                 className="text-muted-foreground/50 hover:text-muted-foreground"
                 onClick={() => onOpenSettings()}
+                aria-label={t('sidebar.footer.settings')}
               >
                 <Settings2 className="size-3.5" />
               </Button>
