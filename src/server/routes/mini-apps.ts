@@ -28,6 +28,7 @@ import {
   rollbackToSnapshot,
 } from '@/server/services/mini-apps'
 import { handleBackendRequest, invalidateBackend, getAppEmitter } from '@/server/services/mini-app-backend'
+import { searchMemories, createMemory } from '@/server/services/memory'
 import { sseManager } from '@/server/sse/index'
 
 export const miniAppRoutes = new Hono<{ Variables: AppVariables }>()
@@ -567,6 +568,59 @@ miniAppRoutes.post('/:id/http', async (c) => {
     }
     return c.json({ error: { code: 'PROXY_ERROR', message } }, 502)
   }
+})
+
+// ─── Memory Access ──────────────────────────────────────────────────────────
+
+// GET /api/mini-apps/:id/memories/search?q=...&limit=N — semantic search memories
+miniAppRoutes.get('/:id/memories/search', async (c) => {
+  const app = await getMiniAppRow(c.req.param('id'))
+  if (!app) return c.json({ error: { code: 'NOT_FOUND', message: 'App not found' } }, 404)
+
+  const query = c.req.query('q')
+  if (!query) return c.json({ error: { code: 'MISSING_QUERY', message: 'q query parameter is required' } }, 400)
+
+  const limit = Math.min(Math.max(1, Number(c.req.query('limit') ?? 20)), 50)
+
+  const results = await searchMemories(app.kinId, query, limit)
+  return c.json({
+    memories: results.map((m) => ({
+      id: m.id,
+      content: m.content,
+      category: m.category,
+      subject: m.subject,
+      score: m.score,
+      updatedAt: m.updatedAt,
+    })),
+  })
+})
+
+// POST /api/mini-apps/:id/memories — store a new memory
+miniAppRoutes.post('/:id/memories', async (c) => {
+  const app = await getMiniAppRow(c.req.param('id'))
+  if (!app) return c.json({ error: { code: 'NOT_FOUND', message: 'App not found' } }, 404)
+
+  const body = await c.req.json<{ content: string; category?: string; subject?: string }>().catch(() => null)
+  if (!body || !body.content || typeof body.content !== 'string') {
+    return c.json({ error: { code: 'INVALID_BODY', message: 'content (string) is required' } }, 400)
+  }
+  if (body.content.length > 2000) {
+    return c.json({ error: { code: 'CONTENT_TOO_LONG', message: 'content must be 2000 characters or less' } }, 400)
+  }
+
+  const validCategories = ['fact', 'preference', 'decision', 'knowledge'] as const
+  const category = validCategories.includes(body.category as any) ? (body.category as typeof validCategories[number]) : 'knowledge'
+
+  const memory = await createMemory(app.kinId, {
+    content: body.content,
+    category,
+    subject: body.subject || null,
+    sourceChannel: 'explicit',
+  })
+
+  return c.json({
+    memory: { id: memory.id, content: memory.content, category: memory.category, subject: memory.subject, createdAt: memory.createdAt },
+  }, 201)
 })
 
 // ─── Backend SSE Events ─────────────────────────────────────────────────────
