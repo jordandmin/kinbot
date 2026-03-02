@@ -1371,3 +1371,336 @@ Form.Submit = function FormSubmit({ children = 'Submit', loadingText = 'Submitti
     ...rest,
   }, ctx.submitting ? loadingText : children)
 }
+
+// ─── DataGrid ─────────────────────────────────────────────────────────────────
+
+/**
+ * Feature-rich data table with sorting, filtering, pagination, and row selection.
+ *
+ * Columns shape: { key, label, sortable?, filterable?, align?, width?, render?(value, row, index) }
+ *
+ * @param {{
+ *   columns: Array<{ key: string, label: string, sortable?: boolean, filterable?: boolean, align?: string, width?: string, render?: Function }>,
+ *   data: Array<object>,
+ *   pageSize?: number,
+ *   pageSizeOptions?: number[],
+ *   selectable?: boolean,
+ *   onSelectionChange?: (selectedRows: object[]) => void,
+ *   onRowClick?: (row: object, index: number) => void,
+ *   searchable?: boolean,
+ *   searchPlaceholder?: string,
+ *   emptyText?: string,
+ *   striped?: boolean,
+ *   compact?: boolean,
+ *   stickyHeader?: boolean,
+ *   maxHeight?: string,
+ *   className?: string,
+ *   style?: object,
+ * }} props
+ */
+export function DataGrid({
+  columns = [],
+  data = [],
+  pageSize: initialPageSize = 10,
+  pageSizeOptions = [5, 10, 25, 50],
+  selectable = false,
+  onSelectionChange,
+  onRowClick,
+  searchable = false,
+  searchPlaceholder = 'Search...',
+  emptyText = 'No data',
+  striped = false,
+  compact = false,
+  stickyHeader = false,
+  maxHeight,
+  className,
+  style,
+  ...rest
+}) {
+  const [sortKey, setSortKey] = useState(null)
+  const [sortDir, setSortDir] = useState('asc') // 'asc' | 'desc'
+  const [filters, setFilters] = useState({}) // { [key]: string }
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(initialPageSize)
+  const [selected, setSelected] = useState(new Set()) // Set of row indices (in filtered data)
+
+  // Reset page when filters/search/sort change
+  useEffect(() => { setPage(1) }, [search, sortKey, sortDir, JSON.stringify(filters)])
+  // Reset selection when data changes
+  useEffect(() => { setSelected(new Set()); onSelectionChange?.([]) }, [data.length])
+
+  // ── Filter + search ──
+  const filtered = React.useMemo(() => {
+    let rows = data
+    // Column filters
+    const activeFilters = Object.entries(filters).filter(([, v]) => v)
+    if (activeFilters.length) {
+      rows = rows.filter(row =>
+        activeFilters.every(([key, val]) =>
+          String(row[key] ?? '').toLowerCase().includes(val.toLowerCase())
+        )
+      )
+    }
+    // Global search
+    if (search) {
+      const q = search.toLowerCase()
+      rows = rows.filter(row =>
+        columns.some(col => String(row[col.key] ?? '').toLowerCase().includes(q))
+      )
+    }
+    return rows
+  }, [data, filters, search, columns])
+
+  // ── Sort ──
+  const sorted = React.useMemo(() => {
+    if (!sortKey) return filtered
+    const col = columns.find(c => c.key === sortKey)
+    if (!col) return filtered
+    return [...filtered].sort((a, b) => {
+      const va = a[sortKey], vb = b[sortKey]
+      if (va == null && vb == null) return 0
+      if (va == null) return 1
+      if (vb == null) return -1
+      let cmp = 0
+      if (typeof va === 'number' && typeof vb === 'number') cmp = va - vb
+      else cmp = String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: 'base' })
+      return sortDir === 'desc' ? -cmp : cmp
+    })
+  }, [filtered, sortKey, sortDir, columns])
+
+  // ── Paginate ──
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
+  const paginated = sorted.slice((page - 1) * pageSize, page * pageSize)
+
+  // ── Selection helpers ──
+  const toggleRow = (globalIdx) => {
+    const next = new Set(selected)
+    next.has(globalIdx) ? next.delete(globalIdx) : next.add(globalIdx)
+    setSelected(next)
+    onSelectionChange?.(sorted.filter((_, i) => next.has(i)))
+  }
+  const toggleAll = () => {
+    const pageIndices = paginated.map((_, i) => (page - 1) * pageSize + i)
+    const allSelected = pageIndices.every(i => selected.has(i))
+    const next = new Set(selected)
+    pageIndices.forEach(i => allSelected ? next.delete(i) : next.add(i))
+    setSelected(next)
+    onSelectionChange?.(sorted.filter((_, i) => next.has(i)))
+  }
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  const handleFilter = (key, value) => {
+    setFilters(f => ({ ...f, [key]: value }))
+  }
+
+  const cellPad = compact ? '0.35rem 0.5rem' : '0.6rem 0.75rem'
+  const headerBg = 'var(--color-surface-secondary, var(--color-bg-secondary))'
+  const borderColor = 'var(--color-border)'
+  const hoverBg = 'var(--color-surface-hover, rgba(128,128,128,0.08))'
+  const stripeBg = 'var(--color-surface-tertiary, rgba(128,128,128,0.04))'
+
+  // Sort indicator
+  const sortIcon = (key) => {
+    if (sortKey !== key) return ' ↕'
+    return sortDir === 'asc' ? ' ↑' : ' ↓'
+  }
+
+  // ── Render ──
+  const filterableColumns = columns.filter(c => c.filterable)
+
+  return React.createElement('div', {
+    className: cn('datagrid', className),
+    style: mergeStyles({ display: 'flex', flexDirection: 'column', gap: '0.5rem' }, style),
+    ...rest,
+  },
+    // Toolbar: search + page size
+    (searchable || pageSizeOptions.length > 1) && React.createElement('div', {
+      style: { display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' },
+    },
+      searchable && React.createElement('input', {
+        type: 'text',
+        value: search,
+        onChange: e => setSearch(e.target.value),
+        placeholder: searchPlaceholder,
+        className: 'input',
+        style: { maxWidth: '16rem', fontSize: compact ? '0.8rem' : undefined },
+      }),
+      // Column filters
+      ...filterableColumns.map(col =>
+        React.createElement('input', {
+          key: col.key,
+          type: 'text',
+          value: filters[col.key] || '',
+          onChange: e => handleFilter(col.key, e.target.value),
+          placeholder: `Filter ${col.label}...`,
+          className: 'input',
+          style: { maxWidth: '10rem', fontSize: compact ? '0.8rem' : undefined },
+        })
+      ),
+      React.createElement('div', { style: { flex: 1 } }),
+      // Row count
+      React.createElement('span', {
+        style: { fontSize: '0.8rem', color: 'var(--color-text-secondary)' },
+      }, `${sorted.length} row${sorted.length !== 1 ? 's' : ''}`),
+      // Page size selector
+      pageSizeOptions.length > 1 && React.createElement('select', {
+        className: 'select',
+        value: pageSize,
+        onChange: e => { setPageSize(Number(e.target.value)); setPage(1) },
+        style: { width: 'auto', fontSize: '0.8rem', padding: '0.25rem 0.5rem' },
+      }, ...pageSizeOptions.map(n =>
+        React.createElement('option', { key: n, value: n }, `${n} / page`)
+      )),
+    ),
+
+    // Table wrapper
+    React.createElement('div', {
+      style: {
+        overflowX: 'auto',
+        ...(maxHeight ? { maxHeight, overflowY: 'auto' } : {}),
+        border: `1px solid ${borderColor}`,
+        borderRadius: 'var(--radius-md, 0.5rem)',
+      },
+    },
+      React.createElement('table', {
+        style: { width: '100%', borderCollapse: 'collapse', fontSize: compact ? '0.8rem' : '0.875rem' },
+        role: 'grid',
+      },
+        // Header
+        React.createElement('thead', null,
+          React.createElement('tr', null,
+            selectable && React.createElement('th', {
+              style: {
+                padding: cellPad, background: headerBg, borderBottom: `1px solid ${borderColor}`,
+                width: '2.5rem', textAlign: 'center',
+                ...(stickyHeader ? { position: 'sticky', top: 0, zIndex: 2 } : {}),
+              },
+            },
+              React.createElement('input', {
+                type: 'checkbox',
+                checked: paginated.length > 0 && paginated.every((_, i) => selected.has((page - 1) * pageSize + i)),
+                onChange: toggleAll,
+                'aria-label': 'Select all rows on this page',
+              })
+            ),
+            ...columns.map(col =>
+              React.createElement('th', {
+                key: col.key,
+                style: {
+                  padding: cellPad, background: headerBg, borderBottom: `1px solid ${borderColor}`,
+                  textAlign: col.align || 'left', fontWeight: 600,
+                  whiteSpace: 'nowrap', userSelect: 'none',
+                  ...(col.width ? { width: col.width } : {}),
+                  ...(col.sortable ? { cursor: 'pointer' } : {}),
+                  ...(stickyHeader ? { position: 'sticky', top: 0, zIndex: 2 } : {}),
+                },
+                onClick: col.sortable ? () => handleSort(col.key) : undefined,
+                'aria-sort': sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined,
+              }, col.label, col.sortable ? sortIcon(col.key) : null)
+            ),
+          ),
+        ),
+        // Body
+        React.createElement('tbody', null,
+          paginated.length === 0
+            ? React.createElement('tr', null,
+                React.createElement('td', {
+                  colSpan: columns.length + (selectable ? 1 : 0),
+                  style: { padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' },
+                }, emptyText)
+              )
+            : paginated.map((row, i) => {
+                const globalIdx = (page - 1) * pageSize + i
+                const isSelected = selected.has(globalIdx)
+                return React.createElement('tr', {
+                  key: row.id ?? globalIdx,
+                  onClick: onRowClick ? () => onRowClick(row, globalIdx) : undefined,
+                  style: {
+                    cursor: onRowClick ? 'pointer' : undefined,
+                    background: isSelected
+                      ? 'var(--color-primary-soft, rgba(59,130,246,0.1))'
+                      : (striped && i % 2 === 1 ? stripeBg : undefined),
+                  },
+                  onMouseEnter: e => { if (!isSelected) e.currentTarget.style.background = hoverBg },
+                  onMouseLeave: e => {
+                    e.currentTarget.style.background = isSelected
+                      ? 'var(--color-primary-soft, rgba(59,130,246,0.1))'
+                      : (striped && i % 2 === 1 ? stripeBg : 'transparent')
+                  },
+                },
+                  selectable && React.createElement('td', {
+                    style: { padding: cellPad, textAlign: 'center', borderBottom: `1px solid ${borderColor}` },
+                    onClick: e => e.stopPropagation(),
+                  },
+                    React.createElement('input', {
+                      type: 'checkbox',
+                      checked: isSelected,
+                      onChange: () => toggleRow(globalIdx),
+                      'aria-label': `Select row ${globalIdx + 1}`,
+                    })
+                  ),
+                  ...columns.map(col =>
+                    React.createElement('td', {
+                      key: col.key,
+                      style: {
+                        padding: cellPad, textAlign: col.align || 'left',
+                        borderBottom: `1px solid ${borderColor}`,
+                      },
+                    }, col.render ? col.render(row[col.key], row, globalIdx) : row[col.key])
+                  ),
+                )
+              }),
+        ),
+      ),
+    ),
+
+    // Pagination footer
+    totalPages > 1 && React.createElement('div', {
+      style: {
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        fontSize: '0.8rem', color: 'var(--color-text-secondary)',
+      },
+    },
+      React.createElement('span', null,
+        selectable && selected.size > 0
+          ? `${selected.size} selected · Page ${page} of ${totalPages}`
+          : `Page ${page} of ${totalPages}`
+      ),
+      React.createElement('div', { style: { display: 'flex', gap: '0.25rem' } },
+        React.createElement('button', {
+          className: 'btn btn-ghost btn-sm',
+          disabled: page <= 1,
+          onClick: () => setPage(1),
+          'aria-label': 'First page',
+        }, '«'),
+        React.createElement('button', {
+          className: 'btn btn-ghost btn-sm',
+          disabled: page <= 1,
+          onClick: () => setPage(p => p - 1),
+          'aria-label': 'Previous page',
+        }, '‹'),
+        React.createElement('button', {
+          className: 'btn btn-ghost btn-sm',
+          disabled: page >= totalPages,
+          onClick: () => setPage(p => p + 1),
+          'aria-label': 'Next page',
+        }, '›'),
+        React.createElement('button', {
+          className: 'btn btn-ghost btn-sm',
+          disabled: page >= totalPages,
+          onClick: () => setPage(totalPages),
+          'aria-label': 'Last page',
+        }, '»'),
+      ),
+    ),
+  )
+}
