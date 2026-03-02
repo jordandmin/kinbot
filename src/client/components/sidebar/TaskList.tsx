@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   SidebarGroup,
@@ -11,7 +11,7 @@ import { cn } from '@/client/lib/utils'
 import { formatDurationBetween, formatElapsed } from '@/client/lib/time'
 import { Loader2, CheckCircle2, XCircle, Clock, Ban, UserCheck, Search, ChevronRight, ListTodo } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { TaskDetailModal } from '@/client/components/sidebar/TaskDetailModal'
+const TaskDetailModal = lazy(() => import('@/client/components/sidebar/TaskDetailModal').then(m => ({ default: m.TaskDetailModal })))
 import { useTasks } from '@/client/hooks/useTasks'
 import type { TaskStatus, TaskSummary } from '@/shared/types'
 
@@ -303,14 +303,18 @@ export function TaskList({ llmModels }: TaskListProps) {
         </CollapsibleContent>
       </Collapsible>
 
-      <TaskDetailModal
-        taskId={selectedTaskId}
-        open={selectedTaskId !== null}
-        onOpenChange={(open) => { if (!open) setSelectedTaskId(null) }}
-        kinName={selectedTask?.sourceKinName ?? selectedTask?.parentKinName}
-        kinAvatarUrl={selectedTask?.sourceKinAvatarUrl ?? selectedTask?.parentKinAvatarUrl}
-        llmModels={llmModels}
-      />
+      {selectedTaskId !== null && (
+        <Suspense fallback={null}>
+          <TaskDetailModal
+            taskId={selectedTaskId}
+            open={true}
+            onOpenChange={(open) => { if (!open) setSelectedTaskId(null) }}
+            kinName={selectedTask?.sourceKinName ?? selectedTask?.parentKinName}
+            kinAvatarUrl={selectedTask?.sourceKinAvatarUrl ?? selectedTask?.parentKinAvatarUrl}
+            llmModels={llmModels}
+          />
+        </Suspense>
+      )}
     </SidebarGroup>
   )
 }

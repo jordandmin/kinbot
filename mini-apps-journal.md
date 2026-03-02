@@ -133,3 +133,39 @@
 2. `KinBot.memory.search()` / `KinBot.memory.store()` — needs new server routes for memory access
 3. New templates: chat interface, settings panel
 4. Improve shared-data pattern (add `KinBot.on('shared-data')` event listener in SDK)
+
+## 2026-03-02 (run 3) — Form compound component with validation
+
+**What:** Added a `Form` compound component with built-in validation to `kinbot-components.js`. This is the most requested missing piece for Kins building interactive apps.
+
+**New components (29 total):**
+- **`Form`** — Compound form component with validation orchestration. Props: `onSubmit` (receives values object), `initialValues`, `validateOnChange`, `validateOnBlur`. Children can be a render function `({values, errors, submitting, reset}) => ...`.
+- **`Form.Field`** — Wraps any input component (Input, Select, Textarea, Checkbox, Switch) and auto-injects `value`/`checked`, `onChange`, `onBlur`, `error`, `id` props. Props: `name`, `label`, `rules`, `helpText`.
+- **`Form.Actions`** — Button container with alignment. Props: `align` (left/center/right/between).
+- **`Form.Submit`** — Submit button that auto-disables during submission. Props: `loadingText`.
+- **`Form.Reset`** — Reset button that clears form to initial values.
+
+**Built-in validators:**
+- `"required"`, `"email"` — string shorthand
+- `{type: "minLength", value: N, message?}`, `{type: "maxLength", value: N}`
+- `{type: "min", value: N}`, `{type: "max", value: N}`
+- `{type: "pattern", value: /regex/}`, `{type: "match", value: "fieldName"}`
+- Custom function: `(value, allValues) => string|null`
+
+**Design decisions:**
+- Uses React Context (FormContext) for state management — fields register/unregister via effects
+- Validation runs on blur by default, on change after first submit attempt
+- Auto-detects checkbox/switch components and uses `checked` prop instead of `value`
+- Errors shown only after field is touched or form is submitted (good UX)
+- ~230 lines of code, zero dependencies beyond React
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-components.js` — added Form, Form.Field, Form.Actions, Form.Submit, Form.Reset, validators (~230 lines)
+- `src/server/tools/mini-app-tools.ts` — documented Form component and validation rules in tool descriptions
+
+**Next priorities:**
+1. `KinBot.memory.search()` / `KinBot.memory.store()` — needs new server routes for memory access
+2. New templates: chat interface, settings panel (good Form showcase)
+3. DataGrid component (sortable/filterable table)
+4. `KinBot.share(data)` improvements — add `KinBot.on('shared-data')` event
+5. `KinBot.navigate(path)` — parent UI navigation

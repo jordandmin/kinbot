@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useMemo, useState, useCallback, startTransition } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useMemo, useState, useCallback, startTransition, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@/client/components/ui/scroll-area'
 import { MessageBubble } from '@/client/components/chat/MessageBubble'
@@ -10,7 +10,7 @@ import { MiniAppViewer } from '@/client/components/mini-app/MiniAppViewer'
 import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { CompactingCard } from '@/client/components/chat/CompactingCard'
 import { HumanPromptCard } from '@/client/components/chat/HumanPromptCard'
-import { TaskDetailModal } from '@/client/components/sidebar/TaskDetailModal'
+const TaskDetailModal = lazy(() => import('@/client/components/sidebar/TaskDetailModal').then(m => ({ default: m.TaskDetailModal })))
 import { Sheet, SheetContent, SheetTitle } from '@/client/components/ui/sheet'
 import { QuickChatPanel } from '@/client/components/chat/QuickChatPanel'
 import { useChat } from '@/client/hooks/useChat'
@@ -737,14 +737,18 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       />
 
       {/* Task detail modal — opened from live task cards */}
-      <TaskDetailModal
-        taskId={detailTaskId}
-        open={detailTaskId !== null}
-        onOpenChange={(open) => { if (!open) setDetailTaskId(null) }}
-        kinName={detailTask?.senderName ?? kin.name}
-        kinAvatarUrl={detailTask?.senderAvatarUrl ?? kin.avatarUrl}
-        llmModels={llmModels}
-      />
+      {detailTaskId !== null && (
+        <Suspense fallback={null}>
+          <TaskDetailModal
+            taskId={detailTaskId}
+            open={true}
+            onOpenChange={(open) => { if (!open) setDetailTaskId(null) }}
+            kinName={detailTask?.senderName ?? kin.name}
+            kinAvatarUrl={detailTask?.senderAvatarUrl ?? kin.avatarUrl}
+            llmModels={llmModels}
+          />
+        </Suspense>
+      )}
 
       {/* Quick session side panel */}
       <Sheet open={isQuickOpen} onOpenChange={setQuickOpen}>

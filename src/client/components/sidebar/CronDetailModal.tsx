@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { Button } from '@/client/components/ui/button'
 import { ScrollArea } from '@/client/components/ui/scroll-area'
 import { Switch } from '@/client/components/ui/switch'
 import { Label } from '@/client/components/ui/label'
-import { TaskDetailModal } from '@/client/components/sidebar/TaskDetailModal'
+const TaskDetailModal = lazy(() => import('@/client/components/sidebar/TaskDetailModal').then(m => ({ default: m.TaskDetailModal })))
 import { ProviderIcon } from '@/client/components/common/ProviderIcon'
 import {
   Clock,
@@ -346,14 +346,18 @@ export function CronDetailModal({
       </Dialog>
 
       {/* Task detail modal (opens from execution history) */}
-      <TaskDetailModal
-        taskId={selectedTaskId}
-        open={selectedTaskId !== null}
-        onOpenChange={(o) => { if (!o) setSelectedTaskId(null) }}
-        kinName={selectedTask?.sourceKinName ?? selectedTask?.parentKinName}
-        kinAvatarUrl={selectedTask?.sourceKinAvatarUrl ?? selectedTask?.parentKinAvatarUrl}
-        llmModels={llmModels}
-      />
+      {selectedTaskId !== null && (
+        <Suspense fallback={null}>
+          <TaskDetailModal
+            taskId={selectedTaskId}
+            open={true}
+            onOpenChange={(o) => { if (!o) setSelectedTaskId(null) }}
+            kinName={selectedTask?.sourceKinName ?? selectedTask?.parentKinName}
+            kinAvatarUrl={selectedTask?.sourceKinAvatarUrl ?? selectedTask?.parentKinAvatarUrl}
+            llmModels={llmModels}
+          />
+        </Suspense>
+      )}
     </>
   )
 }
