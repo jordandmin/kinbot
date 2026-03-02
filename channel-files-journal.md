@@ -150,3 +150,27 @@ Registered in `src/server/tools/register.ts`.
 **Pre-existing issues:** 3 test failures (unrelated) — used HUSKY=0
 
 **Next step:** Step 13 (Phase 4) — UI updates: show file attachments in conversation view (thumbnails for images, download links for docs)
+
+## 2026-03-02 — Run 7: Steps 13, 14, 15 — Phase 4 (Polish)
+
+**Commit:** cd69844
+
+**Step 13 — UI updates:** Already fully implemented. `MessageFiles` component in `MessageBubble.tsx` renders image thumbnails with lightbox and download chips for non-image files. Channel files flow correctly: `downloadChannelAttachments()` → DB `files` table (with `uploadedBy: 'channel'`) → `serializeFile()` in messages API → rendered in UI.
+
+**Step 14 — File size limits & validation:** Already implemented. `MAX_FILE_SIZE` enforced in both `uploadFile()` (webchat) and `downloadAndStoreAttachment()` (channels). Configurable via `UPLOAD_MAX_FILE_SIZE` env var (default 50MB).
+
+**Step 15 — Auto-cleanup of old channel files:**
+- Added `channelFileRetentionDays` config (default 30 days, env: `UPLOAD_CHANNEL_RETENTION_DAYS`)
+- Added `channelFileCleanupIntervalMin` config (default 60 min, env: `UPLOAD_CHANNEL_CLEANUP_INTERVAL`)
+- `pruneOldChannelFiles()` in `files.ts`: queries files with `uploadedBy='channel'` older than retention cutoff, deletes from disk + DB
+- `startChannelFileCleanup()`: runs 30s after startup then at configured interval
+- Hooked into `src/server/index.ts` alongside existing cleanup crons
+- Set to 0 retention days to disable cleanup entirely
+
+**Status:** All 15 steps complete. Channel file support is fully implemented:
+- ✅ Phase 1: Core infrastructure (attachment interface, download/storage, pipeline integration)
+- ✅ Phase 2: All 7 inbound adapters (Telegram, Discord, WhatsApp, Slack, Signal, Matrix, Webchat)
+- ✅ Phase 3: Outbound files (all adapters + Kin tool)
+- ✅ Phase 4: UI display, size limits, auto-cleanup
+
+**Feature is COMPLETE.**
