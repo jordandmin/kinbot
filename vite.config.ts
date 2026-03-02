@@ -46,7 +46,8 @@ export default defineConfig({
           // UI framework
           'vendor-ui': ['radix-ui', 'lucide-react', 'class-variance-authority', 'clsx', 'tailwind-merge', 'sonner', 'cmdk'],
           // Markdown rendering (heavy)
-          'vendor-markdown': ['react-markdown', 'remark-gfm', 'remark-math', 'rehype-katex', 'rehype-highlight'],
+          // react-markdown core; remark-math (pulls katex), rehype-katex & rehype-highlight are lazy-loaded on demand
+'vendor-markdown': ['react-markdown', 'remark-gfm'],
           // CodeMirror editor (heavy, used only in specific views)
           'vendor-codemirror': ['@uiw/react-codemirror', '@codemirror/lang-markdown', '@codemirror/language-data', '@codemirror/view'],
           // Forms

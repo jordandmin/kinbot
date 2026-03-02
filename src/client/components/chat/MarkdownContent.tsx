@@ -1,9 +1,6 @@
-import { memo, useCallback, useMemo, useState, type HTMLAttributes } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState, type HTMLAttributes } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeHighlight from 'rehype-highlight'
-import rehypeKatex from 'rehype-katex'
 import { useTranslation } from 'react-i18next'
 import { Copy, Check, WrapText, Download } from 'lucide-react'
 import { useCopyToClipboard } from '@/client/hooks/useCopyToClipboard'
@@ -17,8 +14,111 @@ interface MarkdownContentProps {
   className?: string
 }
 
-const remarkPlugins = [remarkGfm, remarkMath]
-const rehypePlugins = [rehypeHighlight, rehypeKatex]
+const defaultRemarkPlugins = [remarkGfm]
+
+// ─── Lazy-loaded plugins ──────────────────────────────────────────────────────
+// rehype-highlight (~170 KB), remark-math + rehype-katex (~260 KB) are loaded
+// on demand only when content contains code blocks or math expressions.
+
+// biome-ignore lint: using any for unified plugin compatibility
+type UnifiedPlugin = any
+
+interface LazyPlugins {
+  remarkPlugins: UnifiedPlugin[]
+  rehypePlugins: UnifiedPlugin[]
+}
+
+let cachedRehypeHighlight: UnifiedPlugin | null = null
+let cachedRemarkMath: UnifiedPlugin | null = null
+let cachedRehypeKatex: UnifiedPlugin | null = null
+
+// Simple dedup loaders with listener pattern
+function createLoader(load: () => Promise<UnifiedPlugin>) {
+  let loading = false
+  let cached: UnifiedPlugin | null = null
+  const listeners: Array<(p: UnifiedPlugin) => void> = []
+  return {
+    get: () => cached,
+    load: (): Promise<UnifiedPlugin> => {
+      if (cached) return Promise.resolve(cached)
+      if (loading) return new Promise((r) => listeners.push(r))
+      loading = true
+      return load().then((p) => {
+        cached = p
+        listeners.forEach((fn) => fn(p))
+        listeners.length = 0
+        return p
+      })
+    },
+  }
+}
+
+const highlightLoader = createLoader(() => import('rehype-highlight').then((m) => { cachedRehypeHighlight = m.default; return m.default }))
+const remarkMathLoader = createLoader(() => import('remark-math').then((m) => { cachedRemarkMath = m.default; return m.default }))
+const katexLoader = createLoader(() => import('rehype-katex').then((m) => { cachedRehypeKatex = m.default; return m.default }))
+
+/** Detect if content has fenced code blocks (``` or ~~~) */
+function hasCodeBlocks(content: string): boolean {
+  return /^(`{3,}|~{3,})/m.test(content)
+}
+
+/** Detect if content has math expressions ($...$ or $$...$$) */
+function hasMathExpressions(content: string): boolean {
+  return /\$\$[\s\S]+?\$\$|\$[^\s$]([^$]*[^\s$])?\$/.test(content)
+}
+
+/** Hook to get remark+rehype plugins, loading heavy ones on demand */
+function useLazyPlugins(content: string): LazyPlugins {
+  const needsHighlight = useMemo(() => hasCodeBlocks(content), [content])
+  const needsMath = useMemo(() => hasMathExpressions(content), [content])
+
+  const [plugins, setPlugins] = useState<LazyPlugins>(() => {
+    const remark: UnifiedPlugin[] = [...defaultRemarkPlugins]
+    const rehype: UnifiedPlugin[] = []
+    if (needsMath && cachedRemarkMath) remark.push(cachedRemarkMath)
+    if (needsHighlight && cachedRehypeHighlight) rehype.push(cachedRehypeHighlight)
+    if (needsMath && cachedRehypeKatex) rehype.push(cachedRehypeKatex)
+    return { remarkPlugins: remark, rehypePlugins: rehype }
+  })
+
+  useEffect(() => {
+    let cancelled = false
+    const promises: Promise<void>[] = []
+
+    if (needsHighlight && !cachedRehypeHighlight) {
+      promises.push(highlightLoader.load().then(() => {}))
+    }
+    if (needsMath && !cachedRemarkMath) {
+      promises.push(remarkMathLoader.load().then(() => {}))
+    }
+    if (needsMath && !cachedRehypeKatex) {
+      promises.push(katexLoader.load().then(() => {}))
+    }
+
+    if (promises.length > 0) {
+      Promise.all(promises).then(() => {
+        if (cancelled) return
+        const remark: UnifiedPlugin[] = [...defaultRemarkPlugins]
+        const rehype: UnifiedPlugin[] = []
+        if (needsMath && cachedRemarkMath) remark.push(cachedRemarkMath)
+        if (needsHighlight && cachedRehypeHighlight) rehype.push(cachedRehypeHighlight)
+        if (needsMath && cachedRehypeKatex) rehype.push(cachedRehypeKatex)
+        setPlugins({ remarkPlugins: remark, rehypePlugins: rehype })
+      })
+    } else {
+      const remark: UnifiedPlugin[] = [...defaultRemarkPlugins]
+      const rehype: UnifiedPlugin[] = []
+      if (needsMath && cachedRemarkMath) remark.push(cachedRemarkMath)
+      if (needsHighlight && cachedRehypeHighlight) rehype.push(cachedRehypeHighlight)
+      if (needsMath && cachedRehypeKatex) rehype.push(cachedRehypeKatex)
+      setPlugins({ remarkPlugins: remark, rehypePlugins: rehype })
+    }
+
+    return () => { cancelled = true }
+  }, [needsHighlight, needsMath])
+
+  return plugins
+}
 
 // ─── Code block with copy button ──────────────────────────────────────────────
 
@@ -277,6 +377,34 @@ const markdownComponents = {
   blockquote: withHighlight('blockquote'),
 }
 
+// ─── Inner markdown renderer (uses hooks for lazy rehype plugins) ─────────────
+
+function MarkdownRenderer({
+  content,
+  isUser,
+  className,
+}: MarkdownContentProps) {
+  const { remarkPlugins, rehypePlugins } = useLazyPlugins(content)
+
+  return (
+    <div
+      className={cn(
+        'markdown-content text-sm leading-relaxed',
+        isUser && 'markdown-content--user',
+        className,
+      )}
+    >
+      <ReactMarkdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        components={markdownComponents}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export const MarkdownContent = memo(function MarkdownContent({
@@ -298,21 +426,5 @@ export const MarkdownContent = memo(function MarkdownContent({
     )
   }
 
-  return (
-    <div
-      className={cn(
-        'markdown-content text-sm leading-relaxed',
-        isUser && 'markdown-content--user',
-        className,
-      )}
-    >
-      <ReactMarkdown
-        remarkPlugins={remarkPlugins}
-        rehypePlugins={rehypePlugins}
-        components={markdownComponents}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  )
+  return <MarkdownRenderer content={content} isUser={isUser} className={className} />
 })
