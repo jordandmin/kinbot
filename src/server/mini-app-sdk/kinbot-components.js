@@ -6,7 +6,7 @@
  * All components use CSS variables from kinbot-sdk.css for automatic theme support.
  *
  * Usage in mini-apps:
- *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu } from '@kinbot/components'
+ *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu, DataGrid } from '@kinbot/components'
  */
 
 import React, { useState, useEffect, useRef, useCallback, useId, createContext, useContext } from 'react'
@@ -1895,4 +1895,402 @@ export function DropdownMenu({ trigger, items = [], align = 'start', className, 
       }),
     ),
   )
+}
+
+// ─── DataGrid ─────────────────────────────────────────────────────────────────
+
+/**
+ * Advanced data grid with sorting, filtering, pagination, and row selection.
+ *
+ * @param {{
+ *   columns: Array<{
+ *     key: string,
+ *     label: string,
+ *     sortable?: boolean,
+ *     filterable?: boolean,
+ *     align?: 'left'|'center'|'right',
+ *     width?: string,
+ *     render?: (value: any, row: object, index: number) => any,
+ *   }>,
+ *   data: Array<object>,
+ *   pageSize?: number,
+ *   selectable?: boolean,
+ *   onSelectionChange?: (selectedRows: Array<object>) => void,
+ *   onRowClick?: (row: object, index: number) => void,
+ *   stickyHeader?: boolean,
+ *   striped?: boolean,
+ *   emptyMessage?: string,
+ *   className?: string,
+ *   style?: object,
+ * }} props
+ *
+ * @example
+ *   <DataGrid
+ *     columns={[
+ *       { key: 'name', label: 'Name', sortable: true, filterable: true },
+ *       { key: 'email', label: 'Email', sortable: true },
+ *       { key: 'status', label: 'Status', render: (v) => <Badge variant={v}>{v}</Badge> },
+ *     ]}
+ *     data={users}
+ *     pageSize={10}
+ *     selectable
+ *     onSelectionChange={(rows) => console.log(rows)}
+ *   />
+ */
+export function DataGrid({
+  columns = [],
+  data = [],
+  pageSize = 10,
+  selectable = false,
+  onSelectionChange,
+  onRowClick,
+  stickyHeader = false,
+  striped = false,
+  emptyMessage = 'No data',
+  className,
+  style,
+  ...rest
+}) {
+  const [sortKey, setSortKey] = React.useState(null)
+  const [sortDir, setSortDir] = React.useState('asc') // 'asc' | 'desc'
+  const [filters, setFilters] = React.useState({}) // { [columnKey]: string }
+  const [page, setPage] = React.useState(1)
+  const [selected, setSelected] = React.useState(new Set()) // Set of row indices in filtered data
+
+  // Reset page when filters change
+  React.useEffect(() => { setPage(1) }, [filters, data.length])
+
+  // Reset selection when data changes
+  React.useEffect(() => { setSelected(new Set()) }, [data])
+
+  // Filter
+  const filteredData = React.useMemo(() => {
+    let result = data
+    for (const key of Object.keys(filters)) {
+      const term = (filters[key] || '').toLowerCase()
+      if (!term) continue
+      result = result.filter(row => {
+        const val = row[key]
+        return val != null && String(val).toLowerCase().includes(term)
+      })
+    }
+    return result
+  }, [data, filters])
+
+  // Sort
+  const sortedData = React.useMemo(() => {
+    if (!sortKey) return filteredData
+    return [...filteredData].sort((a, b) => {
+      const va = a[sortKey], vb = b[sortKey]
+      if (va == null && vb == null) return 0
+      if (va == null) return 1
+      if (vb == null) return -1
+      const cmp = typeof va === 'number' && typeof vb === 'number'
+        ? va - vb
+        : String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: 'base' })
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [filteredData, sortKey, sortDir])
+
+  // Paginate
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const pageData = sortedData.slice((safePage - 1) * pageSize, safePage * pageSize)
+
+  function toggleSort(key) {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  function updateFilter(key, value) {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  // Selection helpers
+  const allPageSelected = selectable && pageData.length > 0 && pageData.every((_, i) => selected.has((safePage - 1) * pageSize + i))
+
+  function toggleRow(globalIdx) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(globalIdx)) next.delete(globalIdx); else next.add(globalIdx)
+      if (onSelectionChange) {
+        const rows = [...next].map(i => sortedData[i]).filter(Boolean)
+        onSelectionChange(rows)
+      }
+      return next
+    })
+  }
+
+  function toggleAllPage() {
+    setSelected(prev => {
+      const next = new Set(prev)
+      const start = (safePage - 1) * pageSize
+      if (allPageSelected) {
+        for (let i = 0; i < pageData.length; i++) next.delete(start + i)
+      } else {
+        for (let i = 0; i < pageData.length; i++) next.add(start + i)
+      }
+      if (onSelectionChange) {
+        const rows = [...next].map(i => sortedData[i]).filter(Boolean)
+        onSelectionChange(rows)
+      }
+      return next
+    })
+  }
+
+  const filterableCols = columns.filter(c => c.filterable)
+  const hasFilters = filterableCols.length > 0
+
+  const sortArrow = (key) => {
+    if (sortKey !== key) return ' ↕'
+    return sortDir === 'asc' ? ' ↑' : ' ↓'
+  }
+
+  const cellStyle = (col) => ({
+    textAlign: col.align || 'left',
+    width: col.width || undefined,
+  })
+
+  const headerCellBase = {
+    padding: '0.625rem 0.75rem',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: 'var(--color-muted-foreground)',
+    borderBottom: '1px solid var(--color-border)',
+    whiteSpace: 'nowrap',
+  }
+
+  const bodyCellBase = {
+    padding: '0.625rem 0.75rem',
+    fontSize: '0.875rem',
+    borderBottom: '1px solid var(--color-border)',
+    color: 'var(--color-foreground)',
+  }
+
+  const filterInputStyle = {
+    width: '100%',
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.75rem',
+    background: 'var(--color-input, var(--color-muted))',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-sm, 0.25rem)',
+    color: 'var(--color-foreground)',
+    outline: 'none',
+    marginTop: '0.25rem',
+  }
+
+  const checkboxStyle = {
+    width: '1rem', height: '1rem',
+    accentColor: 'var(--color-primary)',
+    cursor: 'pointer',
+  }
+
+  return React.createElement('div', {
+    className: cn('datagrid', className),
+    style: mergeStyles({ display: 'flex', flexDirection: 'column', gap: '0.5rem' }, style),
+    ...rest,
+  },
+    // Info bar
+    React.createElement('div', {
+      style: {
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        fontSize: '0.8125rem', color: 'var(--color-muted-foreground)',
+        padding: '0 0.25rem',
+      },
+    },
+      React.createElement('span', null,
+        filteredData.length !== data.length
+          ? `${filteredData.length} of ${data.length} rows`
+          : `${data.length} rows`,
+        selectable && selected.size > 0 ? ` · ${selected.size} selected` : '',
+      ),
+      totalPages > 1 && React.createElement('span', null, `Page ${safePage} of ${totalPages}`),
+    ),
+
+    // Table
+    React.createElement('div', {
+      style: { overflowX: 'auto', borderRadius: 'var(--radius-lg, 0.5rem)', border: '1px solid var(--color-border)' },
+    },
+      React.createElement('table', {
+        style: { width: '100%', borderCollapse: 'collapse', background: 'var(--color-card, var(--color-background))' },
+      },
+        // Head
+        React.createElement('thead', {
+          style: stickyHeader ? { position: 'sticky', top: 0, zIndex: 2, background: 'var(--color-card, var(--color-background))' } : undefined,
+        },
+          React.createElement('tr', null,
+            selectable && React.createElement('th', {
+              style: { ...headerCellBase, width: '2.5rem', textAlign: 'center' },
+            },
+              React.createElement('input', {
+                type: 'checkbox',
+                checked: allPageSelected,
+                onChange: toggleAllPage,
+                style: checkboxStyle,
+                'aria-label': 'Select all rows on this page',
+              }),
+            ),
+            ...columns.map(col => React.createElement('th', {
+              key: col.key,
+              style: { ...headerCellBase, ...cellStyle(col), cursor: col.sortable ? 'pointer' : undefined, userSelect: col.sortable ? 'none' : undefined },
+              onClick: col.sortable ? () => toggleSort(col.key) : undefined,
+              'aria-sort': sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined,
+            },
+              React.createElement('span', null, col.label, col.sortable ? sortArrow(col.key) : ''),
+              col.filterable && React.createElement('input', {
+                type: 'text',
+                placeholder: 'Filter...',
+                value: filters[col.key] || '',
+                onChange: (e) => updateFilter(col.key, e.target.value),
+                onClick: (e) => e.stopPropagation(),
+                style: filterInputStyle,
+                'aria-label': `Filter ${col.label}`,
+              }),
+            )),
+          ),
+        ),
+
+        // Body
+        React.createElement('tbody', null,
+          pageData.length === 0
+            ? React.createElement('tr', null,
+                React.createElement('td', {
+                  colSpan: columns.length + (selectable ? 1 : 0),
+                  style: { ...bodyCellBase, textAlign: 'center', padding: '2rem 1rem', color: 'var(--color-muted-foreground)' },
+                }, emptyMessage),
+              )
+            : pageData.map((row, localIdx) => {
+                const globalIdx = (safePage - 1) * pageSize + localIdx
+                const isSelected = selected.has(globalIdx)
+                return React.createElement('tr', {
+                  key: row.id ?? globalIdx,
+                  onClick: onRowClick ? () => onRowClick(row, globalIdx) : undefined,
+                  style: {
+                    cursor: onRowClick ? 'pointer' : undefined,
+                    background: isSelected
+                      ? 'var(--color-primary-muted, rgba(59,130,246,0.08))'
+                      : striped && localIdx % 2 === 1
+                        ? 'var(--color-muted, rgba(0,0,0,0.02))'
+                        : undefined,
+                    transition: 'background 0.1s',
+                  },
+                  onMouseEnter: (e) => { if (!isSelected) e.currentTarget.style.background = 'var(--color-muted)' },
+                  onMouseLeave: (e) => {
+                    e.currentTarget.style.background = isSelected
+                      ? 'var(--color-primary-muted, rgba(59,130,246,0.08))'
+                      : striped && localIdx % 2 === 1
+                        ? 'var(--color-muted, rgba(0,0,0,0.02))'
+                        : ''
+                  },
+                },
+                  selectable && React.createElement('td', {
+                    style: { ...bodyCellBase, textAlign: 'center', width: '2.5rem' },
+                    onClick: (e) => e.stopPropagation(),
+                  },
+                    React.createElement('input', {
+                      type: 'checkbox',
+                      checked: isSelected,
+                      onChange: () => toggleRow(globalIdx),
+                      style: checkboxStyle,
+                      'aria-label': `Select row ${globalIdx + 1}`,
+                    }),
+                  ),
+                  ...columns.map(col => React.createElement('td', {
+                    key: col.key,
+                    style: { ...bodyCellBase, ...cellStyle(col) },
+                  }, col.render ? col.render(row[col.key], row, globalIdx) : row[col.key])),
+                )
+              }),
+        ),
+      ),
+    ),
+
+    // Pagination
+    totalPages > 1 && React.createElement('div', {
+      style: {
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.25rem',
+        padding: '0.25rem 0',
+      },
+    },
+      React.createElement('button', {
+        type: 'button',
+        disabled: safePage <= 1,
+        onClick: () => setPage(1),
+        style: paginationBtnStyle(safePage <= 1),
+        'aria-label': 'First page',
+      }, '«'),
+      React.createElement('button', {
+        type: 'button',
+        disabled: safePage <= 1,
+        onClick: () => setPage(p => Math.max(1, p - 1)),
+        style: paginationBtnStyle(safePage <= 1),
+        'aria-label': 'Previous page',
+      }, '‹'),
+      ...paginationRange(safePage, totalPages).map((p, i) =>
+        p === '...'
+          ? React.createElement('span', { key: `dots-${i}`, style: { padding: '0 0.25rem', color: 'var(--color-muted-foreground)' } }, '…')
+          : React.createElement('button', {
+              key: p,
+              type: 'button',
+              onClick: () => setPage(p),
+              style: {
+                ...paginationBtnStyle(false),
+                background: p === safePage ? 'var(--color-primary)' : 'transparent',
+                color: p === safePage ? 'var(--color-primary-foreground, #fff)' : 'var(--color-foreground)',
+                fontWeight: p === safePage ? 600 : 400,
+              },
+              'aria-current': p === safePage ? 'page' : undefined,
+            }, p),
+      ),
+      React.createElement('button', {
+        type: 'button',
+        disabled: safePage >= totalPages,
+        onClick: () => setPage(p => Math.min(totalPages, p + 1)),
+        style: paginationBtnStyle(safePage >= totalPages),
+        'aria-label': 'Next page',
+      }, '›'),
+      React.createElement('button', {
+        type: 'button',
+        disabled: safePage >= totalPages,
+        onClick: () => setPage(totalPages),
+        style: paginationBtnStyle(safePage >= totalPages),
+        'aria-label': 'Last page',
+      }, '»'),
+    ),
+  )
+}
+
+// Pagination helpers for DataGrid
+function paginationBtnStyle(disabled) {
+  return {
+    padding: '0.375rem 0.625rem',
+    fontSize: '0.8125rem',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-md, 0.375rem)',
+    background: 'var(--color-card, var(--color-background))',
+    color: disabled ? 'var(--color-muted-foreground)' : 'var(--color-foreground)',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1,
+    transition: 'background 0.1s',
+    lineHeight: 1,
+  }
+}
+
+function paginationRange(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const pages = []
+  pages.push(1)
+  if (current > 3) pages.push('...')
+  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+    pages.push(i)
+  }
+  if (current < total - 2) pages.push('...')
+  pages.push(total)
+  return pages
 }

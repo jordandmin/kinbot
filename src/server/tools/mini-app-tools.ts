@@ -85,9 +85,9 @@ export const createMiniAppTool: ToolRegistration = {
         '`Form` (compound form with validation: onSubmit receives values object; Form.Field wraps Input/Select/Textarea/Checkbox/Switch with auto-binding of value/onChange/onBlur/error; ' +
         'rules: ["required", "email", {type:"minLength",value:3,message?:"Too short"}, {type:"maxLength",value:50}, {type:"min",value:0}, {type:"max",value:100}, {type:"pattern",value:/regex/}, {type:"match",value:"fieldName"}, customFn]; ' +
         'Form.Submit auto-disables during submit with loadingText; Form.Reset clears to initialValues; Form.Actions aligns buttons), ' +
-        '`DataGrid` (feature-rich data table: columns [{key, label, sortable?, filterable?, align?, width?, render?}], data, pageSize, pageSizeOptions, selectable + onSelectionChange, ' +
-        'onRowClick, searchable + searchPlaceholder, striped, compact, stickyHeader, maxHeight, emptyText; built-in sorting with locale-aware compare, per-column text filters, global search, ' +
-        'pagination with page size selector, checkbox row selection with select-all; use DataGrid instead of Table+Pagination for data-heavy apps), ' +
+        '`DataGrid` (feature-rich data table: columns [{key, label, sortable?, filterable?, align?, width?, render?}], data, pageSize (default 10), selectable + onSelectionChange, ' +
+        'onRowClick, striped, stickyHeader, emptyMessage; built-in sorting with locale-aware compare, per-column text filters in header, ' +
+        'pagination with first/prev/next/last + smart page range, checkbox row selection with select-all per page; use DataGrid instead of Table+Pagination for data-heavy apps), ' +
         '`Accordion` (items: [{id, title, content, disabled?}], multiple?: boolean for multi-open, defaultOpen?: string[]; collapsible content sections with smooth animation), ' +
         '`DropdownMenu` (trigger: ReactNode, items: [{label, onClick?, icon?, disabled?, destructive?, divider?: boolean}], align: "start"|"end"; click-triggered context menu with keyboard support). ' +
         '**Design System CSS** (auto-injected): CSS variables like ' +
