@@ -27,7 +27,7 @@ import { Badge } from '@/client/components/ui/badge'
 import { Button } from '@/client/components/ui/button'
 import { Switch } from '@/client/components/ui/switch'
 const CronFormModal = lazy(() => import('@/client/components/sidebar/CronFormModal').then(m => ({ default: m.CronFormModal })))
-import { CronDetailModal } from '@/client/components/sidebar/CronDetailModal'
+const CronDetailModal = lazy(() => import('@/client/components/sidebar/CronDetailModal').then(m => ({ default: m.CronDetailModal })))
 import { useCrons } from '@/client/hooks/useCrons'
 import { cn } from '@/client/lib/utils'
 import { formatRelativeTime } from '@/client/lib/time'
@@ -432,6 +432,7 @@ export function CronList({ kins, llmModels }: CronListProps) {
 
       {/* Detail modal */}
       {currentDetailCron && (
+        <Suspense fallback={null}>
         <CronDetailModal
           open={detailCron !== null}
           onOpenChange={(open) => { if (!open) setDetailCron(null) }}
@@ -452,6 +453,7 @@ export function CronList({ kins, llmModels }: CronListProps) {
           onApprove={approveCron}
           onToggleActive={(id, isActive) => updateCron(id, { isActive })}
         />
+        </Suspense>
       )}
     </SidebarGroup>
   )
