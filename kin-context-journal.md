@@ -180,3 +180,37 @@ People currently in this conversation:
 - Add prompt-builder tests for participants, tool usage strategy, and multi-user sections
 - Compacting summary: add time range metadata so Kin knows when summarized events occurred
 - Channel/platform awareness: group vs DM context differentiation (adapt tone/verbosity)
+
+## 2026-03-02 (run 6) — Smart token-based history truncation
+
+**Area:** Conversation context
+
+**Problem:** The `buildMessageHistory()` function used a hard `.limit(50)` on message fetching. This was problematic because:
+1. A single tool call with a large JSON result could consume thousands of tokens, while a short chat message uses only a few dozen
+2. 50 messages of pure chat ≈ 5k tokens, but 50 messages with tool calls ≈ 50k+ tokens
+3. No awareness of context window budget — conversations with heavy tool usage could blow up the context
+
+**Change:**
+1. Added `historyTokenBudget` config option (default: 40,000 tokens, env: `HISTORY_TOKEN_BUDGET`) — the max estimated tokens for conversation history
+2. Increased the DB fetch limit from 50 to 100 to have more messages available for selection
+3. After filtering by compaction snapshot, added a token-budget trimming loop that:
+   - Estimates tokens per message using `content.length + toolCalls.length` / 4
+   - Drops oldest messages one by one until total fits within budget
+   - Always keeps at least the most recent message
+
+**Why 40k default?** Most models have 128k-200k context. System prompt + tools ≈ 10-15k. Memories ≈ 2-5k. This leaves 40k as a generous but safe budget for history, with room for the model's response.
+
+**Behavior change:**
+- Short chat conversations: more messages kept (up to 100 vs old 50)
+- Tool-heavy conversations: fewer messages kept, but always within token budget
+- Backward compatible: default behavior similar to before for typical conversations
+
+**Files changed:** `src/server/config.ts`, `src/server/services/kin-engine.ts`
+**Commit:** `ca9599f` — `feat(context): smart token-based history truncation instead of hard message limit`
+**Tests:** 26/26 prompt-builder tests pass, build OK
+
+**Next areas to explore:**
+- Add a prompt-builder test for participants, tool usage strategy, and multi-user sections
+- Compacting summary: add time range metadata so Kin knows when summarized events occurred
+- Tool descriptions: audit across all tool files for consistency and when-to-use hints
+- Channel/platform awareness: group vs DM context differentiation

@@ -115,10 +115,10 @@ test.describe.serial('Users settings', () => {
     const dialog = page.locator('[role="dialog"]').last()
     await dialog.getByRole('button', { name: /invite/i }).last().click()
 
-    await expect(page.getByText('Invitation created')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByRole('heading', { name: 'Invitation created' })).toBeVisible({ timeout: 5_000 })
 
     // Close revealed link dialog
-    await page.locator('[role="dialog"]').last().getByRole('button', { name: /close/i }).click()
+    await page.locator('[role="dialog"]').last().getByRole('button', { name: /close/i }).first().click()
   })
 
   test('should revoke an invitation with confirmation', async ({ page }) => {
