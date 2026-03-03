@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Tag, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import { useGitHubData } from './GitHubDataProvider'
 
@@ -27,8 +27,38 @@ function parseBody(body: string): string[] {
     .map((l) => l.replace(/^[-*]\s+/, ''))
 }
 
-function ReleaseCard({ release, isLatest }: { release: Release; isLatest: boolean }) {
+function CollapsibleContent({ expanded, children }: { expanded: boolean; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState<number | undefined>(expanded ? undefined : 0)
+
+  useEffect(() => {
+    if (!ref.current) return
+    if (expanded) {
+      setHeight(ref.current.scrollHeight)
+      const timer = setTimeout(() => setHeight(undefined), 300)
+      return () => clearTimeout(timer)
+    } else {
+      setHeight(ref.current.scrollHeight)
+      requestAnimationFrame(() => setHeight(0))
+    }
+  }, [expanded])
+
+  return (
+    <div
+      style={{
+        height: height !== undefined ? height : 'auto',
+        overflow: 'hidden',
+        transition: 'height 0.3s ease',
+      }}
+    >
+      <div ref={ref}>{children}</div>
+    </div>
+  )
+}
+
+function ReleaseCard({ release, isLatest, defaultExpanded }: { release: Release; isLatest: boolean; defaultExpanded: boolean }) {
   const changes = parseBody(release.body)
+  const [expanded, setExpanded] = useState(defaultExpanded)
 
   return (
     <div className="relative pl-8 pb-8 last:pb-0">
@@ -47,7 +77,10 @@ function ReleaseCard({ release, isLatest }: { release: Release; isLatest: boolea
         <Tag size={12} className={isLatest ? 'text-white' : ''} style={isLatest ? {} : { color: 'var(--color-muted-foreground)' }} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex flex-wrap items-center gap-3 mb-2 w-full text-left cursor-pointer group"
+      >
         <span className="font-mono font-bold text-lg" style={{ color: 'var(--color-foreground)' }}>
           {release.tag_name}
         </span>
@@ -59,34 +92,49 @@ function ReleaseCard({ release, isLatest }: { release: Release; isLatest: boolea
         <span className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
           {formatDate(release.published_at)}
         </span>
-      </div>
+        {changes.length > 0 && !expanded && (
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: 'var(--color-muted-foreground)', background: 'var(--color-border)' }}>
+            {changes.length} change{changes.length > 1 ? 's' : ''}
+          </span>
+        )}
+        <ChevronDown
+          size={16}
+          className="ml-auto transition-transform duration-300"
+          style={{
+            color: 'var(--color-muted-foreground)',
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        />
+      </button>
 
-      {changes.length > 0 && (
-        <ul className="space-y-1 mt-2">
-          {changes.map((change, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
-              <span className="gradient-text mt-0.5">•</span>
-              <span>{change}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <CollapsibleContent expanded={expanded}>
+        {changes.length > 0 && (
+          <ul className="space-y-1 mt-2">
+            {changes.map((change, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+                <span className="gradient-text mt-0.5">&#8226;</span>
+                <span>{change}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {!changes.length && release.name && (
-        <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
-          {release.name}
-        </p>
-      )}
+        {!changes.length && release.name && (
+          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+            {release.name}
+          </p>
+        )}
 
-      <a
-        href={release.html_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-sm mt-2 transition-colors hover:opacity-80"
-        style={{ color: 'var(--color-purple-400, #c084fc)' }}
-      >
-        View on GitHub <ExternalLink size={12} />
-      </a>
+        <a
+          href={release.html_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm mt-2 transition-colors hover:opacity-80"
+          style={{ color: 'var(--color-purple-400, #c084fc)' }}
+        >
+          View on GitHub <ExternalLink size={12} />
+        </a>
+      </CollapsibleContent>
     </div>
   )
 }
@@ -123,7 +171,7 @@ export function Changelog() {
         ) : (
           <>
             {visible.map((release, i) => (
-              <ReleaseCard key={release.tag_name} release={release} isLatest={i === 0} />
+              <ReleaseCard key={release.tag_name} release={release} isLatest={i === 0} defaultExpanded={i === 0} />
             ))}
 
             {releases.length > 5 && (

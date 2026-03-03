@@ -259,7 +259,7 @@ export function Hero() {
             <span className="gradient-text animate-gradient">KinBot</span>
           </h1>
         </div>
-        <p className="text-2xl sm:text-3xl font-semibold mb-4" style={{ color: 'var(--color-foreground)' }}>
+        <p className="text-2xl sm:text-3xl font-semibold mb-4" style={{ color: 'var(--color-foreground)', minHeight: '4.5rem' }}>
           AI agents that{' '}
           <RotatingText
             phrases={[
