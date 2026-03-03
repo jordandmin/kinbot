@@ -4,11 +4,48 @@ import {
   Code2,
   Home,
   Users,
-  Briefcase,
+  Mail,
+  Film,
+  MessageSquare,
+  GitBranch,
+  Rss,
+  UserCheck,
+  Heart,
 } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 
 type Icon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
+
+/* ── Audience personas ──────────────────────────────────────────────── */
+
+interface Persona {
+  emoji: string
+  label: string
+  description: string
+}
+
+const personas: Persona[] = [
+  {
+    emoji: '🏠',
+    label: 'Self-hosters & homelab owners',
+    description:
+      'You run services at home and want AI that lives on your hardware, not someone else\'s cloud.',
+  },
+  {
+    emoji: '👨‍💻',
+    label: 'Developers & open-source maintainers',
+    description:
+      'You need agents that understand your codebase, triage issues, and automate your dev workflow.',
+  },
+  {
+    emoji: '👨‍👩‍👧',
+    label: 'Families & small groups',
+    description:
+      'A shared assistant for your household, your friend group, or your small team. No corporate overhead.',
+  },
+]
+
+/* ── Use cases ──────────────────────────────────────────────────────── */
 
 interface UseCase {
   icon: Icon
@@ -20,54 +57,106 @@ interface UseCase {
 
 const useCases: UseCase[] = [
   {
-    icon: Server,
-    title: 'Homelab assistant',
+    icon: MessageSquare,
+    title: 'Discord server manager',
     description:
-      'A Kin that monitors your services, remembers every config change, and alerts you when something breaks. Ask it "what did we change on the reverse proxy last week?" and get an instant answer.',
-    agents: ['SysAdmin Kin', 'Monitoring Kin'],
-    highlight: 'Remembers every config change',
+      'A Kin that moderates your server, answers common questions, welcomes new members, and summarizes conversations you missed overnight.',
+    agents: ['Moderator Kin', 'Welcome Kin'],
+    highlight: 'Always-on community manager',
   },
   {
-    icon: Code2,
-    title: 'Dev team',
+    icon: GitBranch,
+    title: 'GitHub issue responder',
     description:
-      'A code reviewer, an architecture advisor, and a documentation writer that share context. The reviewer flags issues, the architect suggests patterns, and the writer keeps your docs in sync.',
-    agents: ['Reviewer', 'Architect', 'DocWriter'],
-    highlight: 'Agents collaborate on PRs',
+      'Agents specialized on your projects that triage issues, ask clarifying questions, suggest fixes, and draft responses. They know your codebase like the back of their hand.',
+    agents: ['Triage Kin', 'CodeReview Kin'],
+    highlight: 'Knows your codebase intimately',
   },
   {
-    icon: BookOpen,
-    title: 'Research & learning',
+    icon: Film,
+    title: 'Media library & downloads',
     description:
-      'A research Kin that reads papers, extracts key findings, and builds a knowledge base over weeks. Come back months later and ask "what did we learn about transformer efficiency?" — it remembers.',
-    agents: ['Research Kin', 'Summary Kin'],
-    highlight: 'Knowledge compounds over time',
+      'An agent that manages your Plex, Jellyfin, or Emby library. Handles download requests, organizes media, monitors torrents, and notifies you when new content is ready.',
+    agents: ['Media Kin', 'Download Kin'],
+    highlight: 'Your personal media butler',
   },
   {
     icon: Home,
     title: 'Smart home brain',
     description:
-      'Connect a Kin to your home automation via webhooks. It learns your preferences, schedules routines, and adapts over time. "Why is the heating on?" — it explains its reasoning.',
+      'Connected to your Home Assistant via webhooks. It learns your habits, schedules routines, explains why the heating turned on, and adapts to your family\'s preferences over time.',
     agents: ['Home Kin'],
     highlight: 'Learns your habits',
   },
   {
-    icon: Users,
-    title: 'Family / team hub',
+    icon: Mail,
+    title: 'Email & calendar assistant',
     description:
-      'Shared Kins accessible via Telegram or Discord. A cooking Kin that remembers everyone\'s dietary preferences, a trip planner that knows your past vacations and budget.',
-    agents: ['Chef Kin', 'Travel Kin'],
-    highlight: 'Multi-user via chat platforms',
+      'A Kin that reads your inbox, flags what matters, drafts replies, and keeps your calendar in check. Reminds you of upcoming meetings and handles scheduling conflicts.',
+    agents: ['Mail Kin', 'Calendar Kin'],
+    highlight: 'Never miss what matters',
   },
   {
-    icon: Briefcase,
-    title: 'Freelance ops',
+    icon: Rss,
+    title: 'Daily tech watch',
     description:
-      'A client manager that tracks projects, deadlines, and conversations across channels. A finance Kin that remembers invoicing patterns. Delegate between them with sub-tasks.',
-    agents: ['Client Kin', 'Finance Kin'],
-    highlight: 'Cross-agent delegation',
+      'An agent that monitors RSS feeds, Hacker News, Reddit, and Twitter. Every morning, you get a curated digest of what\'s relevant to your interests.',
+    agents: ['Watch Kin'],
+    highlight: 'Curated daily digest',
+  },
+  {
+    icon: Server,
+    title: 'Homelab assistant',
+    description:
+      'Monitors your services, remembers every config change, and alerts you when something breaks. Ask "what did we change on the reverse proxy last week?" and get an instant answer.',
+    agents: ['SysAdmin Kin', 'Monitoring Kin'],
+    highlight: 'Remembers every config change',
+  },
+  {
+    icon: BookOpen,
+    title: 'Research & knowledge base',
+    description:
+      'A research Kin that reads papers, extracts key findings, and builds a knowledge base over weeks. Come back months later and it still remembers everything.',
+    agents: ['Research Kin', 'Summary Kin'],
+    highlight: 'Knowledge compounds over time',
+  },
+  {
+    icon: Users,
+    title: 'Family hub',
+    description:
+      'Shared Kins accessible via Telegram or WhatsApp. A cooking Kin that remembers everyone\'s dietary preferences, a trip planner that knows your past vacations and budget.',
+    agents: ['Chef Kin', 'Travel Kin'],
+    highlight: 'The whole family benefits',
   },
 ]
+
+/* ── Components ─────────────────────────────────────────────────────── */
+
+function PersonaCard({ persona }: { persona: Persona }) {
+  return (
+    <div
+      className="glass-strong rounded-xl p-5 text-center transition-all duration-300 hover:scale-[1.03]"
+      style={{
+        border:
+          '1px solid color-mix(in oklch, var(--color-border) 50%, transparent)',
+      }}
+    >
+      <div className="text-3xl mb-3">{persona.emoji}</div>
+      <h4
+        className="text-sm font-semibold mb-1.5"
+        style={{ color: 'var(--color-foreground)' }}
+      >
+        {persona.label}
+      </h4>
+      <p
+        className="text-xs leading-relaxed"
+        style={{ color: 'var(--color-muted-foreground)' }}
+      >
+        {persona.description}
+      </p>
+    </div>
+  )
+}
 
 function UseCaseCard({ useCase }: { useCase: UseCase }) {
   const { icon: Icon, title, description, agents, highlight } = useCase
@@ -76,7 +165,8 @@ function UseCaseCard({ useCase }: { useCase: UseCase }) {
     <div
       className="glass-strong rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] group"
       style={{
-        border: '1px solid color-mix(in oklch, var(--color-border) 50%, transparent)',
+        border:
+          '1px solid color-mix(in oklch, var(--color-border) 50%, transparent)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor =
@@ -97,7 +187,8 @@ function UseCaseCard({ useCase }: { useCase: UseCase }) {
           style={{
             background:
               'linear-gradient(135deg, color-mix(in oklch, var(--color-glow-1) 15%, transparent), color-mix(in oklch, var(--color-glow-2) 10%, transparent))',
-            border: '1px solid color-mix(in oklch, var(--color-glow-1) 20%, transparent)',
+            border:
+              '1px solid color-mix(in oklch, var(--color-glow-1) 20%, transparent)',
           }}
         >
           <Icon size={20} style={{ color: 'var(--color-primary)' }} />
@@ -105,9 +196,11 @@ function UseCaseCard({ useCase }: { useCase: UseCase }) {
         <span
           className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full"
           style={{
-            background: 'color-mix(in oklch, var(--color-glow-1) 8%, transparent)',
+            background:
+              'color-mix(in oklch, var(--color-glow-1) 8%, transparent)',
             color: 'var(--color-primary)',
-            border: '1px solid color-mix(in oklch, var(--color-glow-1) 15%, transparent)',
+            border:
+              '1px solid color-mix(in oklch, var(--color-glow-1) 15%, transparent)',
           }}
         >
           {highlight}
@@ -137,7 +230,8 @@ function UseCaseCard({ useCase }: { useCase: UseCase }) {
             key={agent}
             className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
             style={{
-              background: 'color-mix(in oklch, var(--color-muted-foreground) 8%, transparent)',
+              background:
+                'color-mix(in oklch, var(--color-muted-foreground) 8%, transparent)',
               color: 'var(--color-muted-foreground)',
             }}
           >
@@ -156,20 +250,47 @@ function UseCaseCard({ useCase }: { useCase: UseCase }) {
 export function UseCases() {
   return (
     <section id="use-cases" className="px-6 py-24 max-w-6xl mx-auto">
-      <div className="text-center mb-16">
+      {/* Section header */}
+      <div className="text-center mb-12">
         <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-          <span style={{ color: 'var(--color-foreground)' }}>What will</span>{' '}
-          <span className="gradient-text">you build?</span>
+          <span style={{ color: 'var(--color-foreground)' }}>Built for</span>{' '}
+          <span className="gradient-text">people like you</span>
         </h2>
         <p
           className="text-lg max-w-2xl mx-auto"
           style={{ color: 'var(--color-muted-foreground)' }}
         >
-          KinBot isn't a chatbot. It's a platform for persistent, collaborative AI agents.
-          Here's what people are building.
+          KinBot is made for tech-savvy individuals, small teams, and families
+          who want AI that runs on their terms. No enterprise complexity, no
+          user management, no corporate overhead. Just powerful agents for the
+          people who actually use them.
         </p>
       </div>
 
+      {/* Audience personas */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16 max-w-3xl mx-auto">
+        {personas.map((p) => (
+          <PersonaCard key={p.label} persona={p} />
+        ))}
+      </div>
+
+      {/* Use cases header */}
+      <div className="text-center mb-12">
+        <h3
+          className="text-2xl sm:text-3xl font-bold mb-3"
+          style={{ color: 'var(--color-foreground)' }}
+        >
+          What will <span className="gradient-text">you</span> build?
+        </h3>
+        <p
+          className="text-base max-w-xl mx-auto"
+          style={{ color: 'var(--color-muted-foreground)' }}
+        >
+          Here are some ideas to get you started.
+        </p>
+      </div>
+
+      {/* Use case cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {useCases.map((uc) => (
           <UseCaseCard key={uc.title} useCase={uc} />

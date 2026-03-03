@@ -486,3 +486,39 @@ Stack, Divider, Card (+Header/Title/Description/Content/Footer), Button, ButtonG
 2. `KinBot.navigate(path)` — verify parent-side handler
 3. Settings template using new components (RadioGroup, Slider, etc.)
 4. Form template demonstrating the Form component with validation
+
+## 2026-03-03 (run 14) — React Hooks Library Expansion
+
+**What:** Added 9 new React hooks to `@kinbot/react` SDK + 7 new convenience re-exports.
+
+### New Hooks
+1. **`useKin()`** → `{ kin, loading }` — reactive access to parent Kin info (id, name, avatarUrl)
+2. **`useUser()`** → `{ user, loading }` — reactive access to current user info (id, name, locale, timezone)
+3. **`useForm(initialValues, validate?)`** → `{ values, errors, touched, handleChange, handleBlur, handleSubmit, reset, isValid, isDirty }` — full form state management with validation
+4. **`useMediaQuery(query)`** → `boolean` — reactive CSS media query matching
+5. **`useDebounce(value, delayMs?)`** → debounced value (default 300ms)
+6. **`useInterval(callback, delayMs)`** — declarative setInterval (null to pause)
+7. **`useClickOutside(ref, handler)`** — detect clicks outside an element
+8. **`useMemory()`** → `{ search, store, results, loading }` — search/store Kin memories
+9. **`useConversation()`** → `{ history, send, messages, loading }` — interact with Kin conversation
+
+### New Re-exports
+`kin`, `user`, `memory`, `conversation`, `notification`, `resize`, `share`
+
+### Tool Docs Updated
+Updated `mini-app-tools.ts` with full documentation of all 12 hooks (3 existing + 9 new).
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-react.js` — +290 lines (9 hooks + 7 re-exports)
+- `src/server/tools/mini-app-tools.ts` — updated hook documentation
+
+**Tests:** 1339 pass, 0 fail. Build clean.
+
+**Hook inventory (12 total):**
+useKinBot, useStorage, useTheme, useKin, useUser, useForm, useMediaQuery, useDebounce, useInterval, useClickOutside, useMemory, useConversation
+
+**Next priorities:**
+1. Settings template could use useForm for demo
+2. Responsive breakpoint CSS utilities (sm:/md:/lg: prefixes)
+3. Form template update to showcase useForm hook
+4. `KinBot.shortcut(key, callback)` — keyboard shortcut registration
