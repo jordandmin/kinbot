@@ -2417,6 +2417,113 @@ check_status() {
     fi
   fi
 
+  # Check process resources (uptime, memory, disk, logs)
+  header "Resources"
+
+  # Process uptime & memory (find the KinBot PID)
+  local kinbot_pid=""
+  if [ "$INIT_SYSTEM" = "script" ]; then
+    local pid_file="$KINBOT_DATA_DIR/kinbot.pid"
+    [ -f "$pid_file" ] && kinbot_pid="$(cat "$pid_file" 2>/dev/null)"
+  elif [ "$INIT_SYSTEM" = "launchd" ]; then
+    kinbot_pid="$(pgrep -f 'bun.*server/index' 2>/dev/null | head -1 || echo "")"
+  elif [ "$IS_ROOT" = true ]; then
+    kinbot_pid="$(systemctl show kinbot -p MainPID --value 2>/dev/null || echo "")"
+    [ "$kinbot_pid" = "0" ] && kinbot_pid=""
+  else
+    kinbot_pid="$(systemctl --user show kinbot -p MainPID --value 2>/dev/null || echo "")"
+    [ "$kinbot_pid" = "0" ] && kinbot_pid=""
+  fi
+
+  if [ -n "$kinbot_pid" ] && kill -0 "$kinbot_pid" 2>/dev/null; then
+    # Uptime
+    local proc_uptime=""
+    if [ -d "/proc/$kinbot_pid" ]; then
+      local start_time_epoch
+      start_time_epoch="$(stat -c %Y "/proc/$kinbot_pid" 2>/dev/null)" || start_time_epoch=""
+      if [ -n "$start_time_epoch" ]; then
+        local now_epoch uptime_s
+        now_epoch="$(date +%s)"
+        uptime_s=$((now_epoch - start_time_epoch))
+        local d=$((uptime_s / 86400)) h=$(( (uptime_s % 86400) / 3600 )) m=$(( (uptime_s % 3600) / 60 ))
+        if [ "$d" -gt 0 ]; then
+          proc_uptime="${d}d ${h}h ${m}m"
+        elif [ "$h" -gt 0 ]; then
+          proc_uptime="${h}h ${m}m"
+        else
+          proc_uptime="${m}m"
+        fi
+      fi
+    elif [ "$OS" = "Darwin" ]; then
+      local elapsed
+      elapsed="$(ps -p "$kinbot_pid" -o etime= 2>/dev/null | tr -d ' ')" || elapsed=""
+      [ -n "$elapsed" ] && proc_uptime="$elapsed"
+    fi
+    [ -n "$proc_uptime" ] && success "Process uptime: $proc_uptime (PID $kinbot_pid)"
+
+    # Memory RSS
+    local mem_kb=""
+    if [ -f "/proc/$kinbot_pid/status" ]; then
+      mem_kb="$(awk '/^VmRSS:/ {print $2}' "/proc/$kinbot_pid/status" 2>/dev/null)" || mem_kb=""
+    fi
+    if [ -z "$mem_kb" ]; then
+      mem_kb="$(ps -p "$kinbot_pid" -o rss= 2>/dev/null | tr -d ' ')" || mem_kb=""
+    fi
+    if [ -n "$mem_kb" ] && [ "$mem_kb" -gt 0 ] 2>/dev/null; then
+      local mem_mb=$((mem_kb / 1024))
+      if [ "$mem_mb" -gt 512 ] 2>/dev/null; then
+        warn "Memory: ${mem_mb}MB RSS (high)"
+        has_issues=true
+      else
+        success "Memory: ${mem_mb}MB RSS"
+      fi
+    fi
+  fi
+
+  # Disk space
+  local install_parent
+  install_parent="$(dirname "$KINBOT_DIR")"
+  local avail_kb=""
+  avail_kb="$(df -k "$install_parent" 2>/dev/null | awk 'NR==2 {print $4}')" || avail_kb=""
+  if [ -n "$avail_kb" ] && [ "$avail_kb" -gt 0 ] 2>/dev/null; then
+    local avail_mb=$((avail_kb / 1024))
+    local avail_gb=$((avail_mb / 1024))
+    if [ "$avail_mb" -lt 500 ] 2>/dev/null; then
+      warn "Disk: ${avail_mb}MB free (critically low, need 500MB+)"
+      has_issues=true
+    elif [ "$avail_mb" -lt 1024 ] 2>/dev/null; then
+      warn "Disk: ${avail_mb}MB free (low, recommend 1GB+)"
+    elif [ "$avail_gb" -gt 0 ] 2>/dev/null; then
+      success "Disk: ${avail_gb}GB free"
+    else
+      success "Disk: ${avail_mb}MB free"
+    fi
+  fi
+
+  # Data directory size
+  if [ -d "$KINBOT_DATA_DIR" ]; then
+    local data_size
+    data_size="$(du -sh "$KINBOT_DATA_DIR" 2>/dev/null | awk '{print $1}')"
+    [ -n "$data_size" ] && info "Data directory size: $data_size"
+  fi
+
+  # Log file size (for script-managed installs)
+  if [ "$INIT_SYSTEM" = "script" ]; then
+    local log_file="$KINBOT_DATA_DIR/kinbot.log"
+    if [ -f "$log_file" ]; then
+      local log_kb
+      log_kb="$(du -k "$log_file" 2>/dev/null | awk '{print $1}')" || log_kb="0"
+      if [ "$log_kb" -gt 102400 ] 2>/dev/null; then
+        local log_mb=$((log_kb / 1024))
+        warn "Log file: ${log_mb}MB (large, run: bash install.sh --start && $KINBOT_DIR/kinbot log-rotate)"
+        has_issues=true
+      elif [ "$log_kb" -gt 10240 ] 2>/dev/null; then
+        local log_mb=$((log_kb / 1024))
+        info "Log file: ${log_mb}MB"
+      fi
+    fi
+  fi
+
   # Check for available updates
   header "Updates"
   if [ -d "$KINBOT_DIR/.git" ]; then
