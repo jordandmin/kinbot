@@ -635,6 +635,80 @@ export function useOnline() {
   return online
 }
 
+// ─── useClipboard ───────────────────────────────────────────────────────────
+
+/**
+ * Reactive clipboard hook.
+ * Provides `copy(text)` and `paste()` with loading/success state.
+ *
+ * @returns {{ copy: (text: string) => Promise<boolean>, paste: () => Promise<string|null>, copied: boolean, loading: boolean }}
+ *
+ * @example
+ *   const { copy, paste, copied } = useClipboard()
+ *   <Button onClick={() => copy('hello')}>{copied ? 'Copied!' : 'Copy'}</Button>
+ */
+export function useClipboard() {
+  const [copied, setCopied] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const timerRef = useRef(null)
+
+  const copy = useCallback(async (text) => {
+    setLoading(true)
+    try {
+      await window.KinBot.clipboard.write(text)
+      setCopied(true)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setCopied(false), 2000)
+      return true
+    } catch {
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const paste = useCallback(async () => {
+    setLoading(true)
+    try {
+      return await window.KinBot.clipboard.read()
+    } catch {
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [])
+
+  return { copy, paste, copied, loading }
+}
+
+// ─── useNotification ────────────────────────────────────────────────────────
+
+/**
+ * Hook for sending browser notifications via the parent window.
+ * Wraps `KinBot.notification()` with a reactive API and permission state.
+ *
+ * @returns {{ notify: (title: string, body?: string) => Promise<boolean>, lastSent: string|null }}
+ *
+ * @example
+ *   const { notify } = useNotification()
+ *   <Button onClick={() => notify('Timer done!', 'Your 5-minute timer has finished.')}>Notify</Button>
+ */
+export function useNotification() {
+  const [lastSent, setLastSent] = useState(null)
+
+  const notify = useCallback(async (title, body) => {
+    const ok = await window.KinBot.notification(title, body)
+    if (ok) setLastSent(new Date().toISOString())
+    return ok
+  }, [])
+
+  return { notify, lastSent }
+}
+
 // ─── Convenience re-exports from vanilla SDK ─────────────────────────────────
 
 export const toast = window.KinBot.toast

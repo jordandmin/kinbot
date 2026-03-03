@@ -64,7 +64,9 @@ export const createMiniAppTool: ToolRegistration = {
         '`useApps()` → `{ apps, loading, refresh }` (list other mini-apps from the same Kin, fetches on mount), ' +
         '`useSharedData(onData?)` → `{ data, clear }` (listen for data shared from another app via KinBot.share()), ' +
         '`usePrevious(value)` → previous value from last render (useful for comparing state changes), ' +
-        '`useOnline()` → `boolean` (reactive network status — true when browser is online). ' +
+        '`useOnline()` → `boolean` (reactive network status — true when browser is online), ' +
+        '`useClipboard()` → `{ copy, paste, copied, loading }` (reactive clipboard — copy(text) returns Promise<boolean>, copied auto-resets after 2s, paste() returns Promise<string|null>), ' +
+        '`useNotification()` → `{ notify, lastSent }` (send browser notifications via parent — notify(title, body?) returns Promise<boolean>). ' +
         '**@kinbot/react Exports (convenience re-exports from KinBot SDK):** ' +
         '`toast(message, type)` (type: "info"|"success"|"warning"|"error"), ' +
         '`confirm(message, options?)` → Promise<boolean> (options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +
