@@ -181,12 +181,12 @@ describe('memory service', () => {
         { score: 0.2 },
       ]
 
-      const topScore = results[0].score
+      const topScore = results[0]!.score
       let cutoff = results.length
 
       for (let i = 1; i < results.length; i++) {
-        const gap = results[i - 1].score - results[i].score
-        const rangeFromTop = topScore - results[i].score
+        const gap = results[i - 1]!.score - results[i]!.score
+        const rangeFromTop = topScore - results[i]!.score
         if (rangeFromTop > 0 && gap / rangeFromTop > 0.4) {
           cutoff = i
           break
@@ -211,12 +211,12 @@ describe('memory service', () => {
         { score: 0.1 },
       ]
 
-      const topScore = results[0].score
+      const topScore = results[0]!.score
       let cutoff = results.length
 
       for (let i = 1; i < results.length; i++) {
-        const gap = results[i - 1].score - results[i].score
-        const rangeFromTop = topScore - results[i].score
+        const gap = results[i - 1]!.score - results[i]!.score
+        const rangeFromTop = topScore - results[i]!.score
         if (rangeFromTop > 0 && gap / rangeFromTop > 0.4) {
           cutoff = i
           break
@@ -238,12 +238,12 @@ describe('memory service', () => {
         { score: 0.6 },
       ]
 
-      const topScore = results[0].score
+      const topScore = results[0]!.score
       let cutoff = results.length
 
       for (let i = 1; i < results.length; i++) {
-        const gap = results[i - 1].score - results[i].score
-        const rangeFromTop = topScore - results[i].score
+        const gap = results[i - 1]!.score - results[i]!.score
+        const rangeFromTop = topScore - results[i]!.score
         if (rangeFromTop > 0 && gap / rangeFromTop > 0.4) {
           cutoff = i
           break
@@ -266,12 +266,12 @@ describe('memory service', () => {
         { score: 0.1 },
       ]
 
-      const topScore = results[0].score
+      const topScore = results[0]!.score
       const minScore = topScore * 0.3 // config.memory.adaptiveKMinScoreRatio
 
       let cutoff = results.length
       for (let i = 1; i < cutoff; i++) {
-        if (results[i].score < minScore) {
+        if (results[i]!.score < minScore) {
           cutoff = i
           break
         }
