@@ -178,8 +178,44 @@ export async function consolidateMemories(kinId: string): Promise<number> {
 
   log.info({ kinId, eligible: eligible.length }, 'Starting memory consolidation')
 
-  // Phase 1: Find similar pairs (pure computation, no LLM calls)
-  const pairs = findSimilarClusters(eligible, threshold)
+  // Phase 1: Find similar pairs, partitioned by subject for efficiency
+  // Memories with the same subject are compared at the configured threshold.
+  // Cross-subject memories are compared at a higher threshold (0.95) to avoid false merges.
+  const crossSubjectThreshold = Math.max(threshold, 0.95)
+
+  // Group by subject (null subject = "general")
+  const bySubject = new Map<string, MemoryRow[]>()
+  for (const m of eligible) {
+    const key = m.subject ?? '__general__'
+    if (!bySubject.has(key)) bySubject.set(key, [])
+    bySubject.get(key)!.push(m)
+  }
+
+  // Within-subject pairs at normal threshold
+  let pairs: Array<[MemoryRow, MemoryRow]> = []
+  for (const group of bySubject.values()) {
+    if (group.length >= 2) {
+      pairs.push(...findSimilarClusters(group, threshold))
+    }
+  }
+
+  // Cross-subject pairs at higher threshold (only if not too many subjects)
+  const subjectKeys = Array.from(bySubject.keys())
+  if (subjectKeys.length <= 20) {
+    for (let i = 0; i < subjectKeys.length; i++) {
+      for (let j = i + 1; j < subjectKeys.length; j++) {
+        const groupA = bySubject.get(subjectKeys[i]!)!
+        const groupB = bySubject.get(subjectKeys[j]!)!
+        // Only cross-compare small groups to bound cost
+        if (groupA.length * groupB.length <= 100) {
+          const combined = [...groupA, ...groupB]
+          const crossPairs = findSimilarClusters(combined, crossSubjectThreshold)
+          // Only keep actual cross-subject pairs
+          pairs.push(...crossPairs.filter(([a, b]) => (a.subject ?? '__general__') !== (b.subject ?? '__general__')))
+        }
+      }
+    }
+  }
   if (pairs.length === 0) {
     log.info({ kinId }, 'No near-duplicate memories found')
     return 0

@@ -12,7 +12,7 @@ import {
 } from '@/server/db/schema'
 import { config } from '@/server/config'
 import { getExtractionModel } from '@/server/services/app-settings'
-import { createMemory, searchMemories } from '@/server/services/memory'
+import { createMemory, updateMemory, searchMemories } from '@/server/services/memory'
 import { sseManager } from '@/server/sse/index'
 import type { MemoryCategory } from '@/shared/types'
 
@@ -314,6 +314,27 @@ async function cleanupSnapshots(kinId: string) {
 
 // ─── Memory Extraction Pipeline ──────────────────────────────────────────────
 
+async function addIfNotDuplicate(
+  kinId: string,
+  item: { content: string; category: string; subject?: string | null },
+  importance: number | null,
+  lastMessageId: string,
+): Promise<boolean> {
+  const similar = await searchMemories(kinId, item.content, 3)
+  const isDuplicate = similar.some((s) => s.score > 0.03)
+  if (isDuplicate) return false
+
+  await createMemory(kinId, {
+    content: item.content,
+    category: item.category as MemoryCategory,
+    subject: item.subject || null,
+    importance,
+    sourceMessageId: lastMessageId,
+    sourceChannel: 'automatic',
+  })
+  return true
+}
+
 async function extractMemories(
   kinId: string,
   kinModel: string,
@@ -328,9 +349,9 @@ async function extractMemories(
   const model = await resolveLLMModel(effectiveExtractionModel ?? kinModel, extractionProviderId)
   if (!model) return 0
 
-  // Get existing memories for dedup context
+  // Get existing memories for dedup context (include IDs for UPDATE actions)
   const existingMemories = await db
-    .select({ content: memories.content, category: memories.category, subject: memories.subject })
+    .select({ id: memories.id, content: memories.content, category: memories.category, subject: memories.subject })
     .from(memories)
     .where(eq(memories.kinId, kinId))
     .all()
@@ -338,7 +359,7 @@ async function extractMemories(
   const existingMemoriesSummary =
     existingMemories.length > 0
       ? existingMemories
-          .map((m) => `- [${m.category}] ${m.content}${m.subject ? ` (subject: ${m.subject})` : ''}`)
+          .map((m, i) => `[${i}] [${m.category}] ${m.content}${m.subject ? ` (subject: ${m.subject})` : ''}`)
           .join('\n')
       : '(none)'
 
@@ -350,22 +371,27 @@ async function extractMemories(
   const extractionPrompt =
     `You are an assistant specialized in information extraction.\n` +
     `Analyze the exchanges below and extract information worth remembering long-term.\n\n` +
-    `For each extracted piece of information, return a JSON object with:\n` +
+    `For each piece of information, decide what action to take:\n` +
+    `- **"add"**: New information not present in existing memories\n` +
+    `- **"update"**: Information that contradicts, supersedes, or enriches an existing memory (e.g., a preference changed, a fact was corrected, new details about something already known)\n` +
+    `- Skip entirely if the information is already accurately captured\n\n` +
+    `Return a JSON array of objects with:\n` +
+    `- "action": "add" | "update"\n` +
     `- "content": the fact or knowledge (a clear, standalone sentence)\n` +
     `- "category": "fact" | "preference" | "decision" | "knowledge"\n` +
     `- "subject": the person or context concerned (name or "general")\n` +
-    `- "importance": a number from 1 to 10 rating how important this memory is.\n` +
-    `  1 = mundane/trivial (e.g. "User said good morning")\n` +
-    `  5 = moderately useful (e.g. "User prefers dark mode")\n` +
-    `  10 = critical/life-changing (e.g. "User got married", "User's API key for production")\n\n` +
+    `- "importance": a number from 1 to 10\n` +
+    `  1 = mundane/trivial, 5 = moderately useful, 10 = critical/life-changing\n` +
+    `- "updateIndex": (only for "update" action) the index number [N] of the existing memory to update\n\n` +
     `Rules:\n` +
     `- Only extract **durable** information (not ephemeral details)\n` +
-    `- Check if the information contradicts or updates an existing memory\n` +
-    `- Do not duplicate information already present in existing memories\n` +
+    `- Use "update" when new info CONTRADICTS or SUPERSEDES an existing memory (e.g., "likes Python" → "switched to Rust")\n` +
+    `- Use "update" to ENRICH an existing memory with significant new details\n` +
+    `- Do NOT update if the existing memory is already accurate and complete\n` +
     `- Be honest with importance scores — most memories should be 3-7\n\n` +
-    `## Existing memories (to avoid duplicates)\n\n${existingMemoriesSummary}\n\n` +
+    `## Existing memories (indexed)\n\n${existingMemoriesSummary}\n\n` +
     `## Exchanges to analyze\n\n${formattedMessages}\n\n` +
-    `Return a JSON array. If nothing new to remember, return [].`
+    `Return a JSON array. If nothing new to remember or update, return [].`
 
   try {
     const result = await generateText({
@@ -378,10 +404,12 @@ async function extractMemories(
     if (!jsonMatch) return 0
 
     const extracted = JSON.parse(jsonMatch[0]) as Array<{
+      action?: string
       content: string
       category: string
       subject: string
       importance?: number
+      updateIndex?: number
     }>
 
     let count = 0
@@ -393,20 +421,29 @@ async function extractMemories(
         ? Math.max(1, Math.min(10, Math.round(item.importance)))
         : null
 
-      // Check for near-duplicates via semantic search
-      const similar = await searchMemories(kinId, item.content, 3)
-      const isDuplicate = similar.some((s) => s.score > 0.03) // High RRF score = very similar
+      const action = item.action ?? 'add'
 
-      if (!isDuplicate) {
-        await createMemory(kinId, {
-          content: item.content,
-          category: item.category as MemoryCategory,
-          subject: item.subject || null,
-          importance,
-          sourceMessageId: lastMessageId,
-          sourceChannel: 'automatic',
-        })
-        count++
+      if (action === 'update' && typeof item.updateIndex === 'number') {
+        // Update an existing memory
+        const target = existingMemories[item.updateIndex]
+        if (target) {
+          await updateMemory(target.id, kinId, {
+            content: item.content,
+            category: item.category as MemoryCategory,
+            subject: item.subject || null,
+            importance,
+          })
+          count++
+          log.debug({ kinId, memoryId: target.id, oldContent: target.content, newContent: item.content }, 'Memory updated via extraction')
+        } else {
+          // Invalid index, fall back to add
+          await addIfNotDuplicate(kinId, item, importance, lastMessageId)
+          count++
+        }
+      } else {
+        // Add new memory (with dedup check)
+        const added = await addIfNotDuplicate(kinId, item, importance, lastMessageId)
+        if (added) count++
       }
     }
     return count
