@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
 import { ModelPicker } from '@/client/components/common/ModelPicker'
@@ -22,6 +22,7 @@ export function MemoriesSettings() {
   const [embeddingModel, setEmbeddingModel] = useState('')
   const [initialEmbeddingModel, setInitialEmbeddingModel] = useState('')
   const [savingEmbeddingModel, setSavingEmbeddingModel] = useState(false)
+  const [reembedding, setReembedding] = useState(false)
 
   useEffect(() => {
     fetchModelSettings()
@@ -64,6 +65,26 @@ export function MemoriesSettings() {
       toast.error(getErrorMessage(err))
     } finally {
       setSavingEmbeddingModel(false)
+    }
+  }
+
+  const handleReembed = async () => {
+    if (!confirm(t('settings.memories.reembedConfirm'))) return
+    setReembedding(true)
+    try {
+      const result = await api.post<{ total: number; success: number; failed: number }>(
+        '/memories/reembed',
+        {},
+      )
+      if (result.failed > 0) {
+        toast.warning(t('settings.memories.reembedFailed', result))
+      } else {
+        toast.success(t('settings.memories.reembedSuccess', result))
+      }
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setReembedding(false)
     }
   }
 
@@ -136,13 +157,27 @@ export function MemoriesSettings() {
               <span>{t('settings.memories.embeddingModelWarning')}</span>
             </div>
           )}
-          <Button
-            size="sm"
-            onClick={handleSaveEmbeddingModel}
-            disabled={!hasEmbeddingModelChanges || savingEmbeddingModel || !embeddingModel}
-          >
-            {savingEmbeddingModel ? t('common.loading') : t('common.save')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={handleSaveEmbeddingModel}
+              disabled={!hasEmbeddingModelChanges || savingEmbeddingModel || !embeddingModel}
+            >
+              {savingEmbeddingModel ? t('common.loading') : t('common.save')}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleReembed}
+              disabled={reembedding}
+            >
+              <RefreshCw className={`mr-1.5 size-3.5 ${reembedding ? 'animate-spin' : ''}`} />
+              {reembedding ? t('settings.memories.reembedInProgress') : t('settings.memories.reembed')}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t('settings.memories.reembedDescription')}
+          </p>
         </div>
       </div>
 

@@ -595,3 +595,68 @@ export async function getRelevantMemories(
   const results = await searchMemories(kinId, query, config.memory.maxRelevantMemories)
   return results.map((r) => ({ id: r.id, category: r.category, content: r.content, subject: r.subject, importance: r.importance, updatedAt: r.updatedAt }))
 }
+
+// ─── Re-embedding ────────────────────────────────────────────────────────────
+
+/**
+ * Re-embed all memories for a given Kin (or all Kins if kinId is null).
+ * Useful when switching embedding models. Processes memories in batches
+ * and reports progress via SSE.
+ * Returns { total, success, failed }.
+ */
+export async function reembedAllMemories(
+  kinId?: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ total: number; success: number; failed: number }> {
+  const conditions = kinId ? [eq(memories.kinId, kinId)] : []
+  const allMemories = await db
+    .select({ id: memories.id, kinId: memories.kinId, content: memories.content })
+    .from(memories)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .all()
+
+  const total = allMemories.length
+  let success = 0
+  let failed = 0
+
+  // Process in batches of 10 to avoid overwhelming the embedding API
+  const BATCH_SIZE = 10
+  for (let i = 0; i < allMemories.length; i += BATCH_SIZE) {
+    const batch = allMemories.slice(i, i + BATCH_SIZE)
+    await Promise.all(
+      batch.map(async (mem) => {
+        try {
+          const embedding = await generateEmbedding(mem.content)
+          const embeddingBuf = Buffer.from(new Float32Array(embedding).buffer)
+
+          // Update the embedding in the memories table
+          await db
+            .update(memories)
+            .set({ embedding: embeddingBuf })
+            .where(eq(memories.id, mem.id))
+
+          // Update sqlite-vec index
+          try {
+            sqlite.run('DELETE FROM memories_vec WHERE memory_id = ?', [mem.id])
+            sqlite.run(
+              'INSERT INTO memories_vec(memory_id, embedding) VALUES (?, ?)',
+              [mem.id, embeddingBuf],
+            )
+          } catch {
+            // sqlite-vec may not be available
+          }
+
+          success++
+        } catch (err) {
+          log.warn({ memoryId: mem.id, err }, 'Failed to re-embed memory')
+          failed++
+        }
+      }),
+    )
+
+    onProgress?.(success + failed, total)
+  }
+
+  log.info({ total, success, failed, kinId: kinId ?? 'all' }, 'Re-embedding complete')
+  return { total, success, failed }
+}

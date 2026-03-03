@@ -59,4 +59,13 @@ memoryRoutes.post('/consolidate', async (c) => {
   return c.json({ removed })
 })
 
+// POST /api/memories/reembed — re-embed all memories with the current embedding model
+memoryRoutes.post('/reembed', async (c) => {
+  const body = await c.req.json<{ kinId?: string }>().catch(() => ({} as { kinId?: string }))
+  const { kinId } = body
+  const { reembedAllMemories } = await import('@/server/services/memory')
+  const result = await reembedAllMemories(kinId || undefined)
+  return c.json(result)
+})
+
 export { memoryRoutes }
