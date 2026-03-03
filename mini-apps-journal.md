@@ -522,3 +522,38 @@ useKinBot, useStorage, useTheme, useKin, useUser, useForm, useMediaQuery, useDeb
 2. Responsive breakpoint CSS utilities (sm:/md:/lg: prefixes)
 3. Form template update to showcase useForm hook
 4. `KinBot.shortcut(key, callback)` — keyboard shortcut registration
+
+## 2026-03-03 (run 15) — 6 New React Hooks + Re-exports
+
+**What:** Added 6 new hooks to `@kinbot/react` and 2 new convenience re-exports, bridging SDK features that lacked React wrappers.
+
+### New Hooks (18 total)
+1. **`useShortcut(key, callback)`** — Register keyboard shortcut with auto-cleanup on unmount. Wraps `KinBot.shortcut()`.
+2. **`useApps()`** → `{ apps, loading, refresh }` — List mini-apps from the same Kin. Fetches on mount, supports manual refresh.
+3. **`useSharedData(onData?)`** → `{ data, clear }` — Listen for data shared from another app via `KinBot.share()`. Stores last received payload.
+4. **`usePrevious(value)`** → previous render's value. Common React pattern useful for comparing state changes.
+5. **`useOnline()`** → `boolean` — Reactive network status (navigator.onLine + event listeners). Useful for offline-aware mini-apps.
+
+### New Re-exports
+- `shortcut` — direct access to `KinBot.shortcut()`
+- `apps` — direct access to `KinBot.apps`
+
+### Tool Docs Updated
+- All 6 new hooks documented in tool descriptions
+- New re-exports listed
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-react.js` — +160 lines (6 hooks + 2 re-exports)
+- `src/server/tools/mini-app-tools.ts` — updated hook + re-export documentation
+
+**Tests:** 1389 pass, 0 fail. Build clean.
+
+**Hook inventory (18 total):**
+useKinBot, useStorage, useTheme, useKin, useUser, useForm, useMediaQuery, useDebounce, useInterval, useClickOutside, useMemory, useConversation, **useShortcut**, **useApps**, **useSharedData**, **usePrevious**, **useOnline**
+
+**Next priorities:**
+1. New template: settings page using Panel, RadioGroup, Slider, Switch (update existing?)
+2. `KinBot.navigate(path)` docs — already implemented, ensure tool docs mention it
+3. Component showcase template could demo useShortcut, useApps
+4. Consider `useClipboard` hook (wraps KinBot.clipboard with reactive state)
+5. Consider `useNotification` hook (wraps KinBot.notification with permission state)
