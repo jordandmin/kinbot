@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useSSE } from '@/client/hooks/useSSE'
-import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, ArrowUpCircle } from 'lucide-react'
 import { PROVIDER_DISPLAY_NAMES } from '@/shared/constants'
 
 /**
@@ -46,6 +46,24 @@ export function StatusNotifications() {
           duration: 6000,
         })
       }
+    },
+
+    'version:update-available': (data) => {
+      const latestVersion = data.latestVersion as string
+      const releaseUrl = data.releaseUrl as string
+      toast.info(
+        t('statusNotifications.updateAvailable', { version: latestVersion }),
+        {
+          icon: <ArrowUpCircle className="size-4 text-blue-500" />,
+          duration: 10000,
+          action: releaseUrl
+            ? {
+                label: t('statusNotifications.viewRelease', 'View'),
+                onClick: () => window.open(releaseUrl, '_blank'),
+              }
+            : undefined,
+        },
+      )
     },
 
     'channel:updated': (data) => {

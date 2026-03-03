@@ -1452,7 +1452,9 @@
     "providerOffline": "Connexion à {{name}} échouée",
     "channelOnline": "Canal connecté",
     "channelOffline": "Canal déconnecté",
-    "channelError": "Erreur de connexion au canal"
+    "channelError": "Erreur de connexion au canal",
+    "updateAvailable": "KinOS {{version}} est disponible",
+    "viewRelease": "Voir"
   },
   "errorBoundary": {
     "message": "Une erreur est survenue. Veuillez recharger la page.",
