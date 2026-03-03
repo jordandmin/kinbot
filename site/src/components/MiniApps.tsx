@@ -203,13 +203,14 @@ export function MiniApps() {
           </div>
         </div>
         <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-          <span style={{ color: 'var(--color-foreground)' }}>Your Kins don't just chat.</span>{' '}
-          <span className="gradient-text">They build.</span>
+          <span style={{ color: 'var(--color-foreground)' }}>Oh, and they</span>{' '}
+          <span className="gradient-text">build apps too.</span>
         </h2>
         <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
-          Mini-Apps are full interactive applications that your Kins create from scratch
-          during conversation. Real React UIs, real backend logic, real persistent storage.
-          Ask for a dashboard, get a dashboard.
+          Your Kins already chat, use tools, remember everything, run cron jobs, collaborate
+          with each other, and connect to your favorite channels. On top of all that, they can
+          also create full interactive applications from scratch, right inside the conversation.
+          Real React UIs, real backend logic, real persistent storage.
         </p>
       </div>
 
@@ -265,7 +266,7 @@ export function MiniApps() {
             {
               step: '1',
               title: 'You describe what you need',
-              desc: '"Build me a habit tracker with streaks and weekly charts."',
+              desc: 'In the same conversation where your Kin manages your calendar and searches the web, just say "build me a habit tracker with streaks."',
             },
             {
               step: '2',
@@ -325,7 +326,8 @@ export function MiniApps() {
           <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
             Mini-Apps are a full platform: SDK v1.15 with 40+ APIs, a component library (@kinbot/components),
             server-side backends with SSE events, CORS-free HTTP proxy, inter-app communication,
-            Kin memory access, and a design system that follows your theme. No other AI assistant does this.
+            Kin memory access, and a design system that follows your theme. All this on top of
+            the 90+ built-in tools, long-term memory, and multi-agent capabilities your Kins already have.
           </p>
         </div>
       </div>
