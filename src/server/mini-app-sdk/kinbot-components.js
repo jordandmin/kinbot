@@ -2146,3 +2146,460 @@ export function DatePicker({ value, onChange, label, error, type = 'date', min, 
     }, error),
   )
 }
+
+// ─── Charts ───────────────────────────────────────────────────────────────────
+
+const CHART_COLORS = [
+  'var(--color-chart-1)',
+  'var(--color-chart-2)',
+  'var(--color-chart-3)',
+  'var(--color-chart-4)',
+  'var(--color-chart-5)',
+]
+
+function getChartColor(i) {
+  return CHART_COLORS[i % CHART_COLORS.length]
+}
+
+// ─── BarChart ─────────────────────────────────────────────────────────────────
+
+/**
+ * BarChart - Vertical bar chart using SVG
+ *
+ * Props:
+ *   data: Array<{ label: string, value: number, color?: string }>
+ *   width?: number (default 400)
+ *   height?: number (default 250)
+ *   showValues?: boolean (default true) — show value labels on bars
+ *   showGrid?: boolean (default true) — horizontal grid lines
+ *   barRadius?: number (default 4) — border radius on bar tops
+ *   gap?: number (default 0.3) — gap ratio between bars (0-1)
+ *   animate?: boolean (default true)
+ *   className?: string
+ *   style?: object
+ */
+export function BarChart({
+  data = [],
+  width = 400,
+  height = 250,
+  showValues = true,
+  showGrid = true,
+  barRadius = 4,
+  gap = 0.3,
+  animate = true,
+  className,
+  style,
+}) {
+  if (!data.length) return null
+
+  const padding = { top: 20, right: 16, bottom: 40, left: 48 }
+  const chartW = width - padding.left - padding.right
+  const chartH = height - padding.top - padding.bottom
+  const maxVal = Math.max(...data.map(d => d.value), 0) || 1
+  const niceMax = niceNumber(maxVal)
+  const gridLines = 5
+  const barWidth = chartW / data.length
+  const innerBar = barWidth * (1 - gap)
+
+  return React.createElement('svg', {
+    viewBox: `0 0 ${width} ${height}`,
+    width, height,
+    className: cn('kb-bar-chart', className),
+    style: { maxWidth: '100%', height: 'auto', ...style },
+    role: 'img',
+    'aria-label': 'Bar chart',
+  },
+    // grid lines
+    showGrid && Array.from({ length: gridLines + 1 }, (_, i) => {
+      const y = padding.top + (chartH / gridLines) * i
+      const val = niceMax - (niceMax / gridLines) * i
+      return React.createElement('g', { key: `g${i}` },
+        React.createElement('line', {
+          x1: padding.left, y1: y, x2: width - padding.right, y2: y,
+          stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: i === gridLines ? 'none' : '4,4',
+        }),
+        React.createElement('text', {
+          x: padding.left - 8, y: y + 4, textAnchor: 'end',
+          fill: 'var(--color-muted-foreground)', fontSize: 10,
+        }, formatCompact(val)),
+      )
+    }),
+    // bars
+    data.map((d, i) => {
+      const barH = (d.value / niceMax) * chartH
+      const x = padding.left + barWidth * i + (barWidth - innerBar) / 2
+      const y = padding.top + chartH - barH
+      const color = d.color || getChartColor(i)
+      return React.createElement('g', { key: i },
+        React.createElement('rect', {
+          x, y, width: innerBar, height: barH,
+          rx: barRadius, ry: barRadius,
+          fill: color,
+          style: animate ? { animation: `kb-bar-grow 0.5s ease-out ${i * 0.05}s both`, transformOrigin: `${x + innerBar / 2}px ${padding.top + chartH}px` } : undefined,
+        }),
+        // value label
+        showValues && d.value > 0 && React.createElement('text', {
+          x: x + innerBar / 2, y: y - 6, textAnchor: 'middle',
+          fill: 'var(--color-foreground)', fontSize: 10, fontWeight: 500,
+        }, formatCompact(d.value)),
+        // x-axis label
+        React.createElement('text', {
+          x: x + innerBar / 2, y: height - padding.bottom + 16, textAnchor: 'middle',
+          fill: 'var(--color-muted-foreground)', fontSize: 10,
+        }, truncLabel(d.label, Math.floor(innerBar / 6))),
+      )
+    }),
+  )
+}
+
+// ─── LineChart ────────────────────────────────────────────────────────────────
+
+/**
+ * LineChart - Multi-series line chart using SVG
+ *
+ * Props:
+ *   data: Array<{ label: string, values: number[] }> — each entry is an x-axis point
+ *         OR Array<{ label: string, value: number }> for single series
+ *   series?: string[] — series names (for legend)
+ *   width?: number (default 400)
+ *   height?: number (default 250)
+ *   showDots?: boolean (default true)
+ *   showGrid?: boolean (default true)
+ *   showArea?: boolean (default false) — fill area under lines
+ *   curved?: boolean (default true) — smooth curves
+ *   animate?: boolean (default true)
+ *   className?: string
+ *   style?: object
+ */
+export function LineChart({
+  data = [],
+  series,
+  width = 400,
+  height = 250,
+  showDots = true,
+  showGrid = true,
+  showArea = false,
+  curved = true,
+  animate = true,
+  className,
+  style,
+}) {
+  if (!data.length) return null
+
+  // normalize to multi-series
+  const isMulti = Array.isArray(data[0]?.values)
+  const seriesCount = isMulti ? (data[0]?.values?.length || 1) : 1
+  const getVal = (d, s) => isMulti ? (d.values?.[s] ?? 0) : (d.value ?? 0)
+
+  const padding = { top: 20, right: 16, bottom: 40, left: 48 }
+  const chartW = width - padding.left - padding.right
+  const chartH = height - padding.top - padding.bottom
+
+  let allVals = []
+  data.forEach(d => {
+    for (let s = 0; s < seriesCount; s++) allVals.push(getVal(d, s))
+  })
+  const maxVal = Math.max(...allVals, 0) || 1
+  const niceMax = niceNumber(maxVal)
+  const gridLines = 5
+
+  const xStep = data.length > 1 ? chartW / (data.length - 1) : 0
+  const toX = i => padding.left + xStep * i
+  const toY = v => padding.top + chartH - (v / niceMax) * chartH
+
+  const buildPath = (seriesIdx) => {
+    const points = data.map((d, i) => [toX(i), toY(getVal(d, seriesIdx))])
+    if (curved && points.length > 2) return catmullRomPath(points)
+    return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ')
+  }
+
+  const pathLength = useRef(null)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
+  return React.createElement('svg', {
+    viewBox: `0 0 ${width} ${height}`,
+    width, height,
+    className: cn('kb-line-chart', className),
+    style: { maxWidth: '100%', height: 'auto', ...style },
+    role: 'img',
+    'aria-label': 'Line chart',
+  },
+    // defs for area gradient
+    showArea && React.createElement('defs', null,
+      Array.from({ length: seriesCount }, (_, s) =>
+        React.createElement('linearGradient', { key: s, id: `area-${s}`, x1: 0, y1: 0, x2: 0, y2: 1 },
+          React.createElement('stop', { offset: '0%', stopColor: getChartColor(s), stopOpacity: 0.3 }),
+          React.createElement('stop', { offset: '100%', stopColor: getChartColor(s), stopOpacity: 0.02 }),
+        )
+      )
+    ),
+    // grid
+    showGrid && Array.from({ length: gridLines + 1 }, (_, i) => {
+      const y = padding.top + (chartH / gridLines) * i
+      const val = niceMax - (niceMax / gridLines) * i
+      return React.createElement('g', { key: `g${i}` },
+        React.createElement('line', {
+          x1: padding.left, y1: y, x2: width - padding.right, y2: y,
+          stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: i === gridLines ? 'none' : '4,4',
+        }),
+        React.createElement('text', {
+          x: padding.left - 8, y: y + 4, textAnchor: 'end',
+          fill: 'var(--color-muted-foreground)', fontSize: 10,
+        }, formatCompact(val)),
+      )
+    }),
+    // x labels
+    data.map((d, i) => React.createElement('text', {
+      key: `x${i}`, x: toX(i), y: height - padding.bottom + 16, textAnchor: 'middle',
+      fill: 'var(--color-muted-foreground)', fontSize: 10,
+    }, truncLabel(d.label, 8))),
+    // series
+    Array.from({ length: seriesCount }, (_, s) => {
+      const d = buildPath(s)
+      const color = getChartColor(s)
+      return React.createElement('g', { key: `s${s}` },
+        // area
+        showArea && React.createElement('path', {
+          d: d + ` L${toX(data.length - 1)},${padding.top + chartH} L${toX(0)},${padding.top + chartH} Z`,
+          fill: `url(#area-${s})`,
+        }),
+        // line
+        React.createElement('path', {
+          d, fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+          style: animate && mounted ? { strokeDasharray: 2000, strokeDashoffset: 0, transition: 'stroke-dashoffset 1s ease-out' } : undefined,
+        }),
+        // dots
+        showDots && data.map((pt, i) => React.createElement('circle', {
+          key: i, cx: toX(i), cy: toY(getVal(pt, s)), r: 3.5,
+          fill: 'var(--color-background)', stroke: color, strokeWidth: 2,
+        })),
+      )
+    }),
+    // legend
+    series && seriesCount > 1 && React.createElement('g', { transform: `translate(${padding.left}, ${height - 8})` },
+      series.map((name, s) => React.createElement('g', { key: s, transform: `translate(${s * 90}, 0)` },
+        React.createElement('rect', { width: 10, height: 10, rx: 2, fill: getChartColor(s) }),
+        React.createElement('text', { x: 14, y: 9, fill: 'var(--color-muted-foreground)', fontSize: 10 }, name),
+      ))
+    ),
+  )
+}
+
+// ─── PieChart ─────────────────────────────────────────────────────────────────
+
+/**
+ * PieChart - Pie/donut chart using SVG
+ *
+ * Props:
+ *   data: Array<{ label: string, value: number, color?: string }>
+ *   width?: number (default 250)
+ *   height?: number (default 250)
+ *   donut?: boolean (default false) — ring chart
+ *   showLabels?: boolean (default true) — show labels outside
+ *   showLegend?: boolean (default true) — show legend below
+ *   animate?: boolean (default true)
+ *   className?: string
+ *   style?: object
+ */
+export function PieChart({
+  data = [],
+  width = 250,
+  height = 250,
+  donut = false,
+  showLabels = true,
+  showLegend = true,
+  animate = true,
+  className,
+  style,
+}) {
+  if (!data.length) return null
+
+  const total = data.reduce((s, d) => s + d.value, 0) || 1
+  const cx = width / 2
+  const cy = (showLegend ? height - 40 : height) / 2
+  const r = Math.min(cx, cy) - (showLabels ? 30 : 10)
+  const innerR = donut ? r * 0.55 : 0
+  const legendY = showLegend ? height - 32 : 0
+
+  let cumAngle = -Math.PI / 2
+  const slices = data.map((d, i) => {
+    const angle = (d.value / total) * Math.PI * 2
+    const startAngle = cumAngle
+    cumAngle += angle
+    const endAngle = cumAngle
+    return { ...d, startAngle, endAngle, angle, color: d.color || getChartColor(i), index: i }
+  })
+
+  return React.createElement('svg', {
+    viewBox: `0 0 ${width} ${height}`,
+    width, height,
+    className: cn('kb-pie-chart', className),
+    style: { maxWidth: '100%', height: 'auto', ...style },
+    role: 'img',
+    'aria-label': 'Pie chart',
+  },
+    slices.map(s => {
+      const path = arcPath(cx, cy, r, innerR, s.startAngle, s.endAngle)
+      const midAngle = (s.startAngle + s.endAngle) / 2
+      const labelR = r + 16
+      const lx = cx + Math.cos(midAngle) * labelR
+      const ly = cy + Math.sin(midAngle) * labelR
+      const pct = Math.round((s.value / total) * 100)
+      return React.createElement('g', { key: s.index },
+        React.createElement('path', {
+          d: path, fill: s.color,
+          stroke: 'var(--color-background)', strokeWidth: 2,
+          style: animate ? { animation: `kb-pie-grow 0.6s ease-out ${s.index * 0.08}s both`, transformOrigin: `${cx}px ${cy}px` } : undefined,
+        }),
+        showLabels && pct >= 5 && React.createElement('text', {
+          x: lx, y: ly, textAnchor: Math.cos(midAngle) > 0.1 ? 'start' : Math.cos(midAngle) < -0.1 ? 'end' : 'middle',
+          dominantBaseline: 'middle',
+          fill: 'var(--color-muted-foreground)', fontSize: 10,
+        }, `${pct}%`),
+      )
+    }),
+    // center label for donut
+    donut && React.createElement('text', {
+      x: cx, y: cy, textAnchor: 'middle', dominantBaseline: 'middle',
+      fill: 'var(--color-foreground)', fontSize: 18, fontWeight: 600,
+    }, formatCompact(total)),
+    // legend
+    showLegend && React.createElement('g', { transform: `translate(${8}, ${legendY})` },
+      slices.map((s, i) => {
+        const col = Math.floor(i / 2)
+        const row = i % 2
+        return React.createElement('g', { key: i, transform: `translate(${col * 120}, ${row * 16})` },
+          React.createElement('rect', { width: 8, height: 8, rx: 2, fill: s.color, y: 1 }),
+          React.createElement('text', { x: 12, y: 9, fill: 'var(--color-muted-foreground)', fontSize: 10 },
+            truncLabel(s.label, 12)),
+        )
+      })
+    ),
+  )
+}
+
+// ─── SparkLine ────────────────────────────────────────────────────────────────
+
+/**
+ * SparkLine - Tiny inline line chart
+ *
+ * Props:
+ *   data: number[]
+ *   width?: number (default 100)
+ *   height?: number (default 32)
+ *   color?: string
+ *   showArea?: boolean (default true)
+ *   strokeWidth?: number (default 1.5)
+ *   className?: string
+ *   style?: object
+ */
+export function SparkLine({
+  data = [],
+  width = 100,
+  height = 32,
+  color = 'var(--color-primary)',
+  showArea = true,
+  strokeWidth = 1.5,
+  className,
+  style,
+}) {
+  if (data.length < 2) return null
+
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const pad = 2
+  const w = width - pad * 2
+  const h = height - pad * 2
+
+  const points = data.map((v, i) => [
+    pad + (i / (data.length - 1)) * w,
+    pad + h - ((v - min) / range) * h,
+  ])
+
+  const pathD = catmullRomPath(points)
+
+  return React.createElement('svg', {
+    viewBox: `0 0 ${width} ${height}`,
+    width, height,
+    className: cn('kb-sparkline', className),
+    style: { display: 'inline-block', verticalAlign: 'middle', ...style },
+    role: 'img',
+    'aria-label': 'Sparkline',
+  },
+    showArea && React.createElement('defs', null,
+      React.createElement('linearGradient', { id: 'spark-area', x1: 0, y1: 0, x2: 0, y2: 1 },
+        React.createElement('stop', { offset: '0%', stopColor: color, stopOpacity: 0.2 }),
+        React.createElement('stop', { offset: '100%', stopColor: color, stopOpacity: 0 }),
+      )
+    ),
+    showArea && React.createElement('path', {
+      d: pathD + ` L${points[points.length - 1][0]},${height - pad} L${points[0][0]},${height - pad} Z`,
+      fill: 'url(#spark-area)',
+    }),
+    React.createElement('path', {
+      d: pathD, fill: 'none', stroke: color, strokeWidth, strokeLinecap: 'round', strokeLinejoin: 'round',
+    }),
+  )
+}
+
+// ─── Chart Helpers ────────────────────────────────────────────────────────────
+
+function niceNumber(val) {
+  const exp = Math.floor(Math.log10(val))
+  const frac = val / Math.pow(10, exp)
+  let nice
+  if (frac <= 1) nice = 1
+  else if (frac <= 2) nice = 2
+  else if (frac <= 5) nice = 5
+  else nice = 10
+  return nice * Math.pow(10, exp)
+}
+
+function formatCompact(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'
+  return String(Math.round(n * 10) / 10)
+}
+
+function truncLabel(str, max) {
+  if (!str) return ''
+  return str.length > max ? str.slice(0, max - 1) + '…' : str
+}
+
+function catmullRomPath(points, tension = 0.3) {
+  if (points.length < 2) return ''
+  if (points.length === 2) return `M${points[0][0]},${points[0][1]} L${points[1][0]},${points[1][1]}`
+
+  let d = `M${points[0][0]},${points[0][1]}`
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)]
+    const p1 = points[i]
+    const p2 = points[i + 1]
+    const p3 = points[Math.min(i + 2, points.length - 1)]
+    const cp1x = p1[0] + (p2[0] - p0[0]) * tension
+    const cp1y = p1[1] + (p2[1] - p0[1]) * tension
+    const cp2x = p2[0] - (p3[0] - p1[0]) * tension
+    const cp2y = p2[1] - (p3[1] - p1[1]) * tension
+    d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0]},${p2[1]}`
+  }
+  return d
+}
+
+function arcPath(cx, cy, outerR, innerR, startAngle, endAngle) {
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
+  const sx = cx + Math.cos(startAngle) * outerR
+  const sy = cy + Math.sin(startAngle) * outerR
+  const ex = cx + Math.cos(endAngle) * outerR
+  const ey = cy + Math.sin(endAngle) * outerR
+
+  if (innerR > 0) {
+    const isx = cx + Math.cos(endAngle) * innerR
+    const isy = cy + Math.sin(endAngle) * innerR
+    const iex = cx + Math.cos(startAngle) * innerR
+    const iey = cy + Math.sin(startAngle) * innerR
+    return `M${sx},${sy} A${outerR},${outerR} 0 ${largeArc} 1 ${ex},${ey} L${isx},${isy} A${innerR},${innerR} 0 ${largeArc} 0 ${iex},${iey} Z`
+  }
+  return `M${cx},${cy} L${sx},${sy} A${outerR},${outerR} 0 ${largeArc} 1 ${ex},${ey} Z`
+}

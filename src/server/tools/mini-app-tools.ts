@@ -65,7 +65,7 @@ export const createMiniAppTool: ToolRegistration = {
         '`events` (SSE from backend: `.on(event, cb)`, `.subscribe(cb)`, `.close()`, `.connected`). ' +
         '**@kinbot/components — React Component Library:** Add `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"` to app.json dependencies. ' +
         'Import: `import { Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, ' +
-        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker } from "@kinbot/components"`. ' +
+        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, BarChart, LineChart, PieChart, SparkLine } from "@kinbot/components"`. ' +
         'All components auto-adapt to light/dark theme. Key components: ' +
         '`Card` (+ Card.Header, Card.Title, Card.Description, Card.Content, Card.Footer), ' +
         '`Button` (variant: primary|secondary|destructive|ghost|shine, size: sm|md|lg|icon), ' +
@@ -94,6 +94,11 @@ export const createMiniAppTool: ToolRegistration = {
         '`RadioGroup` (name?, options: [{value, label, disabled?}], value, onChange, direction: "column"|"row", label?, error?), ' +
         '`Slider` (range input: value, min, max, step, onChange, label?, showValue?: boolean, formatValue?: fn, disabled?), ' +
         '`DatePicker` (date input: value, onChange, label?, error?, type: "date"|"datetime-local"|"time", min?, max?, disabled?). ' +
+        '**Charts:** `BarChart` (data: [{label, value, color?}], width?, height?, showValues?, showGrid?, barRadius?, gap?, animate?), ' +
+        '`LineChart` (data: [{label, value}] or [{label, values: number[]}] for multi-series, series?: string[], showDots?, showArea?, curved?, animate?), ' +
+        '`PieChart` (data: [{label, value, color?}], donut?: boolean, showLabels?, showLegend?, animate?), ' +
+        '`SparkLine` (data: number[], width?, height?, color?, showArea?, strokeWidth?). ' +
+        'Charts use --color-chart-1 through --color-chart-5 CSS variables for theme-aware colors. ' +
         '**Design System CSS** (auto-injected): CSS variables like ' +
         'var(--color-primary), var(--color-background), var(--color-foreground), var(--color-muted), var(--color-card), var(--color-border). ' +
         'Utility classes: .glass-strong, .surface-card, .gradient-primary, .btn-shine, .card-hover, .animate-fade-in-up. ' +
