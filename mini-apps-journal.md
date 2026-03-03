@@ -356,3 +356,39 @@ KinBot.on('shared-data', ({ from, fromName, data, ts }) => {
 2. `KinBot.resize(width?, height?)` improvements
 3. New template: data table template using DataGrid
 4. Panel component (wrapper with title bar, collapsible?)
+
+## 2026-03-03 (run 10) — New Components + Duplicate DataGrid Fix
+
+**What:** Added 4 new React components and fixed a duplicate export bug.
+
+### Bug Fix: Duplicate DataGrid
+- Two `export function DataGrid` existed (lines 1401 and 1940)
+- First one (enhanced, run 7): searchable, compact, pageSizeOptions, maxHeight
+- Second one (original, run 9): simpler version with basic pagination helpers
+- Removed the old duplicate + its helper functions (`paginationBtnStyle`, `paginationRange`)
+- Net: -148 lines (removed 397 old lines, added 249 new component lines)
+
+### New Components
+1. **Panel** — Collapsible panel with title bar, icon, actions slot, 3 variants (default/outlined/filled). Chevron animation, aria-expanded.
+2. **RadioGroup** — Radio button group with options array, row/column layout, label, error, auto-generated name via useId.
+3. **Slider** — Range input with filled track via CSS gradient, label, showValue, formatValue callback.
+4. **DatePicker** — Date/datetime-local/time input with label, error, min/max, focus ring. Uses colorScheme: inherit for dark mode.
+
+### Updated Docs
+- Tool descriptions updated with all 4 new components
+- DataGrid docs updated to reflect enhanced version's extra props (pageSizeOptions, searchable, compact, maxHeight)
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-components.js` — removed duplicate DataGrid (397 lines), added 4 components (+249 lines)
+- `src/server/tools/mini-app-tools.ts` — updated component docs
+
+**Tests:** 1289 pass, 0 fail. Build clean.
+
+**Component inventory (36 total):**
+Stack, Divider, Card (+Header/Title/Description/Content/Footer), Button, ButtonGroup, Input, Textarea, Select, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Grid, Breadcrumbs, Popover, Form (+Field/Submit/Reset/Actions), DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker
+
+**Next priorities:**
+1. New template: settings/preferences page (using Panel, RadioGroup, Slider, Switch)
+2. `KinBot.navigate(path)` — verify parent-side handler exists in MiniAppViewer
+3. Component docs/storybook mini-app (a mini-app that showcases all components)
+4. Chart components (BarChart, LineChart) using SVG
