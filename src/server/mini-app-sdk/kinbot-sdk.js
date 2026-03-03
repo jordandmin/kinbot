@@ -838,6 +838,70 @@
     })
   }
 
+  // ─── Download ─────────────────────────────────────────────────────────────
+
+  /**
+   * Trigger a file download from within a mini-app.
+   * Content can be a string (text), an object (auto-serialized to JSON), or a Blob/ArrayBuffer.
+   * The parent window handles the actual download to bypass iframe sandbox restrictions.
+   * @param {string} filename — download filename (e.g. 'report.csv')
+   * @param {string|object|Blob|ArrayBuffer} content — file content
+   * @param {string} [mimeType] — MIME type (auto-detected if omitted)
+   * @returns {Promise<boolean>} — true if the download was initiated
+   */
+  function download(filename, content, mimeType) {
+    if (!filename || content == null) return Promise.reject(new Error('filename and content are required'))
+    var id = String(++_dialogCounter)
+    var data, mime
+
+    if (typeof content === 'string') {
+      mime = mimeType || 'text/plain'
+      data = btoa(unescape(encodeURIComponent(content)))
+    } else if (content && typeof content === 'object' && !(content instanceof Blob) && !(content instanceof ArrayBuffer)) {
+      // Plain object → JSON
+      mime = mimeType || 'application/json'
+      data = btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2))))
+    } else if (content instanceof Blob) {
+      // Blob → read as base64
+      mime = mimeType || content.type || 'application/octet-stream'
+      return new Promise(function (resolve) {
+        var reader = new FileReader()
+        reader.onload = function () {
+          var b64 = reader.result.split(',')[1] || ''
+          try {
+            parent.postMessage({
+              source: 'kinbot-sdk', type: 'download', callbackId: id,
+              filename: String(filename).slice(0, 200), data: b64, mimeType: mime,
+            }, '*')
+          } catch (e) { resolve(false); return }
+          _pendingDialogs[id] = { resolve: resolve }
+        }
+        reader.onerror = function () { resolve(false) }
+        reader.readAsDataURL(content)
+      })
+    } else if (content instanceof ArrayBuffer) {
+      mime = mimeType || 'application/octet-stream'
+      var bytes = new Uint8Array(content)
+      var binary = ''
+      for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+      data = btoa(binary)
+    } else {
+      return Promise.reject(new Error('Unsupported content type'))
+    }
+
+    try {
+      parent.postMessage({
+        source: 'kinbot-sdk', type: 'download', callbackId: id,
+        filename: String(filename).slice(0, 200), data: data, mimeType: mime,
+      }, '*')
+    } catch (e) {
+      return Promise.resolve(false)
+    }
+    return new Promise(function (resolve) {
+      _pendingDialogs[id] = { resolve: resolve }
+    })
+  }
+
   // ─── Keyboard Shortcuts ──────────────────────────────────────────────────
 
   var _shortcuts = {}
@@ -1056,6 +1120,7 @@
     memory: memory,
     conversation: conversation,
     share: share,
-    version: '1.15.0',
+    download: download,
+    version: '1.16.0',
   }
 })()

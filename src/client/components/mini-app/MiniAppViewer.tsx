@@ -310,6 +310,39 @@ export function MiniAppViewer() {
           }
           break
         }
+        case 'download': {
+          const callbackId = String(msg.callbackId)
+          const filename = String(msg.filename || 'download')
+          const b64Data = String(msg.data || '')
+          const mimeType = String(msg.mimeType || 'application/octet-stream')
+          if (!b64Data) {
+            sendDialogResult(callbackId, false)
+            break
+          }
+          try {
+            // Decode base64 to binary
+            const binary = atob(b64Data)
+            const bytes = new Uint8Array(binary.length)
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+            const blob = new Blob([bytes], { type: mimeType })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = filename
+            a.style.display = 'none'
+            document.body.appendChild(a)
+            a.click()
+            // Cleanup
+            setTimeout(() => {
+              URL.revokeObjectURL(url)
+              a.remove()
+            }, 1000)
+            sendDialogResult(callbackId, true)
+          } catch {
+            sendDialogResult(callbackId, false)
+          }
+          break
+        }
         case 'notification': {
           const callbackId = String(msg.callbackId)
           const title = String(msg.title || '')

@@ -66,7 +66,8 @@ export const createMiniAppTool: ToolRegistration = {
         '`usePrevious(value)` → previous value from last render (useful for comparing state changes), ' +
         '`useOnline()` → `boolean` (reactive network status — true when browser is online), ' +
         '`useClipboard()` → `{ copy, paste, copied, loading }` (reactive clipboard — copy(text) returns Promise<boolean>, copied auto-resets after 2s, paste() returns Promise<string|null>), ' +
-        '`useNotification()` → `{ notify, lastSent }` (send browser notifications via parent — notify(title, body?) returns Promise<boolean>). ' +
+        '`useNotification()` → `{ notify, lastSent }` (send browser notifications via parent — notify(title, body?) returns Promise<boolean>), ' +
+        '`useDownload()` → `{ download, downloading }` (trigger file downloads — download(filename, content, mimeType?) where content can be string/object/Blob/ArrayBuffer; objects auto-serialize to JSON). ' +
         '**@kinbot/react Exports (convenience re-exports from KinBot SDK):** ' +
         '`toast(message, type)` (type: "info"|"success"|"warning"|"error"), ' +
         '`confirm(message, options?)` → Promise<boolean> (options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +
@@ -80,7 +81,8 @@ export const createMiniAppTool: ToolRegistration = {
         '`http` (external HTTP proxy: `http(url, opts?)`, `http.json(url)`, `http.post(url, data)` — 60 req/min, 5MB max, 15s timeout), ' +
         '`events` (SSE from backend: `.on(event, cb)`, `.subscribe(cb)`, `.close()`, `.connected`), ' +
         '`shortcut` (register keyboard shortcuts: `shortcut("ctrl+k", cb)` — returns unregister function), ' +
-        '`apps` (list/get mini-apps: `apps.list()`, `apps.get(id)`). ' +
+        '`apps` (list/get mini-apps: `apps.list()`, `apps.get(id)`), ' +
+        '`download` (trigger file download: `download(filename, content, mimeType?)`). ' +
         '**@kinbot/components — React Component Library:** Add `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"` to app.json dependencies. ' +
         'Import: `import { Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, ' +
         'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, BarChart, LineChart, PieChart, SparkLine, Stepper, StepperContent } from "@kinbot/components"`. ' +
@@ -156,7 +158,8 @@ export const createMiniAppTool: ToolRegistration = {
         '`KinBot.memory.store(content, {category?, subject?})` → Promise<object> (store a new memory; category: fact|preference|decision|knowledge, default knowledge; max 2000 chars). ' +
         '`KinBot.conversation.history(limit?)` → Promise<Array> (get recent messages: {id, role, content, createdAt, sourceType}; default 20, max 100). ' +
         '`KinBot.conversation.send(text, options?)` → Promise<boolean> (send a message to the Kin; alias of sendMessage). ' +
-        '`KinBot.share(targetSlug, data)` → Promise<boolean> (share JSON data with another mini-app and open it; the target app receives it via `KinBot.on("shared-data", ({from, fromName, data, ts}) => ...)`)',
+        '`KinBot.share(targetSlug, data)` → Promise<boolean> (share JSON data with another mini-app and open it; the target app receives it via `KinBot.on("shared-data", ({from, fromName, data, ts}) => ...)`). ' +
+        '`KinBot.download(filename, content, mimeType?)` → Promise<boolean> (trigger a file download; content can be a string, object (auto-JSON), Blob, or ArrayBuffer; mimeType is auto-detected if omitted).',
       inputSchema: z.object({
         name: z.string().describe('Display name of the app (e.g. "Todo Tracker")'),
         slug: z.string().regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/).describe('URL-safe identifier in kebab-case (e.g. "todo-tracker"). Must be unique among your apps.'),

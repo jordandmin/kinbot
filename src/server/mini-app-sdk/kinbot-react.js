@@ -709,6 +709,37 @@ export function useNotification() {
   return { notify, lastSent }
 }
 
+// ─── useDownload ────────────────────────────────────────────────────────────
+
+/**
+ * Hook for triggering file downloads from within a mini-app.
+ * Wraps `KinBot.download()` with a reactive downloading state.
+ *
+ * @returns {{ download: (filename: string, content: string|object|Blob|ArrayBuffer, mimeType?: string) => Promise<boolean>, downloading: boolean }}
+ *
+ * @example
+ *   const { download, downloading } = useDownload()
+ *   <Button onClick={() => download('data.json', myData)} disabled={downloading}>Export</Button>
+ *   <Button onClick={() => download('report.csv', csvString, 'text/csv')}>CSV</Button>
+ */
+export function useDownload() {
+  const [downloading, setDownloading] = useState(false)
+
+  const doDownload = useCallback(async (filename, content, mimeType) => {
+    setDownloading(true)
+    try {
+      const ok = await window.KinBot.download(filename, content, mimeType)
+      return ok
+    } catch {
+      return false
+    } finally {
+      setDownloading(false)
+    }
+  }, [])
+
+  return { download: doDownload, downloading }
+}
+
 // ─── Convenience re-exports from vanilla SDK ─────────────────────────────────
 
 export const toast = window.KinBot.toast
@@ -733,3 +764,4 @@ export const resize = window.KinBot.resize
 export const share = window.KinBot.share
 export const shortcut = window.KinBot.shortcut
 export const apps = window.KinBot.apps
+export const download = window.KinBot.download
