@@ -59,7 +59,12 @@ export const createMiniAppTool: ToolRegistration = {
         '`useMediaQuery(query)` → `boolean` (reactive CSS media query, e.g. useMediaQuery("(min-width: 768px)")), ' +
         '`useDebounce(value, delayMs?)` → debounced value (default 300ms), ' +
         '`useInterval(callback, delayMs)` (declarative setInterval, pass null to pause), ' +
-        '`useClickOutside(ref, handler)` (call handler when click outside ref element). ' +
+        '`useClickOutside(ref, handler)` (call handler when click outside ref element), ' +
+        '`useShortcut(key, callback)` (register keyboard shortcut, auto-cleanup on unmount — e.g. useShortcut("ctrl+k", openSearch)), ' +
+        '`useApps()` → `{ apps, loading, refresh }` (list other mini-apps from the same Kin, fetches on mount), ' +
+        '`useSharedData(onData?)` → `{ data, clear }` (listen for data shared from another app via KinBot.share()), ' +
+        '`usePrevious(value)` → previous value from last render (useful for comparing state changes), ' +
+        '`useOnline()` → `boolean` (reactive network status — true when browser is online). ' +
         '**@kinbot/react Exports (convenience re-exports from KinBot SDK):** ' +
         '`toast(message, type)` (type: "info"|"success"|"warning"|"error"), ' +
         '`confirm(message, options?)` → Promise<boolean> (options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +
@@ -71,7 +76,9 @@ export const createMiniAppTool: ToolRegistration = {
         '`api.put("/path", data)` → PUT JSON, `api.patch("/path", data)` → PATCH JSON, `api.delete("/path")` → DELETE, ' +
         '`api.json("/path", options?)` → any method with JSON parsing, `api("/path", options?)` → raw Response), ' +
         '`http` (external HTTP proxy: `http(url, opts?)`, `http.json(url)`, `http.post(url, data)` — 60 req/min, 5MB max, 15s timeout), ' +
-        '`events` (SSE from backend: `.on(event, cb)`, `.subscribe(cb)`, `.close()`, `.connected`). ' +
+        '`events` (SSE from backend: `.on(event, cb)`, `.subscribe(cb)`, `.close()`, `.connected`), ' +
+        '`shortcut` (register keyboard shortcuts: `shortcut("ctrl+k", cb)` — returns unregister function), ' +
+        '`apps` (list/get mini-apps: `apps.list()`, `apps.get(id)`). ' +
         '**@kinbot/components — React Component Library:** Add `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"` to app.json dependencies. ' +
         'Import: `import { Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, ' +
         'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, BarChart, LineChart, PieChart, SparkLine } from "@kinbot/components"`. ' +

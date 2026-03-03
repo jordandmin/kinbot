@@ -481,6 +481,160 @@ export function useConversation() {
   return { history, send, messages, loading }
 }
 
+// ─── useShortcut ────────────────────────────────────────────────────────────
+
+/**
+ * Register a keyboard shortcut within the mini-app.
+ * Automatically cleans up on unmount or when key/callback changes.
+ *
+ * @param {string} key — key combo, e.g. 'ctrl+k', 'meta+shift+p', 'escape'
+ * @param {Function} callback — called when shortcut fires
+ *
+ * @example
+ *   useShortcut('ctrl+k', () => setSearchOpen(true))
+ *   useShortcut('escape', () => setSearchOpen(false))
+ */
+export function useShortcut(key, callback) {
+  const savedCallback = useRef(callback)
+
+  useEffect(() => {
+    savedCallback.current = callback
+  }, [callback])
+
+  useEffect(() => {
+    if (!key) return
+    const unregister = window.KinBot.shortcut(key, (...args) => savedCallback.current(...args))
+    return () => {
+      if (typeof unregister === 'function') unregister()
+      else window.KinBot.shortcut(key, null)
+    }
+  }, [key])
+}
+
+// ─── useApps ────────────────────────────────────────────────────────────────
+
+/**
+ * List other mini-apps from the same Kin.
+ * Fetches on mount and returns the list reactively.
+ *
+ * @returns {{ apps: Array, loading: boolean, refresh: () => Promise<Array> }}
+ *
+ * @example
+ *   const { apps, loading } = useApps()
+ *   return apps.map(a => <div key={a.id}>{a.name}</div>)
+ */
+export function useApps() {
+  const [apps, setApps] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    try {
+      const list = await window.KinBot.apps.list()
+      setApps(list)
+      return list
+    } catch (err) {
+      console.error('[KinBot React] useApps failed:', err)
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    window.KinBot.ready().then(refresh)
+  }, [refresh])
+
+  return { apps, loading, refresh }
+}
+
+// ─── useSharedData ──────────────────────────────────────────────────────────
+
+/**
+ * Listen for data shared from another mini-app via KinBot.share().
+ * Calls the handler when shared data arrives. Also returns the last received data.
+ *
+ * @param {Function} [onData] — optional callback when data arrives
+ * @returns {{ data: object|null, clear: () => void }}
+ *
+ * @example
+ *   const { data } = useSharedData((shared) => {
+ *     console.log('Received from', shared.fromName, shared.data)
+ *   })
+ */
+export function useSharedData(onData) {
+  const [data, setData] = useState(null)
+  const handlerRef = useRef(onData)
+
+  useEffect(() => {
+    handlerRef.current = onData
+  }, [onData])
+
+  useEffect(() => {
+    return window.KinBot.on('shared-data', (payload) => {
+      setData(payload)
+      if (handlerRef.current) handlerRef.current(payload)
+    })
+  }, [])
+
+  const clear = useCallback(() => setData(null), [])
+
+  return { data, clear }
+}
+
+// ─── usePrevious ────────────────────────────────────────────────────────────
+
+/**
+ * Returns the previous value of a variable (from the last render).
+ * Useful for comparing current vs previous state.
+ *
+ * @param {any} value — value to track
+ * @returns {any} — previous value (undefined on first render)
+ *
+ * @example
+ *   const [count, setCount] = useState(0)
+ *   const prevCount = usePrevious(count)
+ *   // prevCount is the value from the previous render
+ */
+export function usePrevious(value) {
+  const ref = useRef()
+  useEffect(() => {
+    ref.current = value
+  })
+  return ref.current
+}
+
+// ─── useOnline ──────────────────────────────────────────────────────────────
+
+/**
+ * Reactive network status hook.
+ * Returns true when the browser is online.
+ *
+ * @returns {boolean}
+ *
+ * @example
+ *   const isOnline = useOnline()
+ *   if (!isOnline) return <Alert variant="warning">You're offline</Alert>
+ */
+export function useOnline() {
+  const [online, setOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  )
+
+  useEffect(() => {
+    const on = () => setOnline(true)
+    const off = () => setOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => {
+      window.removeEventListener('online', on)
+      window.removeEventListener('offline', off)
+    }
+  }, [])
+
+  return online
+}
+
 // ─── Convenience re-exports from vanilla SDK ─────────────────────────────────
 
 export const toast = window.KinBot.toast
@@ -503,3 +657,5 @@ export const conversation = window.KinBot.conversation
 export const notification = window.KinBot.notification
 export const resize = window.KinBot.resize
 export const share = window.KinBot.share
+export const shortcut = window.KinBot.shortcut
+export const apps = window.KinBot.apps
