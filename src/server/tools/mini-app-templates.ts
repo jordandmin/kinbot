@@ -341,9 +341,9 @@ const TEMPLATES: MiniAppTemplate[] = [
   {
     id: 'form',
     name: 'Form Builder',
-    description: 'A clean form with validation using @kinbot/components (Card, Input, Select, Textarea, Checkbox, Button, Alert, Divider, Stack).',
+    description: 'A clean form with validation using the useForm hook and @kinbot/components (Card, Input, Select, Textarea, Checkbox, Switch, RadioGroup, DatePicker, Button, Alert, Divider, Stack).',
     icon: '📝',
-    tags: ['form', 'input', 'data-entry', 'components'],
+    tags: ['form', 'input', 'data-entry', 'components', 'validation', 'useForm'],
     suggestedSlug: 'form',
     files: {
       'app.json': REACT_APP_JSON,
@@ -354,85 +354,117 @@ const TEMPLATES: MiniAppTemplate[] = [
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Form</title>
   <style>
-    body { padding: 1.5rem; max-width: 520px; margin: 0 auto; }
+    body { padding: 1.5rem; max-width: 560px; margin: 0 auto; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/jsx">
-    import { useState, useRef } from 'react'
+    import { useState } from 'react'
     import { createRoot } from 'react-dom/client'
-    import { useKinBot, toast } from '@kinbot/react'
-    import { Card, Input, Select, Textarea, Checkbox, Button, ButtonGroup, Alert, Divider, Stack, Spinner } from '@kinbot/components'
+    import { useKinBot, useForm, toast } from '@kinbot/react'
+    import { Card, Input, Select, Textarea, Checkbox, Switch, RadioGroup, DatePicker, Button, Alert, Divider, Stack, Spinner } from '@kinbot/components'
 
     function App() {
       const { ready } = useKinBot()
       if (!ready) return <Stack align="center" style={{ padding: '2rem' }}><Spinner /></Stack>
-      return <ContactForm />
+      return <RegistrationForm />
     }
 
-    function ContactForm() {
-      const [errors, setErrors] = useState({})
+    function RegistrationForm() {
       const [submitted, setSubmitted] = useState(false)
-      const formRef = useRef(null)
 
-      const handleSubmit = (e) => {
-        e.preventDefault()
-        const data = Object.fromEntries(new FormData(formRef.current))
+      const form = useForm(
+        { firstName: '', lastName: '', email: '', category: '', birthDate: '', priority: 'normal', message: '', newsletter: false, agree: false },
+        (v) => {
+          const e = {}
+          if (!v.firstName.trim()) e.firstName = 'First name is required'
+          if (!v.lastName.trim()) e.lastName = 'Last name is required'
+          if (!v.email.trim()) e.email = 'Email is required'
+          else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.email)) e.email = 'Enter a valid email'
+          if (!v.category) e.category = 'Please select a category'
+          if (!v.agree) e.agree = 'You must agree to continue'
+          if (v.message && v.message.length > 500) e.message = v.message.length + '/500 characters'
+          return e
+        }
+      )
 
-        const newErrors = {}
-        if (!data.firstName?.trim()) newErrors.firstName = 'Required'
-        if (!data.lastName?.trim()) newErrors.lastName = 'Required'
-        if (!data.email?.trim()) newErrors.email = 'Enter a valid email'
-
-        setErrors(newErrors)
-        if (Object.keys(newErrors).length > 0) return
-
+      const onSubmit = form.handleSubmit((values) => {
         toast('Form submitted successfully!', 'success')
-        console.log('Form data:', data)
-        formRef.current.reset()
-        setErrors({})
+        console.log('Form data:', values)
         setSubmitted(true)
-      }
+        form.reset()
+      })
 
       return (
         <div className="animate-fade-in-up">
           <Card>
             <Card.Header>
-              <Card.Title className="gradient-primary-text">Contact Form</Card.Title>
-              <Card.Description>Fill in the details below and submit.</Card.Description>
+              <Card.Title className="gradient-primary-text">Registration Form</Card.Title>
+              <Card.Description>Demonstrating the useForm hook with validation, error states, and various input types.</Card.Description>
             </Card.Header>
             <Card.Content>
               {submitted && (
-                <Alert variant="success" title="Success!" dismissible onDismiss={() => setSubmitted(false)} style={{ marginBottom: '1rem' }}>
-                  Your form was submitted successfully.
+                <Alert variant="success" title="Submitted!" dismissible onDismiss={() => setSubmitted(false)} style={{ marginBottom: '1rem' }}>
+                  Your registration was received.
                 </Alert>
               )}
-              <form ref={formRef} onSubmit={handleSubmit}>
+              <form onSubmit={onSubmit}>
                 <Stack gap="1rem">
                   <div className="form-row">
-                    <Input name="firstName" label="First Name *" placeholder="John" error={errors.firstName} />
-                    <Input name="lastName" label="Last Name *" placeholder="Doe" error={errors.lastName} />
+                    <Input label="First Name *" placeholder="John" value={form.values.firstName}
+                      onChange={form.handleChange('firstName')} onBlur={form.handleBlur('firstName')}
+                      error={form.touched.firstName && form.errors.firstName} />
+                    <Input label="Last Name *" placeholder="Doe" value={form.values.lastName}
+                      onChange={form.handleChange('lastName')} onBlur={form.handleBlur('lastName')}
+                      error={form.touched.lastName && form.errors.lastName} />
                   </div>
-                  <Input name="email" label="Email *" type="email" placeholder="john@example.com" error={errors.email} />
-                  <Select
-                    name="category"
-                    label="Category"
-                    placeholder="Select a category..."
+                  <Input label="Email *" type="email" placeholder="john@example.com" value={form.values.email}
+                    onChange={form.handleChange('email')} onBlur={form.handleBlur('email')}
+                    error={form.touched.email && form.errors.email} />
+                  <div className="form-row">
+                    <Select label="Category *" value={form.values.category}
+                      onChange={form.handleChange('category')} onBlur={form.handleBlur('category')}
+                      error={form.touched.category && form.errors.category}
+                      options={[
+                        { value: '', label: 'Select...' },
+                        { value: 'general', label: 'General Inquiry' },
+                        { value: 'support', label: 'Support' },
+                        { value: 'feedback', label: 'Feedback' },
+                        { value: 'partnership', label: 'Partnership' },
+                      ]}
+                    />
+                    <DatePicker label="Birth Date" value={form.values.birthDate}
+                      onChange={form.handleChange('birthDate')} />
+                  </div>
+                  <RadioGroup label="Priority" value={form.values.priority}
+                    onChange={form.handleChange('priority')} direction="row"
                     options={[
-                      { value: 'general', label: 'General Inquiry' },
-                      { value: 'support', label: 'Support' },
-                      { value: 'feedback', label: 'Feedback' },
-                      { value: 'other', label: 'Other' },
+                      { value: 'low', label: 'Low' },
+                      { value: 'normal', label: 'Normal' },
+                      { value: 'high', label: 'High' },
                     ]}
                   />
-                  <Textarea name="message" label="Message" placeholder="Write your message here..." />
-                  <Checkbox name="agree" label="I agree to the terms" />
+                  <Textarea label="Message" placeholder="Tell us more..." value={form.values.message}
+                    onChange={form.handleChange('message')} onBlur={form.handleBlur('message')}
+                    error={form.touched.message && form.errors.message} />
+                  <Switch label="Subscribe to newsletter" checked={form.values.newsletter}
+                    onChange={form.handleChange('newsletter')} />
+                  <Checkbox label="I agree to the terms and conditions *" checked={form.values.agree}
+                    onChange={form.handleChange('agree')}
+                    error={form.touched.agree && form.errors.agree} />
                   <Divider />
-                  <Stack direction="row" justify="flex-end" gap="0.75rem">
-                    <Button type="reset" variant="ghost" onClick={() => { setErrors({}); setSubmitted(false) }}>Reset</Button>
-                    <Button type="submit" variant="shine">Submit</Button>
+                  <Stack direction="row" justify="space-between" align="center">
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)' }}>
+                      {form.isDirty ? '● Unsaved changes' : ''}
+                    </span>
+                    <Stack direction="row" gap="0.75rem">
+                      <Button type="button" variant="ghost" onClick={() => { form.reset(); setSubmitted(false) }}
+                        disabled={!form.isDirty}>Reset</Button>
+                      <Button type="submit" variant="shine" disabled={!form.isValid}>Submit</Button>
+                    </Stack>
                   </Stack>
                 </Stack>
               </form>
@@ -884,9 +916,9 @@ const TEMPLATES: MiniAppTemplate[] = [
   {
     id: 'settings',
     name: 'Settings Panel',
-    description: 'A settings/preferences panel using Form, Switch, Select, and Input components with storage persistence. Great for configuration UIs.',
+    description: 'A settings/preferences panel using Panel (collapsible sections), Switch, Select, RadioGroup, Slider, and Input components with storage persistence.',
     icon: '⚙️',
-    tags: ['settings', 'form', 'preferences', 'config', 'storage'],
+    tags: ['settings', 'form', 'preferences', 'config', 'storage', 'panel', 'slider', 'radiogroup'],
     suggestedSlug: 'settings',
     files: {
       'app.json': REACT_APP_JSON,
@@ -900,43 +932,56 @@ const TEMPLATES: MiniAppTemplate[] = [
     body { padding: 1.5rem; max-width: 640px; margin: 0 auto; }
     h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
     .subtitle { font-size: 0.85rem; color: var(--color-muted-foreground); margin-bottom: 1.5rem; }
-    .section { margin-bottom: 1.5rem; }
-    .section-title { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted-foreground); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-border); }
-    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 0.625rem 0; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; }
+    .setting-info { flex: 1; min-width: 0; }
     .setting-label { font-size: 0.875rem; font-weight: 500; }
     .setting-desc { font-size: 0.75rem; color: var(--color-muted-foreground); margin-top: 0.125rem; }
+    .setting-control { flex-shrink: 0; margin-left: 1rem; }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/jsx">
-    import { useState, useEffect } from 'react'
+    import { useState } from 'react'
     import { createRoot } from 'react-dom/client'
     import { useKinBot, useStorage, toast } from '@kinbot/react'
-    import { Card, Switch, Select, Input, Button, Divider, Badge, Alert } from '@kinbot/components'
+    import { Panel, Switch, Select, RadioGroup, Slider, Input, Button, Badge, Stack, Spinner, Divider } from '@kinbot/components'
 
     const DEFAULTS = {
+      theme: 'auto',
+      fontSize: 14,
+      uiDensity: 'comfortable',
       notifications: true,
-      darkMode: 'auto',
-      language: 'en',
-      fontSize: '14',
-      autoSave: true,
-      compactMode: false,
       soundEffects: true,
+      notifyFrequency: 'all',
       displayName: '',
+      language: 'en',
+      autoSave: true,
     }
 
     function App() {
       const { ready } = useKinBot()
-      if (!ready) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-muted-foreground)' }}>Loading...</div>
+      if (!ready) return <Stack align="center" style={{ padding: '2rem' }}><Spinner /></Stack>
       return <SettingsPanel />
+    }
+
+    function Setting({ label, desc, children }) {
+      return (
+        <div className="setting-row">
+          <div className="setting-info">
+            <div className="setting-label">{label}</div>
+            {desc && <div className="setting-desc">{desc}</div>}
+          </div>
+          <div className="setting-control">{children}</div>
+        </div>
+      )
     }
 
     function SettingsPanel() {
       const [settings, setSettings, loading] = useStorage('app-settings', DEFAULTS)
       const [dirty, setDirty] = useState(false)
 
-      if (loading) return null
+      if (loading) return <Stack align="center" style={{ padding: '2rem' }}><Spinner /></Stack>
 
       const update = (key, value) => {
         setSettings(prev => ({ ...prev, [key]: value }))
@@ -955,108 +1000,86 @@ const TEMPLATES: MiniAppTemplate[] = [
       }
 
       return (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+        <div className="animate-fade-in-up">
+          <Stack direction="row" align="center" gap="0.75rem" style={{ marginBottom: '0.25rem' }}>
             <h2 className="gradient-primary-text">Settings</h2>
             {dirty && <Badge variant="warning">Unsaved</Badge>}
-          </div>
+          </Stack>
           <div className="subtitle">Configure your app preferences</div>
 
-          <Card className="section">
-            <div className="section-title">Appearance</div>
+          <Stack gap="0.75rem">
+            <Panel title="Appearance" icon="🎨" defaultOpen>
+              <Setting label="Theme" desc="Choose your preferred color scheme">
+                <RadioGroup value={settings.theme} onChange={(e) => update('theme', e.target.value)} direction="row"
+                  options={[
+                    { value: 'auto', label: 'Auto' },
+                    { value: 'light', label: 'Light' },
+                    { value: 'dark', label: 'Dark' },
+                  ]}
+                />
+              </Setting>
+              <Setting label="Font Size" desc={settings.fontSize + 'px'}>
+                <Slider value={settings.fontSize} onChange={(e) => update('fontSize', Number(e.target.value))}
+                  min={10} max={22} step={1} style={{ width: 160 }} />
+              </Setting>
+              <Setting label="UI Density" desc="Controls spacing and padding">
+                <Select value={settings.uiDensity} onChange={(e) => update('uiDensity', e.target.value)} style={{ width: 140 }}
+                  options={[
+                    { value: 'compact', label: 'Compact' },
+                    { value: 'comfortable', label: 'Comfortable' },
+                    { value: 'spacious', label: 'Spacious' },
+                  ]}
+                />
+              </Setting>
+            </Panel>
 
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Theme</div>
-                <div className="setting-desc">Choose your preferred color scheme</div>
-              </div>
-              <Select value={settings.darkMode} onChange={e => update('darkMode', e.target.value)} style={{ width: 130 }}>
-                <option value="auto">Auto</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </Select>
-            </div>
+            <Panel title="Notifications" icon="🔔" defaultOpen>
+              <Setting label="Push Notifications" desc="Receive alerts for important updates">
+                <Switch checked={settings.notifications} onChange={(e) => update('notifications', e.target.checked)} />
+              </Setting>
+              <Setting label="Sound Effects" desc="Play sounds for interactions">
+                <Switch checked={settings.soundEffects} onChange={(e) => update('soundEffects', e.target.checked)} />
+              </Setting>
+              {settings.notifications && (
+                <Setting label="Frequency" desc="How often to receive notifications">
+                  <RadioGroup value={settings.notifyFrequency} onChange={(e) => update('notifyFrequency', e.target.value)} direction="row"
+                    options={[
+                      { value: 'all', label: 'All' },
+                      { value: 'important', label: 'Important' },
+                      { value: 'none', label: 'None' },
+                    ]}
+                  />
+                </Setting>
+              )}
+            </Panel>
 
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Font Size</div>
-                <div className="setting-desc">Base text size in pixels</div>
-              </div>
-              <Select value={settings.fontSize} onChange={e => update('fontSize', e.target.value)} style={{ width: 130 }}>
-                <option value="12">Small (12px)</option>
-                <option value="14">Default (14px)</option>
-                <option value="16">Large (16px)</option>
-                <option value="18">Extra Large (18px)</option>
-              </Select>
-            </div>
+            <Panel title="Profile" icon="👤">
+              <Setting label="Display Name" desc="How others see you">
+                <Input value={settings.displayName} onChange={(e) => update('displayName', e.target.value)}
+                  placeholder="Enter name" style={{ width: 180 }} />
+              </Setting>
+              <Setting label="Language" desc="Interface language">
+                <Select value={settings.language} onChange={(e) => update('language', e.target.value)} style={{ width: 140 }}
+                  options={[
+                    { value: 'en', label: 'English' },
+                    { value: 'fr', label: 'Français' },
+                    { value: 'de', label: 'Deutsch' },
+                    { value: 'es', label: 'Español' },
+                    { value: 'ja', label: '日本語' },
+                  ]}
+                />
+              </Setting>
+              <Setting label="Auto-Save" desc="Automatically save changes">
+                <Switch checked={settings.autoSave} onChange={(e) => update('autoSave', e.target.checked)} />
+              </Setting>
+            </Panel>
+          </Stack>
 
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Compact Mode</div>
-                <div className="setting-desc">Reduce spacing for denser layouts</div>
-              </div>
-              <Switch checked={settings.compactMode} onChange={e => update('compactMode', e.target.checked)} />
-            </div>
-          </Card>
-
-          <Card className="section">
-            <div className="section-title">Notifications</div>
-
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Push Notifications</div>
-                <div className="setting-desc">Receive alerts for important updates</div>
-              </div>
-              <Switch checked={settings.notifications} onChange={e => update('notifications', e.target.checked)} />
-            </div>
-
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Sound Effects</div>
-                <div className="setting-desc">Play sounds for interactions</div>
-              </div>
-              <Switch checked={settings.soundEffects} onChange={e => update('soundEffects', e.target.checked)} />
-            </div>
-          </Card>
-
-          <Card className="section">
-            <div className="section-title">Profile</div>
-
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Display Name</div>
-                <div className="setting-desc">How others see you</div>
-              </div>
-              <Input value={settings.displayName} onChange={e => update('displayName', e.target.value)} placeholder="Enter name" style={{ width: 180 }} />
-            </div>
-
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Language</div>
-                <div className="setting-desc">Interface language</div>
-              </div>
-              <Select value={settings.language} onChange={e => update('language', e.target.value)} style={{ width: 130 }}>
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-                <option value="de">Deutsch</option>
-                <option value="es">Español</option>
-                <option value="ja">日本語</option>
-              </Select>
-            </div>
-
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Auto-Save</div>
-                <div className="setting-desc">Automatically save changes</div>
-              </div>
-              <Switch checked={settings.autoSave} onChange={e => update('autoSave', e.target.checked)} />
-            </div>
-          </Card>
-
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          <Divider style={{ margin: '1.25rem 0' }} />
+          <Stack direction="row" gap="0.75rem" justify="flex-end">
             <Button variant="outline" onClick={reset}>Reset to Defaults</Button>
             <Button onClick={save} disabled={!dirty}>Save Changes</Button>
-          </div>
+          </Stack>
         </div>
       )
     }
