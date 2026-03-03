@@ -6,7 +6,7 @@
  * All components use CSS variables from kinbot-sdk.css for automatic theme support.
  *
  * Usage in mini-apps:
- *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu, DataGrid, Panel, RadioGroup, Slider, DatePicker } from '@kinbot/components'
+ *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu, DataGrid, Panel, RadioGroup, Slider, DatePicker, Stepper, StepperContent } from '@kinbot/components'
  */
 
 import React, { useState, useEffect, useRef, useCallback, useId, createContext, useContext } from 'react'
@@ -2602,4 +2602,165 @@ function arcPath(cx, cy, outerR, innerR, startAngle, endAngle) {
     return `M${sx},${sy} A${outerR},${outerR} 0 ${largeArc} 1 ${ex},${ey} L${isx},${isy} A${innerR},${innerR} 0 ${largeArc} 0 ${iex},${iey} Z`
   }
   return `M${cx},${cy} L${sx},${sy} A${outerR},${outerR} 0 ${largeArc} 1 ${ex},${ey} Z`
+}
+
+// ─── Stepper ──────────────────────────────────────────────────────────────────
+
+/**
+ * Multi-step progress indicator with navigation.
+ * Renders a horizontal step bar with numbered circles, labels, and connecting lines.
+ * Steps can be completed, active, or upcoming.
+ *
+ * @param {{ steps: Array<{ label: string, description?: string, icon?: string }>, activeStep: number, onStepClick?: (index: number) => void, variant?: 'default'|'compact', allowClickAhead?: boolean, className?: string, style?: object }} props
+ *
+ * @example
+ *   <Stepper steps={[{ label: 'Account' }, { label: 'Profile' }, { label: 'Review' }]} activeStep={1} />
+ */
+export function Stepper({ steps = [], activeStep = 0, onStepClick, variant = 'default', allowClickAhead = false, className, style, ...rest }) {
+  const isCompact = variant === 'compact'
+
+  const handleClick = (index) => {
+    if (!onStepClick) return
+    if (index <= activeStep || allowClickAhead) onStepClick(index)
+  }
+
+  return React.createElement('div', {
+    className: cn('kb-stepper', isCompact && 'kb-stepper--compact', className),
+    style: mergeStyles({
+      display: 'flex',
+      alignItems: 'flex-start',
+      width: '100%',
+      gap: 0,
+    }, style),
+    role: 'navigation',
+    'aria-label': 'Progress steps',
+    ...rest,
+  }, steps.map((step, i) => {
+    const status = i < activeStep ? 'completed' : i === activeStep ? 'active' : 'upcoming'
+    const clickable = onStepClick && (i <= activeStep || allowClickAhead)
+
+    return React.createElement(React.Fragment, { key: i }, [
+      // Step item
+      React.createElement('button', {
+        key: 'step-' + i,
+        type: 'button',
+        className: cn('kb-stepper__step', 'kb-stepper__step--' + status),
+        onClick: () => handleClick(i),
+        disabled: !clickable,
+        'aria-current': status === 'active' ? 'step' : undefined,
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: isCompact ? '0.25rem' : '0.5rem',
+          flex: '0 0 auto',
+          minWidth: isCompact ? 'auto' : '80px',
+          background: 'none',
+          border: 'none',
+          padding: isCompact ? '0.25rem' : '0.25rem 0.5rem',
+          cursor: clickable ? 'pointer' : 'default',
+          opacity: status === 'upcoming' ? 0.5 : 1,
+          transition: 'opacity 0.2s ease',
+        },
+      }, [
+        // Circle indicator
+        React.createElement('div', {
+          key: 'circle',
+          style: {
+            width: isCompact ? '28px' : '36px',
+            height: isCompact ? '28px' : '36px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: isCompact ? '0.75rem' : '0.85rem',
+            fontWeight: 600,
+            transition: 'all 0.3s ease',
+            background: status === 'completed'
+              ? 'var(--color-primary)'
+              : status === 'active'
+                ? 'var(--color-primary)'
+                : 'var(--color-muted)',
+            color: status === 'upcoming'
+              ? 'var(--color-muted-foreground)'
+              : 'var(--color-primary-foreground, #fff)',
+            boxShadow: status === 'active'
+              ? '0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent)'
+              : 'none',
+          },
+        }, step.icon
+          ? step.icon
+          : status === 'completed'
+            ? '✓'
+            : String(i + 1)
+        ),
+        // Label
+        !isCompact && React.createElement('div', {
+          key: 'label',
+          style: {
+            fontSize: '0.8rem',
+            fontWeight: status === 'active' ? 600 : 400,
+            color: status === 'upcoming'
+              ? 'var(--color-muted-foreground)'
+              : 'var(--color-foreground)',
+            textAlign: 'center',
+            lineHeight: 1.3,
+            transition: 'color 0.2s ease',
+          },
+        }, step.label),
+        // Description
+        !isCompact && step.description && React.createElement('div', {
+          key: 'desc',
+          style: {
+            fontSize: '0.7rem',
+            color: 'var(--color-muted-foreground)',
+            textAlign: 'center',
+            lineHeight: 1.3,
+            marginTop: '-0.25rem',
+          },
+        }, step.description),
+      ]),
+      // Connector line (not after last step)
+      i < steps.length - 1 && React.createElement('div', {
+        key: 'line-' + i,
+        style: {
+          flex: 1,
+          height: '2px',
+          minWidth: '24px',
+          alignSelf: 'center',
+          marginTop: isCompact ? '0' : '-' + (step.description ? '1.5rem' : '0.75rem'),
+          background: i < activeStep
+            ? 'var(--color-primary)'
+            : 'var(--color-border)',
+          borderRadius: '1px',
+          transition: 'background 0.3s ease',
+        },
+      }),
+    ])
+  }))
+}
+
+// ─── StepperContent ───────────────────────────────────────────────────────────
+
+/**
+ * Companion to Stepper. Renders only the child matching the active step index.
+ * Children should be step content elements; only the one at `activeStep` is shown.
+ *
+ * @param {{ activeStep: number, children: any, animated?: boolean, className?: string, style?: object }} props
+ *
+ * @example
+ *   <StepperContent activeStep={step}>
+ *     <div>Step 1 content</div>
+ *     <div>Step 2 content</div>
+ *   </StepperContent>
+ */
+export function StepperContent({ activeStep = 0, children, animated = true, className, style, ...rest }) {
+  const items = React.Children.toArray(children)
+  const content = items[activeStep] || null
+  return React.createElement('div', {
+    className: cn(animated && 'animate-fade-in', className),
+    key: activeStep,
+    style,
+    ...rest,
+  }, content)
 }

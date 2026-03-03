@@ -1091,6 +1091,222 @@ const TEMPLATES: MiniAppTemplate[] = [
     },
   },
   {
+    id: 'wizard',
+    name: 'Multi-Step Wizard',
+    description: 'A multi-step wizard form using Stepper, StepperContent, useForm, and storage persistence. Demonstrates step navigation, validation per step, and final review.',
+    icon: '🧙',
+    tags: ['wizard', 'stepper', 'multi-step', 'form', 'validation', 'useForm'],
+    suggestedSlug: 'wizard',
+    files: {
+      'app.json': REACT_APP_JSON,
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard</title>
+  <style>
+    body { padding: 1.5rem; max-width: 600px; margin: 0 auto; }
+    .review-row { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.875rem; }
+    .review-label { color: var(--color-muted-foreground); }
+    .review-value { font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/jsx">
+    import { useState } from 'react'
+    import { createRoot } from 'react-dom/client'
+    import { useKinBot, useForm, useStorage, toast } from '@kinbot/react'
+    import { Card, Input, Select, Textarea, Switch, RadioGroup, Button, Alert, Divider, Stack, Spinner, Stepper, StepperContent, Badge } from '@kinbot/components'
+
+    const STEPS = [
+      { label: 'Account', icon: '👤' },
+      { label: 'Details', icon: '📋' },
+      { label: 'Preferences', icon: '⚙️' },
+      { label: 'Review', icon: '✅' },
+    ]
+
+    const INITIAL = {
+      email: '', password: '', confirmPassword: '',
+      fullName: '', company: '', role: '', bio: '',
+      plan: 'free', notifications: true, newsletter: false,
+    }
+
+    function App() {
+      const { ready } = useKinBot()
+      if (!ready) return <Stack align="center" style={{ padding: '2rem' }}><Spinner /></Stack>
+      return <WizardForm />
+    }
+
+    function WizardForm() {
+      const [step, setStep] = useState(0)
+      const [submitted, setSubmitted] = useState(false)
+      const [savedDraft, setSavedDraft, draftLoading] = useStorage('wizard-draft', null)
+
+      const form = useForm(savedDraft || INITIAL, (v) => {
+        const e = {}
+        if (!v.email.trim()) e.email = 'Required'
+        else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.email)) e.email = 'Invalid email'
+        if (!v.password || v.password.length < 6) e.password = 'Min 6 characters'
+        if (v.password !== v.confirmPassword) e.confirmPassword = 'Passwords must match'
+        if (!v.fullName.trim()) e.fullName = 'Required'
+        if (!v.role) e.role = 'Please select a role'
+        return e
+      })
+
+      if (draftLoading) return <Stack align="center" style={{ padding: '2rem' }}><Spinner /></Stack>
+
+      const stepErrors = [
+        ['email', 'password', 'confirmPassword'],
+        ['fullName', 'role'],
+        [],
+        [],
+      ]
+
+      const canProceed = () => {
+        const fields = stepErrors[step]
+        for (const f of fields) {
+          if (form.errors[f]) return false
+          if (!form.values[f] && f !== 'confirmPassword') return false
+        }
+        if (step === 0 && form.values.password !== form.values.confirmPassword) return false
+        return true
+      }
+
+      const next = () => {
+        stepErrors[step].forEach(f => form.handleBlur(f)())
+        if (canProceed()) {
+          setSavedDraft(form.values)
+          setStep(s => Math.min(s + 1, STEPS.length - 1))
+        }
+      }
+
+      const back = () => setStep(s => Math.max(s - 1, 0))
+
+      const submit = () => {
+        toast('Account created successfully!', 'success')
+        setSavedDraft(null)
+        setSubmitted(true)
+      }
+
+      if (submitted) {
+        return (
+          <Card className="animate-scale-in">
+            <Card.Content>
+              <Stack align="center" gap="1rem" style={{ padding: '2rem 0' }}>
+                <div style={{ fontSize: '3rem' }}>🎉</div>
+                <h2 className="gradient-primary-text" style={{ margin: 0 }}>Welcome aboard!</h2>
+                <p style={{ color: 'var(--color-muted-foreground)', textAlign: 'center' }}>
+                  Your account has been created. Check your email for verification.
+                </p>
+                <Button onClick={() => { form.reset(); setStep(0); setSubmitted(false) }}>Start Over</Button>
+              </Stack>
+            </Card.Content>
+          </Card>
+        )
+      }
+
+      return (
+        <div className="animate-fade-in-up">
+          <Stepper steps={STEPS} activeStep={step} onStepClick={setStep} />
+          <Card style={{ marginTop: '1.25rem' }}>
+            <Card.Content>
+              <StepperContent activeStep={step}>
+                {/* Step 0: Account */}
+                <Stack gap="1rem">
+                  <h3 style={{ margin: 0 }}>Create your account</h3>
+                  <Input label="Email *" type="email" placeholder="you@example.com"
+                    value={form.values.email} onChange={form.handleChange('email')}
+                    onBlur={form.handleBlur('email')} error={form.touched.email && form.errors.email} />
+                  <Input label="Password *" type="password" placeholder="Min 6 characters"
+                    value={form.values.password} onChange={form.handleChange('password')}
+                    onBlur={form.handleBlur('password')} error={form.touched.password && form.errors.password} />
+                  <Input label="Confirm Password *" type="password" placeholder="Re-enter password"
+                    value={form.values.confirmPassword} onChange={form.handleChange('confirmPassword')}
+                    onBlur={form.handleBlur('confirmPassword')} error={form.touched.confirmPassword && form.errors.confirmPassword} />
+                </Stack>
+
+                {/* Step 1: Details */}
+                <Stack gap="1rem">
+                  <h3 style={{ margin: 0 }}>Tell us about yourself</h3>
+                  <Input label="Full Name *" placeholder="John Doe"
+                    value={form.values.fullName} onChange={form.handleChange('fullName')}
+                    onBlur={form.handleBlur('fullName')} error={form.touched.fullName && form.errors.fullName} />
+                  <Input label="Company" placeholder="Acme Inc."
+                    value={form.values.company} onChange={form.handleChange('company')} />
+                  <Select label="Role *" value={form.values.role}
+                    onChange={form.handleChange('role')} onBlur={form.handleBlur('role')}
+                    error={form.touched.role && form.errors.role}
+                    options={[
+                      { value: '', label: 'Select your role...' },
+                      { value: 'developer', label: 'Developer' },
+                      { value: 'designer', label: 'Designer' },
+                      { value: 'manager', label: 'Manager' },
+                      { value: 'other', label: 'Other' },
+                    ]} />
+                  <Textarea label="Bio" placeholder="Tell us a bit about yourself..."
+                    value={form.values.bio} onChange={form.handleChange('bio')} />
+                </Stack>
+
+                {/* Step 2: Preferences */}
+                <Stack gap="1rem">
+                  <h3 style={{ margin: 0 }}>Your preferences</h3>
+                  <RadioGroup label="Plan" value={form.values.plan}
+                    onChange={form.handleChange('plan')}
+                    options={[
+                      { value: 'free', label: 'Free' },
+                      { value: 'pro', label: 'Pro ($9/mo)' },
+                      { value: 'enterprise', label: 'Enterprise ($49/mo)' },
+                    ]} />
+                  <Divider />
+                  <Switch label="Enable notifications" checked={form.values.notifications}
+                    onChange={form.handleChange('notifications')} />
+                  <Switch label="Subscribe to newsletter" checked={form.values.newsletter}
+                    onChange={form.handleChange('newsletter')} />
+                </Stack>
+
+                {/* Step 3: Review */}
+                <Stack gap="0.75rem">
+                  <h3 style={{ margin: 0 }}>Review your information</h3>
+                  <div className="surface-card" style={{ padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                    <div className="review-row"><span className="review-label">Email</span><span className="review-value">{form.values.email}</span></div>
+                    <div className="review-row"><span className="review-label">Name</span><span className="review-value">{form.values.fullName}</span></div>
+                    {form.values.company && <div className="review-row"><span className="review-label">Company</span><span className="review-value">{form.values.company}</span></div>}
+                    <div className="review-row"><span className="review-label">Role</span><span className="review-value">{form.values.role}</span></div>
+                    <div className="review-row"><span className="review-label">Plan</span><Badge>{form.values.plan}</Badge></div>
+                    <div className="review-row"><span className="review-label">Notifications</span><span className="review-value">{form.values.notifications ? '✓' : '✗'}</span></div>
+                  </div>
+                  {form.values.bio && (
+                    <>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-muted-foreground)', fontWeight: 500 }}>Bio</div>
+                      <p style={{ fontSize: '0.875rem', margin: 0 }}>{form.values.bio}</p>
+                    </>
+                  )}
+                </Stack>
+              </StepperContent>
+
+              <Divider style={{ margin: '1.25rem 0' }} />
+              <Stack direction="row" justify="space-between">
+                <Button variant="ghost" onClick={back} disabled={step === 0}>← Back</Button>
+                {step < STEPS.length - 1
+                  ? <Button onClick={next} disabled={!canProceed()}>Next →</Button>
+                  : <Button variant="shine" onClick={submit}>Create Account</Button>
+                }
+              </Stack>
+            </Card.Content>
+          </Card>
+        </div>
+      )
+    }
+
+    createRoot(document.getElementById('root')).render(<App />)
+  </script>
+</body>
+</html>`,
+    },
+  },
+  {
     id: 'component-showcase',
     name: 'Component Showcase',
     description: 'An interactive storybook that demos all 40 @kinbot/components with live examples. Browse by category: Layout, Forms, Data Display, Feedback, Navigation, Overlays, and Charts.',
@@ -1155,7 +1371,8 @@ const TEMPLATES: MiniAppTemplate[] = [
       Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination,
       Modal, Drawer, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion,
       DropdownMenu, Panel, RadioGroup, Slider, DatePicker,
-      BarChart, LineChart, PieChart, SparkLine
+      BarChart, LineChart, PieChart, SparkLine,
+      Stepper, StepperContent
     } from '@kinbot/components'
 
     const CATEGORIES = [
@@ -1163,7 +1380,7 @@ const TEMPLATES: MiniAppTemplate[] = [
       { id: 'forms', label: 'Forms', items: ['Button','ButtonGroup','Input','Textarea','Select','Checkbox','Switch','RadioGroup','Slider','DatePicker','Form'] },
       { id: 'data', label: 'Data Display', items: ['Badge','Tag','Stat','Avatar','Tooltip','ProgressBar','Table','List','DataGrid','Accordion'] },
       { id: 'feedback', label: 'Feedback', items: ['Alert','Spinner','Skeleton','EmptyState'] },
-      { id: 'nav', label: 'Navigation', items: ['Tabs','Breadcrumbs','Pagination','DropdownMenu'] },
+      { id: 'nav', label: 'Navigation', items: ['Tabs','Breadcrumbs','Pagination','DropdownMenu','Stepper'] },
       { id: 'overlays', label: 'Overlays', items: ['Modal','Drawer','Popover'] },
       { id: 'charts', label: 'Charts', items: ['BarChart','LineChart','PieChart','SparkLine'] },
     ]
@@ -1330,7 +1547,16 @@ const TEMPLATES: MiniAppTemplate[] = [
           <DropdownMenu trigger={<Button variant="outline" size="sm">Actions ▾</Button>}
             items={[{label:'Edit',icon:'✏️',onClick:()=>{}},{label:'Duplicate',icon:'📋',onClick:()=>{}},{type:'separator'},{label:'Delete',icon:'🗑️',variant:'danger',onClick:()=>{}}]} />
         </div>
+        <div className="demo-box">
+          <div className="demo-label">Stepper</div>
+          <StepperDemo />
+        </div>
       </>
+    }
+
+    function StepperDemo() {
+      const [step, setStep] = useState(1)
+      return <Stepper steps={[{label:'Account'},{label:'Profile'},{label:'Confirm'}]} activeStep={step} onStepClick={setStep} />
     }
 
     function OverlaysDemo() {
@@ -1399,7 +1625,7 @@ const TEMPLATES: MiniAppTemplate[] = [
       forms: { title: 'Forms', desc: 'Buttons, inputs, selects, toggles, sliders, date pickers', render: FormsDemo },
       data: { title: 'Data Display', desc: 'Badges, tags, stats, avatars, tables, lists, accordions', render: DataDemo },
       feedback: { title: 'Feedback', desc: 'Alerts, spinners, skeletons, empty states', render: FeedbackDemo },
-      nav: { title: 'Navigation', desc: 'Tabs, breadcrumbs, pagination, dropdown menus', render: NavDemo },
+      nav: { title: 'Navigation', desc: 'Tabs, breadcrumbs, pagination, dropdown menus, stepper', render: NavDemo },
       overlays: { title: 'Overlays', desc: 'Modal, Drawer, Popover', render: OverlaysDemo },
       charts: { title: 'Charts', desc: 'Bar, Line, Pie, SparkLine', render: ChartsDemo },
     }
