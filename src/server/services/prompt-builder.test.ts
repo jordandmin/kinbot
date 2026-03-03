@@ -318,4 +318,29 @@ describe('buildSystemPrompt', () => {
     }))
     expect(result).toContain('No tables')
   })
+
+  // --- Memory grouping ---
+
+  it('groups memories by category when more than 3', () => {
+    const memories = [
+      { category: 'fact', content: 'Lives in Paris', subject: 'User' },
+      { category: 'fact', content: 'Works at Acme', subject: 'User' },
+      { category: 'preference', content: 'Likes dark mode', subject: null },
+      { category: 'decision', content: 'Use PostgreSQL', subject: null },
+    ]
+    const result = buildSystemPrompt(makeParams({ relevantMemories: memories }))
+    expect(result).toContain('### Facts')
+    expect(result).toContain('### Preferences')
+    expect(result).toContain('### Decisions')
+  })
+
+  it('renders flat list when 3 or fewer memories', () => {
+    const memories = [
+      { category: 'fact', content: 'Lives in Paris', subject: null },
+      { category: 'preference', content: 'Likes dark mode', subject: null },
+    ]
+    const result = buildSystemPrompt(makeParams({ relevantMemories: memories }))
+    expect(result).toContain('## Memories')
+    expect(result).not.toContain('### Facts')
+  })
 })

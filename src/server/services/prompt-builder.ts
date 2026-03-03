@@ -201,6 +201,52 @@ function buildConversationStateBlock(state: PromptParams['conversationState']): 
   return lines.join('\n')
 }
 
+/**
+ * Category display order and labels for grouped memory rendering.
+ */
+const MEMORY_CATEGORY_META: Record<string, { order: number; label: string }> = {
+  fact: { order: 1, label: 'Facts' },
+  preference: { order: 2, label: 'Preferences' },
+  decision: { order: 3, label: 'Decisions' },
+  knowledge: { order: 4, label: 'Knowledge' },
+}
+
+/**
+ * Build the memories block, grouping memories by category for easier scanning.
+ * Falls back to a flat list if there are very few memories (≤3).
+ */
+function buildMemoriesBlock(memories: Memory[]): string {
+  if (memories.length <= 3) {
+    // Few memories — flat list is fine
+    const memoryLines = memories.map(formatMemoryLine).join('\n')
+    return `## Memories\n\nRelevant information from your past interactions (★ = high importance):\n\n${memoryLines}`
+  }
+
+  // Group by category
+  const groups = new Map<string, Memory[]>()
+  for (const m of memories) {
+    const key = m.category
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(m)
+  }
+
+  // Sort groups by defined order (unknown categories last)
+  const sortedCategories = [...groups.keys()].sort((a, b) => {
+    const orderA = MEMORY_CATEGORY_META[a]?.order ?? 99
+    const orderB = MEMORY_CATEGORY_META[b]?.order ?? 99
+    return orderA - orderB
+  })
+
+  const sections: string[] = []
+  for (const cat of sortedCategories) {
+    const label = MEMORY_CATEGORY_META[cat]?.label ?? cat
+    const lines = groups.get(cat)!.map(formatMemoryLine).join('\n')
+    sections.push(`### ${label}\n${lines}`)
+  }
+
+  return `## Memories\n\nRelevant information from your past interactions (★ = high importance):\n\n${sections.join('\n\n')}`
+}
+
 const LANGUAGE_NAMES: Record<string, string> = {
   fr: 'French',
   en: 'English',
@@ -303,10 +349,7 @@ export function buildSystemPrompt(params: PromptParams): string {
   if (params.isQuickSession) {
     // [5] Relevant memories (read-only)
     if (params.relevantMemories.length > 0) {
-      const memoryLines = params.relevantMemories.map(formatMemoryLine).join('\n')
-      blocks.push(
-        `## Memories\n\nRelevant information from your past interactions (★ = high importance):\n\n${memoryLines}`,
-      )
+      blocks.push(buildMemoriesBlock(params.relevantMemories))
     }
 
     // [3.5] Platform directives (global prompt) — applies to quick sessions too
@@ -406,10 +449,7 @@ export function buildSystemPrompt(params: PromptParams): string {
 
   // [5] Relevant memories
   if (params.relevantMemories.length > 0) {
-    const memoryLines = params.relevantMemories.map(formatMemoryLine).join('\n')
-    blocks.push(
-      `## Memories\n\nRelevant information from your past interactions (★ = high importance):\n\n${memoryLines}`,
-    )
+    blocks.push(buildMemoriesBlock(params.relevantMemories))
   }
 
   // [6] Hidden system instructions (main agent only)
