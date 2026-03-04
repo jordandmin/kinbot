@@ -1708,7 +1708,7 @@ export default {
   {
     id: 'component-showcase',
     name: 'Component Showcase',
-    description: 'An interactive storybook that demos all 40 @kinbot/components with live examples. Browse by category: Layout, Forms, Data Display, Feedback, Navigation, Overlays, and Charts.',
+    description: 'An interactive storybook that demos all 45 @kinbot/components with live examples. Browse by category: Layout, Forms, Data Display, Feedback, Navigation, Overlays, Charts, and Extra.',
     icon: '🧩',
     tags: ['components', 'storybook', 'demo', 'reference', 'ui'],
     suggestedSlug: 'component-showcase',
@@ -1771,7 +1771,8 @@ export default {
       Modal, Drawer, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion,
       DropdownMenu, Panel, RadioGroup, Slider, DatePicker,
       BarChart, LineChart, PieChart, SparkLine,
-      Stepper, StepperContent
+      Stepper, StepperContent,
+      FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput
     } from '@kinbot/components'
 
     const CATEGORIES = [
@@ -1782,6 +1783,7 @@ export default {
       { id: 'nav', label: 'Navigation', items: ['Tabs','Breadcrumbs','Pagination','DropdownMenu','Stepper'] },
       { id: 'overlays', label: 'Overlays', items: ['Modal','Drawer','Popover'] },
       { id: 'charts', label: 'Charts', items: ['BarChart','LineChart','PieChart','SparkLine'] },
+      { id: 'extra', label: 'Extra', items: ['FileUpload','CodeBlock','Timeline','AvatarGroup','NumberInput'] },
     ]
 
     // ─── Demo sections ───
@@ -2019,6 +2021,42 @@ export default {
       </>
     }
 
+    function ExtraDemo() {
+      const [num, setNum] = useState(5)
+      return <>
+        <div className="demo-box">
+          <div className="demo-label">FileUpload</div>
+          <FileUpload accept="image/*" multiple maxSize={5*1024*1024} maxFiles={3}
+            onFiles={files => KinBot.toast('Received ' + files.length + ' file(s)')}
+            onError={err => KinBot.toast(err, 'error')}
+            label="Drop images here" hint="Max 5MB, up to 3 files" />
+        </div>
+        <div className="demo-box">
+          <div className="demo-label">CodeBlock</div>
+          <CodeBlock language="javascript" showLineNumbers code={\`function greet(name) {\\n  return \\\`Hello, \\\${name}!\\\`;\\n}\\n\\nconsole.log(greet('KinBot'));\`} />
+        </div>
+        <div className="demo-box">
+          <div className="demo-label">Timeline</div>
+          <Timeline items={[
+            { title: 'App created', time: '10:00 AM', icon: '🚀', color: 'var(--color-success)' },
+            { title: 'First update', description: 'Added new features', time: '11:30 AM', color: 'var(--color-primary)' },
+            { title: 'Published', time: '2:00 PM', icon: '✅', color: 'var(--color-success)' },
+          ]} />
+        </div>
+        <div className="demo-box">
+          <div className="demo-label">AvatarGroup</div>
+          <Stack direction="row" gap="1.5rem" align="center">
+            <AvatarGroup avatars={[{name:'Alice'},{name:'Bob'},{name:'Claire'},{name:'Dan'},{name:'Eve'}]} max={3} size="md" />
+            <AvatarGroup avatars={[{name:'NV'},{name:'EM'}]} size="lg" />
+          </Stack>
+        </div>
+        <div className="demo-box" style={{maxWidth:'200px'}}>
+          <div className="demo-label">NumberInput</div>
+          <NumberInput label="Quantity" value={num} onChange={setNum} min={0} max={100} step={1} />
+        </div>
+      </>
+    }
+
     const SECTIONS = {
       layout: { title: 'Layout', desc: 'Stack, Divider, Card, Grid, Panel', render: LayoutDemo },
       forms: { title: 'Forms', desc: 'Buttons, inputs, selects, toggles, sliders, date pickers', render: FormsDemo },
@@ -2027,6 +2065,7 @@ export default {
       nav: { title: 'Navigation', desc: 'Tabs, breadcrumbs, pagination, dropdown menus, stepper', render: NavDemo },
       overlays: { title: 'Overlays', desc: 'Modal, Drawer, Popover', render: OverlaysDemo },
       charts: { title: 'Charts', desc: 'Bar, Line, Pie, SparkLine', render: ChartsDemo },
+      extra: { title: 'Extra', desc: 'FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput', render: ExtraDemo },
     }
 
     function App() {
@@ -2480,6 +2519,123 @@ export default {
           </Alert>
         </div>
       )
+    }
+
+    createRoot(document.getElementById('root')).render(<App />)
+  </script>
+</body>
+</html>`,
+    },
+  },
+  {
+    id: 'multi-page',
+    name: 'Multi-Page App',
+    description: 'A multi-page mini-app demonstrating hash-based routing with useHashRouter, Route, and Link from @kinbot/react. Includes a nav bar, home, about, and settings pages.',
+    icon: '🗺️',
+    tags: ['routing', 'multi-page', 'navigation', 'spa'],
+    suggestedSlug: 'multi-page-app',
+    files: {
+      'app.json': REACT_APP_JSON,
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Page App</title>
+  <style>
+    body { margin: 0; padding: 0; }
+    .app-nav {
+      display: flex; gap: 0.25rem; padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface-secondary);
+    }
+    .app-nav a {
+      padding: 0.4rem 0.75rem; border-radius: var(--radius-sm);
+      font-size: 0.85rem; color: var(--color-text-secondary);
+      text-decoration: none; transition: all 0.15s;
+    }
+    .app-nav a:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .app-nav a.link-active { background: var(--color-primary); color: white; }
+    .page { padding: 1.5rem; max-width: 600px; }
+    .page h1 { margin: 0 0 0.5rem; font-size: 1.3rem; color: var(--color-text-primary); }
+    .page p { color: var(--color-text-secondary); line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/jsx">
+    import { useState } from 'react'
+    import { createRoot } from 'react-dom/client'
+    import { useKinBot, useHashRouter, Route, Link } from '@kinbot/react'
+    import { Card, Stack, Switch, Select, Button, Alert } from '@kinbot/components'
+
+    function HomePage() {
+      return <div className="page">
+        <h1>🏠 Home</h1>
+        <p>Welcome to this multi-page mini-app! Use the navigation above to browse pages.</p>
+        <Card style={{ padding: '1rem', marginTop: '1rem' }} hover>
+          <Stack gap="0.5rem">
+            <strong>How it works</strong>
+            <p style={{ margin: 0, fontSize: '0.85rem' }}>
+              This app uses <code>useHashRouter</code> from <code>@kinbot/react</code> for
+              client-side routing. No page reloads needed. Try the browser back/forward buttons too!
+            </p>
+          </Stack>
+        </Card>
+      </div>
+    }
+
+    function AboutPage() {
+      return <div className="page">
+        <h1>ℹ️ About</h1>
+        <p>This template demonstrates hash-based routing in a KinBot mini-app.</p>
+        <Alert variant="info" title="Routing primitives" style={{ marginTop: '1rem' }}>
+          <code>useHashRouter()</code> returns path, params, navigate, and back.
+          <code>Route</code> and <code>Link</code> handle rendering and navigation.
+        </Alert>
+      </div>
+    }
+
+    function SettingsPage() {
+      const [dark, setDark] = useState(false)
+      return <div className="page">
+        <h1>⚙️ Settings</h1>
+        <Card style={{ padding: '1rem' }}>
+          <Stack gap="1rem">
+            <Switch label="Dark mode (demo toggle)" checked={dark} onChange={() => setDark(!dark)} />
+            <Select label="Language" options={[
+              { value: 'en', label: 'English' },
+              { value: 'fr', label: 'Français' },
+              { value: 'de', label: 'Deutsch' },
+            ]} placeholder="Choose..." />
+            <Button onClick={() => KinBot.toast('Settings saved!')}>Save</Button>
+          </Stack>
+        </Card>
+      </div>
+    }
+
+    function NotFound({ path }) {
+      return <div className="page">
+        <h1>404</h1>
+        <p>Page <code>{path}</code> not found.</p>
+        <Button variant="outline" onClick={() => location.hash = '#/'}>Go home</Button>
+      </div>
+    }
+
+    function App() {
+      const { path } = useHashRouter('/')
+
+      return <>
+        <nav className="app-nav">
+          <Link to="/" active={path === '/'}>Home</Link>
+          <Link to="/about" active={path === '/about'}>About</Link>
+          <Link to="/settings" active={path === '/settings'}>Settings</Link>
+        </nav>
+        <Route path="/" current={path}><HomePage /></Route>
+        <Route path="/about" current={path}><AboutPage /></Route>
+        <Route path="/settings" current={path}><SettingsPage /></Route>
+        <Route fallback current={path}><NotFound path={path} /></Route>
+      </>
     }
 
     createRoot(document.getElementById('root')).render(<App />)
