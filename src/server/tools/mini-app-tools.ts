@@ -93,7 +93,7 @@ export const createMiniAppTool: ToolRegistration = {
         '`download` (trigger file download: `download(filename, content, mimeType?)`). ' +
         '**@kinbot/components — React Component Library:** Add `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"` to app.json dependencies. ' +
         'Import: `import { Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, ' +
-        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, BarChart, LineChart, PieChart, SparkLine, Stepper, StepperContent } from "@kinbot/components"`. ' +
+        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, BarChart, LineChart, PieChart, SparkLine, Stepper, StepperContent, FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput } from "@kinbot/components"`. ' +
         'All components auto-adapt to light/dark theme. Key components: ' +
         '`Card` (+ Card.Header, Card.Title, Card.Description, Card.Content, Card.Footer), ' +
         '`Button` (variant: primary|secondary|destructive|ghost|shine, size: sm|md|lg|icon), ' +
@@ -129,6 +129,11 @@ export const createMiniAppTool: ToolRegistration = {
         'Charts use --color-chart-1 through --color-chart-5 CSS variables for theme-aware colors. ' +
         '**Stepper:** `Stepper` (steps: [{label, description?, icon?}], activeStep, onStepClick?, variant?: "default"|"compact", allowClickAhead?). ' +
         '`StepperContent` (activeStep, animated?, children) renders only the child at activeStep index. Great for multi-step wizards and onboarding flows. ' +
+        '**New components:** `FileUpload` (drag-and-drop zone: accept, multiple, maxSize, maxFiles, onFiles, onError, compact, label, hint — validates file type/size), ' +
+        '`CodeBlock` (code display: code, language, showCopy, showLineNumbers, maxHeight — monospace with copy button), ' +
+        '`Timeline` (chronological events: items [{title, description?, time?, icon?, color?}] — vertical timeline with dots/icons), ' +
+        '`AvatarGroup` (stacked avatars: avatars [{src?, name?}], max, size sm|md|lg — overflow +N indicator), ' +
+        '`NumberInput` (numeric +/- stepper: value, onChange, min, max, step, label, error, size sm|md|lg). ' +
         '**Design System CSS** (auto-injected): CSS variables like ' +
         'var(--color-primary), var(--color-background), var(--color-foreground), var(--color-muted), var(--color-card), var(--color-border). ' +
         'Utility classes: .glass-strong, .surface-card, .gradient-primary, .btn-shine, .card-hover, .animate-fade-in-up. ' +

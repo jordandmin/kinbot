@@ -6,7 +6,7 @@
  * All components use CSS variables from kinbot-sdk.css for automatic theme support.
  *
  * Usage in mini-apps:
- *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu, DataGrid, Panel, RadioGroup, Slider, DatePicker, Stepper, StepperContent } from '@kinbot/components'
+ *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu, DataGrid, Panel, RadioGroup, Slider, DatePicker, Stepper, StepperContent, FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput } from '@kinbot/components'
  */
 
 import React, { useState, useEffect, useRef, useCallback, useId, createContext, useContext } from 'react'
@@ -2763,4 +2763,532 @@ export function StepperContent({ activeStep = 0, children, animated = true, clas
     style,
     ...rest,
   }, content)
+}
+
+// ─── FileUpload ───────────────────────────────────────────────────────────────
+
+/**
+ * Drag-and-drop file upload zone with click-to-browse fallback.
+ *
+ * @param {{ accept?: string, multiple?: boolean, maxSize?: number, maxFiles?: number, onFiles?: (files: File[]) => void, onError?: (error: string) => void, disabled?: boolean, label?: string, hint?: string, icon?: string, compact?: boolean, className?: string, style?: object }} props
+ *
+ * @example
+ *   <FileUpload accept="image/*" maxSize={5 * 1024 * 1024} onFiles={files => console.log(files)} />
+ */
+export function FileUpload({
+  accept,
+  multiple = false,
+  maxSize,
+  maxFiles = 10,
+  onFiles,
+  onError,
+  disabled = false,
+  label,
+  hint,
+  icon = '📁',
+  compact = false,
+  className,
+  style,
+  ...rest
+}) {
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef(null)
+
+  function validate(files) {
+    const arr = Array.from(files)
+    if (!multiple && arr.length > 1) {
+      onError?.('Only one file allowed')
+      return null
+    }
+    if (arr.length > maxFiles) {
+      onError?.(`Maximum ${maxFiles} files allowed`)
+      return null
+    }
+    if (maxSize) {
+      const tooBig = arr.find(f => f.size > maxSize)
+      if (tooBig) {
+        const mb = (maxSize / (1024 * 1024)).toFixed(1)
+        onError?.(`File "${tooBig.name}" exceeds ${mb} MB limit`)
+        return null
+      }
+    }
+    if (accept) {
+      const patterns = accept.split(',').map(s => s.trim())
+      const invalid = arr.find(f => !patterns.some(p => {
+        if (p.startsWith('.')) return f.name.toLowerCase().endsWith(p.toLowerCase())
+        if (p.endsWith('/*')) return f.type.startsWith(p.slice(0, -1))
+        return f.type === p
+      }))
+      if (invalid) {
+        onError?.(`File type "${invalid.type || invalid.name}" is not accepted`)
+        return null
+      }
+    }
+    return arr
+  }
+
+  function handleFiles(files) {
+    const valid = validate(files)
+    if (valid && valid.length > 0) onFiles?.(valid)
+  }
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+    if (disabled) return
+    handleFiles(e.dataTransfer.files)
+  }, [disabled, accept, multiple, maxSize, maxFiles])
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!disabled) setDragOver(true)
+  }, [disabled])
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+  }, [])
+
+  const baseStyle = {
+    border: '2px dashed var(--color-border)',
+    borderRadius: 'var(--radius-lg)',
+    padding: compact ? '12px 16px' : '32px 16px',
+    textAlign: 'center',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'border-color 0.2s, background-color 0.2s',
+    backgroundColor: dragOver ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent',
+    borderColor: dragOver ? 'var(--color-primary)' : 'var(--color-border)',
+    opacity: disabled ? 0.5 : 1,
+  }
+
+  return React.createElement('div', {
+    className: cn('kb-file-upload', className),
+    style: mergeStyles(baseStyle, style),
+    onDrop: handleDrop,
+    onDragOver: handleDragOver,
+    onDragLeave: handleDragLeave,
+    onClick: () => !disabled && inputRef.current?.click(),
+    role: 'button',
+    tabIndex: disabled ? -1 : 0,
+    'aria-label': label || 'Upload files',
+    'aria-disabled': disabled,
+    onKeyDown: (e) => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); inputRef.current?.click() } },
+    ...rest,
+  },
+    React.createElement('input', {
+      ref: inputRef,
+      type: 'file',
+      accept,
+      multiple,
+      disabled,
+      style: { display: 'none' },
+      onChange: (e) => { handleFiles(e.target.files); e.target.value = '' },
+    }),
+    !compact && React.createElement('div', { style: { fontSize: '2rem', marginBottom: '8px' } }, icon),
+    React.createElement('div', {
+      style: { fontWeight: 500, color: 'var(--color-foreground)', fontSize: compact ? '0.875rem' : undefined },
+    }, label || (dragOver ? 'Drop files here' : 'Drop files here or click to browse')),
+    hint && React.createElement('div', {
+      style: { fontSize: '0.75rem', color: 'var(--color-muted-foreground)', marginTop: '4px' },
+    }, hint),
+  )
+}
+
+// ─── CodeBlock ────────────────────────────────────────────────────────────────
+
+/**
+ * Formatted code display with optional copy button and language label.
+ * No external syntax highlighter needed; uses monospace styling with the theme.
+ *
+ * @param {{ code: string, language?: string, showCopy?: boolean, showLineNumbers?: boolean, maxHeight?: string, className?: string, style?: object }} props
+ *
+ * @example
+ *   <CodeBlock code={`const x = 42;`} language="javascript" showCopy />
+ */
+export function CodeBlock({
+  code = '',
+  language,
+  showCopy = true,
+  showLineNumbers = false,
+  maxHeight = '400px',
+  className,
+  style,
+  ...rest
+}) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+  }
+
+  const lines = code.split('\n')
+
+  const containerStyle = {
+    position: 'relative',
+    borderRadius: 'var(--radius-lg)',
+    backgroundColor: 'var(--color-muted)',
+    border: '1px solid var(--color-border)',
+    overflow: 'hidden',
+  }
+
+  const preStyle = {
+    margin: 0,
+    padding: '16px',
+    paddingRight: showCopy ? '48px' : '16px',
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+    fontSize: '0.8125rem',
+    lineHeight: 1.6,
+    overflowX: 'auto',
+    overflowY: 'auto',
+    maxHeight,
+    color: 'var(--color-foreground)',
+    tabSize: 2,
+  }
+
+  const lineNumStyle = {
+    display: 'inline-block',
+    width: `${String(lines.length).length + 1}ch`,
+    textAlign: 'right',
+    paddingRight: '12px',
+    marginRight: '12px',
+    borderRight: '1px solid var(--color-border)',
+    color: 'var(--color-muted-foreground)',
+    userSelect: 'none',
+  }
+
+  return React.createElement('div', {
+    className: cn('kb-code-block', className),
+    style: mergeStyles(containerStyle, style),
+    ...rest,
+  },
+    (language || showCopy) && React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '6px 12px',
+        borderBottom: '1px solid var(--color-border)',
+        fontSize: '0.75rem',
+        color: 'var(--color-muted-foreground)',
+      },
+    },
+      React.createElement('span', null, language || ''),
+      showCopy && React.createElement('button', {
+        onClick: handleCopy,
+        style: {
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: copied ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
+          fontSize: '0.75rem',
+          padding: '2px 6px',
+          borderRadius: 'var(--radius-sm)',
+          transition: 'color 0.2s',
+        },
+        'aria-label': 'Copy code',
+      }, copied ? '✓ Copied' : 'Copy'),
+    ),
+    React.createElement('pre', { style: preStyle },
+      React.createElement('code', null,
+        showLineNumbers
+          ? lines.map((line, i) => React.createElement('div', { key: i, style: { display: 'flex' } },
+              React.createElement('span', { style: lineNumStyle }, i + 1),
+              React.createElement('span', { style: { flex: 1 } }, line),
+            ))
+          : code,
+      ),
+    ),
+  )
+}
+
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+
+/**
+ * Vertical timeline for displaying chronological events.
+ *
+ * @param {{ items: Array<{ title: string, description?: string, time?: string, icon?: string, color?: string }>, className?: string, style?: object }} props
+ *
+ * @example
+ *   <Timeline items={[
+ *     { title: 'Order placed', time: '10:30 AM', icon: '📦' },
+ *     { title: 'Payment confirmed', time: '10:31 AM', icon: '✅', color: 'var(--color-primary)' },
+ *   ]} />
+ */
+export function Timeline({ items = [], className, style, ...rest }) {
+  return React.createElement('div', {
+    className: cn('kb-timeline', className),
+    style: mergeStyles({ position: 'relative', paddingLeft: '28px' }, style),
+    role: 'list',
+    ...rest,
+  },
+    // Vertical line
+    React.createElement('div', {
+      'aria-hidden': true,
+      style: {
+        position: 'absolute',
+        left: '9px',
+        top: '4px',
+        bottom: '4px',
+        width: '2px',
+        backgroundColor: 'var(--color-border)',
+        borderRadius: '1px',
+      },
+    }),
+    items.map((item, i) =>
+      React.createElement('div', {
+        key: i,
+        role: 'listitem',
+        style: {
+          position: 'relative',
+          paddingBottom: i < items.length - 1 ? '24px' : '0',
+        },
+      },
+        // Dot / icon
+        React.createElement('div', {
+          'aria-hidden': true,
+          style: {
+            position: 'absolute',
+            left: '-28px',
+            top: '2px',
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            backgroundColor: item.color || 'var(--color-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: item.icon ? '0.7rem' : '0',
+            color: 'white',
+            border: '2px solid var(--color-background)',
+          },
+        }, item.icon || null),
+        // Content
+        React.createElement('div', null,
+          React.createElement('div', {
+            style: { display: 'flex', alignItems: 'baseline', gap: '8px' },
+          },
+            React.createElement('span', {
+              style: { fontWeight: 600, color: 'var(--color-foreground)', fontSize: '0.875rem' },
+            }, item.title),
+            item.time && React.createElement('span', {
+              style: { fontSize: '0.75rem', color: 'var(--color-muted-foreground)' },
+            }, item.time),
+          ),
+          item.description && React.createElement('div', {
+            style: { marginTop: '4px', fontSize: '0.8125rem', color: 'var(--color-muted-foreground)', lineHeight: 1.5 },
+          }, item.description),
+        ),
+      ),
+    ),
+  )
+}
+
+// ─── AvatarGroup ──────────────────────────────────────────────────────────────
+
+/**
+ * Stacked group of avatars with overflow indicator.
+ *
+ * @param {{ avatars: Array<{ src?: string, name?: string }>, max?: number, size?: 'sm'|'md'|'lg', className?: string, style?: object }} props
+ *
+ * @example
+ *   <AvatarGroup avatars={[{ name: 'Alice' }, { name: 'Bob' }, { src: '/img.jpg' }]} max={3} />
+ */
+export function AvatarGroup({ avatars = [], max = 5, size = 'md', className, style, ...rest }) {
+  const sizes = { sm: 28, md: 36, lg: 44 }
+  const px = sizes[size] || sizes.md
+  const shown = avatars.slice(0, max)
+  const overflow = avatars.length - max
+
+  return React.createElement('div', {
+    className: cn('kb-avatar-group', className),
+    style: mergeStyles({ display: 'flex', alignItems: 'center' }, style),
+    role: 'group',
+    'aria-label': `${avatars.length} members`,
+    ...rest,
+  },
+    shown.map((av, i) => {
+      const initials = (av.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+      return React.createElement('div', {
+        key: i,
+        title: av.name,
+        style: {
+          width: px,
+          height: px,
+          borderRadius: '50%',
+          border: '2px solid var(--color-background)',
+          marginLeft: i > 0 ? `${-px * 0.3}px` : '0',
+          position: 'relative',
+          zIndex: shown.length - i,
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: av.src ? 'transparent' : 'var(--color-primary)',
+          color: 'white',
+          fontSize: `${px * 0.38}px`,
+          fontWeight: 600,
+          flexShrink: 0,
+        },
+      },
+        av.src
+          ? React.createElement('img', { src: av.src, alt: av.name || '', style: { width: '100%', height: '100%', objectFit: 'cover' } })
+          : initials,
+      )
+    }),
+    overflow > 0 && React.createElement('div', {
+      style: {
+        width: px,
+        height: px,
+        borderRadius: '50%',
+        border: '2px solid var(--color-background)',
+        marginLeft: `${-px * 0.3}px`,
+        position: 'relative',
+        zIndex: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-muted)',
+        color: 'var(--color-muted-foreground)',
+        fontSize: `${px * 0.34}px`,
+        fontWeight: 600,
+        flexShrink: 0,
+      },
+    }, `+${overflow}`),
+  )
+}
+
+// ─── NumberInput ───────────────────────────────────────────────────────────────
+
+/**
+ * Numeric input with increment/decrement buttons.
+ *
+ * @param {{ value?: number, onChange?: (value: number) => void, min?: number, max?: number, step?: number, label?: string, error?: string, disabled?: boolean, size?: 'sm'|'md'|'lg', className?: string, style?: object }} props
+ *
+ * @example
+ *   const [qty, setQty] = useState(1)
+ *   <NumberInput value={qty} onChange={setQty} min={0} max={99} label="Quantity" />
+ */
+export function NumberInput({
+  value = 0,
+  onChange,
+  min = -Infinity,
+  max = Infinity,
+  step = 1,
+  label,
+  error,
+  disabled = false,
+  size = 'md',
+  className,
+  style,
+  ...rest
+}) {
+  const id = useId()
+  const sizes = { sm: { h: 32, font: '0.8125rem', btnW: 28 }, md: { h: 38, font: '0.875rem', btnW: 32 }, lg: { h: 44, font: '1rem', btnW: 36 } }
+  const s = sizes[size] || sizes.md
+
+  function clamp(v) {
+    return Math.min(max, Math.max(min, v))
+  }
+
+  function increment() {
+    if (!disabled) onChange?.(clamp(value + step))
+  }
+
+  function decrement() {
+    if (!disabled) onChange?.(clamp(value - step))
+  }
+
+  function handleInput(e) {
+    const raw = e.target.value
+    if (raw === '' || raw === '-') return
+    const n = parseFloat(raw)
+    if (!isNaN(n)) onChange?.(clamp(n))
+  }
+
+  const btnStyle = {
+    width: s.btnW,
+    height: s.h,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'none',
+    border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    color: disabled ? 'var(--color-muted-foreground)' : 'var(--color-foreground)',
+    fontSize: '1.1rem',
+    fontWeight: 600,
+    padding: 0,
+    opacity: disabled ? 0.5 : 1,
+    flexShrink: 0,
+  }
+
+  return React.createElement('div', {
+    className: cn('kb-number-input', className),
+    style: mergeStyles({ display: 'flex', flexDirection: 'column', gap: '4px' }, style),
+    ...rest,
+  },
+    label && React.createElement('label', {
+      htmlFor: id,
+      style: { fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-foreground)' },
+    }, label),
+    React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        borderRadius: 'var(--radius-md)',
+        border: `1px solid ${error ? 'var(--color-destructive)' : 'var(--color-border)'}`,
+        backgroundColor: 'var(--color-background)',
+        overflow: 'hidden',
+        opacity: disabled ? 0.6 : 1,
+      },
+    },
+      React.createElement('button', {
+        type: 'button',
+        onClick: decrement,
+        disabled: disabled || value <= min,
+        style: { ...btnStyle, borderRight: '1px solid var(--color-border)' },
+        'aria-label': 'Decrease',
+        tabIndex: -1,
+      }, '−'),
+      React.createElement('input', {
+        id,
+        type: 'text',
+        inputMode: 'numeric',
+        value: String(value),
+        onChange: handleInput,
+        disabled,
+        style: {
+          flex: 1,
+          height: s.h,
+          textAlign: 'center',
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: 'var(--color-foreground)',
+          fontSize: s.font,
+          fontWeight: 500,
+          minWidth: 0,
+        },
+        'aria-label': label || 'Number input',
+      }),
+      React.createElement('button', {
+        type: 'button',
+        onClick: increment,
+        disabled: disabled || value >= max,
+        style: { ...btnStyle, borderLeft: '1px solid var(--color-border)' },
+        'aria-label': 'Increase',
+        tabIndex: -1,
+      }, '+'),
+    ),
+    error && React.createElement('span', {
+      style: { fontSize: '0.75rem', color: 'var(--color-destructive)' },
+      role: 'alert',
+    }, error),
+  )
 }

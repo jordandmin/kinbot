@@ -546,3 +546,73 @@ export interface StepperContentProps extends BaseProps {
   animated?: boolean;
 }
 export function StepperContent(props: StepperContentProps): React.ReactElement;
+
+// ─── FileUpload ─────────────────────────────────────────────────────────────
+
+export interface FileUploadProps extends BaseProps {
+  accept?: string;
+  multiple?: boolean;
+  maxSize?: number;
+  maxFiles?: number;
+  onFiles?: (files: File[]) => void;
+  onError?: (error: string) => void;
+  disabled?: boolean;
+  label?: string;
+  hint?: string;
+  icon?: string;
+  compact?: boolean;
+}
+export function FileUpload(props: FileUploadProps): React.ReactElement;
+
+// ─── CodeBlock ──────────────────────────────────────────────────────────────
+
+export interface CodeBlockProps extends BaseProps {
+  code: string;
+  language?: string;
+  showCopy?: boolean;
+  showLineNumbers?: boolean;
+  maxHeight?: string;
+}
+export function CodeBlock(props: CodeBlockProps): React.ReactElement;
+
+// ─── Timeline ───────────────────────────────────────────────────────────────
+
+export interface TimelineItem {
+  title: string;
+  description?: string;
+  time?: string;
+  icon?: string;
+  color?: string;
+}
+export interface TimelineProps extends BaseProps {
+  items: TimelineItem[];
+}
+export function Timeline(props: TimelineProps): React.ReactElement;
+
+// ─── AvatarGroup ────────────────────────────────────────────────────────────
+
+export interface AvatarGroupMember {
+  src?: string;
+  name?: string;
+}
+export interface AvatarGroupProps extends BaseProps {
+  avatars: AvatarGroupMember[];
+  max?: number;
+  size?: 'sm' | 'md' | 'lg';
+}
+export function AvatarGroup(props: AvatarGroupProps): React.ReactElement;
+
+// ─── NumberInput ────────────────────────────────────────────────────────────
+
+export interface NumberInputProps extends BaseProps {
+  value?: number;
+  onChange?: (value: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  label?: string;
+  error?: string;
+  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+}
+export function NumberInput(props: NumberInputProps): React.ReactElement;
