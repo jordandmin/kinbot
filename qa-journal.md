@@ -66,3 +66,35 @@
 ### Next run
 - Area 3: Conversations (send messages, check chat UI, scroll behavior, empty states)
 - Or Area 4: Tasks/Crons (create, edit, enable/disable, delete tasks)
+
+## 2026-03-04 04:40 UTC
+### Area tested: Settings page (Area 9)
+- **Pages visited:** Settings dialog (all 11 tabs: General, AI Providers, Search, MCP Servers, Vault, Memories, Files, Channels, Webhooks, Contacts, Users, Notifications)
+- **Browser:** `openclaw` profile (headless Chromium)
+- **Login:** Existing session from previous run
+- **Bugs found:** 1 (issue created: #37)
+  - **#37 (bug/i18n):** In Settings > Notifications, the last toggle shows raw i18n keys `notifications.types.mention` and `notifications.descriptions.mention` instead of translated text. All other notification types display correctly.
+- **UX suggestions:** 0
+- **All clear:**
+  - Settings dialog opens correctly as a modal overlay
+  - Left navigation has clear grouping (Core, Extensions, Connections, Access) with 11 tabs total
+  - **General:** Global prompt textarea with live token counter, Save button disabled when no changes
+  - **AI Providers:** Two providers (Anthropic Claude Max, OpenAI) displayed with capability badges (LLM, Embedding, Image). "Test all connections" button works perfectly - shows progress bar, "2 passed" result, and toast notification. "Add provider" form has 22+ provider types in dropdown with capability labels, proper required field validation (API key), "Show password" toggle, helpful links to get API keys
+  - **Search:** Brave Search configured, default provider dropdown, add button
+  - **MCP Servers:** Clean empty state with description and add button
+  - **Vault:** Category filter tabs (All, Favorites, Secret, Credential, Card, Note, Identity), "Manage types" button, clean empty state
+  - **Memories:** Model Configuration section (Extraction Model, Embedding Model dropdowns), "Re-embed all memories" button, search bar with category and Kin filters, 5 memories shown with rich metadata (category, subject, source Kin, auto/manual, score), edit/delete per memory, "Add memory" button
+  - **Files:** Clean empty state with upload button
+  - **Channels:** Clean empty state with descriptive text
+  - **Webhooks:** Clean empty state
+  - **Contacts:** Shows Nicolas VARROT with "Human" badge, email, edit/delete buttons, "Add note" and "Add contact" buttons
+  - **Users:** Shows user profile (Nicolas VARROT, @MarlburroW, email, join date, language "fr"), Invitations section with "Invite" button
+  - **Notifications:** 7 notification toggles with descriptions, all checked by default. Notification sound toggle. External delivery section with "Add delivery channel" button
+  - Footer shows version (v0.9.0), uptime, and summary counts consistently across all tabs
+  - "What is this?" expandable help section present on most tabs
+  - Every empty state has clear description text and a call-to-action button
+- **Note:** Kin pages (`/kin/dev`, `/kin/dispatcher`) consistently cause the headless browser to timeout/hang, likely due to WebSocket connections or heavy React rendering. This blocked testing Area 3 (Conversations). May be specific to headless Chromium rather than a real user-facing issue.
+
+### Next run
+- Area 4: Tasks/Crons (create, edit, enable/disable, delete tasks - can test from sidebar without entering a Kin page)
+- Or Area 3: Conversations (if browser stability improves)

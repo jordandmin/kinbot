@@ -664,3 +664,38 @@ No existing template used the data-fetching hooks (useFetch, useApi, useAsync, u
 2. Form template update to showcase `useForm` + `useAsync` together
 3. Consider TypeScript type definitions (.d.ts) for SDK autocomplete
 4. Responsive breakpoint CSS utilities
+
+## 2026-03-04 (run 18) — Pagination Hooks
+
+**What:** Added 2 new React hooks for paginated data loading patterns.
+
+### New Hooks (24 total)
+1. **`useInfiniteScroll(path, options?)`** → `{ items, loading, loadingMore, error, hasMore, loadMore, reset, sentinelRef }` — infinite scroll / "load more" pattern. Fetches pages from backend (KinBot.api) or external URLs (KinBot.http) and merges results. Supports auto-load via IntersectionObserver with `sentinelRef`. Options: source, pageSize, pageParam, limitParam, getItems, getHasMore, autoLoad, threshold.
+2. **`usePagination(path, options?)`** → `{ items, loading, error, page, totalPages, setPage, next, prev, refetch }` — traditional page-based pagination. Replaces items on each page change (vs. infinite scroll which appends). Supports total page count via `getTotal` callback. Options: source, pageSize, pageParam, limitParam, getItems, getTotal.
+
+### Why These Hooks
+Pagination is one of the most common patterns in data-heavy mini-apps. Previously Kins had to manually implement page tracking, URL construction, and result merging. These hooks cover both UX patterns:
+- `useInfiniteScroll` for feeds, timelines, social content (mobile-friendly)
+- `usePagination` for tables, admin panels, structured data (desktop-friendly)
+
+### Design Decisions
+- Both hooks support `source: 'api' | 'http'` to work with backend or external APIs
+- `getItems` auto-detects common response shapes (array, .items, .data, .results)
+- `useInfiniteScroll` uses IntersectionObserver for autoLoad (no scroll event listeners)
+- `usePagination` prevents out-of-bounds navigation when totalPages is known
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-react.js` — +200 lines (2 hooks)
+- `src/server/tools/mini-app-tools.ts` — updated hook documentation
+
+**Tests:** 1582 pass, 0 fail. Build clean (pre-commit OOM'd as usual, CI verified).
+
+**Hook inventory (24 total):**
+useKinBot, useStorage, useTheme, useKin, useUser, useForm, useMediaQuery, useDebounce, useInterval, useClickOutside, useMemory, useConversation, useShortcut, useApps, useSharedData, usePrevious, useOnline, useClipboard, useNotification, useDownload, useFetch, useApi, useAsync, useEventStream, **useInfiniteScroll**, **usePagination**
+
+**Next priorities:**
+1. Template that demos useInfiniteScroll + usePagination (e.g., paginated data table)
+2. Form template update to showcase useForm + useAsync together
+3. Consider TypeScript type definitions (.d.ts) for SDK autocomplete
+4. Responsive breakpoint CSS utilities
+5. `useLocalStorage` hook (persistent state outside KinBot storage, for non-synced prefs)

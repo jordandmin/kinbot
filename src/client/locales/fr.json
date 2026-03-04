@@ -1196,7 +1196,8 @@
       "cron-pending-approval": "Cron en attente",
       "mcp-pending-approval": "MCP en attente",
       "kin-error": "Erreur Kin",
-      "kin-alert": "Alerte Kin"
+      "kin-alert": "Alerte Kin",
+      "mention": "Mention"
     },
     "descriptions": {
       "prompt-pending": "Un Kin attend votre réponse pour continuer",
@@ -1204,7 +1205,8 @@
       "cron-pending-approval": "Une tâche planifiée créée par un Kin nécessite votre approbation",
       "mcp-pending-approval": "Un serveur MCP ajouté par un Kin nécessite votre approbation",
       "kin-error": "Un Kin a rencontré une erreur qui peut nécessiter investigation",
-      "kin-alert": "Un Kin vous a envoyé une notification"
+      "kin-alert": "Un Kin vous a envoyé une notification",
+      "mention": "Quelqu'un vous a mentionné dans une conversation"
     }
   },
   "modelPicker": {
