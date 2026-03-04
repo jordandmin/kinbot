@@ -67,7 +67,11 @@ export const createMiniAppTool: ToolRegistration = {
         '`useOnline()` → `boolean` (reactive network status — true when browser is online), ' +
         '`useClipboard()` → `{ copy, paste, copied, loading }` (reactive clipboard — copy(text) returns Promise<boolean>, copied auto-resets after 2s, paste() returns Promise<string|null>), ' +
         '`useNotification()` → `{ notify, lastSent }` (send browser notifications via parent — notify(title, body?) returns Promise<boolean>), ' +
-        '`useDownload()` → `{ download, downloading }` (trigger file downloads — download(filename, content, mimeType?) where content can be string/object/Blob/ArrayBuffer; objects auto-serialize to JSON). ' +
+        '`useDownload()` → `{ download, downloading }` (trigger file downloads — download(filename, content, mimeType?) where content can be string/object/Blob/ArrayBuffer; objects auto-serialize to JSON), ' +
+        '`useFetch(url, options?)` → `{ data, loading, error, refetch, status }` (fetch external data via KinBot.http proxy — auto-fetches on mount and when url changes; pass null to skip; options: {method, body, headers, json (default true), enabled (default true)}), ' +
+        '`useApi(path, options?)` → `{ data, loading, error, refetch }` (fetch from mini-app backend _server.js via KinBot.api — auto-fetches on mount; path like "/items"; options: {method, body, enabled}), ' +
+        '`useAsync(asyncFn)` → `{ run, data, loading, error, reset }` (wrap any async function with loading/error states — call run(...args) manually; great for mutations like POST/DELETE), ' +
+        '`useEventStream(eventName?, callback?)` → `{ messages, connected, clear }` (subscribe to SSE events from backend — auto-connects on mount, disconnects on unmount; with callback: no accumulation; without: messages accumulate as [{event, data, ts}]). ' +
         '**@kinbot/react Exports (convenience re-exports from KinBot SDK):** ' +
         '`toast(message, type)` (type: "info"|"success"|"warning"|"error"), ' +
         '`confirm(message, options?)` → Promise<boolean> (options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +

@@ -740,6 +740,252 @@ export function useDownload() {
   return { download: doDownload, downloading }
 }
 
+// ─── useFetch ───────────────────────────────────────────────────────────────
+
+/**
+ * Hook for fetching external data via `KinBot.http()` with automatic
+ * loading/error/refetch states. Fetches on mount and when `url` changes.
+ *
+ * @param {string|null} url - URL to fetch (pass null to skip/pause)
+ * @param {object} [options] - Options: { method, body, headers, json (default true), enabled (default true) }
+ * @returns {{ data: any, loading: boolean, error: string|null, refetch: () => void, status: number|null }}
+ *
+ * @example
+ *   const { data, loading, error, refetch } = useFetch('https://api.example.com/items')
+ *   if (loading) return <Spinner />
+ *   if (error) return <Alert variant="error">{error}</Alert>
+ *   return <List items={data.map(i => ({ content: i.name }))} />
+ *
+ * @example
+ *   // POST request
+ *   const { data, loading } = useFetch('https://api.example.com/search', {
+ *     method: 'POST', body: { query: searchTerm }
+ *   })
+ *
+ * @example
+ *   // Conditional fetch (skip when no ID)
+ *   const { data } = useFetch(userId ? `https://api.example.com/users/${userId}` : null)
+ */
+export function useFetch(url, options = {}) {
+  const { method, body, headers, json = true, enabled = true } = options
+  const [state, setState] = useState({ data: null, loading: !!url && enabled, error: null, status: null })
+  const [tick, setTick] = useState(0)
+
+  // Serialize options for dependency tracking
+  const optKey = JSON.stringify({ method, body, headers, json, enabled })
+
+  useEffect(() => {
+    if (!url || !enabled) {
+      setState(s => s.loading ? { ...s, loading: false } : s)
+      return
+    }
+    let cancelled = false
+    setState(s => ({ ...s, loading: true, error: null }))
+
+    const doFetch = async () => {
+      try {
+        let result, status
+        if (json && (!method || method === 'GET')) {
+          result = await window.KinBot.http.json(url, headers)
+          status = 200
+        } else if (method === 'POST' || body) {
+          result = await window.KinBot.http.post(url, body, headers)
+          status = 200
+        } else {
+          const resp = await window.KinBot.http(url, { method, body: body ? JSON.stringify(body) : undefined, headers })
+          status = resp.status
+          result = json ? await resp.json() : await resp.text()
+        }
+        if (!cancelled) setState({ data: result, loading: false, error: null, status })
+      } catch (err) {
+        if (!cancelled) setState(s => ({ ...s, loading: false, error: err?.message || String(err), status: null }))
+      }
+    }
+    doFetch()
+    return () => { cancelled = true }
+  }, [url, optKey, tick])
+
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+
+  return { ...state, refetch }
+}
+
+// ─── useApi ─────────────────────────────────────────────────────────────────
+
+/**
+ * Hook for calling the mini-app's backend API (`_server.js`) via `KinBot.api()`
+ * with automatic loading/error/refetch states. Fetches on mount when path is provided.
+ *
+ * @param {string|null} path - API path (e.g. "/items") or null to skip
+ * @param {object} [options] - Options: { method (default "GET"), body, enabled (default true) }
+ * @returns {{ data: any, loading: boolean, error: string|null, refetch: () => void }}
+ *
+ * @example
+ *   const { data: items, loading, refetch } = useApi('/items')
+ *   const handleAdd = async (item) => {
+ *     await api.post('/items', item)
+ *     refetch()
+ *   }
+ *
+ * @example
+ *   // Conditional fetch
+ *   const { data } = useApi(activeTab === 'stats' ? '/stats' : null)
+ */
+export function useApi(path, options = {}) {
+  const { method = 'GET', body, enabled = true } = options
+  const [state, setState] = useState({ data: null, loading: !!path && enabled, error: null })
+  const [tick, setTick] = useState(0)
+
+  const optKey = JSON.stringify({ method, body, enabled })
+
+  useEffect(() => {
+    if (!path || !enabled) {
+      setState(s => s.loading ? { ...s, loading: false } : s)
+      return
+    }
+    let cancelled = false
+    setState(s => ({ ...s, loading: true, error: null }))
+
+    const doFetch = async () => {
+      try {
+        const apiObj = window.KinBot.api
+        let result
+        if (method === 'GET') {
+          result = await apiObj.get(path)
+        } else if (method === 'POST') {
+          result = await apiObj.post(path, body)
+        } else if (method === 'PUT') {
+          result = await apiObj.put(path, body)
+        } else if (method === 'DELETE') {
+          result = await apiObj.delete(path)
+        } else {
+          result = await apiObj.json(path, { method, body })
+        }
+        if (!cancelled) setState({ data: result, loading: false, error: null })
+      } catch (err) {
+        if (!cancelled) setState(s => ({ ...s, loading: false, error: err?.message || String(err) }))
+      }
+    }
+    doFetch()
+    return () => { cancelled = true }
+  }, [path, optKey, tick])
+
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+
+  return { ...state, refetch }
+}
+
+// ─── useAsync ───────────────────────────────────────────────────────────────
+
+/**
+ * Hook that wraps an async function with loading/error states. Unlike useFetch/useApi,
+ * this doesn't auto-execute — you call `run()` manually. Great for mutations (POST, DELETE, etc.).
+ *
+ * @param {Function} asyncFn - Async function to wrap
+ * @returns {{ run: (...args) => Promise<any>, data: any, loading: boolean, error: string|null, reset: () => void }}
+ *
+ * @example
+ *   const { run: deleteItem, loading: deleting } = useAsync(async (id) => {
+ *     await api.delete(`/items/${id}`)
+ *   })
+ *   <Button onClick={() => deleteItem(item.id)} disabled={deleting}>
+ *     {deleting ? 'Deleting...' : 'Delete'}
+ *   </Button>
+ *
+ * @example
+ *   const { run: submitForm, loading, error } = useAsync(async (values) => {
+ *     return await api.post('/submit', values)
+ *   })
+ *   <Form onSubmit={(vals) => submitForm(vals)}>...</Form>
+ *   {error && <Alert variant="error">{error}</Alert>}
+ */
+export function useAsync(asyncFn) {
+  const [state, setState] = useState({ data: null, loading: false, error: null })
+  const fnRef = useRef(asyncFn)
+  fnRef.current = asyncFn
+
+  const run = useCallback(async (...args) => {
+    setState({ data: null, loading: true, error: null })
+    try {
+      const result = await fnRef.current(...args)
+      setState({ data: result, loading: false, error: null })
+      return result
+    } catch (err) {
+      const error = err?.message || String(err)
+      setState(s => ({ ...s, loading: false, error }))
+      throw err
+    }
+  }, [])
+
+  const reset = useCallback(() => setState({ data: null, loading: false, error: null }), [])
+
+  return { ...state, run, reset }
+}
+
+// ─── useEventStream ─────────────────────────────────────────────────────────
+
+/**
+ * Hook for subscribing to real-time SSE events from the mini-app backend.
+ * Wraps `KinBot.events` with automatic connect/disconnect on mount/unmount.
+ *
+ * @param {string} [eventName] - Specific event name to listen for (omit to receive all events)
+ * @param {Function} [callback] - Callback for each event. If omitted, events accumulate in `messages`.
+ * @returns {{ messages: Array, connected: boolean, clear: () => void }}
+ *
+ * @example
+ *   // Listen for specific events
+ *   const { messages } = useEventStream('update')
+ *   // messages = [{event: 'update', data: {...}, ts: ...}, ...]
+ *
+ * @example
+ *   // With callback (no accumulation)
+ *   useEventStream('notification', (data) => {
+ *     toast(data.message, { type: data.level })
+ *   })
+ *
+ * @example
+ *   // All events
+ *   const { messages, clear } = useEventStream()
+ */
+export function useEventStream(eventName, callback) {
+  const [messages, setMessages] = useState([])
+  const [connected, setConnected] = useState(false)
+  const cbRef = useRef(callback)
+  cbRef.current = callback
+
+  useEffect(() => {
+    const evts = window.KinBot.events
+    if (!evts) return
+
+    const handler = (data) => {
+      const entry = { event: eventName || '*', data, ts: Date.now() }
+      if (cbRef.current) {
+        cbRef.current(data)
+      } else {
+        setMessages(prev => [...prev, entry])
+      }
+    }
+
+    let unsub
+    if (eventName) {
+      unsub = evts.on(eventName, handler)
+    } else {
+      unsub = evts.subscribe(handler)
+    }
+    setConnected(true)
+
+    return () => {
+      if (typeof unsub === 'function') unsub()
+      else evts.close?.()
+      setConnected(false)
+    }
+  }, [eventName])
+
+  const clear = useCallback(() => setMessages([]), [])
+
+  return { messages, connected, clear }
+}
+
 // ─── Convenience re-exports from vanilla SDK ─────────────────────────────────
 
 export const toast = window.KinBot.toast
