@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
-import { Label } from '@/client/components/ui/label'
-import { Brain, Sparkles } from 'lucide-react'
-import { InfoTip } from '@/client/components/common/InfoTip'
-import { api } from '@/client/lib/api'
-import { ModelPicker } from '@/client/components/common/ModelPicker'
-import { useModels } from '@/client/hooks/useModels'
+import { Brain } from 'lucide-react'
+import {
+  MemoryModelConfig,
+  type MemoryModelConfigRef,
+} from '@/client/components/common/MemoryModelConfig'
 
 interface StepMemoryProps {
   onComplete: () => void
@@ -15,29 +14,15 @@ interface StepMemoryProps {
 
 export function StepMemory({ onComplete, onBack }: StepMemoryProps) {
   const { t } = useTranslation()
-  const { llmModels, embeddingModels } = useModels()
-  const [extractionModel, setExtractionModel] = useState('')
-  const [embeddingModel, setEmbeddingModel] = useState('')
+  const configRef = useRef<MemoryModelConfigRef>(null)
   const [saving, setSaving] = useState(false)
-
-  // Pre-select first embedding model when models load
-  useEffect(() => {
-    if (embeddingModels.length > 0) {
-      setEmbeddingModel((prev) => prev || embeddingModels[0]!.id)
-    }
-  }, [embeddingModels])
 
   const handleNext = async () => {
     setSaving(true)
     try {
-      await Promise.all([
-        api.put('/settings/extraction-model', { model: extractionModel || null }),
-        embeddingModel
-          ? api.put('/settings/embedding-model', { model: embeddingModel })
-          : Promise.resolve(),
-      ])
+      await configRef.current?.save()
     } catch {
-      // Non-blocking — settings can be configured later in Memories settings
+      // Non-blocking — settings can be configured later
     } finally {
       setSaving(false)
     }
@@ -55,59 +40,18 @@ export function StepMemory({ onComplete, onBack }: StepMemoryProps) {
         </p>
       </div>
 
-      {/* Visual header */}
       <div className="flex justify-center">
         <div className="rounded-full bg-primary/10 p-4">
           <Brain className="size-8 text-primary" />
         </div>
       </div>
 
-      {/* Extraction model */}
-      <div className="space-y-2">
-        <Label className="flex items-center gap-1.5">
-          <Sparkles className="size-3.5 text-muted-foreground" />
-          {t('onboarding.memory.extractionModel')}
-          <InfoTip content={t('onboarding.memory.extractionModelTip')} />
-        </Label>
-        <ModelPicker
-          models={llmModels}
-          value={extractionModel}
-          onValueChange={setExtractionModel}
-          placeholder={t('settings.memories.extractionModelPlaceholder')}
-          allowClear
-        />
-        <p className="text-xs text-muted-foreground">
-          {t('onboarding.memory.extractionModelHint')}
-        </p>
-      </div>
+      <MemoryModelConfig ref={configRef} variant="onboarding" />
 
-      {/* Embedding model */}
-      <div className="space-y-2">
-        <Label className="flex items-center gap-1.5">
-          <Brain className="size-3.5 text-muted-foreground" />
-          {t('onboarding.memory.embeddingModel')}
-          <InfoTip content={t('onboarding.memory.embeddingModelTip')} />
-        </Label>
-        <ModelPicker
-          models={embeddingModels}
-          value={embeddingModel}
-          onValueChange={setEmbeddingModel}
-          placeholder={t('onboarding.memory.embeddingModelPlaceholder')}
-        />
-        <p className="text-xs text-muted-foreground">
-          {t('onboarding.memory.embeddingModelHint')}
-        </p>
-      </div>
-
-      {/* Navigation buttons */}
       <div className="pt-2">
         <div className="flex gap-3">
           {onBack && (
-            <Button
-              variant="outline"
-              onClick={onBack}
-              size="lg"
-            >
+            <Button variant="outline" onClick={onBack} size="lg">
               {t('common.back')}
             </Button>
           )}
