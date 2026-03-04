@@ -332,3 +332,13 @@ export const share: KinBot['share'];
 export const shortcut: KinBot['shortcut'];
 export const apps: KinBot['apps'];
 export const download: KinBot['download'];
+
+/**
+ * Persistent state using browser localStorage (not synced via KinBot storage).
+ * Useful for UI preferences, collapsed states, and other non-critical local data.
+ * Keys are auto-prefixed with 'kb:'. Syncs across tabs via storage events.
+ * @param key - localStorage key
+ * @param defaultValue - fallback when key doesn't exist
+ * @returns [value, setValue, remove] tuple
+ */
+export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void, () => void];

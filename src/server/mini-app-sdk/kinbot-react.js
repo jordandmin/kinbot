@@ -1288,3 +1288,52 @@ export const share = window.KinBot.share
 export const shortcut = window.KinBot.shortcut
 export const apps = window.KinBot.apps
 export const download = window.KinBot.download
+
+// ─── useLocalStorage ────────────────────────────────────────────────────────
+/**
+ * Persistent state using browser localStorage (not synced via KinBot storage).
+ * Useful for UI preferences, collapsed states, and other non-critical local data.
+ * @param {string} key - localStorage key (auto-prefixed with 'kb:')
+ * @param {*} defaultValue - fallback when key doesn't exist
+ */
+export function useLocalStorage(key, defaultValue) {
+  const prefixedKey = 'kb:' + key
+  const [value, setValue] = useState(() => {
+    try {
+      const item = localStorage.getItem(prefixedKey)
+      return item !== null ? JSON.parse(item) : defaultValue
+    } catch {
+      return defaultValue
+    }
+  })
+
+  const set = useCallback((newValue) => {
+    setValue((prev) => {
+      const resolved = typeof newValue === 'function' ? newValue(prev) : newValue
+      try {
+        localStorage.setItem(prefixedKey, JSON.stringify(resolved))
+      } catch { /* quota exceeded — silently fail */ }
+      return resolved
+    })
+  }, [prefixedKey])
+
+  const remove = useCallback(() => {
+    localStorage.removeItem(prefixedKey)
+    setValue(defaultValue)
+  }, [prefixedKey, defaultValue])
+
+  // Sync across tabs
+  useEffect(() => {
+    function onStorage(e) {
+      if (e.key === prefixedKey) {
+        try {
+          setValue(e.newValue !== null ? JSON.parse(e.newValue) : defaultValue)
+        } catch { /* ignore parse errors */ }
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [prefixedKey, defaultValue])
+
+  return [value, set, remove]
+}
