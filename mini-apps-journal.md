@@ -905,3 +905,47 @@ Added Tailwind-style responsive utility classes with breakpoints: sm (640px), md
 1. Fix pre-existing test failures (formatCountdown, markInvitationUsed export)
 2. Template showcasing responsive layout (mobile-first grid that adapts)
 3. TypeScript type definitions (.d.ts) for SDK — already partially done, could be expanded
+
+## 2026-03-04 (run 23) — 5 New Components: FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput
+
+**What:** Added 5 commonly-needed React components to `kinbot-components.js`.
+
+### New Components
+
+1. **`FileUpload`** — Drag-and-drop file upload zone with click-to-browse fallback
+   - Props: `accept`, `multiple`, `maxSize`, `maxFiles`, `onFiles`, `onError`, `disabled`, `label`, `hint`, `icon`, `compact`
+   - Validates file type (accept patterns), size limits, max file count
+   - Visual drag-over feedback, keyboard accessible
+
+2. **`CodeBlock`** — Formatted code display with copy button
+   - Props: `code`, `language`, `showCopy`, `showLineNumbers`, `maxHeight`
+   - Header bar with language label + copy button (copies to clipboard)
+   - Monospace font, scrollable, theme-integrated
+
+3. **`Timeline`** — Vertical chronological event display
+   - Props: `items` (array of `{title, description?, time?, icon?, color?}`)
+   - Vertical line with colored dots/icons, title + time + description layout
+   - ARIA list role for accessibility
+
+4. **`AvatarGroup`** — Stacked overlapping avatars with overflow
+   - Props: `avatars` (array of `{src?, name?}`), `max`, `size` (sm|md|lg)
+   - Shows initials when no image, +N overflow indicator
+   - Proper z-index stacking
+
+5. **`NumberInput`** — Numeric input with +/- buttons
+   - Props: `value`, `onChange`, `min`, `max`, `step`, `label`, `error`, `disabled`, `size` (sm|md|lg)
+   - Decrement/increment buttons, clamping, keyboard input support
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-components.js` — +416 lines (5 components)
+- `src/server/mini-app-sdk/kinbot-components.d.ts` — +73 lines (type definitions)
+- `src/server/tools/mini-app-tools.ts` — +5 lines (updated import list + component docs)
+
+**Tests:** 1776 pass, 1 fail (pre-existing onboarding mock ordering issue), 1 error (pre-existing). Build clean.
+
+**Note:** The pre-existing test failure (1 fail + 1 error) is a Bun `mock.module` ordering issue in onboarding.test.ts — the `markInvitationUsed` import fails when run in the full suite but passes in isolation. Not a real bug, just a Bun test runner limitation.
+
+**Next priorities:**
+1. Add `useHashRouter` hook for multi-page navigation within mini-apps
+2. Update component-showcase template to include new components
+3. Consider `Combobox` (searchable select) and `TagInput` (multi-tag entry) components
