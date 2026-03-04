@@ -187,7 +187,7 @@ export function PluginsSettings() {
                         {plugin.hookCount} {t('settings.plugins.hooks')}
                       </span>
                     )}
-                    {plugin.permissions.length > 0 && (
+                    {(plugin.permissions?.length ?? 0) > 0 && (
                       <span className="flex items-center gap-1">
                         <Shield className="size-3" />
                         {plugin.permissions.length} {t('settings.plugins.permissions')}
@@ -196,7 +196,7 @@ export function PluginsSettings() {
                   </div>
 
                   {/* Permissions detail */}
-                  {plugin.permissions.length > 0 && (
+                  {(plugin.permissions?.length ?? 0) > 0 && (
                     <Collapsible>
                       <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1">
                         <ChevronDown className="size-3" />
@@ -221,7 +221,7 @@ export function PluginsSettings() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {Object.keys(plugin.configSchema).length > 0 && (
+                  {Object.keys(plugin.configSchema ?? {}).length > 0 && (
                     <Button
                       variant="ghost"
                       size="icon"
