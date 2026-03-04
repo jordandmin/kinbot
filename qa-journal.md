@@ -135,3 +135,54 @@
 - Area 11: Contacts (add, approve, edit, delete) - testable from Settings
 - Area 12: Webhooks (create, edit, test, delete) - testable from Settings
 - Area 5: Provider settings - testable from Settings
+
+## 2026-03-04 12:40 UTC
+### Area tested: Contacts (Area 11) + Webhooks (Area 12) + Channels (Area 6 - partial)
+- **Pages visited:** Settings > Contacts, Settings > Webhooks, Settings > Channels
+- **Browser:** `openclaw` profile (headless Chromium), host target
+- **Login:** Existing session
+
+#### Contacts (Area 11)
+- **Bugs found:** 0
+- **UX suggestions:** 0
+- **All clear:**
+  - Contact list shows existing contacts with type badge (Human), name, and identifiers
+  - "Add contact" form: Name (required), Type dropdown (Human, Kin), Link to system user (None, existing users), Identifiers section
+  - Identifiers: "Add identifier" creates inline row with type combobox (email, phone, mobile, twitter, instagram, linkedin, github, slack, website + searchable) and value textbox
+  - Button correctly disabled until Name is filled
+  - Contact creation shows "Contact added" toast, appears immediately in list
+  - Edit form pre-populates all fields correctly (name, type, identifiers)
+  - "Link to system user" dropdown shows registered users with display name + username
+  - "Add note" feature: inline note form with Kin selector, scope (Global/Private), and note textbox
+  - Delete has proper confirmation dialog ("This will permanently delete this contact and all associated identifiers and notes")
+  - Delete shows "Contact deleted" toast, contact removed immediately
+  - CRUD flow is complete and works correctly
+
+#### Webhooks (Area 12)
+- **Bugs found:** 0
+- **UX suggestions:** 0
+- **All clear:**
+  - Clean empty state with description and CTA
+  - "Add webhook" form: Target Kin (required, shows Kin list with descriptions), Name (required), Description (optional)
+  - Creation shows "Webhook created" dialog with URL and masked token, warning "Save this token now - it will not be shown again" (good security)
+  - Webhook list shows: name, target Kin, trigger count, last triggered, enable/disable toggle
+  - Actions: View logs, Copy URL, Regenerate token, Edit, Delete
+  - Toggle works correctly with "Webhook updated" toast
+  - View logs shows clean empty state ("No triggers yet")
+  - Delete confirmation warns about external services receiving 404 errors (helpful)
+  - Delete works correctly with "Webhook deleted" toast
+
+#### Channels (Area 6 - partial)
+- **All clear:**
+  - Clean empty state with clear description
+  - "Add channel" form: Name, Kin (required), Platform dropdown, platform-specific fields
+  - Platform options: Telegram, Discord, Slack, WhatsApp, Signal, Matrix
+  - Telegram selected by default, shows Bot token field with password toggle and "How to get your bot token" link
+  - Token stored encrypted in vault (noted in UI)
+
+- **Note:** Both Contacts and Webhooks areas are very polished. CRUD flows work end-to-end, confirmation dialogs are present for destructive actions, toasts provide good feedback, empty states are clear. No bugs found in these areas.
+
+### Next run
+- Area 3: Conversations (send messages, chat UI, scroll behavior) - requires entering Kin page
+- Area 13: MCP Servers (add, configure, remove) - testable from Settings
+- Area 7: Memory (browse, search, delete) - testable from Settings

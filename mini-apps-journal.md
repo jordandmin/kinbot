@@ -807,3 +807,41 @@ Previous form template only did synchronous client-side submission (console.log)
 1. TypeScript type definitions (.d.ts) for SDK autocomplete
 2. Responsive breakpoint CSS utilities
 3. `useLocalStorage` hook (persistent state outside KinBot storage)
+
+## 2026-03-04 (run 21) — Responsive Breakpoint CSS Utilities + useLocalStorage Hook
+
+**What:** Two additions covering the next priorities from run 20.
+
+### 1. Responsive Breakpoint CSS Utilities (kinbot-sdk.css)
+Added Tailwind-style responsive utility classes with breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px).
+
+**Utility categories:**
+- **Display:** `.hidden`, `.block`, `.flex`, `.grid`, `.inline`, `.inline-block`, `.inline-flex` (+ sm/md/lg/xl variants)
+- **Flex direction:** `.flex-row`, `.flex-col`, `.flex-wrap`, `.flex-nowrap` (+ sm/md/lg variants)
+- **Grid columns:** `.grid-cols-{1,2,3,4,6,12}` (+ sm/md/lg/xl variants)
+- **Gap:** `.gap-{0,1,2,3,4,6,8}` (+ sm/md/lg variants)
+- **Padding:** `.p-{0,1,2,3,4,6,8}`, `.px-{0,2,4,6}`, `.py-{0,2,4,6}` (+ sm/md/lg variants)
+- **Text alignment:** `.text-{left,center,right}` (+ sm/md/lg variants)
+- **Width:** `.w-{full,auto,1/2,1/3,2/3,1/4,3/4}`, `.max-w-{sm,md,lg,xl,2xl,4xl,full}` (+ sm/md/lg variants)
+- **Justify/Align:** `.justify-{start,center,end,between}`, `.items-{start,center,end,stretch}`, `.self-{start,center,end}` (+ sm/md/lg variants)
+- **CSS variables:** `--breakpoint-sm/md/lg/xl` for JS access
+
+### 2. useLocalStorage Hook (kinbot-react.js)
+- `useLocalStorage(key, defaultValue)` → `[value, set, remove]`
+- Uses browser localStorage (NOT KinBot storage API) — for non-synced UI preferences
+- Auto-prefixes keys with `kb:` to avoid collisions
+- Syncs across tabs via `storage` event listener
+- Handles JSON serialization/deserialization and quota errors
+- TypeScript definitions added to `kinbot-react.d.ts`
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-sdk.css` — +280 lines (responsive utilities)
+- `src/server/mini-app-sdk/kinbot-react.js` — +47 lines (useLocalStorage)
+- `src/server/mini-app-sdk/kinbot-react.d.ts` — +12 lines (type def)
+
+**Tests:** 1692 pass, 0 fail. Build clean (pre-commit OOM'd as usual, CI verified).
+
+**Next priorities:**
+1. Update tool descriptions in `mini-app-tools.ts` to document responsive utilities + useLocalStorage
+2. Template showcasing responsive layout (mobile-first grid that adapts)
+3. Consider `useBreakpoint()` hook (returns current breakpoint name: 'sm'|'md'|'lg'|'xl')
