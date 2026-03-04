@@ -5,6 +5,7 @@ import {
   updateCron,
   deleteCron,
   listCrons,
+  triggerCronManually,
 } from '@/server/services/crons'
 import { fetchPreviousCronRuns } from '@/server/services/tasks'
 import { resolveKinId } from '@/server/services/kin-resolver'
@@ -205,6 +206,38 @@ export const getCronJournalTool: ToolRegistration = {
                 (r.updatedAt.getTime() - r.createdAt.getTime()) / 1000,
               ),
             })),
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * trigger_cron — manually trigger a cron for immediate execution.
+ * Does not affect the regular schedule.
+ * Available to main agents only.
+ */
+export const triggerCronTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Trigger an existing cron job for immediate execution. ' +
+        'The cron runs right now without affecting its regular schedule. ' +
+        'Useful when the user asks to "run X now" instead of waiting for the next scheduled time.',
+      inputSchema: z.object({
+        cron_id: z.string().describe('ID of the cron to trigger'),
+      }),
+      execute: async ({ cron_id }) => {
+        try {
+          const { taskId } = await triggerCronManually(cron_id)
+          return {
+            success: true,
+            cronId: cron_id,
+            taskId,
+            message: 'Cron triggered successfully. The task is now running.',
           }
         } catch (err) {
           return { error: err instanceof Error ? err.message : 'Unknown error' }

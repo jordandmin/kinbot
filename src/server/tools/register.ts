@@ -61,6 +61,7 @@ import {
   deleteCronTool,
   listCronsTool,
   getCronJournalTool,
+  triggerCronTool,
 } from '@/server/tools/cron-tools'
 import {
   registerToolTool,
@@ -211,6 +212,7 @@ export function registerAllTools(): void {
   toolRegistry.register('delete_cron', deleteCronTool)
   toolRegistry.register('list_crons', listCronsTool)
   toolRegistry.register('get_cron_journal', getCronJournalTool)
+  toolRegistry.register('trigger_cron', triggerCronTool)
   // Phase 19: Custom tools (main only)
   toolRegistry.register('register_tool', registerToolTool)
   toolRegistry.register('run_custom_tool', runCustomToolTool)

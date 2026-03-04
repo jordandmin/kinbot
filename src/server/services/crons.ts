@@ -265,6 +265,37 @@ function stopJob(cronId: string) {
   }
 }
 
+export async function triggerCronManually(cronId: string): Promise<{ taskId: string }> {
+  const cron = await db.select().from(crons).where(eq(crons.id, cronId)).get()
+  if (!cron) throw new Error('Cron not found')
+  if (cron.requiresApproval) throw new Error('Cron is pending approval and cannot be triggered')
+
+  // Update last triggered
+  await db
+    .update(crons)
+    .set({ lastTriggeredAt: new Date(), updatedAt: new Date() })
+    .where(eq(crons.id, cronId))
+
+  const { taskId } = await spawnTask({
+    parentKinId: cron.kinId,
+    description: cron.taskDescription,
+    mode: 'async',
+    spawnType: cron.targetKinId ? 'other' : 'self',
+    sourceKinId: cron.targetKinId ?? undefined,
+    model: cron.model ?? undefined,
+    cronId: cron.id,
+  })
+
+  sseManager.sendToKin(cron.kinId, {
+    type: 'cron:triggered',
+    kinId: cron.kinId,
+    data: { cronId: cron.id, kinId: cron.kinId, taskId },
+  })
+
+  log.info({ cronId: cron.id, cronName: cron.name, taskId }, 'Cron triggered manually')
+  return { taskId }
+}
+
 async function triggerCron(cronId: string) {
   const cron = await db.select().from(crons).where(eq(crons.id, cronId)).get()
   if (!cron || !cron.isActive || cron.requiresApproval) return
