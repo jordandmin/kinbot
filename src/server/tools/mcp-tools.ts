@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid'
 import { db } from '@/server/db/index'
 import { mcpServers, kinMcpServers } from '@/server/db/schema'
 import { disconnectServer } from '@/server/services/mcp'
+import { sseManager } from '@/server/sse/index'
 import { config } from '@/server/config'
 import { createLogger } from '@/server/logger'
 import type { ToolRegistration } from '@/server/tools/types'
@@ -62,6 +63,11 @@ export const addMcpServerTool: ToolRegistration = {
           })
 
           log.info({ serverId: id, name, kinId: ctx.kinId, status }, 'MCP server created by Kin')
+
+          sseManager.broadcast({
+            type: 'mcp-server:created',
+            data: { mcpServerId: id, name, status },
+          })
 
           // Persistent notification for pending approval
           if (status === 'pending_approval') {
@@ -127,6 +133,12 @@ export const updateMcpServerTool: ToolRegistration = {
           }
 
           log.info({ serverId: server_id, kinId: ctx.kinId, configChanged }, 'MCP server updated by Kin')
+
+          sseManager.broadcast({
+            type: 'mcp-server:updated',
+            data: { mcpServerId: server_id, name: name ?? existing.name },
+          })
+
           return { success: true, serverId: server_id }
         } catch (err) {
           return { error: err instanceof Error ? err.message : 'Unknown error' }
@@ -156,6 +168,12 @@ export const removeMcpServerTool: ToolRegistration = {
           await db.delete(mcpServers).where(eq(mcpServers.id, server_id))
 
           log.info({ serverId: server_id, name: existing.name, kinId: ctx.kinId }, 'MCP server removed by Kin')
+
+          sseManager.broadcast({
+            type: 'mcp-server:deleted',
+            data: { mcpServerId: server_id },
+          })
+
           return { success: true }
         } catch (err) {
           return { error: err instanceof Error ? err.message : 'Unknown error' }
