@@ -1337,3 +1337,32 @@ export function useLocalStorage(key, defaultValue) {
 
   return [value, set, remove]
 }
+
+// ─── useBreakpoint ──────────────────────────────────────────────────────────
+/**
+ * Returns the current responsive breakpoint name based on window width.
+ * Breakpoints: 'xs' (<640px), 'sm' (≥640px), 'md' (≥768px), 'lg' (≥1024px), 'xl' (≥1280px).
+ * Reactive — updates on window resize.
+ */
+export function useBreakpoint() {
+  const getBreakpoint = useCallback(() => {
+    const w = window.innerWidth
+    if (w >= 1280) return 'xl'
+    if (w >= 1024) return 'lg'
+    if (w >= 768) return 'md'
+    if (w >= 640) return 'sm'
+    return 'xs'
+  }, [])
+
+  const [bp, setBp] = useState(getBreakpoint)
+
+  useEffect(() => {
+    function onResize() {
+      setBp(getBreakpoint())
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [getBreakpoint])
+
+  return bp
+}

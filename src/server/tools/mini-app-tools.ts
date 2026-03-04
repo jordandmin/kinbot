@@ -74,6 +74,8 @@ export const createMiniAppTool: ToolRegistration = {
         '`useEventStream(eventName?, callback?)` → `{ messages, connected, clear }` (subscribe to SSE events from backend — auto-connects on mount, disconnects on unmount; with callback: no accumulation; without: messages accumulate as [{event, data, ts}]). ' +
         '`useInfiniteScroll(path, options?)` → `{ items, loading, loadingMore, error, hasMore, loadMore, reset, sentinelRef }` (infinite scroll / load-more pagination — fetches pages from backend or external API and merges results; options: source "api"|"http", pageSize, pageParam, limitParam, getItems, getHasMore, autoLoad, threshold; use sentinelRef with autoLoad for IntersectionObserver auto-trigger). ' +
         '`usePagination(path, options?)` → `{ items, loading, error, page, totalPages, setPage, next, prev, refetch }` (traditional page-based pagination — replaces items on each page change; options: source, pageSize, pageParam, limitParam, getItems, getTotal for computing totalPages). ' +
+        '`useLocalStorage(key, defaultValue)` → `[value, setValue, remove]` (persistent state using browser localStorage — NOT synced via KinBot storage; useful for UI preferences like collapsed panels, sort order, sidebar width; keys auto-prefixed with "kb:"; syncs across tabs; setValue accepts value or updater function like useState). ' +
+        '`useBreakpoint()` → `"xs"|"sm"|"md"|"lg"|"xl"` (reactive current breakpoint based on window width: xs <640px, sm ≥640px, md ≥768px, lg ≥1024px, xl ≥1280px — great for conditional rendering based on screen size). ' +
         '**@kinbot/react Exports (convenience re-exports from KinBot SDK):** ' +
         '`toast(message, type)` (type: "info"|"success"|"warning"|"error"), ' +
         '`confirm(message, options?)` → Promise<boolean> (options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +
@@ -143,7 +145,14 @@ export const createMiniAppTool: ToolRegistration = {
         'Components: .btn, .btn-primary, .btn-secondary, .btn-destructive, .btn-ghost, .btn-sm, .btn-lg, ' +
         '.card, .card-header, .card-title, .card-content, .input, .textarea, .badge, .table, .label, .separator, ' +
         '.select, .checkbox, .switch, .radio, .progress, .alert, .avatar, .kbd, .spinner. ' +
-        'Responsive breakpoints: sm: (≥640px), md: (≥768px), lg: (≥1024px). ' +
+        '**Responsive CSS utilities** (Tailwind-style, mobile-first): Breakpoints: sm (≥640px), md (≥768px), lg (≥1024px), xl (≥1280px). ' +
+        'Prefix any utility with `sm:`, `md:`, `lg:`, `xl:` for responsive variants. ' +
+        'Available: display (hidden/block/flex/grid/inline/inline-block/inline-flex), flex-direction (flex-row/flex-col/flex-wrap), ' +
+        'grid columns (grid-cols-1 to grid-cols-12), gap (gap-0 to gap-8), padding (p-/px-/py- 0 to 8), text alignment, ' +
+        'width (w-full/w-auto/w-1\\/2/w-1\\/3/w-2\\/3/w-1\\/4/w-3\\/4), max-width, justify/align/self. ' +
+        'Example: `className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"`. ' +
+        'CSS variables `--breakpoint-sm/md/lg/xl` available for JS access. ' +
+        'For JS-level breakpoint detection, use the `useBreakpoint()` hook. ' +
         'Theme (light/dark) and palette are automatically synced. ' +
         '**TypeScript Definitions:** Available at `/api/mini-apps/sdk/kinbot-sdk.d.ts`, `/api/mini-apps/sdk/kinbot-react.d.ts`, `/api/mini-apps/sdk/kinbot-components.d.ts` for full API type documentation. ' +
         'For additional files, use write_mini_app_file after creation. Relative paths resolve to the app\'s static directory. ' +

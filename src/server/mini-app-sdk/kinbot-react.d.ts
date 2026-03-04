@@ -342,3 +342,10 @@ export const download: KinBot['download'];
  * @returns [value, setValue, remove] tuple
  */
 export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void, () => void];
+
+/**
+ * Returns the current responsive breakpoint name based on window width.
+ * Reactive — updates on window resize.
+ * @returns 'xs' (<640px) | 'sm' (≥640px) | 'md' (≥768px) | 'lg' (≥1024px) | 'xl' (≥1280px)
+ */
+export function useBreakpoint(): 'xs' | 'sm' | 'md' | 'lg' | 'xl';
