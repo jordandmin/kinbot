@@ -60,11 +60,11 @@ export const httpRequestTool: ToolRegistration = {
           .describe('HTTP method'),
         url: z.string().url().describe('Target URL (must be http:// or https://)'),
         headers: z
-          .record(z.string())
+          .record(z.string(), z.string())
           .optional()
           .describe('Request headers as key-value pairs'),
         body: z
-          .union([z.string(), z.record(z.unknown())])
+          .union([z.string(), z.record(z.string(), z.unknown())])
           .optional()
           .describe('Request body. Objects are auto-serialized to JSON.'),
         timeout_seconds: z
