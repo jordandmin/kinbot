@@ -361,6 +361,12 @@ export function setContactNote(contactId: string, kinId: string, scope: NoteScop
       .set({ content, updatedAt: now })
       .where(eq(contactNotes.id, existing.id))
       .run()
+
+    sseManager.broadcast({
+      type: 'contact:updated',
+      data: { contactId },
+    })
+
     return { ...existing, content, updatedAt: now }
   }
 
@@ -374,6 +380,11 @@ export function setContactNote(contactId: string, kinId: string, scope: NoteScop
     createdAt: now,
     updatedAt: now,
   }).run()
+
+  sseManager.broadcast({
+    type: 'contact:updated',
+    data: { contactId },
+  })
 
   return { id, contactId, kinId, scope, content, createdAt: now, updatedAt: now }
 }
