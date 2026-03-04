@@ -341,12 +341,47 @@ const TEMPLATES: MiniAppTemplate[] = [
   {
     id: 'form',
     name: 'Form Builder',
-    description: 'A clean form with validation using the useForm hook and @kinbot/components (Card, Input, Select, Textarea, Checkbox, Switch, RadioGroup, DatePicker, Button, Alert, Divider, Stack).',
+    description: 'A contact form with client validation (useForm), async backend submission (useAsync), server-side validation, and submission history. Uses @kinbot/components (Card, Input, Select, Textarea, Checkbox, Switch, RadioGroup, DatePicker, Button, Alert, Divider, Stack, Badge, Table, Tabs, Spinner, EmptyState, Stat).',
     icon: '📝',
-    tags: ['form', 'input', 'data-entry', 'components', 'validation', 'useForm'],
+    tags: ['form', 'input', 'data-entry', 'components', 'validation', 'useForm', 'useAsync', 'backend'],
     suggestedSlug: 'form',
     files: {
       'app.json': REACT_APP_JSON,
+      '_server.js': `// Backend: stores submissions in memory, validates server-side, returns history
+const submissions = []
+
+export default {
+  async fetch(req) {
+    const url = new URL(req.url)
+
+    if (req.method === 'POST' && url.pathname === '/submit') {
+      const body = await req.json()
+      const errors = {}
+      if (!body.firstName?.trim()) errors.firstName = 'First name is required'
+      if (!body.lastName?.trim()) errors.lastName = 'Last name is required'
+      if (!body.email?.trim()) errors.email = 'Email is required'
+      else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(body.email)) errors.email = 'Invalid email format'
+      if (!body.category) errors.category = 'Category is required'
+      if (!body.agree) errors.agree = 'You must agree to the terms'
+      // Simulate server-side duplicate check
+      if (body.email && submissions.some(s => s.email === body.email)) {
+        errors.email = 'This email has already been submitted'
+      }
+      if (Object.keys(errors).length > 0) {
+        return Response.json({ ok: false, errors }, { status: 422 })
+      }
+      const record = { id: submissions.length + 1, ...body, submittedAt: new Date().toISOString() }
+      submissions.push(record)
+      return Response.json({ ok: true, record })
+    }
+
+    if (req.method === 'GET' && url.pathname === '/submissions') {
+      return Response.json({ items: [...submissions].reverse(), total: submissions.length })
+    }
+
+    return Response.json({ error: 'Not found' }, { status: 404 })
+  }
+}`,
       'index.html': `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -354,27 +389,58 @@ const TEMPLATES: MiniAppTemplate[] = [
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Form</title>
   <style>
-    body { padding: 1.5rem; max-width: 560px; margin: 0 auto; }
+    body { padding: 1.5rem; max-width: 640px; margin: 0 auto; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .server-error { font-size: 0.75rem; color: var(--color-destructive); margin-top: 0.25rem; }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/jsx">
-    import { useState } from 'react'
+    import { useState, useCallback } from 'react'
     import { createRoot } from 'react-dom/client'
-    import { useKinBot, useForm, toast } from '@kinbot/react'
-    import { Card, Input, Select, Textarea, Checkbox, Switch, RadioGroup, DatePicker, Button, Alert, Divider, Stack, Spinner } from '@kinbot/components'
+    import { useKinBot, useForm, useAsync, useApi, toast } from '@kinbot/react'
+    import { Card, Input, Select, Textarea, Checkbox, Switch, RadioGroup, DatePicker, Button, Alert, Divider, Stack, Badge, Table, Tabs, Spinner, EmptyState, Stat } from '@kinbot/components'
 
     function App() {
       const { ready } = useKinBot()
       if (!ready) return <Stack align="center" style={{ padding: '2rem' }}><Spinner /></Stack>
-      return <RegistrationForm />
+      return <FormApp />
     }
 
-    function RegistrationForm() {
-      const [submitted, setSubmitted] = useState(false)
+    function FormApp() {
+      const [tab, setTab] = useState('form')
+      const history = useApi('/submissions')
+
+      return (
+        <div className="animate-fade-in-up">
+          <Tabs value={tab} onChange={setTab} tabs={[
+            { value: 'form', label: 'New Submission' },
+            { value: 'history', label: <span>History {history.data?.total > 0 && <Badge size="sm" variant="secondary">{history.data.total}</Badge>}</span> },
+          ]} />
+          <div style={{ marginTop: '1rem' }}>
+            {tab === 'form' ? (
+              <RegistrationForm onSuccess={() => { history.refetch(); setTab('history') }} />
+            ) : (
+              <SubmissionHistory data={history.data} loading={history.loading} />
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    function RegistrationForm({ onSuccess }) {
+      const [serverErrors, setServerErrors] = useState({})
+
+      const { run: submitToServer, loading: submitting, error: submitError } = useAsync(async (values) => {
+        const res = await KinBot.api('/submit', { method: 'POST', body: values })
+        if (!res.ok) {
+          setServerErrors(res.errors || {})
+          throw new Error('Server validation failed')
+        }
+        return res.record
+      })
 
       const form = useForm(
         { firstName: '', lastName: '', email: '', category: '', birthDate: '', priority: 'normal', message: '', newsletter: false, agree: false },
@@ -391,86 +457,129 @@ const TEMPLATES: MiniAppTemplate[] = [
         }
       )
 
-      const onSubmit = form.handleSubmit((values) => {
-        toast('Form submitted successfully!', 'success')
-        console.log('Form data:', values)
-        setSubmitted(true)
-        form.reset()
+      const onSubmit = form.handleSubmit(async (values) => {
+        setServerErrors({})
+        try {
+          const record = await submitToServer(values)
+          toast('Submission #' + record.id + ' saved!', 'success')
+          form.reset()
+          onSuccess?.()
+        } catch {
+          toast('Please fix the errors below', 'error')
+        }
       })
 
+      const fieldError = (name) => (form.touched[name] && form.errors[name]) || serverErrors[name]
+
       return (
-        <div className="animate-fade-in-up">
-          <Card>
-            <Card.Header>
-              <Card.Title className="gradient-primary-text">Registration Form</Card.Title>
-              <Card.Description>Demonstrating the useForm hook with validation, error states, and various input types.</Card.Description>
-            </Card.Header>
-            <Card.Content>
-              {submitted && (
-                <Alert variant="success" title="Submitted!" dismissible onDismiss={() => setSubmitted(false)} style={{ marginBottom: '1rem' }}>
-                  Your registration was received.
-                </Alert>
-              )}
-              <form onSubmit={onSubmit}>
-                <Stack gap="1rem">
-                  <div className="form-row">
-                    <Input label="First Name *" placeholder="John" value={form.values.firstName}
-                      onChange={form.handleChange('firstName')} onBlur={form.handleBlur('firstName')}
-                      error={form.touched.firstName && form.errors.firstName} />
-                    <Input label="Last Name *" placeholder="Doe" value={form.values.lastName}
-                      onChange={form.handleChange('lastName')} onBlur={form.handleBlur('lastName')}
-                      error={form.touched.lastName && form.errors.lastName} />
-                  </div>
+        <Card>
+          <Card.Header>
+            <Card.Title className="gradient-primary-text">Contact Form</Card.Title>
+            <Card.Description>Demonstrates useForm (client validation) + useAsync (async submission) with a backend that validates server-side.</Card.Description>
+          </Card.Header>
+          <Card.Content>
+            {submitError && !Object.keys(serverErrors).length && (
+              <Alert variant="error" title="Submission failed" style={{ marginBottom: '1rem' }}>
+                An unexpected error occurred. Please try again.
+              </Alert>
+            )}
+            <form onSubmit={onSubmit}>
+              <Stack gap="1rem">
+                <div className="form-row">
+                  <Input label="First Name *" placeholder="John" value={form.values.firstName}
+                    onChange={form.handleChange('firstName')} onBlur={form.handleBlur('firstName')}
+                    error={fieldError('firstName')} disabled={submitting} />
+                  <Input label="Last Name *" placeholder="Doe" value={form.values.lastName}
+                    onChange={form.handleChange('lastName')} onBlur={form.handleBlur('lastName')}
+                    error={fieldError('lastName')} disabled={submitting} />
+                </div>
+                <div>
                   <Input label="Email *" type="email" placeholder="john@example.com" value={form.values.email}
-                    onChange={form.handleChange('email')} onBlur={form.handleBlur('email')}
-                    error={form.touched.email && form.errors.email} />
-                  <div className="form-row">
-                    <Select label="Category *" value={form.values.category}
-                      onChange={form.handleChange('category')} onBlur={form.handleBlur('category')}
-                      error={form.touched.category && form.errors.category}
-                      options={[
-                        { value: '', label: 'Select...' },
-                        { value: 'general', label: 'General Inquiry' },
-                        { value: 'support', label: 'Support' },
-                        { value: 'feedback', label: 'Feedback' },
-                        { value: 'partnership', label: 'Partnership' },
-                      ]}
-                    />
-                    <DatePicker label="Birth Date" value={form.values.birthDate}
-                      onChange={form.handleChange('birthDate')} />
-                  </div>
-                  <RadioGroup label="Priority" value={form.values.priority}
-                    onChange={form.handleChange('priority')} direction="row"
+                    onChange={(v) => { form.handleChange('email')(v); setServerErrors(e => { const { email, ...rest } = e; return rest }) }}
+                    onBlur={form.handleBlur('email')}
+                    error={fieldError('email')} disabled={submitting} />
+                  {serverErrors.email && !form.errors.email && <div className="server-error">⚠ Server: {serverErrors.email}</div>}
+                </div>
+                <div className="form-row">
+                  <Select label="Category *" value={form.values.category}
+                    onChange={form.handleChange('category')} onBlur={form.handleBlur('category')}
+                    error={fieldError('category')} disabled={submitting}
                     options={[
-                      { value: 'low', label: 'Low' },
-                      { value: 'normal', label: 'Normal' },
-                      { value: 'high', label: 'High' },
+                      { value: '', label: 'Select...' },
+                      { value: 'general', label: 'General Inquiry' },
+                      { value: 'support', label: 'Support' },
+                      { value: 'feedback', label: 'Feedback' },
+                      { value: 'partnership', label: 'Partnership' },
                     ]}
                   />
-                  <Textarea label="Message" placeholder="Tell us more..." value={form.values.message}
-                    onChange={form.handleChange('message')} onBlur={form.handleBlur('message')}
-                    error={form.touched.message && form.errors.message} />
-                  <Switch label="Subscribe to newsletter" checked={form.values.newsletter}
-                    onChange={form.handleChange('newsletter')} />
-                  <Checkbox label="I agree to the terms and conditions *" checked={form.values.agree}
-                    onChange={form.handleChange('agree')}
-                    error={form.touched.agree && form.errors.agree} />
-                  <Divider />
-                  <Stack direction="row" justify="space-between" align="center">
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)' }}>
-                      {form.isDirty ? '● Unsaved changes' : ''}
-                    </span>
-                    <Stack direction="row" gap="0.75rem">
-                      <Button type="button" variant="ghost" onClick={() => { form.reset(); setSubmitted(false) }}
-                        disabled={!form.isDirty}>Reset</Button>
-                      <Button type="submit" variant="shine" disabled={!form.isValid}>Submit</Button>
-                    </Stack>
+                  <DatePicker label="Birth Date" value={form.values.birthDate}
+                    onChange={form.handleChange('birthDate')} disabled={submitting} />
+                </div>
+                <RadioGroup label="Priority" value={form.values.priority}
+                  onChange={form.handleChange('priority')} direction="row" disabled={submitting}
+                  options={[
+                    { value: 'low', label: 'Low' },
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'high', label: 'High' },
+                  ]}
+                />
+                <Textarea label="Message" placeholder="Tell us more..." value={form.values.message}
+                  onChange={form.handleChange('message')} onBlur={form.handleBlur('message')}
+                  error={fieldError('message')} disabled={submitting} />
+                <Switch label="Subscribe to newsletter" checked={form.values.newsletter}
+                  onChange={form.handleChange('newsletter')} disabled={submitting} />
+                <Checkbox label="I agree to the terms and conditions *" checked={form.values.agree}
+                  onChange={form.handleChange('agree')}
+                  error={fieldError('agree')} disabled={submitting} />
+                <Divider />
+                <Stack direction="row" justify="space-between" align="center">
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-muted-foreground)' }}>
+                    {form.isDirty ? '● Unsaved changes' : ''}
+                  </span>
+                  <Stack direction="row" gap="0.75rem">
+                    <Button type="button" variant="ghost" onClick={() => { form.reset(); setServerErrors({}) }}
+                      disabled={!form.isDirty || submitting}>Reset</Button>
+                    <Button type="submit" variant="shine" disabled={!form.isValid || submitting}
+                      loading={submitting}>
+                      {submitting ? 'Submitting...' : 'Submit'}
+                    </Button>
                   </Stack>
                 </Stack>
-              </form>
-            </Card.Content>
-          </Card>
-        </div>
+              </Stack>
+            </form>
+          </Card.Content>
+        </Card>
+      )
+    }
+
+    function SubmissionHistory({ data, loading }) {
+      if (loading) return <Stack align="center" style={{ padding: '2rem' }}><Spinner /></Stack>
+      if (!data?.items?.length) return <EmptyState icon="📭" title="No submissions yet" description="Submit the form to see entries here." />
+
+      const priorityVariant = { low: 'secondary', normal: 'default', high: 'destructive' }
+
+      return (
+        <Card>
+          <Card.Header>
+            <Stack direction="row" justify="space-between" align="center">
+              <Card.Title>Submissions</Card.Title>
+              <Stat value={data.total} label="total" size="sm" />
+            </Stack>
+          </Card.Header>
+          <Card.Content>
+            <Table
+              columns={[
+                { key: 'id', header: '#', width: '3rem' },
+                { key: 'name', header: 'Name', render: (r) => r.firstName + ' ' + r.lastName },
+                { key: 'email', header: 'Email' },
+                { key: 'category', header: 'Category', render: (r) => <Badge size="sm">{r.category}</Badge> },
+                { key: 'priority', header: 'Priority', render: (r) => <Badge size="sm" variant={priorityVariant[r.priority] || 'default'}>{r.priority}</Badge> },
+                { key: 'submittedAt', header: 'Date', render: (r) => new Date(r.submittedAt).toLocaleString() },
+              ]}
+              data={data.items}
+            />
+          </Card.Content>
+        </Card>
       )
     }
 
