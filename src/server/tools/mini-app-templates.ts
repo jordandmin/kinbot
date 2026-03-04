@@ -1957,6 +1957,259 @@ export default {
 </html>`,
     },
   },
+  {
+    id: 'data-browser',
+    name: 'Data Browser',
+    description: 'Demonstrates both pagination patterns: traditional page-based navigation (usePagination) and infinite scroll (useInfiniteScroll). Includes a backend that generates 200 mock records with filtering and sorting.',
+    icon: '📋',
+    tags: ['pagination', 'data', 'table', 'infinite-scroll', 'hooks', 'usePagination', 'useInfiniteScroll', 'backend'],
+    suggestedSlug: 'data-browser',
+    files: {
+      'app.json': REACT_APP_JSON,
+      '_server.js': `// Backend: paginated data with filtering and sorting
+const CATEGORIES = ['Engineering', 'Design', 'Marketing', 'Sales', 'Support']
+const STATUSES = ['active', 'inactive', 'pending']
+const FIRST = ['Alice', 'Bob', 'Claire', 'David', 'Emma', 'Fabien', 'Grace', 'Hugo', 'Iris', 'Jules', 'Kate', 'Leo', 'Mia', 'Noah', 'Olivia', 'Paul', 'Quinn', 'Rose', 'Sam', 'Tina']
+const LAST = ['Martin', 'Chen', 'Dubois', 'Kim', 'Wilson', 'Roux', 'Lee', 'Bernard', 'Moreau', 'Singh']
+
+// Generate 200 stable mock records
+const ALL_RECORDS = Array.from({ length: 200 }, (_, i) => ({
+  id: i + 1,
+  name: FIRST[i % FIRST.length] + ' ' + LAST[i % LAST.length],
+  email: (FIRST[i % FIRST.length] + '.' + LAST[i % LAST.length] + '@example.com').toLowerCase(),
+  department: CATEGORIES[i % CATEGORIES.length],
+  status: STATUSES[i % STATUSES.length],
+  score: 40 + ((i * 7 + 13) % 61),
+  joined: new Date(2023, i % 12, (i % 28) + 1).toISOString().slice(0, 10),
+}))
+
+function filterRecords(records, query, department, status) {
+  return records.filter(r => {
+    if (query && !r.name.toLowerCase().includes(query.toLowerCase()) && !r.email.toLowerCase().includes(query.toLowerCase())) return false
+    if (department && r.department !== department) return false
+    if (status && r.status !== status) return false
+    return true
+  })
+}
+
+function sortRecords(records, sortBy, sortDir) {
+  if (!sortBy) return records
+  return [...records].sort((a, b) => {
+    const va = a[sortBy], vb = b[sortBy]
+    const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb))
+    return sortDir === 'desc' ? -cmp : cmp
+  })
+}
+
+export default {
+  'GET /records': async (req) => {
+    const url = new URL(req.url)
+    const page = parseInt(url.searchParams.get('page') || '1')
+    const limit = parseInt(url.searchParams.get('limit') || '20')
+    const query = url.searchParams.get('q') || ''
+    const department = url.searchParams.get('department') || ''
+    const status = url.searchParams.get('status') || ''
+    const sortBy = url.searchParams.get('sort') || ''
+    const sortDir = url.searchParams.get('dir') || 'asc'
+
+    let filtered = filterRecords(ALL_RECORDS, query, department, status)
+    filtered = sortRecords(filtered, sortBy, sortDir)
+    const total = filtered.length
+    const items = filtered.slice((page - 1) * limit, page * limit)
+
+    return Response.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) })
+  },
+
+  'GET /departments': async () => {
+    return Response.json({ departments: CATEGORIES })
+  },
+}`,
+      'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Browser</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import React, { useState, useCallback } from 'react'
+    import { createRoot } from 'react-dom/client'
+    import { useApi, usePagination, useInfiniteScroll, useTheme } from '@kinbot/react'
+    import { Card, Stack, Tabs, Badge, Input, Select, Button, ButtonGroup, Table, Spinner, EmptyState, Stat, Divider, Pagination, Tag, Alert } from '@kinbot/components'
+
+    // ─── Filters (shared between both views) ────────────────────────────────
+    function Filters({ query, setQuery, department, setDepartment, status, setStatus, departments }) {
+      return React.createElement(Stack, { direction: 'row', gap: '0.5rem', align: 'end', wrap: true },
+        React.createElement(Input, {
+          label: 'Search',
+          placeholder: 'Name or email...',
+          value: query,
+          onChange: e => setQuery(e.target.value),
+          style: { minWidth: '200px', flex: 1 },
+        }),
+        React.createElement(Select, {
+          label: 'Department',
+          value: department,
+          onChange: e => setDepartment(e.target.value),
+          options: [{ value: '', label: 'All' }, ...departments.map(d => ({ value: d, label: d }))],
+        }),
+        React.createElement(Select, {
+          label: 'Status',
+          value: status,
+          onChange: e => setStatus(e.target.value),
+          options: [
+            { value: '', label: 'All' },
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+            { value: 'pending', label: 'Pending' },
+          ],
+        }),
+      )
+    }
+
+    // ─── Status badge helper ─────────────────────────────────────────────────
+    function statusVariant(s) {
+      return s === 'active' ? 'success' : s === 'pending' ? 'warning' : 'default'
+    }
+
+    // ─── Columns definition ──────────────────────────────────────────────────
+    const COLUMNS = [
+      { key: 'id', label: '#', width: '50px' },
+      { key: 'name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'department', label: 'Dept' },
+      { key: 'status', label: 'Status', render: (v) => React.createElement(Badge, { variant: statusVariant(v) }, v) },
+      { key: 'score', label: 'Score', render: (v) => React.createElement('span', { style: { fontWeight: 600, color: v >= 80 ? 'var(--color-success)' : v >= 60 ? 'var(--color-warning)' : 'var(--color-error)' } }, v) },
+      { key: 'joined', label: 'Joined' },
+    ]
+
+    // ─── Tab 1: Table with usePagination ─────────────────────────────────────
+    function PaginatedView({ query, department, status }) {
+      const qp = new URLSearchParams()
+      if (query) qp.set('q', query)
+      if (department) qp.set('department', department)
+      if (status) qp.set('status', status)
+      const qs = qp.toString()
+      const path = '/records' + (qs ? '?' + qs : '')
+
+      const { items, loading, error, page, totalPages, setPage, refetch } = usePagination(path, {
+        pageSize: 15,
+        getItems: res => res.items,
+        getTotal: res => res.total,
+      })
+
+      if (error) return React.createElement(Alert, { variant: 'error', title: 'Error' }, error)
+      if (loading && items.length === 0) return React.createElement(Stack, { align: 'center', style: { padding: '3rem' } }, React.createElement(Spinner, { size: 32 }))
+      if (!loading && items.length === 0) return React.createElement(EmptyState, { icon: '🔍', title: 'No results', description: 'Try adjusting your filters' })
+
+      return React.createElement(Stack, { gap: '1rem' },
+        React.createElement('div', { style: { overflowX: 'auto' } },
+          React.createElement(Table, { columns: COLUMNS, data: items }),
+        ),
+        React.createElement(Stack, { direction: 'row', align: 'center', justify: 'space-between' },
+          React.createElement('span', { style: { fontSize: '0.85rem', color: 'var(--color-text-secondary)' } },
+            'Page ' + page + ' of ' + (totalPages || '?')
+          ),
+          React.createElement(Pagination, { page, totalPages: totalPages || 1, onChange: setPage }),
+        ),
+      )
+    }
+
+    // ─── Tab 2: Cards with useInfiniteScroll ─────────────────────────────────
+    function InfiniteView({ query, department, status }) {
+      const qp = new URLSearchParams()
+      if (query) qp.set('q', query)
+      if (department) qp.set('department', department)
+      if (status) qp.set('status', status)
+      const qs = qp.toString()
+      const path = '/records' + (qs ? '?' + qs : '')
+
+      const { items, loading, loadingMore, error, hasMore, loadMore, reset, sentinelRef } = useInfiniteScroll(path, {
+        pageSize: 20,
+        getItems: res => res.items,
+        getHasMore: (res, extracted) => res.page < res.totalPages,
+        autoLoad: true,
+        threshold: 300,
+      })
+
+      if (error) return React.createElement(Alert, { variant: 'error', title: 'Error' }, error)
+      if (loading && items.length === 0) return React.createElement(Stack, { align: 'center', style: { padding: '3rem' } }, React.createElement(Spinner, { size: 32 }))
+      if (!loading && items.length === 0) return React.createElement(EmptyState, { icon: '🔍', title: 'No results', description: 'Try adjusting your filters' })
+
+      return React.createElement(Stack, { gap: '0.75rem' },
+        React.createElement('div', { style: { fontSize: '0.85rem', color: 'var(--color-text-secondary)' } },
+          items.length + ' records loaded' + (hasMore ? ' (scroll for more)' : ' (all loaded)')
+        ),
+        React.createElement('div', {
+          style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' },
+        },
+          ...items.map(r => React.createElement(Card, { key: r.id, hover: true },
+            React.createElement(Card.Header, null,
+              React.createElement(Card.Title, { as: 'h4' }, r.name),
+              React.createElement(Card.Description, null, r.email),
+            ),
+            React.createElement(Card.Content, null,
+              React.createElement(Stack, { direction: 'row', gap: '0.5rem', wrap: true },
+                React.createElement(Tag, null, r.department),
+                React.createElement(Badge, { variant: statusVariant(r.status) }, r.status),
+                React.createElement(Badge, { variant: 'outline' }, 'Score: ' + r.score),
+              ),
+            ),
+            React.createElement(Card.Footer, null,
+              React.createElement('span', { style: { fontSize: '0.8rem', color: 'var(--color-text-tertiary)' } }, 'Joined ' + r.joined),
+            ),
+          )),
+        ),
+        React.createElement('div', { ref: sentinelRef, style: { padding: '1rem', textAlign: 'center' } },
+          loadingMore ? React.createElement(Spinner, { size: 20 }) : null,
+          !hasMore && items.length > 0 ? React.createElement('span', { style: { fontSize: '0.85rem', color: 'var(--color-text-tertiary)' } }, 'All records loaded') : null,
+        ),
+      )
+    }
+
+    // ─── App ─────────────────────────────────────────────────────────────────
+    function App() {
+      const [tab, setTab] = useState('table')
+      const [query, setQuery] = useState('')
+      const [department, setDepartment] = useState('')
+      const [status, setStatus] = useState('')
+      const { data: deptData } = useApi('/departments')
+      const departments = deptData?.departments || []
+
+      const tabs = [
+        { id: 'table', label: 'Table View', icon: '📊' },
+        { id: 'cards', label: 'Card View', icon: '🃏' },
+      ]
+
+      return React.createElement(Stack, { gap: '1rem', style: { padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' } },
+        React.createElement(Stack, { direction: 'row', align: 'center', justify: 'space-between', wrap: true },
+          React.createElement('h2', { style: { margin: 0 } }, '📋 Data Browser'),
+          React.createElement(Stack, { direction: 'row', gap: '0.5rem' },
+            React.createElement(Stat, { value: '200', label: 'Total Records' }),
+          ),
+        ),
+        React.createElement(Alert, { variant: 'info' },
+          tab === 'table'
+            ? 'Table view uses usePagination: items are replaced on each page change. Navigate with the pagination controls below.'
+            : 'Card view uses useInfiniteScroll: new items append as you scroll down. Try scrolling to the bottom!',
+        ),
+        React.createElement(Filters, { query, setQuery, department, setDepartment, status, setStatus, departments }),
+        React.createElement(Divider, null),
+        React.createElement(Tabs, { tabs, active: tab, onChange: setTab }),
+        tab === 'table'
+          ? React.createElement(PaginatedView, { query, department, status })
+          : React.createElement(InfiniteView, { query, department, status }),
+      )
+    }
+
+    createRoot(document.getElementById('root')).render(React.createElement(App))
+  </script>
+</body>
+</html>`,
+    },
+  },
 ]
 
 export function getTemplateById(id: string): MiniAppTemplate | undefined {
