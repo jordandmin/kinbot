@@ -1,5 +1,32 @@
 # KinBot Cron Manager Journal
 
+## 2026-03-04 07:00 UTC
+### Audit summary
+- **Active KinBot crons:** 16 (+ 4 non-KinBot: PinchChat, bot-chronicles, reddit-token-refresh, woodbrass-reply-check)
+- **Healthy:** kinbot-memory-research, kinbot-community, kinbot-add-tests, kinbot-github-maintenance, kinbot-i18n-audit, kinbot-sse-reactivity, kinbot-ci-watchdog, kinbot-release, kinbot-mini-apps, kinbot-e2e-tests, kinbot-improve-cli, kinbot-consistency-guardian, kinbot-improve-site, kinbot-promo, PinchChat, bot-chronicles, reddit-token-refresh, woodbrass-reply-check
+- **Issues found:**
+  1. **kinbot-qa-explorer** — 1 timeout at 600s. Browser-based QA testing is inherently slow (successful runs take 500-570s). The 600s timeout is too tight.
+  2. **kinbot-qol-features** — disabled, still has 3 consecutive timeouts at 300s. This cron has a ~50% timeout rate historically. Overlaps heavily with kinbot-improve-ux (also disabled). Both should stay disabled.
+
+### Actions taken
+1. **Increased kinbot-qa-explorer timeout**: 600s → 900s. Browser automation runs consistently take 500-570s when they succeed, leaving almost no margin at 600s. 900s gives comfortable headroom.
+
+### Observations
+- **woodbrass-reply-check**: Fixed last audit (model dot vs hyphen). Now running perfectly on Gemini Flash, completing in ~600ms. Very efficient.
+- **kinbot-qol-features + kinbot-improve-ux**: Both disabled. These overlap significantly (both add frontend QoL features). If re-enabled, merge into one with 600s timeout. Propose keeping just one.
+- **Git activity is healthy**: 30 recent commits from multiple crons (mini-apps, tests, memory, i18n, e2e, installer, community issues). No git conflicts observed.
+- **kinbot-qa-explorer doing great work**: When it runs successfully, it finds real bugs and creates proper GitHub issues (#22-#31 in recent runs). Worth keeping despite occasional timeouts.
+- **Cost observation**: 16 active KinBot crons on Opus 4.6. Many run every 2h. That's ~100+ Opus runs/day. The productive ones (community, tests, mini-apps, sse-reactivity) produce real commits. The watchdog/release crons are lightweight (8-140s). Good cost/value ratio overall.
+
+### Proposals (for Nicolas to decide)
+1. **Merge kinbot-qol-features + kinbot-improve-ux**: If re-enabling either, merge them into a single cron. They have near-identical scope.
+2. **Consider Sonnet 4.6 for lightweight crons**: kinbot-ci-watchdog (8s runs, just checks CI), kinbot-release (checks if there's anything to release, often "nothing to do"), and kinbot-github-maintenance could potentially use a cheaper model. These are mostly git/gh commands with simple logic.
+
+### Next audit focus
+- Monitor kinbot-qa-explorer after timeout increase (should eliminate the timeout issue)
+- Check if any crons are producing duplicate/conflicting commits
+- Review kinbot-promo effectiveness (4x/day on Opus is expensive for social media posting)
+
 ## 2026-03-02 07:00 UTC
 ### Audit summary
 - **Active KinBot crons:** 17 (+ 3 non-KinBot: PinchChat, bot-chronicles, reddit-token-refresh, woodbrass-reply-check)

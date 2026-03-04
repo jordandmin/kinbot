@@ -699,3 +699,41 @@ useKinBot, useStorage, useTheme, useKin, useUser, useForm, useMediaQuery, useDeb
 3. Consider TypeScript type definitions (.d.ts) for SDK autocomplete
 4. Responsive breakpoint CSS utilities
 5. `useLocalStorage` hook (persistent state outside KinBot storage, for non-synced prefs)
+
+## 2026-03-04 (run 19) — Data Browser Template
+
+**What:** Added new `data-browser` template demonstrating both pagination hooks side-by-side.
+
+### Template Structure
+- **2 tabs** switching between pagination patterns:
+  1. **Table View** (`usePagination`) — traditional paginated table with page navigation, 15 items/page
+  2. **Card View** (`useInfiniteScroll`) — auto-loading card grid with sentinel-based IntersectionObserver, 20 items/page
+- **Shared filters** across both views: text search (name/email), department dropdown, status dropdown
+- **Backend** generates 200 stable mock employee records with filtering, sorting, and pagination
+
+### Backend (`_server.js`)
+- `GET /records` — paginated, filterable, sortable (params: page, limit, q, department, status, sort, dir). Returns `{ items, total, page, limit, totalPages }`
+- `GET /departments` — list of department names for filter dropdown
+
+### Components Used
+Card, Stack, Tabs, Badge, Input, Select, Button, Table, Spinner, EmptyState, Stat, Divider, Pagination, Tag, Alert
+
+### Hooks Used
+useApi (department list), usePagination (table view), useInfiniteScroll (card view), useTheme
+
+### Why
+No existing template demonstrated the pagination hooks (useInfiniteScroll, usePagination) added in run 18. This template shows both patterns in context with shared filtering, making it a practical reference for Kins building data-heavy apps.
+
+**Files changed:**
+- `src/server/tools/mini-app-templates.ts` — +253 lines (new template + backend)
+
+**Tests:** 1612 pass, 0 fail. Build clean (pre-commit OOM'd as usual, CI verified).
+
+**Template inventory (11 total):**
+dashboard, todo-list, form, data-viewer, kanban, chat, settings, wizard, api-explorer, component-showcase, **data-browser**
+
+**Next priorities:**
+1. Form template update to showcase useForm + useAsync together
+2. TypeScript type definitions (.d.ts) for SDK autocomplete
+3. Responsive breakpoint CSS utilities
+4. `useLocalStorage` hook (persistent state outside KinBot storage)
