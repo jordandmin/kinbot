@@ -72,6 +72,8 @@ export const createMiniAppTool: ToolRegistration = {
         '`useApi(path, options?)` → `{ data, loading, error, refetch }` (fetch from mini-app backend _server.js via KinBot.api — auto-fetches on mount; path like "/items"; options: {method, body, enabled}), ' +
         '`useAsync(asyncFn)` → `{ run, data, loading, error, reset }` (wrap any async function with loading/error states — call run(...args) manually; great for mutations like POST/DELETE), ' +
         '`useEventStream(eventName?, callback?)` → `{ messages, connected, clear }` (subscribe to SSE events from backend — auto-connects on mount, disconnects on unmount; with callback: no accumulation; without: messages accumulate as [{event, data, ts}]). ' +
+        '`useInfiniteScroll(path, options?)` → `{ items, loading, loadingMore, error, hasMore, loadMore, reset, sentinelRef }` (infinite scroll / load-more pagination — fetches pages from backend or external API and merges results; options: source "api"|"http", pageSize, pageParam, limitParam, getItems, getHasMore, autoLoad, threshold; use sentinelRef with autoLoad for IntersectionObserver auto-trigger). ' +
+        '`usePagination(path, options?)` → `{ items, loading, error, page, totalPages, setPage, next, prev, refetch }` (traditional page-based pagination — replaces items on each page change; options: source, pageSize, pageParam, limitParam, getItems, getTotal for computing totalPages). ' +
         '**@kinbot/react Exports (convenience re-exports from KinBot SDK):** ' +
         '`toast(message, type)` (type: "info"|"success"|"warning"|"error"), ' +
         '`confirm(message, options?)` → Promise<boolean> (options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +

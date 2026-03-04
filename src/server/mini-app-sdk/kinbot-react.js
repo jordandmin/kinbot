@@ -986,6 +986,283 @@ export function useEventStream(eventName, callback) {
   return { messages, connected, clear }
 }
 
+// ─── useInfiniteScroll ──────────────────────────────────────────────────────
+
+/**
+ * Hook for infinite-scroll / "load more" pagination patterns. Fetches pages from
+ * a backend API (`KinBot.api()`) or external URL (`KinBot.http()`) and merges results.
+ *
+ * @param {string|null} path - API path (e.g. "/items") or full URL. Pass null to disable.
+ * @param {object} [options] - Configuration options
+ * @param {string} [options.source='api'] - 'api' for KinBot.api(), 'http' for KinBot.http()
+ * @param {number} [options.pageSize=20] - Items per page
+ * @param {string} [options.pageParam='page'] - Query param name for page number
+ * @param {string} [options.limitParam='limit'] - Query param name for page size
+ * @param {Function} [options.getItems] - Extract items array from response (default: response itself or response.items/data)
+ * @param {Function} [options.getHasMore] - Determine if more pages exist (default: items.length >= pageSize)
+ * @param {boolean} [options.autoLoad=false] - Auto-load next page when scrolling near bottom
+ * @param {number} [options.threshold=200] - Pixels from bottom to trigger auto-load
+ * @returns {{ items: Array, loading: boolean, loadingMore: boolean, error: string|null, hasMore: boolean, loadMore: () => void, reset: () => void, sentinelRef: React.RefObject }}
+ *
+ * @example
+ *   // Basic usage with backend API
+ *   const { items, loading, hasMore, loadMore, loadingMore } = useInfiniteScroll('/items', {
+ *     pageSize: 10
+ *   })
+ *   return (
+ *     <div>
+ *       {items.map(item => <div key={item.id}>{item.name}</div>)}
+ *       {loadingMore && <Spinner />}
+ *       {hasMore && <Button onClick={loadMore}>Load more</Button>}
+ *     </div>
+ *   )
+ *
+ * @example
+ *   // Auto-load with sentinel element
+ *   const { items, loading, loadingMore, sentinelRef } = useInfiniteScroll('/feed', {
+ *     autoLoad: true, threshold: 300
+ *   })
+ *   return (
+ *     <div>
+ *       {items.map(item => <Card key={item.id}>{item.text}</Card>)}
+ *       <div ref={sentinelRef}>{loadingMore && <Spinner />}</div>
+ *     </div>
+ *   )
+ *
+ * @example
+ *   // External API with custom response parsing
+ *   const { items, hasMore, loadMore } = useInfiniteScroll('https://api.example.com/posts', {
+ *     source: 'http',
+ *     getItems: (res) => res.results,
+ *     getHasMore: (res, items) => res.next !== null
+ *   })
+ */
+export function useInfiniteScroll(path, options = {}) {
+  const {
+    source = 'api',
+    pageSize = 20,
+    pageParam = 'page',
+    limitParam = 'limit',
+    getItems: getItemsFn,
+    getHasMore: getHasMoreFn,
+    autoLoad = false,
+    threshold = 200
+  } = options
+
+  const [items, setItems] = useState([])
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(!!path)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState(null)
+  const [hasMore, setHasMore] = useState(true)
+  const sentinelRef = useRef(null)
+  const fetchingRef = useRef(false)
+
+  const extractItems = useCallback((response) => {
+    if (getItemsFn) return getItemsFn(response)
+    if (Array.isArray(response)) return response
+    if (response?.items) return response.items
+    if (response?.data) return response.data
+    if (response?.results) return response.results
+    return []
+  }, [getItemsFn])
+
+  const checkHasMore = useCallback((response, extracted) => {
+    if (getHasMoreFn) return getHasMoreFn(response, extracted)
+    return extracted.length >= pageSize
+  }, [getHasMoreFn, pageSize])
+
+  const fetchPage = useCallback(async (pageNum, isReset) => {
+    if (!path || fetchingRef.current) return
+    fetchingRef.current = true
+
+    const isFirst = pageNum === 1
+    if (isFirst) setLoading(true)
+    else setLoadingMore(true)
+    setError(null)
+
+    try {
+      const separator = path.includes('?') ? '&' : '?'
+      const url = `${path}${separator}${pageParam}=${pageNum}&${limitParam}=${pageSize}`
+
+      let response
+      if (source === 'http') {
+        response = await window.KinBot.http.json(url)
+      } else {
+        response = await window.KinBot.api.get(url)
+      }
+
+      const extracted = extractItems(response)
+      const more = checkHasMore(response, extracted)
+
+      setItems(prev => isFirst || isReset ? extracted : [...prev, ...extracted])
+      setHasMore(more)
+    } catch (err) {
+      setError(err?.message || String(err))
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+      fetchingRef.current = false
+    }
+  }, [path, source, pageSize, pageParam, limitParam, extractItems, checkHasMore])
+
+  // Initial fetch
+  useEffect(() => {
+    if (!path) {
+      setLoading(false)
+      return
+    }
+    setItems([])
+    setPage(1)
+    setHasMore(true)
+    fetchPage(1, true)
+  }, [path]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadMore = useCallback(() => {
+    if (!hasMore || fetchingRef.current) return
+    const next = page + 1
+    setPage(next)
+    fetchPage(next, false)
+  }, [hasMore, page, fetchPage])
+
+  const reset = useCallback(() => {
+    setItems([])
+    setPage(1)
+    setHasMore(true)
+    setError(null)
+    fetchPage(1, true)
+  }, [fetchPage])
+
+  // IntersectionObserver for auto-load
+  useEffect(() => {
+    if (!autoLoad || !sentinelRef.current) return
+    const el = sentinelRef.current
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !fetchingRef.current) {
+          loadMore()
+        }
+      },
+      { rootMargin: `0px 0px ${threshold}px 0px` }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [autoLoad, threshold, hasMore, loadMore])
+
+  return { items, loading, loadingMore, error, hasMore, loadMore, reset, sentinelRef }
+}
+
+// ─── usePagination ──────────────────────────────────────────────────────────
+
+/**
+ * Hook for traditional page-based pagination (page 1, 2, 3... with navigation).
+ * Unlike useInfiniteScroll, this replaces items on each page change.
+ *
+ * @param {string|null} path - API path or full URL. Pass null to disable.
+ * @param {object} [options] - Configuration options
+ * @param {string} [options.source='api'] - 'api' for KinBot.api(), 'http' for KinBot.http()
+ * @param {number} [options.pageSize=20] - Items per page
+ * @param {string} [options.pageParam='page'] - Query param name for page number
+ * @param {string} [options.limitParam='limit'] - Query param name for page size
+ * @param {Function} [options.getItems] - Extract items from response
+ * @param {Function} [options.getTotal] - Extract total count from response (enables page count)
+ * @returns {{ items: Array, loading: boolean, error: string|null, page: number, totalPages: number|null, setPage: (n: number) => void, next: () => void, prev: () => void, refetch: () => void }}
+ *
+ * @example
+ *   const { items, loading, page, totalPages, next, prev } = usePagination('/items', {
+ *     pageSize: 10,
+ *     getTotal: (res) => res.total
+ *   })
+ *   return (
+ *     <div>
+ *       <List items={items.map(i => ({ content: i.name }))} />
+ *       <div>Page {page}{totalPages ? ` / ${totalPages}` : ''}</div>
+ *       <Button onClick={prev} disabled={page <= 1}>Prev</Button>
+ *       <Button onClick={next} disabled={totalPages && page >= totalPages}>Next</Button>
+ *     </div>
+ *   )
+ */
+export function usePagination(path, options = {}) {
+  const {
+    source = 'api',
+    pageSize = 20,
+    pageParam = 'page',
+    limitParam = 'limit',
+    getItems: getItemsFn,
+    getTotal: getTotalFn
+  } = options
+
+  const [items, setItems] = useState([])
+  const [page, setPageState] = useState(1)
+  const [loading, setLoading] = useState(!!path)
+  const [error, setError] = useState(null)
+  const [totalPages, setTotalPages] = useState(null)
+  const [tick, setTick] = useState(0)
+
+  const extractItems = useCallback((response) => {
+    if (getItemsFn) return getItemsFn(response)
+    if (Array.isArray(response)) return response
+    if (response?.items) return response.items
+    if (response?.data) return response.data
+    if (response?.results) return response.results
+    return []
+  }, [getItemsFn])
+
+  useEffect(() => {
+    if (!path) {
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+
+    const doFetch = async () => {
+      try {
+        const separator = path.includes('?') ? '&' : '?'
+        const url = `${path}${separator}${pageParam}=${page}&${limitParam}=${pageSize}`
+
+        let response
+        if (source === 'http') {
+          response = await window.KinBot.http.json(url)
+        } else {
+          response = await window.KinBot.api.get(url)
+        }
+
+        if (cancelled) return
+        setItems(extractItems(response))
+
+        if (getTotalFn) {
+          const total = getTotalFn(response)
+          if (typeof total === 'number') {
+            setTotalPages(Math.ceil(total / pageSize))
+          }
+        }
+      } catch (err) {
+        if (!cancelled) setError(err?.message || String(err))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    doFetch()
+    return () => { cancelled = true }
+  }, [path, page, pageSize, pageParam, limitParam, source, extractItems, getTotalFn, tick])
+
+  const setPage = useCallback((n) => {
+    if (n < 1) return
+    if (totalPages && n > totalPages) return
+    setPageState(n)
+  }, [totalPages])
+
+  const next = useCallback(() => setPage(page + 1), [page, setPage])
+  const prev = useCallback(() => setPage(page - 1), [page, setPage])
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+
+  return { items, loading, error, page, totalPages, setPage, next, prev, refetch }
+}
+
 // ─── Convenience re-exports from vanilla SDK ─────────────────────────────────
 
 export const toast = window.KinBot.toast
