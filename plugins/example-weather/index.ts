@@ -15,7 +15,7 @@ export default function(ctx: any) {
         create: () =>
           tool({
             description: 'Get current weather for a location',
-            parameters: z.object({
+            inputSchema: z.object({
               location: z.string().describe('City name (e.g. "Paris" or "London,UK")'),
             }),
             execute: async ({ location }: { location: string }) => {
