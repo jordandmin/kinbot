@@ -113,6 +113,18 @@
           - "src/client/**/cron*"
           - "src/client/**/*Cron*"
 
+"plugins":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/server/services/plugin*"
+          - "src/server/routes/plugin*"
+          - "src/client/**/plugin*"
+          - "src/client/**/*Plugin*"
+
+"store":
+  - changed-files:
+      - any-glob-to-any-file: "store/**"
+
 "security":
   - changed-files:
       - any-glob-to-any-file:
