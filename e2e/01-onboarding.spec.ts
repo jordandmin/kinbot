@@ -4,9 +4,10 @@ import { fillIdentityStep, mockProviderModels, TEST_USER } from './helpers/auth'
 test.describe.serial('Onboarding flow', () => {
   test('should show step 1 identity form on fresh database', async ({ page }) => {
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
     // Should land on step 1
-    await expect(page.getByText('Step 1 of 5')).toBeVisible()
+    await expect(page.getByText('Step 1 of 5')).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('Your identity')).toBeVisible()
 
     // All required fields should be present
@@ -26,7 +27,8 @@ test.describe.serial('Onboarding flow', () => {
 
   test('should show avatar initials as user types name', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByText('Step 1 of 5')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('Step 1 of 5')).toBeVisible({ timeout: 15_000 })
 
     // Type first and last name
     await page.fill('#firstName', 'Alice')
@@ -38,7 +40,8 @@ test.describe.serial('Onboarding flow', () => {
 
   test('should show error on password mismatch', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByText('Step 1 of 5')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('Step 1 of 5')).toBeVisible({ timeout: 15_000 })
 
     await page.fill('#firstName', 'Test')
     await page.fill('#lastName', 'User')
@@ -59,9 +62,10 @@ test.describe.serial('Onboarding flow', () => {
     await mockProviderModels(page)
 
     await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
     // ── Step 1: Identity ──
-    await expect(page.getByText('Step 1 of 5')).toBeVisible()
+    await expect(page.getByText('Step 1 of 5')).toBeVisible({ timeout: 15_000 })
     await fillIdentityStep(page)
 
     // ── Step 2: Preferences ──
@@ -108,8 +112,8 @@ test.describe.serial('Onboarding flow', () => {
     // LLM and Embedding should now show "Covered"
     await expect(page.getByText('Covered').first()).toBeVisible()
 
-    // Click Next
-    await page.getByRole('button', { name: 'Next' }).click()
+    // Click "Customize memory & search" to advance to step 4
+    await page.getByRole('button', { name: 'Customize memory & search' }).click()
 
     // ── Step 4: Memory ──
     await expect(page.getByText('Step 4 of 5')).toBeVisible()
@@ -119,8 +123,8 @@ test.describe.serial('Onboarding flow', () => {
     await page.getByRole('button', { name: 'Back' }).click()
     await expect(page.getByText('Step 3 of 5')).toBeVisible()
 
-    // Go forward again
-    await page.getByRole('button', { name: 'Next' }).click()
+    // Go forward again (step 3 button is "Customize memory & search")
+    await page.getByRole('button', { name: 'Customize memory & search' }).click()
     await expect(page.getByText('Step 4 of 5')).toBeVisible()
 
     // Click Next

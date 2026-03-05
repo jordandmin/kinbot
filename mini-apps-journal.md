@@ -1132,3 +1132,32 @@ Card, Stack, Button, Input, Combobox, TagInput, DataGrid, Modal, Badge, Stat, Di
 1. Add a multi-page template demonstrating routing (e.g., dashboard with settings/about pages)
 2. Consider `ColorPicker` or `RichTextEditor` components
 3. Update component-showcase template to include routing demo section
+
+## 2026-03-05 (run 30) — ColorPicker Component
+
+**What:** Added a full-featured `ColorPicker` React component to the component library.
+
+### Component: `ColorPicker`
+- **Saturation/brightness area** — 2D drag surface with white→transparent and black→transparent overlays
+- **Hue slider** — rainbow gradient bar with thumb indicator
+- **Hex input** — monospace text field with validation, syncs both ways
+- **Color preview** — swatch showing current selected color
+- **Swatches prop** — optional array of preset colors as clickable buttons
+- **Props:** value (hex), onChange(hex), label, error, swatches[], disabled, size (sm|md|lg)
+- Pointer drag with document-level move/up for smooth interaction
+- HSV↔Hex conversion utilities (internal)
+- Full theme integration (CSS variables for borders, radius, etc.)
+- Accessible: ARIA labels, keyboard-navigable hex input
+
+### Files changed
+- `src/server/mini-app-sdk/kinbot-components.js` — +180 lines (ColorPicker + color utils)
+- `src/server/mini-app-sdk/kinbot-components.d.ts` — +13 lines (TypeScript definitions)
+- `src/server/tools/mini-app-tools.ts` — added ColorPicker to import list + documentation
+- `src/server/tools/mini-app-templates.ts` — added ColorPicker demo to component-showcase (48 components), updated Forms category
+
+**Tests:** 1875 pass, 1 fail (pre-existing). Build clean.
+
+**Next priorities:**
+1. Add `RichTextEditor` component (or simpler `MarkdownEditor`)
+2. Update component-showcase to include routing demo section
+3. Consider `Calendar` or `DateRangePicker` components
