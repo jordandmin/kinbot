@@ -733,3 +733,24 @@ export interface MarkdownEditorProps {
   style?: React.CSSProperties;
 }
 export function MarkdownEditor(props: MarkdownEditorProps): React.ReactElement;
+
+// ── Calendar ────────────────────────────────────────────────────────────────
+export interface CalendarEvent {
+  date: string;
+  color?: string;
+  label?: string;
+}
+export interface CalendarProps {
+  value?: string | string[] | { start: string; end: string };
+  onChange?: (value: string | string[] | { start: string; end: string }) => void;
+  mode?: 'single' | 'multiple' | 'range';
+  events?: CalendarEvent[];
+  min?: string;
+  max?: string;
+  weekStart?: 0 | 1;
+  showOutsideDays?: boolean;
+  locale?: string;
+  className?: string;
+  style?: React.CSSProperties;
+}
+export function Calendar(props: CalendarProps): React.ReactElement;

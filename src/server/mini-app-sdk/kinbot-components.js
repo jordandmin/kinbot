@@ -4587,3 +4587,308 @@ export function MarkdownEditor({
     }, error),
   )
 }
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+
+/**
+ * Visual month calendar with single date, multi-date, or range selection.
+ * Supports event markers and min/max date constraints.
+ *
+ * @param {{ value?: string|string[]|{start:string,end:string}, onChange?: (value: string|string[]|{start:string,end:string}) => void, mode?: 'single'|'multiple'|'range', events?: Array<{date:string, color?:string, label?:string}>, min?: string, max?: string, weekStart?: 0|1, showOutsideDays?: boolean, locale?: string, className?: string, style?: object }} props
+ */
+export function Calendar({
+  value,
+  onChange,
+  mode = 'single',
+  events = [],
+  min,
+  max,
+  weekStart = 1,
+  showOutsideDays = true,
+  locale = 'en',
+  className,
+  style,
+  ...rest
+}) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = _calFmt(today)
+
+  // Parse initial month from value
+  const initialDate = (() => {
+    if (mode === 'range' && value && typeof value === 'object' && !Array.isArray(value) && value.start) return _calParse(value.start) || today
+    if (Array.isArray(value) && value.length) return _calParse(value[0]) || today
+    if (typeof value === 'string' && value) return _calParse(value) || today
+    return today
+  })()
+
+  const [viewYear, setViewYear] = React.useState(initialDate.getFullYear())
+  const [viewMonth, setViewMonth] = React.useState(initialDate.getMonth())
+  const [hoverDate, setHoverDate] = React.useState(null)
+
+  // Range selection partial state
+  const [rangeStart, setRangeStart] = React.useState(
+    mode === 'range' && value && value.start ? value.start : null
+  )
+  const [rangeEnd, setRangeEnd] = React.useState(
+    mode === 'range' && value && value.end ? value.end : null
+  )
+
+  // Sync range state if value prop changes externally
+  React.useEffect(() => {
+    if (mode === 'range' && value && typeof value === 'object' && !Array.isArray(value)) {
+      if (value.start) setRangeStart(value.start)
+      if (value.end) setRangeEnd(value.end)
+    }
+  }, [mode, value && value.start, value && value.end])
+
+  function isDisabled(dateStr) {
+    if (min && dateStr < min) return true
+    if (max && dateStr > max) return true
+    return false
+  }
+
+  // Build event lookup
+  const eventMap = React.useMemo(() => {
+    const m = {}
+    for (const e of events) {
+      if (!m[e.date]) m[e.date] = []
+      m[e.date].push(e)
+    }
+    return m
+  }, [events])
+
+  // Selected set for single/multiple
+  const selectedSet = React.useMemo(() => {
+    const s = new Set()
+    if (mode === 'single' && typeof value === 'string') s.add(value)
+    if (mode === 'multiple' && Array.isArray(value)) value.forEach(v => s.add(v))
+    return s
+  }, [mode, value])
+
+  function isInRange(dateStr) {
+    if (mode !== 'range') return false
+    const s = rangeStart
+    const e = rangeEnd || hoverDate
+    if (!s || !e) return false
+    const lo = s < e ? s : e
+    const hi = s < e ? e : s
+    return dateStr >= lo && dateStr <= hi
+  }
+
+  function isRangeEnd(dateStr) {
+    if (mode !== 'range') return false
+    return dateStr === rangeStart || dateStr === (rangeEnd || hoverDate)
+  }
+
+  function handleClick(dateStr) {
+    if (isDisabled(dateStr)) return
+    if (mode === 'single') {
+      onChange && onChange(dateStr)
+    } else if (mode === 'multiple') {
+      const arr = Array.isArray(value) ? [...value] : []
+      const idx = arr.indexOf(dateStr)
+      if (idx >= 0) arr.splice(idx, 1)
+      else arr.push(dateStr)
+      arr.sort()
+      onChange && onChange(arr)
+    } else if (mode === 'range') {
+      if (!rangeStart || rangeEnd) {
+        setRangeStart(dateStr)
+        setRangeEnd(null)
+      } else {
+        const s = rangeStart < dateStr ? rangeStart : dateStr
+        const e = rangeStart < dateStr ? dateStr : rangeStart
+        setRangeStart(s)
+        setRangeEnd(e)
+        onChange && onChange({ start: s, end: e })
+      }
+    }
+  }
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
+    else setViewMonth(m => m + 1)
+  }
+
+  // Build grid cells
+  const firstOfMonth = new Date(viewYear, viewMonth, 1)
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  let startDay = firstOfMonth.getDay() - weekStart
+  if (startDay < 0) startDay += 7
+
+  const cells = []
+  // Previous month fill
+  if (showOutsideDays && startDay > 0) {
+    const prevDays = new Date(viewYear, viewMonth, 0).getDate()
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = new Date(viewYear, viewMonth - 1, prevDays - i)
+      cells.push({ date: d, dateStr: _calFmt(d), outside: true })
+    }
+  } else {
+    for (let i = 0; i < startDay; i++) cells.push(null)
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(viewYear, viewMonth, d)
+    cells.push({ date, dateStr: _calFmt(date), outside: false })
+  }
+  const remaining = 7 - (cells.length % 7)
+  if (remaining < 7) {
+    if (showOutsideDays) {
+      for (let d = 1; d <= remaining; d++) {
+        const date = new Date(viewYear, viewMonth + 1, d)
+        cells.push({ date, dateStr: _calFmt(date), outside: true })
+      }
+    } else {
+      for (let i = 0; i < remaining; i++) cells.push(null)
+    }
+  }
+
+  // Week day headers
+  const dayNames = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(2024, 0, weekStart + i) // Mon=1 start
+    dayNames.push(d.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 2))
+  }
+
+  const monthLabel = firstOfMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+  const sz = 36
+
+  return React.createElement('div', {
+    className: cn('kb-calendar', className),
+    style: {
+      display: 'inline-flex', flexDirection: 'column',
+      border: '1px solid var(--color-border, rgba(128,128,128,0.2))',
+      borderRadius: 'var(--radius-md, 0.5rem)',
+      padding: '0.75rem',
+      background: 'var(--color-surface, transparent)',
+      userSelect: 'none',
+      ...style,
+    },
+    ...rest,
+  },
+    // Header
+    React.createElement('div', {
+      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' },
+    },
+      React.createElement('button', {
+        onClick: prevMonth, 'aria-label': 'Previous month',
+        style: _calNavBtn(),
+      }, '‹'),
+      React.createElement('span', {
+        style: { fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-primary, inherit)', textTransform: 'capitalize' },
+      }, monthLabel),
+      React.createElement('button', {
+        onClick: nextMonth, 'aria-label': 'Next month',
+        style: _calNavBtn(),
+      }, '›'),
+    ),
+    // Day headers
+    React.createElement('div', {
+      style: { display: 'grid', gridTemplateColumns: `repeat(7, ${sz}px)`, gap: '2px', marginBottom: '2px' },
+    },
+      ...dayNames.map((name, i) =>
+        React.createElement('div', {
+          key: i,
+          style: {
+            width: sz, height: sz * 0.75, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-tertiary, #9ca3af)', textTransform: 'uppercase',
+          },
+        }, name),
+      ),
+    ),
+    // Day cells
+    React.createElement('div', {
+      style: { display: 'grid', gridTemplateColumns: `repeat(7, ${sz}px)`, gap: '2px' },
+    },
+      ...cells.map((cell, i) => {
+        if (!cell) return React.createElement('div', { key: `e${i}`, style: { width: sz, height: sz } })
+        const { dateStr, outside } = cell
+        const disabled = isDisabled(dateStr)
+        const isToday = dateStr === todayStr
+        const isSelected = selectedSet.has(dateStr)
+        const inRange = isInRange(dateStr)
+        const atRangeEnd = isRangeEnd(dateStr)
+        const hasEvents = eventMap[dateStr]
+
+        let bg = 'transparent'
+        let color = outside ? 'var(--color-text-tertiary, #9ca3af)' : 'var(--color-text-primary, inherit)'
+        let fontWeight = isToday ? 700 : 400
+        let border = 'none'
+
+        if (disabled) {
+          color = 'var(--color-text-tertiary, #9ca3af)'
+        } else if (isSelected || atRangeEnd) {
+          bg = 'var(--color-primary, #6366f1)'
+          color = 'white'
+          fontWeight = 600
+        } else if (inRange) {
+          bg = 'var(--color-primary-alpha, rgba(99,102,241,0.15))'
+        }
+
+        if (isToday && !isSelected && !atRangeEnd) {
+          border = '2px solid var(--color-primary, #6366f1)'
+        }
+
+        return React.createElement('button', {
+          key: dateStr,
+          onClick: () => handleClick(dateStr),
+          onMouseEnter: () => mode === 'range' && rangeStart && !rangeEnd && setHoverDate(dateStr),
+          'aria-label': dateStr,
+          'aria-selected': isSelected || atRangeEnd || undefined,
+          'aria-disabled': disabled || undefined,
+          disabled,
+          title: hasEvents ? hasEvents.map(e => e.label || e.date).join(', ') : undefined,
+          style: {
+            width: sz, height: sz,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.8rem', fontWeight,
+            background: bg, color, border,
+            borderRadius: inRange && !atRangeEnd ? '0' : 'var(--radius-sm, 0.25rem)',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.4 : outside ? 0.5 : 1,
+            transition: 'background 0.1s, color 0.1s',
+            outline: 'none', position: 'relative', padding: 0,
+          },
+        },
+          cell.date.getDate(),
+          hasEvents && React.createElement('div', {
+            style: { position: 'absolute', bottom: 2, display: 'flex', gap: 2 },
+          },
+            ...hasEvents.slice(0, 3).map((ev, j) =>
+              React.createElement('div', {
+                key: j,
+                style: { width: 4, height: 4, borderRadius: '50%', background: ev.color || 'var(--color-primary, #6366f1)' },
+              }),
+            ),
+          ),
+        )
+      }),
+    ),
+  )
+}
+
+function _calParse(s) {
+  if (!s) return null
+  const [y, m, d] = s.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(y, m - 1, d)
+}
+
+function _calFmt(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function _calNavBtn() {
+  return {
+    background: 'none', border: '1px solid var(--color-border, rgba(128,128,128,0.2))',
+    borderRadius: 'var(--radius-sm, 0.25rem)',
+    width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', fontSize: '1.1rem', color: 'var(--color-text-primary, inherit)',
+    transition: 'background 0.1s',
+  }
+}

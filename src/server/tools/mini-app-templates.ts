@@ -1773,7 +1773,7 @@ export default {
       BarChart, LineChart, PieChart, SparkLine,
       Stepper, StepperContent,
       FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput,
-      Combobox, TagInput, ColorPicker, MarkdownEditor
+      Combobox, TagInput, ColorPicker, MarkdownEditor, Calendar
     } from '@kinbot/components'
 
     const CATEGORIES = [
@@ -1784,7 +1784,7 @@ export default {
       { id: 'nav', label: 'Navigation', items: ['Tabs','Breadcrumbs','Pagination','DropdownMenu','Stepper'] },
       { id: 'overlays', label: 'Overlays', items: ['Modal','Drawer','Popover'] },
       { id: 'charts', label: 'Charts', items: ['BarChart','LineChart','PieChart','SparkLine'] },
-      { id: 'extra', label: 'Extra', items: ['FileUpload','CodeBlock','Timeline','AvatarGroup','NumberInput'] },
+      { id: 'extra', label: 'Extra', items: ['FileUpload','CodeBlock','Timeline','AvatarGroup','NumberInput','Calendar'] },
     ]
 
     // ─── Demo sections ───
@@ -2084,6 +2084,20 @@ export default {
           <div className="demo-label">NumberInput</div>
           <NumberInput label="Quantity" value={num} onChange={setNum} min={0} max={100} step={1} />
         </div>
+        <div className="demo-box">
+          <div className="demo-label">Calendar (single)</div>
+          <Calendar value="2026-03-15" onChange={d => KinBot.toast('Selected: ' + d)}
+            events={[
+              { date: '2026-03-05', color: 'var(--color-primary)', label: 'Today' },
+              { date: '2026-03-10', color: 'var(--color-success)', label: 'Meeting' },
+              { date: '2026-03-20', color: 'var(--color-warning)', label: 'Deadline' },
+            ]} />
+        </div>
+        <div className="demo-box">
+          <div className="demo-label">Calendar (range)</div>
+          <Calendar mode="range" value={{ start: '2026-03-10', end: '2026-03-18' }}
+            onChange={r => KinBot.toast('Range: ' + r.start + ' → ' + r.end)} />
+        </div>
       </>
     }
 
@@ -2095,7 +2109,7 @@ export default {
       nav: { title: 'Navigation', desc: 'Tabs, breadcrumbs, pagination, dropdown menus, stepper', render: NavDemo },
       overlays: { title: 'Overlays', desc: 'Modal, Drawer, Popover', render: OverlaysDemo },
       charts: { title: 'Charts', desc: 'Bar, Line, Pie, SparkLine', render: ChartsDemo },
-      extra: { title: 'Extra', desc: 'FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput', render: ExtraDemo },
+      extra: { title: 'Extra', desc: 'FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput, Calendar', render: ExtraDemo },
     }
 
     function App() {
