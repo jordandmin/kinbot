@@ -616,3 +616,47 @@ export interface NumberInputProps extends BaseProps {
   size?: 'sm' | 'md' | 'lg';
 }
 export function NumberInput(props: NumberInputProps): React.ReactElement;
+
+// ─── Combobox ─────────────────────────────────────────────────────────────────
+
+interface ComboboxOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+  icon?: string;
+  description?: string;
+}
+
+interface ComboboxProps {
+  options: ComboboxOption[];
+  value?: string;
+  onChange?: (value: string, option: ComboboxOption | null) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  label?: string;
+  error?: string;
+  disabled?: boolean;
+  clearable?: boolean;
+  emptyText?: string;
+  maxHeight?: string;
+  renderOption?: (option: ComboboxOption, isActive: boolean) => React.ReactNode;
+}
+export function Combobox(props: ComboboxProps): React.ReactElement;
+
+// ─── TagInput ─────────────────────────────────────────────────────────────────
+
+interface TagInputProps {
+  value?: string[];
+  onChange?: (tags: string[]) => void;
+  suggestions?: string[];
+  placeholder?: string;
+  label?: string;
+  error?: string;
+  disabled?: boolean;
+  maxTags?: number;
+  allowDuplicates?: boolean;
+  validate?: (tag: string) => string | null;
+  variant?: 'default' | 'primary';
+  size?: 'sm' | 'md';
+}
+export function TagInput(props: TagInputProps): React.ReactElement;

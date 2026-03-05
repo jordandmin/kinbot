@@ -6,7 +6,7 @@
  * All components use CSS variables from kinbot-sdk.css for automatic theme support.
  *
  * Usage in mini-apps:
- *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu, DataGrid, Panel, RadioGroup, Slider, DatePicker, Stepper, StepperContent, FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput } from '@kinbot/components'
+ *   import { Card, Button, Input, Badge, Alert, Tabs, Modal, Spinner, Accordion, DropdownMenu, DataGrid, Panel, RadioGroup, Slider, DatePicker, Stepper, StepperContent, FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput, Combobox, TagInput } from '@kinbot/components'
  */
 
 import React, { useState, useEffect, useRef, useCallback, useId, createContext, useContext } from 'react'
@@ -3290,5 +3290,670 @@ export function NumberInput({
       style: { fontSize: '0.75rem', color: 'var(--color-destructive)' },
       role: 'alert',
     }, error),
+  )
+}
+
+// ─── Combobox ─────────────────────────────────────────────────────────────────
+
+/**
+ * Searchable select dropdown with filtering, keyboard navigation, and optional custom rendering.
+ *
+ * @param {{
+ *   options: Array<{ value: string, label: string, disabled?: boolean, icon?: string, description?: string }>,
+ *   value?: string,
+ *   onChange?: (value: string, option: object) => void,
+ *   placeholder?: string,
+ *   searchPlaceholder?: string,
+ *   label?: string,
+ *   error?: string,
+ *   disabled?: boolean,
+ *   clearable?: boolean,
+ *   emptyText?: string,
+ *   maxHeight?: string,
+ *   renderOption?: (option: object, isActive: boolean) => ReactNode,
+ *   className?: string,
+ *   style?: object,
+ * }} props
+ *
+ * @example
+ *   <Combobox
+ *     label="Country"
+ *     options={[{ value: 'fr', label: 'France' }, { value: 'us', label: 'United States' }]}
+ *     value={country}
+ *     onChange={setCountry}
+ *     placeholder="Select a country..."
+ *   />
+ */
+export function Combobox({
+  options = [],
+  value,
+  onChange,
+  placeholder = 'Select...',
+  searchPlaceholder = 'Search...',
+  label,
+  error,
+  disabled = false,
+  clearable = false,
+  emptyText = 'No results found',
+  maxHeight = '240px',
+  renderOption,
+  className,
+  style,
+  ...rest
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const containerRef = useRef(null)
+  const inputRef = useRef(null)
+  const listRef = useRef(null)
+  const id = useId()
+
+  const selectedOption = options.find(o => o.value === value)
+
+  const filtered = query
+    ? options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options
+
+  // Close on outside click / Escape
+  useEffect(() => {
+    if (!open) return
+    function onClickOut(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    function onEsc(e) {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', onClickOut)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onClickOut)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [open])
+
+  // Reset active index on filter change
+  useEffect(() => {
+    setActiveIndex(filtered.length > 0 ? 0 : -1)
+  }, [query, filtered.length])
+
+  // Focus search input when opening
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 0)
+    }
+  }, [open])
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (!open || activeIndex < 0 || !listRef.current) return
+    const items = listRef.current.children
+    if (items[activeIndex]) {
+      items[activeIndex].scrollIntoView({ block: 'nearest' })
+    }
+  }, [activeIndex, open])
+
+  function handleSelect(option) {
+    if (option.disabled) return
+    onChange?.(option.value, option)
+    setOpen(false)
+    setQuery('')
+  }
+
+  function handleKeyDown(e) {
+    if (!open) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        setOpen(true)
+      }
+      return
+    }
+
+    const enabledItems = filtered.filter(o => !o.disabled)
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setActiveIndex(i => {
+          let next = i + 1
+          while (next < filtered.length && filtered[next]?.disabled) next++
+          return next < filtered.length ? next : i
+        })
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setActiveIndex(i => {
+          let next = i - 1
+          while (next >= 0 && filtered[next]?.disabled) next--
+          return next >= 0 ? next : i
+        })
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (activeIndex >= 0 && filtered[activeIndex] && !filtered[activeIndex].disabled) {
+          handleSelect(filtered[activeIndex])
+        }
+        break
+      case 'Home':
+        e.preventDefault()
+        setActiveIndex(0)
+        break
+      case 'End':
+        e.preventDefault()
+        setActiveIndex(filtered.length - 1)
+        break
+    }
+  }
+
+  function handleClear(e) {
+    e.stopPropagation()
+    onChange?.('', null)
+    setQuery('')
+  }
+
+  const triggerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    width: '100%',
+    minHeight: '38px',
+    padding: '0.5rem 0.75rem',
+    border: `1px solid ${error ? 'var(--color-destructive)' : open ? 'var(--color-ring, var(--color-primary))' : 'var(--color-border)'}`,
+    borderRadius: 'var(--radius-md)',
+    backgroundColor: 'var(--color-background)',
+    color: 'var(--color-foreground)',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    fontSize: '0.875rem',
+    textAlign: 'left',
+    outline: 'none',
+    opacity: disabled ? 0.5 : 1,
+    transition: 'border-color 0.15s',
+  }
+
+  const dropdownStyle = {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: '4px',
+    zIndex: 50,
+    backgroundColor: 'var(--color-popover, var(--color-card))',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-lg)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    animation: 'fade-in 0.15s ease',
+    overflow: 'hidden',
+  }
+
+  const optionStyle = (isActive, isDisabled) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    width: '100%',
+    padding: '0.5rem 0.75rem',
+    background: isActive ? 'var(--color-muted)' : 'transparent',
+    border: 'none',
+    color: isDisabled ? 'var(--color-muted-foreground)' : 'var(--color-foreground)',
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+    fontSize: '0.875rem',
+    textAlign: 'left',
+    opacity: isDisabled ? 0.5 : 1,
+    transition: 'background 0.1s',
+  })
+
+  return React.createElement('div', {
+    className: cn('kb-combobox', className),
+    style: mergeStyles({ display: 'flex', flexDirection: 'column', gap: '0.375rem' }, style),
+    ...rest,
+  },
+    label && React.createElement('label', {
+      htmlFor: `combobox-${id}`,
+      style: { fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-foreground)' },
+    }, label),
+    React.createElement('div', {
+      ref: containerRef,
+      style: { position: 'relative' },
+    },
+      // Trigger button
+      React.createElement('button', {
+        id: `combobox-${id}`,
+        type: 'button',
+        role: 'combobox',
+        'aria-expanded': open,
+        'aria-haspopup': 'listbox',
+        'aria-controls': `combobox-list-${id}`,
+        disabled,
+        onClick: () => !disabled && setOpen(o => !o),
+        onKeyDown: handleKeyDown,
+        style: triggerStyle,
+      },
+        selectedOption?.icon && React.createElement('span', { style: { flexShrink: 0 } }, selectedOption.icon),
+        React.createElement('span', {
+          style: { flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selectedOption ? 'inherit' : 'var(--color-muted-foreground)' },
+        }, selectedOption ? selectedOption.label : placeholder),
+        clearable && value && React.createElement('span', {
+          onClick: handleClear,
+          role: 'button',
+          'aria-label': 'Clear selection',
+          style: { cursor: 'pointer', color: 'var(--color-muted-foreground)', fontSize: '1rem', lineHeight: 1, padding: '0 2px' },
+        }, '\u00d7'),
+        React.createElement('span', {
+          style: {
+            flexShrink: 0,
+            fontSize: '0.6rem',
+            color: 'var(--color-muted-foreground)',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s',
+          },
+        }, '▼'),
+      ),
+      // Dropdown
+      open && React.createElement('div', { style: dropdownStyle },
+        // Search input
+        React.createElement('div', {
+          style: { padding: '0.5rem', borderBottom: '1px solid var(--color-border)' },
+        },
+          React.createElement('input', {
+            ref: inputRef,
+            type: 'text',
+            value: query,
+            onChange: e => setQuery(e.target.value),
+            onKeyDown: handleKeyDown,
+            placeholder: searchPlaceholder,
+            className: 'input',
+            style: { fontSize: '0.8125rem' },
+            role: 'searchbox',
+            'aria-label': 'Search options',
+            'aria-autocomplete': 'list',
+            'aria-controls': `combobox-list-${id}`,
+          }),
+        ),
+        // Options list
+        React.createElement('div', {
+          ref: listRef,
+          id: `combobox-list-${id}`,
+          role: 'listbox',
+          'aria-label': label || 'Options',
+          style: { maxHeight, overflowY: 'auto', padding: '0.25rem' },
+        },
+          filtered.length === 0
+            ? React.createElement('div', {
+                style: { padding: '0.75rem', textAlign: 'center', color: 'var(--color-muted-foreground)', fontSize: '0.8125rem' },
+              }, emptyText)
+            : filtered.map((opt, i) => {
+                const isActive = i === activeIndex
+                const isSelected = opt.value === value
+                return React.createElement('button', {
+                  key: opt.value,
+                  type: 'button',
+                  role: 'option',
+                  'aria-selected': isSelected,
+                  'aria-disabled': opt.disabled,
+                  disabled: opt.disabled,
+                  onClick: () => handleSelect(opt),
+                  onMouseEnter: () => setActiveIndex(i),
+                  style: {
+                    ...optionStyle(isActive, opt.disabled),
+                    borderRadius: 'var(--radius-md)',
+                  },
+                },
+                  renderOption
+                    ? renderOption(opt, isActive)
+                    : [
+                        opt.icon && React.createElement('span', { key: 'icon', style: { flexShrink: 0 } }, opt.icon),
+                        React.createElement('div', { key: 'content', style: { flex: 1, minWidth: 0 } },
+                          React.createElement('div', {
+                            style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                          }, opt.label),
+                          opt.description && React.createElement('div', {
+                            style: { fontSize: '0.75rem', color: 'var(--color-muted-foreground)', marginTop: '1px' },
+                          }, opt.description),
+                        ),
+                        isSelected && React.createElement('span', {
+                          key: 'check',
+                          style: { flexShrink: 0, color: 'var(--color-primary)', fontSize: '0.875rem' },
+                        }, '✓'),
+                      ],
+                )
+              }),
+        ),
+      ),
+    ),
+    error && React.createElement('p', {
+      style: { color: 'var(--color-destructive)', fontSize: '0.8125rem', margin: 0 },
+    }, error),
+  )
+}
+
+// ─── TagInput ─────────────────────────────────────────────────────────────────
+
+/**
+ * Multi-tag input with keyboard support (Enter to add, Backspace to remove last).
+ * Supports suggestions dropdown, validation, and max tag limits.
+ *
+ * @param {{
+ *   value?: string[],
+ *   onChange?: (tags: string[]) => void,
+ *   suggestions?: string[],
+ *   placeholder?: string,
+ *   label?: string,
+ *   error?: string,
+ *   disabled?: boolean,
+ *   maxTags?: number,
+ *   allowDuplicates?: boolean,
+ *   validate?: (tag: string) => string|null,
+ *   variant?: 'default'|'primary',
+ *   size?: 'sm'|'md',
+ *   className?: string,
+ *   style?: object,
+ * }} props
+ *
+ * @example
+ *   const [tags, setTags] = useState(['react', 'typescript'])
+ *   <TagInput
+ *     label="Skills"
+ *     value={tags}
+ *     onChange={setTags}
+ *     suggestions={['react', 'vue', 'svelte', 'angular']}
+ *     placeholder="Add a skill..."
+ *     maxTags={10}
+ *   />
+ */
+export function TagInput({
+  value = [],
+  onChange,
+  suggestions = [],
+  placeholder = 'Type and press Enter...',
+  label,
+  error,
+  disabled = false,
+  maxTags = Infinity,
+  allowDuplicates = false,
+  validate,
+  variant = 'default',
+  size = 'md',
+  className,
+  style,
+  ...rest
+}) {
+  const [input, setInput] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const [localError, setLocalError] = useState(null)
+  const inputRef = useRef(null)
+  const containerRef = useRef(null)
+  const id = useId()
+
+  const isSmall = size === 'sm'
+
+  // Filter suggestions
+  const filteredSuggestions = input.trim()
+    ? suggestions.filter(s =>
+        s.toLowerCase().includes(input.toLowerCase()) &&
+        (allowDuplicates || !value.includes(s))
+      )
+    : []
+
+  const canAdd = value.length < maxTags && !disabled
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    if (!showSuggestions) return
+    function onClick(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [showSuggestions])
+
+  // Reset suggestion index when filtered list changes
+  useEffect(() => {
+    setActiveIndex(filteredSuggestions.length > 0 ? 0 : -1)
+  }, [input, filteredSuggestions.length])
+
+  function addTag(tag) {
+    const trimmed = tag.trim()
+    if (!trimmed || !canAdd) return false
+    if (!allowDuplicates && value.includes(trimmed)) {
+      setLocalError('Already added')
+      setTimeout(() => setLocalError(null), 2000)
+      return false
+    }
+    if (validate) {
+      const err = validate(trimmed)
+      if (err) {
+        setLocalError(err)
+        setTimeout(() => setLocalError(null), 2000)
+        return false
+      }
+    }
+    onChange?.([...value, trimmed])
+    setInput('')
+    setShowSuggestions(false)
+    setLocalError(null)
+    return true
+  }
+
+  function removeTag(index) {
+    if (disabled) return
+    const next = [...value]
+    next.splice(index, 1)
+    onChange?.(next)
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (activeIndex >= 0 && filteredSuggestions[activeIndex]) {
+        addTag(filteredSuggestions[activeIndex])
+      } else {
+        addTag(input)
+      }
+    } else if (e.key === 'Backspace' && input === '' && value.length > 0) {
+      removeTag(value.length - 1)
+    } else if (e.key === ',' || e.key === 'Tab') {
+      if (input.trim()) {
+        e.preventDefault()
+        addTag(input)
+      }
+    } else if (e.key === 'ArrowDown' && showSuggestions) {
+      e.preventDefault()
+      setActiveIndex(i => Math.min(i + 1, filteredSuggestions.length - 1))
+    } else if (e.key === 'ArrowUp' && showSuggestions) {
+      e.preventDefault()
+      setActiveIndex(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+    }
+  }
+
+  function handleInputChange(e) {
+    setInput(e.target.value)
+    setShowSuggestions(true)
+    setLocalError(null)
+  }
+
+  const displayError = error || localError
+
+  const tagPad = isSmall ? '0.125rem 0.375rem' : '0.1875rem 0.5rem'
+  const tagFont = isSmall ? '0.75rem' : '0.8125rem'
+
+  const containerStyle = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: isSmall ? '0.25rem' : '0.375rem',
+    minHeight: isSmall ? '32px' : '38px',
+    padding: isSmall ? '0.25rem 0.5rem' : '0.375rem 0.5rem',
+    border: `1px solid ${displayError ? 'var(--color-destructive)' : 'var(--color-border)'}`,
+    borderRadius: 'var(--radius-md)',
+    backgroundColor: 'var(--color-background)',
+    cursor: disabled ? 'not-allowed' : 'text',
+    opacity: disabled ? 0.5 : 1,
+    transition: 'border-color 0.15s',
+  }
+
+  const tagStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+    padding: tagPad,
+    borderRadius: 'var(--radius-md)',
+    fontSize: tagFont,
+    fontWeight: 500,
+    backgroundColor: variant === 'primary'
+      ? 'color-mix(in srgb, var(--color-primary) 15%, transparent)'
+      : 'var(--color-muted)',
+    color: variant === 'primary'
+      ? 'var(--color-primary)'
+      : 'var(--color-foreground)',
+    lineHeight: 1.4,
+    maxWidth: '100%',
+    animation: 'fade-in 0.15s ease',
+  }
+
+  const removeButtonStyle = {
+    background: 'none',
+    border: 'none',
+    padding: '0 1px',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    color: 'inherit',
+    opacity: 0.6,
+    fontSize: tagFont,
+    lineHeight: 1,
+    display: 'inline-flex',
+    alignItems: 'center',
+  }
+
+  return React.createElement('div', {
+    className: cn('kb-tag-input', className),
+    style: mergeStyles({ display: 'flex', flexDirection: 'column', gap: '0.375rem' }, style),
+    ...rest,
+  },
+    label && React.createElement('div', {
+      style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    },
+      React.createElement('label', {
+        htmlFor: `taginput-${id}`,
+        style: { fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-foreground)' },
+      }, label),
+      maxTags < Infinity && React.createElement('span', {
+        style: { fontSize: '0.75rem', color: value.length >= maxTags ? 'var(--color-destructive)' : 'var(--color-muted-foreground)' },
+      }, `${value.length}/${maxTags}`),
+    ),
+    React.createElement('div', { ref: containerRef, style: { position: 'relative' } },
+      // Tags + input container
+      React.createElement('div', {
+        style: containerStyle,
+        onClick: () => !disabled && inputRef.current?.focus(),
+        onFocus: (e) => { if (!disabled) e.currentTarget.style.borderColor = 'var(--color-ring, var(--color-primary))' },
+        onBlur: (e) => {
+          if (!containerRef.current?.contains(e.relatedTarget)) {
+            e.currentTarget.style.borderColor = displayError ? 'var(--color-destructive)' : 'var(--color-border)'
+          }
+        },
+      },
+        // Tags
+        ...value.map((tag, i) =>
+          React.createElement('span', {
+            key: `${tag}-${i}`,
+            style: tagStyle,
+          },
+            React.createElement('span', {
+              style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+            }, tag),
+            !disabled && React.createElement('button', {
+              type: 'button',
+              onClick: (e) => { e.stopPropagation(); removeTag(i) },
+              style: removeButtonStyle,
+              'aria-label': `Remove ${tag}`,
+              tabIndex: -1,
+            }, '\u00d7'),
+          ),
+        ),
+        // Text input
+        canAdd && React.createElement('input', {
+          ref: inputRef,
+          id: `taginput-${id}`,
+          type: 'text',
+          value: input,
+          onChange: handleInputChange,
+          onKeyDown: handleKeyDown,
+          onFocus: () => input.trim() && setShowSuggestions(true),
+          placeholder: value.length === 0 ? placeholder : '',
+          disabled,
+          style: {
+            flex: 1,
+            minWidth: '60px',
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            color: 'var(--color-foreground)',
+            fontSize: isSmall ? '0.8125rem' : '0.875rem',
+            padding: '2px 0',
+          },
+          'aria-label': label || 'Add tag',
+          role: 'combobox',
+          'aria-expanded': showSuggestions && filteredSuggestions.length > 0,
+          'aria-autocomplete': 'list',
+        }),
+      ),
+      // Suggestions dropdown
+      showSuggestions && filteredSuggestions.length > 0 && React.createElement('div', {
+        role: 'listbox',
+        style: {
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          marginTop: '4px',
+          zIndex: 50,
+          backgroundColor: 'var(--color-popover, var(--color-card))',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          maxHeight: '160px',
+          overflowY: 'auto',
+          padding: '0.25rem',
+          animation: 'fade-in 0.15s ease',
+        },
+      },
+        filteredSuggestions.map((s, i) =>
+          React.createElement('button', {
+            key: s,
+            type: 'button',
+            role: 'option',
+            'aria-selected': i === activeIndex,
+            onClick: () => addTag(s),
+            onMouseEnter: () => setActiveIndex(i),
+            style: {
+              display: 'block',
+              width: '100%',
+              padding: '0.4rem 0.75rem',
+              background: i === activeIndex ? 'var(--color-muted)' : 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--color-foreground)',
+              cursor: 'pointer',
+              fontSize: '0.8125rem',
+              textAlign: 'left',
+              transition: 'background 0.1s',
+            },
+          }, s),
+        ),
+      ),
+    ),
+    displayError && React.createElement('p', {
+      style: { color: 'var(--color-destructive)', fontSize: '0.8125rem', margin: 0 },
+      role: 'alert',
+    }, displayError),
   )
 }
