@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/client/components/ui/button'
 import { Switch } from '@/client/components/ui/switch'
 import { Input } from '@/client/components/ui/input'
+import { PasswordInput } from '@/client/components/ui/password-input'
 import { Label } from '@/client/components/ui/label'
 import { Badge } from '@/client/components/ui/badge'
 import { Textarea } from '@/client/components/ui/textarea'
@@ -555,13 +556,21 @@ function ConfigFieldRenderer({
       )}
 
       {field.type === 'string' && (
-        <Input
-          id={fieldKey}
-          type={field.secret ? 'password' : 'text'}
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-        />
+        field.secret ? (
+          <PasswordInput
+            id={fieldKey}
+            value={value ?? ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+          />
+        ) : (
+          <Input
+            id={fieldKey}
+            value={value ?? ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+          />
+        )
       )}
 
       {field.type === 'number' && (
