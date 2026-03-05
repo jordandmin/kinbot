@@ -6,7 +6,10 @@ Official community plugins for KinBot. Each directory contains a self-contained 
 
 | Plugin | Description | Tags |
 |--------|-------------|------|
+| [bookmarks](./bookmarks/) | Save, organize, and search bookmarks with tags | productivity, bookmarks, organization |
+| [pomodoro](./pomodoro/) | Pomodoro technique timer with focused work sessions and timed breaks | productivity, timer, focus |
 | [rss-reader](./rss-reader/) | Fetch and summarize RSS/Atom feeds | rss, news, productivity |
+| [system-monitor](./system-monitor/) | Monitor system resources: CPU, memory, disk, uptime, and processes | system, monitoring, devops |
 
 ## Contributing a Plugin
 
