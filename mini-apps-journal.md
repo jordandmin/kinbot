@@ -1070,3 +1070,33 @@ Added Tailwind-style responsive utility classes with breakpoints: sm (640px), md
 1. Add a "Form Builder" template demonstrating Form + Combobox + TagInput together
 2. Consider `ColorPicker` or `RichTextEditor` components
 3. Fix the StepProviders.tsx TS error (separate concern)
+
+## 2026-03-05 (run 28) — Contact Manager Template
+
+**What:** Added a new "Contact Manager" template showcasing the newer form components in a real CRUD app.
+
+### New Template: `contact-manager`
+- Full CRUD contact manager with backend persistence (`_server.js`)
+- **Combobox** used for role selection (with icons) and role filtering
+- **TagInput** used for tagging contacts (vip, partner, lead, etc.) with suggestions
+- **DataGrid** for displaying contacts with sorting and pagination
+- **Modal** for create/edit forms
+- **Form validation** both client-side (useForm) and server-side (duplicate email check)
+- Search bar filters by name/email/company
+- Role filter via Combobox dropdown
+- Delete with KinBot.confirm() dialog
+- EmptyState when no results
+- Responsive layout
+
+### Components demonstrated
+Card, Stack, Button, Input, Combobox, TagInput, DataGrid, Modal, Badge, Stat, Divider, Spinner, EmptyState, Alert
+
+**Files changed:**
+- `src/server/tools/mini-app-templates.ts` — +203 lines (new template)
+
+**Tests:** 1772 pass, 5 fail (pre-existing), 5 errors (pre-existing). Build clean.
+
+**Next priorities:**
+1. Update tool descriptions to document routing primitives (useHashRouter, Route, Link)
+2. Consider `ColorPicker` or `RichTextEditor` components
+3. Add TypeScript declarations for routing exports

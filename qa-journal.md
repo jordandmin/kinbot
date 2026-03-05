@@ -308,3 +308,60 @@
 - Area 15: Quick chat / Ephemeral sessions
 - Area 11: Contacts (add, approve, edit, delete)
 - Area 12: Webhooks
+
+## 2026-03-05 04:40 UTC
+### Area tested: Contacts (Area 11), Webhooks (Area 12), MCP Servers (Area 13)
+- **Pages visited:** Settings > Contacts, Settings > Webhooks, Settings > MCP Servers, Settings > Vault
+- **Browser:** `openclaw` profile (headless Chromium), host target
+
+#### Findings
+
+**Enhancement: Submit buttons hidden until form is valid in create dialogs (#58)**
+- In Add contact, Add webhook, and Add MCP server dialogs, the submit button is completely invisible until required fields are filled
+- Better pattern: always show the button but keep it disabled
+- Affects discoverability for new users
+
+#### Other observations (not filed - working correctly)
+
+**Contacts:**
+- CRUD flow works perfectly: Add, Edit, Delete all function correctly
+- Contact creation saves identifiers (email tested) properly
+- Edit dialog loads saved data correctly (unlike profile - see #54)
+- Delete has a proper confirmation dialog with clear warning text
+- "Add note" feature works: shows Kin selector, scope (Global), and note text field
+- Identifier type dropdown comprehensive: email, phone, mobile, twitter, instagram, linkedin, github, slack, website
+- Type selector: Human/Kin options available
+- "Link to system user" combobox present
+
+**Webhooks:**
+- Full CRUD works: create, view, delete
+- Creation shows webhook URL and masked token with "Save this token now" warning (good security)
+- Webhook list shows: toggle (enable/disable), View logs, Copy URL, Regenerate token, Edit, Delete
+- Trigger log dialog shows (empty state with illustration)
+- Delete confirmation dialog with clear "External services will receive 404 errors" warning
+- Kin selector dropdown works in creation flow
+
+**MCP Servers:**
+- Empty state with clear description
+- "What is this?" expandable info section
+- Add dialog has: Name, Command, Arguments, Environment variables sections
+- Add variable button for env vars
+
+**Vault:**
+- Categories: All, Favorites, Secret, Credential, Card, Note, Identity
+- "Manage types" button present
+- Clean empty state
+
+**Performance note:**
+- Conversation pages (/kin/dev, /kin/dispatcher) consistently cause browser snapshot timeouts (>20s)
+- Settings dialog pages load and respond quickly
+- This is a recurring issue noted in previous sessions
+
+- **Bugs found:** 0
+- **UX suggestions:** 1 (issue #58)
+- **All clear:** Contacts CRUD, Webhooks CRUD, MCP Servers UI, Vault UI, delete confirmations, identifier management, webhook security (token masking), category filtering in Vault
+
+### Next run
+- Area 15: Quick chat / Ephemeral sessions (need to access via a conversation page, which may require addressing the conversation page timeout issue)
+- Area 9: Settings page - remaining tabs (General, Plugins, Browse Plugins, Files, Channels, Users, Notifications)
+- Area 8: Mini-apps
