@@ -40,6 +40,7 @@ const rows: Row[] = [
   { feature: 'Chat integrations (6 platforms)', kinbot: 'yes', chatgpt: 'no', openwebui: 'no', lobechat: 'no', anythingllm: 'partial', openclaw: 'yes', crewai: 'no' },
   { feature: 'Custom tools (agent-created)', kinbot: 'yes', chatgpt: 'no', openwebui: 'no', lobechat: 'no', anythingllm: 'no', openclaw: 'partial', crewai: 'partial' },
   { feature: 'Mini Apps (agent-built UIs)', kinbot: 'yes', chatgpt: 'no', openwebui: 'no', lobechat: 'no', anythingllm: 'no', openclaw: 'no', crewai: 'no' },
+  { feature: 'Plugin system (hot-reload)', kinbot: 'yes', chatgpt: 'no', openwebui: 'partial', lobechat: 'yes', anythingllm: 'partial', openclaw: 'partial', crewai: 'no' },
   { feature: 'RAG / document embedding', kinbot: 'no', chatgpt: 'partial', openwebui: 'yes', lobechat: 'partial', anythingllm: 'yes', openclaw: 'no', crewai: 'partial' },
   { feature: 'Multi-user with roles', kinbot: 'yes', chatgpt: 'yes', openwebui: 'yes', lobechat: 'partial', anythingllm: 'yes', openclaw: 'no', crewai: 'no' },
   { feature: 'Web UI', kinbot: 'yes', chatgpt: 'yes', openwebui: 'yes', lobechat: 'yes', anythingllm: 'yes', openclaw: 'no', crewai: 'no' },

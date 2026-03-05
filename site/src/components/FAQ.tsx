@@ -103,7 +103,12 @@ const faqs: FAQItem[] = [
     category: 'Technical',
   },
   {
-    question: 'Can agents create their own tools?',
+    question: 'How does the plugin system work?',
+    answer:
+      'KinBot supports four plugin types: tools (add capabilities agents can invoke), providers (connect new AI backends), channels (bridge messaging platforms), and hooks (intercept lifecycle events like beforeChat or afterToolCall). Plugins are TypeScript-first and hot-reloadable: drop a folder into plugins/ and it loads instantly, no restart needed. Each plugin declares its permissions upfront, and users approve before activation. You can scaffold a new plugin in seconds with bunx create-kinbot-plugin, or install community plugins from git, npm, or the plugin registry.',
+    category: 'Features',
+  },
+  {
     answer:
       'Yes. Kins can create custom tools at runtime (with user approval). Combined with MCP server support, this means your agents can extend their own capabilities — connecting to databases, calling APIs, running code, or interacting with any system you expose. No code changes needed.',
     category: 'Features',
