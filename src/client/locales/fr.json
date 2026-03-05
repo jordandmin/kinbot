@@ -118,7 +118,12 @@
       "cannotFinish": "Configurez des fournisseurs couvrant les capacités LLM et Embedding",
       "nameTip": "Un nom pour identifier ce provider dans votre tableau de bord. Si vide, le nom du type de provider est utilisé.",
       "baseUrlTip": "Remplace l'URL par défaut de l'API. Utile pour les instances auto-hébergées, proxies, ou API tierces compatibles.",
-      "getApiKey": "Obtenir votre clé API {{provider}}"
+      "getApiKey": "Obtenir votre clé API {{provider}}",
+      "guidanceIntro": "Pas sûr par où commencer ? Voici les options les plus populaires :",
+      "localBadge": "Local",
+      "getKey": "Obtenir",
+      "noKeyNeeded": "Pas de clé API nécessaire",
+      "guidanceFooter": "Vous pourrez ajouter d'autres fournisseurs plus tard dans les Paramètres. Choisissez-en un pour démarrer !"
     },
     "memory": {
       "title": "Mémoire",

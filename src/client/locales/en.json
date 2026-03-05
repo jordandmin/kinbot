@@ -118,7 +118,12 @@
       "cannotFinish": "Configure providers to cover LLM and Embedding capabilities",
       "nameTip": "A friendly label to identify this provider in your dashboard. If left empty, the provider type name is used.",
       "baseUrlTip": "Override the default API endpoint. Useful for self-hosted instances, proxies, or compatible third-party APIs.",
-      "getApiKey": "Get your {{provider}} API key"
+      "getApiKey": "Get your {{provider}} API key",
+      "guidanceIntro": "Not sure where to start? Here are the most popular options:",
+      "localBadge": "Local",
+      "getKey": "Get key",
+      "noKeyNeeded": "No API key needed",
+      "guidanceFooter": "You can add more providers later in Settings. Pick one to get started!"
     },
     "memory": {
       "title": "Memory",

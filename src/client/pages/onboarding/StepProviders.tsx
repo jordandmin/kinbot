@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
 import { Badge } from '@/client/components/ui/badge'
-import { Brain, Image, Plus, Search } from 'lucide-react'
+import { Brain, Image, Plus, Search, ExternalLink, Sparkles, Zap, Server } from 'lucide-react'
 import { api } from '@/client/lib/api'
 import { ProviderCard } from '@/client/components/kin/ProviderCard'
 import { ProviderFormDialog } from '@/client/components/kin/AddProviderDialog'
 import { AI_PROVIDER_TYPES } from '@/shared/constants'
+import { PROVIDER_META } from '@/shared/provider-metadata'
 import { useProviders } from '@/client/hooks/useProviders'
 
 interface StepProvidersProps {
@@ -106,6 +107,59 @@ export function StepProviders({ onComplete, onBack }: StepProvidersProps) {
           )
         })}
       </div>
+
+      {/* Provider guidance — shown when no providers configured */}
+      {aiProviders.length === 0 && (
+        <div className="space-y-3">
+          <p className="text-center text-xs text-muted-foreground">
+            {t('onboarding.providers.guidanceIntro')}
+          </p>
+          <div className="grid gap-2">
+            {([
+              { type: 'openai' as const, icon: Sparkles, caps: 'LLM + Embedding + Image' },
+              { type: 'gemini' as const, icon: Zap, caps: 'LLM + Image' },
+              { type: 'ollama' as const, icon: Server, caps: 'LLM + Embedding' },
+            ] as const).map(({ type, icon: Icon, caps }) => {
+              const meta = PROVIDER_META[type]
+              return (
+                <div
+                  key={type}
+                  className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-3 py-2.5"
+                >
+                  <div className="rounded-full bg-primary/10 p-1.5 text-primary">
+                    <Icon className="size-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium">{meta.displayName}</span>
+                      {type === 'ollama' && (
+                        <Badge variant="secondary" size="xs">{t('onboarding.providers.localBadge')}</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{caps}</p>
+                  </div>
+                  {meta.apiKeyUrl ? (
+                    <a
+                      href={meta.apiKeyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      {t('onboarding.providers.getKey')}
+                      <ExternalLink className="size-3" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{t('onboarding.providers.noKeyNeeded')}</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-center text-[11px] text-muted-foreground/70">
+            {t('onboarding.providers.guidanceFooter')}
+          </p>
+        </div>
+      )}
 
       {/* Configured providers */}
       {aiProviders.length > 0 && (

@@ -1010,3 +1010,38 @@ Added Tailwind-style responsive utility classes with breakpoints: sm (640px), md
 1. Consider `Combobox` (searchable select) and `TagInput` (multi-tag entry) components
 2. Add TypeScript declarations for routing exports in kinbot-react.d.ts if not already complete
 3. Improve tool descriptions to document the routing primitives for Kins
+
+## 2026-03-05 (run 26) — Combobox & TagInput Components
+
+**What:** Added two high-value form components to the component library.
+
+### New Exports (kinbot-components.js)
+
+1. **`Combobox`** — Searchable select dropdown with filtering
+   - Props: `options` (value/label/icon/description/disabled), `value`, `onChange`, `placeholder`, `searchPlaceholder`, `label`, `error`, `disabled`, `clearable`, `emptyText`, `maxHeight`, `renderOption`
+   - Full keyboard navigation (Arrow keys, Enter, Home, End, Escape)
+   - Filtered search with highlighted active item
+   - Optional icons, descriptions, and custom renderOption
+   - Clearable selection with × button
+   - ARIA: combobox role, listbox, expanded state
+
+2. **`TagInput`** — Multi-tag entry with suggestions
+   - Props: `value` (string[]), `onChange`, `suggestions`, `placeholder`, `label`, `error`, `disabled`, `maxTags`, `allowDuplicates`, `validate`, `variant` (default/primary), `size` (sm/md)
+   - Enter/comma/Tab to add tag, Backspace to remove last
+   - Suggestions dropdown with keyboard navigation
+   - Duplicate detection with error feedback
+   - Custom validation function support
+   - Max tag limit with counter display
+   - Two visual variants: default (muted) and primary (accent color)
+
+**Files changed:**
+- `src/server/mini-app-sdk/kinbot-components.js` — +397 lines (Combobox + TagInput)
+- `src/server/mini-app-sdk/kinbot-components.d.ts` — +35 lines (type definitions)
+- `src/server/tools/mini-app-tools.ts` — +3 lines (updated import list + component docs)
+
+**Tests:** 1792 pass, 4 fail (pre-existing), 4 errors (pre-existing). Build clean.
+
+**Next priorities:**
+1. Update component-showcase template to include Combobox and TagInput demos
+2. Add a form-builder template demonstrating Form + Combobox + TagInput together
+3. Consider `ColorPicker` or `RichTextEditor` components

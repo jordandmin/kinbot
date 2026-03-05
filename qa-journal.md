@@ -275,3 +275,36 @@
 - Area 14: Account (profile, password, language settings)
 - Area 3 continued: Test actually sending a message, editing a message, using reactions (was blocked by browser timeouts on Dispatcher page - try with Dev Kin which has less history)
 - Area 15: Quick chat / Ephemeral sessions
+
+## 2026-03-05 00:40 UTC
+### Area tested: Account / My Account (Area 14)
+- **Pages visited:** Home page, "My account" dialog (via avatar dropdown menu)
+- **Browser:** `openclaw` profile (headless Chromium), host target
+
+#### Findings
+
+**Bug: Profile data not persisted after saving (#54)**
+- Fill in First name ("QA"), Last name ("Tester"), Pseudonym ("qa_bot")
+- Click "Save changes" - success toast "Profile updated" appears
+- Close and reopen dialog: all fields are empty
+- Page reload: all fields still empty
+- Avatar initials never update from "??" even after "successful" save
+- Either the API call fails silently, backend doesn't persist, or dialog doesn't load saved data on mount
+
+#### Other observations (not filed - working correctly)
+- Avatar dropdown menu works: shows email, "My account", "Settings", "Sign out"
+- "My account" dialog layout is clean: avatar upload button, email display, form fields, language dropdown
+- Language dropdown works: shows English and Francais (only 2 languages, matching open issues #5/#6 for German/Spanish)
+- Cancel and Close buttons work correctly
+- Form validation: no required field validation on first/last name (acceptable - they're optional)
+- File input for avatar is present (hidden, triggered by avatar button)
+- Version button (v0.9.0) in sidebar timed out on click - could not verify what it opens
+
+- **Bugs found:** 1 (issue #54)
+- **UX suggestions:** 0
+- **All clear:** Dialog layout, avatar dropdown menu, language selector, Cancel/Close behavior
+
+### Next run
+- Area 15: Quick chat / Ephemeral sessions
+- Area 11: Contacts (add, approve, edit, delete)
+- Area 12: Webhooks
