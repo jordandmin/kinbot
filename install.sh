@@ -1302,9 +1302,16 @@ case "${1:-}" in
     "$0" start
     ;;
   status)
+    # ── Version ──
+    _ver=""
+    if [ -d "$KINBOT_DIR/.git" ]; then
+      _ver="$(git -C "$KINBOT_DIR" describe --tags 2>/dev/null || git -C "$KINBOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+    fi
+
     if is_running; then
       _pid="$(get_pid)"
       echo "● KinBot is running (PID $_pid)"
+      [ -n "$_ver" ] && echo "  Version: $_ver"
 
       # Show uptime
       if [ -d "/proc/$_pid" ]; then
@@ -1335,29 +1342,74 @@ case "${1:-}" in
       fi
       if [ -n "$_mem_kb" ] && [ "$_mem_kb" -gt 0 ] 2>/dev/null; then
         _mem_mb=$((_mem_kb / 1024))
-        echo "  Memory:  ${_mem_mb}MB RSS"
+        if [ "$_mem_mb" -gt 512 ] 2>/dev/null; then
+          echo "  Memory:  ${_mem_mb}MB RSS ⚠ (high)"
+        else
+          echo "  Memory:  ${_mem_mb}MB RSS"
+        fi
       fi
 
-      # Show port from config
+      # Show port from config and HTTP health
+      _port=""
       if [ -f "$ENV_FILE" ]; then
         _port="$(grep '^PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2)" || _port=""
-        [ -n "$_port" ] && echo "  Port:    $_port"
+      fi
+      if [ -n "$_port" ]; then
+        _http_code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${_port}/" --max-time 3 2>/dev/null || echo "000")"
+        if [ "$_http_code" != "000" ]; then
+          echo "  Port:    $_port (HTTP $_http_code ✓)"
+        else
+          echo "  Port:    $_port (not responding ⚠)"
+        fi
+      fi
+
+      # Show database info
+      _db_file="$DATA_DIR/kinbot.db"
+      if [ -f "$_db_file" ]; then
+        _db_size="$(du -h "$_db_file" 2>/dev/null | awk '{print $1}')" || _db_size=""
+        [ -n "$_db_size" ] && echo "  DB:      $_db_size"
+      fi
+
+      # Show disk space
+      _avail_kb="$(df -k "$DATA_DIR" 2>/dev/null | awk 'NR==2 {print $4}')" || _avail_kb=""
+      if [ -n "$_avail_kb" ] && [ "$_avail_kb" -gt 0 ] 2>/dev/null; then
+        _avail_mb=$((_avail_kb / 1024))
+        _avail_gb=$((_avail_mb / 1024))
+        if [ "$_avail_mb" -lt 500 ] 2>/dev/null; then
+          echo "  Disk:    ${_avail_mb}MB free ⚠ (low)"
+        elif [ "$_avail_gb" -gt 0 ] 2>/dev/null; then
+          echo "  Disk:    ${_avail_gb}GB free"
+        else
+          echo "  Disk:    ${_avail_mb}MB free"
+        fi
       fi
 
       # Show log file size
       if [ -f "$LOG_FILE" ]; then
         _log_size="$(du -h "$LOG_FILE" 2>/dev/null | awk '{print $1}')" || _log_size=""
         [ -n "$_log_size" ] && echo "  Logs:    $LOG_FILE ($_log_size)"
-        if [ -n "$_log_size" ]; then
-          # Warn if log file is getting large (>100MB)
-          _log_kb="$(du -k "$LOG_FILE" 2>/dev/null | awk '{print $1}')" || _log_kb="0"
-          if [ "$_log_kb" -gt 102400 ] 2>/dev/null; then
-            echo "  ⚠ Log file is large. Run: $0 log-rotate"
+        _log_kb="$(du -k "$LOG_FILE" 2>/dev/null | awk '{print $1}')" || _log_kb="0"
+        if [ "$_log_kb" -gt 102400 ] 2>/dev/null; then
+          echo "  ⚠ Log file is large. Run: $0 log-rotate"
+        fi
+      fi
+
+      # Check for available updates (quick, non-blocking)
+      if [ -d "$KINBOT_DIR/.git" ]; then
+        _branch="$(git -C "$KINBOT_DIR" branch --show-current 2>/dev/null || echo "main")"
+        if git -C "$KINBOT_DIR" fetch --dry-run origin "$_branch" 2>&1 | grep -q "$_branch" 2>/dev/null; then
+          _behind="$(git -C "$KINBOT_DIR" rev-list HEAD.."origin/$_branch" --count 2>/dev/null || echo "0")"
+          if [ "$_behind" -gt 0 ] 2>/dev/null; then
+            _remote_ver="$(git -C "$KINBOT_DIR" describe --tags "origin/$_branch" 2>/dev/null || git -C "$KINBOT_DIR" rev-parse --short "origin/$_branch" 2>/dev/null || echo "?")"
+            echo ""
+            echo "  ⬆ Update available: $_ver → $_remote_ver ($_behind commits behind)"
+            echo "    Run: $0 update"
           fi
         fi
       fi
     else
       echo "○ KinBot is not running"
+      [ -n "$_ver" ] && echo "  Version: $_ver"
       rm -f "$PID_FILE"
       # Show last few log lines as a hint
       if [ -f "$LOG_FILE" ]; then
