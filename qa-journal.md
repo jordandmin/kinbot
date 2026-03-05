@@ -365,3 +365,73 @@
 - Area 15: Quick chat / Ephemeral sessions (need to access via a conversation page, which may require addressing the conversation page timeout issue)
 - Area 9: Settings page - remaining tabs (General, Plugins, Browse Plugins, Files, Channels, Users, Notifications)
 - Area 8: Mini-apps
+
+## 2026-03-05 08:40 UTC
+### Area tested: Settings page - remaining tabs (Area 9)
+- **Pages visited:** Settings > General, Search, Plugins, Browse Plugins, Memories, Files, Channels, Users, Notifications
+
+#### Bugs found
+
+**Bug: Plugins tab crashes app (regression of #43) - Issue #61**
+- Settings > Plugins crashes entire app with error boundary
+- Error: `Cannot read properties of undefined (reading 'length')`
+- Requires page reload to recover
+- 100% reproducible
+- Was fixed in #43 but has regressed
+
+**Bug: Browse Plugins shows error toasts - Issue #62**
+- Settings > Browse Plugins shows two error toasts: `Cannot read properties of undefined (reading 'plugins')`
+- Page renders but shows "No plugins found"
+- Related to #61, likely same underlying data/API issue
+
+#### Other observations (not filed - working correctly)
+
+**General tab:**
+- Global prompt field works: typing enables Save button, token counter updates in real-time (~5 tokens for test text)
+- "What is this?" expandable info section present
+- Save button properly disabled when no changes
+
+**Search tab:**
+- Brave Search provider configured and displayed correctly
+- Default provider dropdown with "Automatic (first valid)" option
+- Provider card shows capabilities (Web Search)
+- Delete, edit buttons present
+
+**Memories tab:**
+- Shows 5 memories with proper metadata (category, scope, Kin, source, relevance score)
+- Search bar, category filter, Kin filter all present
+- Model Configuration section: Extraction Model and Embedding Model dropdowns
+- "Re-embed all memories" button available
+- "Add memory" button at bottom
+- Each memory has edit and delete buttons
+
+**Files tab:**
+- Clean empty state with illustration
+- "Upload file" button (appears twice - one in empty state, one at bottom)
+
+**Channels tab:**
+- Clean empty state with good description
+- "Add channel" button (appears twice - one in empty state, one at bottom)
+
+**Users tab:**
+- Shows Nicolas VARROT user with avatar, username (@MarlburroW), email, join date, language (fr)
+- Invitations section with "Invite" button
+- Clean layout
+
+**Notifications tab:**
+- Comprehensive toggle list: Notification sound, Input needed, User pending approval, Cron pending approval, MCP pending approval, Kin error, Kin alert, Mention
+- All toggles checked by default
+- External delivery section with "Add delivery channel" button
+- Clean descriptions for each notification type
+
+**Footer bar (all tabs):**
+- Shows version (v0.9.0), uptime (1d 12h), and stats (2 Kins, 3 providers, 5 memories, 1 channel(?), 2 users(?))
+
+- **Bugs found:** 2 (issues #61, #62)
+- **UX suggestions:** 0
+- **All clear:** General, Search, Memories, Files, Channels, Users, Notifications tabs all work well
+
+### Next run
+- Area 15: Quick chat / Ephemeral sessions
+- Area 8: Mini-apps (gallery, viewer)
+- Area 4: Tasks/Crons (create, edit, enable/disable, delete)

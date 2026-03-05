@@ -10,6 +10,15 @@ const mockTasks = {
   listKinTasks: mock(() => Promise.resolve([] as any[])),
   listSourceKinTasks: mock(() => Promise.resolve([] as any[])),
   getTask: mock(() => Promise.resolve(null as any)),
+  fetchPreviousCronRuns: mock(() => Promise.resolve([] as any[])),
+  listAllTasks: mock(() => Promise.resolve([])),
+  listTasksPaginated: mock(() => Promise.resolve({ tasks: [], total: 0 })),
+  recoverStaleTasks: mock(() => {}),
+  resumeSubKin: mock(() => Promise.resolve()),
+  resolveTask: mock(() => Promise.resolve()),
+  reportToParent: mock(() => Promise.resolve()),
+  updateTaskStatus: mock(() => Promise.resolve()),
+  requestInput: mock(() => Promise.resolve()),
 }
 
 const mockKinResolver = {
