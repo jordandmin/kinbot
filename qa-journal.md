@@ -435,3 +435,43 @@
 - Area 15: Quick chat / Ephemeral sessions
 - Area 8: Mini-apps (gallery, viewer)
 - Area 4: Tasks/Crons (create, edit, enable/disable, delete)
+
+## 2026-03-05 12:40 UTC
+### Area tested: Mini-Apps (Area 8)
+- **Pages visited:** Home page sidebar (Mini-Apps section), App Gallery dialog
+
+#### Bugs found
+
+**Bug: Mini-Apps sidebar not updated after cloning from App Gallery - Issue #63**
+- Clone an app via App Gallery, success toast appears, but sidebar still shows "No apps yet"
+- Even after full page refresh, cloned app doesn't appear in sidebar
+- Root cause: `useMiniApps` hook filters by `selectedKinId`, which is null on home page
+- The SSE event `miniapp:created` is filtered by kinId match, so it's silently dropped
+
+#### UX suggestions
+
+**Enhancement: Misleading empty state when no Kin selected - Issue #64**
+- Sidebar shows "No apps yet - Ask a Kin to create one" even when apps exist on other Kins
+- Should show "Select a Kin to see its apps" or show all apps across Kins
+
+**Enhancement: Clone button doesn't update after cloning, allows duplicates - Issue #65**
+- After cloning, the Clone button stays active (not "Owned"/"Cloned")
+- User can clone the same app multiple times, creating duplicates
+- Gallery doesn't refresh data or track cloned state
+
+#### Other observations (code review, no issues filed)
+- MiniAppViewer is well-built: postMessage SDK with toast, navigate, fullpage, confirm/prompt dialogs, clipboard, download, notifications, send-message, share, resize, locale/theme sync
+- Rate limiting on send-message (5/30s) is good
+- Sandbox iframe with appropriate permissions
+- MiniAppCard has proper keyboard accessibility, delete confirmation
+- E2E tests exist for gallery (16-mini-app-gallery.spec.ts)
+- Could not test mini-app viewer/iframe rendering due to browser service timeouts
+
+- **Bugs found:** 1 (issue #63)
+- **UX suggestions:** 2 (issues #64, #65)
+- **All clear:** MiniAppViewer component, MiniAppCard component, clone backend logic, E2E test coverage, SDK message handling
+
+### Next run
+- Area 15: Quick chat / Ephemeral sessions
+- Area 4: Tasks/Crons (create, edit, enable/disable, delete)
+- Area 3: Conversations (start, send messages, chat UI)

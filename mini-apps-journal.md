@@ -1161,3 +1161,32 @@ Card, Stack, Button, Input, Combobox, TagInput, DataGrid, Modal, Badge, Stat, Di
 1. Add `RichTextEditor` component (or simpler `MarkdownEditor`)
 2. Update component-showcase to include routing demo section
 3. Consider `Calendar` or `DateRangePicker` components
+
+## 2026-03-05 (run 31) — Calendar Component
+
+**What:** Added a full-featured `Calendar` React component to the component library.
+
+### Component: `Calendar`
+- **Three selection modes:** `single` (one date), `multiple` (toggle dates on/off), `range` (click start then end)
+- **Event markers:** Pass `events` array with `{date, color?, label?}` - shows colored dots below dates (up to 3 per day)
+- **Date constraints:** `min` and `max` props disable dates outside the range
+- **Week start:** `weekStart` prop (0=Sunday, 1=Monday default)
+- **Outside days:** `showOutsideDays` fills the grid with prev/next month days (dimmed)
+- **Locale support:** `locale` prop for localized day/month names
+- **Range hover preview:** When selecting a range, hovering shows the would-be selection highlighted
+- **Today indicator:** Bold text + primary color border ring
+- **Theme integration:** Uses CSS variables throughout (--color-primary, --color-border, --radius-*, etc.)
+- **Accessible:** ARIA labels, aria-selected, aria-disabled, keyboard-navigable buttons
+
+### Files changed
+- `src/server/mini-app-sdk/kinbot-components.js` — +280 lines (Calendar + helper functions)
+- `src/server/mini-app-sdk/kinbot-components.d.ts` — +20 lines (TypeScript definitions)
+- `src/server/tools/mini-app-tools.ts` — added Calendar to import list + documentation
+- `src/server/tools/mini-app-templates.ts` — added Calendar demos to component-showcase (single + range mode)
+
+**Tests:** 1925 pass, 0 fail. Build clean.
+
+**Next priorities:**
+1. Consider `DateRangePicker` as a compound component (Calendar + input fields)
+2. Add `RichTextEditor` component
+3. Update component-showcase to include routing demo section
