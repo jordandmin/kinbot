@@ -96,7 +96,7 @@ export const createMiniAppTool: ToolRegistration = {
         '`download` (trigger file download: `download(filename, content, mimeType?)`). ' +
         '**@kinbot/components — React Component Library:** Add `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"` to app.json dependencies. ' +
         'Import: `import { Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, ' +
-        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, BarChart, LineChart, PieChart, SparkLine, Stepper, StepperContent, FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput, Combobox, TagInput } from "@kinbot/components"`. ' +
+        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, BarChart, LineChart, PieChart, SparkLine, Stepper, StepperContent, FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput, Combobox, TagInput, Router, Route, Link, NavLink, Navigate, useHashRouter } from "@kinbot/components"`. ' +
         'All components auto-adapt to light/dark theme. Key components: ' +
         '`Card` (+ Card.Header, Card.Title, Card.Description, Card.Content, Card.Footer), ' +
         '`Button` (variant: primary|secondary|destructive|ghost|shine, size: sm|md|lg|icon), ' +
@@ -139,6 +139,9 @@ export const createMiniAppTool: ToolRegistration = {
         '`NumberInput` (numeric +/- stepper: value, onChange, min, max, step, label, error, size sm|md|lg), ' +
         '`Combobox` (searchable select dropdown: options [{value, label, icon?, description?, disabled?}], value, onChange, placeholder, clearable, label, error — keyboard nav + filtering), ' +
         '`TagInput` (multi-tag entry: value string[], onChange, suggestions string[], placeholder, maxTags, validate fn, variant default|primary, size sm|md — Enter/comma to add, Backspace to remove). ' +
+        '**Routing (hash-based):** `Router` wraps your app, `Route` declares paths (supports :params), `Link`/`NavLink` for navigation, `Navigate` for redirects, `useHashRouter()` hook returns {path, params, query, navigate}. ' +
+        'Example: `<Router><Route path="/" element={<Home/>}/><Route path="/users/:id" element={<UserDetail/>}/><Route path="*" element={<NotFound/>}/></Router>`. ' +
+        'NavLink adds "active" class when path matches (exact prop for exact match). ' +
         '**Design System CSS** (auto-injected): CSS variables like ' +
         'var(--color-primary), var(--color-background), var(--color-foreground), var(--color-muted), var(--color-card), var(--color-border). ' +
         'Utility classes: .glass-strong, .surface-card, .gradient-primary, .btn-shine, .card-hover, .animate-fade-in-up. ' +

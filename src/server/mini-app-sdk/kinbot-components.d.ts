@@ -660,3 +660,46 @@ interface TagInputProps {
   size?: 'sm' | 'md';
 }
 export function TagInput(props: TagInputProps): React.ReactElement;
+
+// ─── Routing ──────────────────────────────────────────────────────────────────
+
+interface RouterContextValue {
+  path: string;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  navigate: (to: string, opts?: { replace?: boolean }) => void;
+}
+
+export function useHashRouter(): RouterContextValue;
+
+interface RouterProps extends BaseProps {
+  children?: React.ReactNode;
+}
+export function Router(props: RouterProps): React.ReactElement;
+
+interface RouteProps {
+  path: string;
+  element?: React.ReactNode;
+  children?: React.ReactNode;
+}
+export function Route(props: RouteProps): React.ReactElement;
+
+interface LinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
+  to: string;
+  replace?: boolean;
+  children?: React.ReactNode;
+}
+export function Link(props: LinkProps): React.ReactElement;
+
+interface NavigateProps {
+  to: string;
+  replace?: boolean;
+}
+export function Navigate(props: NavigateProps): React.ReactElement;
+
+interface NavLinkProps extends LinkProps {
+  exact?: boolean;
+  activeClassName?: string;
+  activeStyle?: React.CSSProperties;
+}
+export function NavLink(props: NavLinkProps): React.ReactElement;

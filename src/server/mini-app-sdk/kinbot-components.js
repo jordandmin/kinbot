@@ -3957,3 +3957,151 @@ export function TagInput({
     }, displayError),
   )
 }
+
+// ─── Routing ────────────────────────────────────────────────────────────────────
+// Hash-based router for mini-apps (no server config needed).
+// Usage:
+//   const { path, navigate, params } = useHashRouter()
+//   <Router> <Route path="/" element={<Home/>}/> <Route path="/edit/:id" element={<Edit/>}/> </Router>
+//   <Link to="/settings">Settings</Link>
+
+const RouterContext = React.createContext({ path: '/', params: {}, query: {}, navigate: () => {} })
+
+function parsePath(hash) {
+  const raw = (hash || '#/').slice(1) || '/'
+  const [pathname, search] = raw.split('?')
+  const query = {}
+  if (search) {
+    search.split('&').forEach(p => {
+      const [k, v] = p.split('=')
+      if (k) query[decodeURIComponent(k)] = v ? decodeURIComponent(v) : ''
+    })
+  }
+  return { pathname: pathname || '/', query }
+}
+
+function matchRoute(pattern, pathname) {
+  if (pattern === '*') return { matched: true, params: {} }
+  const patParts = pattern.split('/').filter(Boolean)
+  const pathParts = pathname.split('/').filter(Boolean)
+  if (patParts.length !== pathParts.length) return { matched: false }
+  const params = {}
+  for (let i = 0; i < patParts.length; i++) {
+    if (patParts[i].startsWith(':')) {
+      params[patParts[i].slice(1)] = decodeURIComponent(pathParts[i])
+    } else if (patParts[i] !== pathParts[i]) {
+      return { matched: false }
+    }
+  }
+  return { matched: true, params }
+}
+
+/**
+ * useHashRouter — hook for hash-based routing state.
+ * Returns { path, params, query, navigate }.
+ * `navigate(path, { replace? })` updates location.hash.
+ */
+export function useHashRouter() {
+  return React.useContext(RouterContext)
+}
+
+/**
+ * Router — provider component. Wrap your app in <Router>...</Router>.
+ * Children should be <Route> elements.
+ */
+export function Router({ children, className, style }) {
+  const [loc, setLoc] = React.useState(() => parsePath(location.hash))
+
+  React.useEffect(() => {
+    const handler = () => setLoc(parsePath(location.hash))
+    window.addEventListener('hashchange', handler)
+    return () => window.removeEventListener('hashchange', handler)
+  }, [])
+
+  const navigate = React.useCallback((to, opts) => {
+    if (opts?.replace) {
+      history.replaceState(null, '', '#' + to)
+    } else {
+      location.hash = to
+    }
+  }, [])
+
+  // Find matching route among children
+  const routes = React.Children.toArray(children).filter(c => c?.type === Route)
+  let matchedElement = null
+  let matchedParams = {}
+
+  for (const route of routes) {
+    const result = matchRoute(route.props.path, loc.pathname)
+    if (result.matched) {
+      matchedParams = result.params
+      matchedElement = route.props.element || route.props.children || null
+      break
+    }
+  }
+
+  const ctx = React.useMemo(() => ({
+    path: loc.pathname,
+    params: matchedParams,
+    query: loc.query,
+    navigate,
+  }), [loc.pathname, loc.query, matchedParams, navigate])
+
+  return React.createElement(RouterContext.Provider, { value: ctx },
+    React.createElement('div', { className, style }, matchedElement)
+  )
+}
+
+/**
+ * Route — declares a route. Must be a direct child of <Router>.
+ * Props: path (pattern with :params), element (React element to render).
+ * Example: <Route path="/users/:id" element={<UserDetail/>} />
+ */
+export function Route() {
+  return null // Rendered by Router, not directly
+}
+
+/**
+ * Link — navigation link using hash routing.
+ * Props: to (path string), replace (boolean), className, style, children.
+ */
+export function Link({ to, replace, className, style, children, ...rest }) {
+  const { navigate } = React.useContext(RouterContext)
+  return React.createElement('a', {
+    href: '#' + to,
+    className,
+    style: { color: 'var(--color-primary)', textDecoration: 'none', cursor: 'pointer', ...style },
+    onClick: (e) => {
+      e.preventDefault()
+      navigate(to, { replace })
+      rest.onClick?.(e)
+    },
+    ...rest,
+  }, children)
+}
+
+/**
+ * Navigate — component that navigates on mount (redirect).
+ * Props: to (path string), replace (boolean, default true).
+ */
+export function Navigate({ to, replace = true }) {
+  const { navigate } = React.useContext(RouterContext)
+  React.useEffect(() => { navigate(to, { replace }) }, [to, replace, navigate])
+  return null
+}
+
+/**
+ * NavLink — like Link but adds 'active' class when current path matches.
+ * Props: to, exact (default false), activeClassName, activeStyle, + Link props.
+ */
+export function NavLink({ to, exact, activeClassName = 'active', activeStyle, className, style, children, ...rest }) {
+  const { path } = React.useContext(RouterContext)
+  const isActive = exact ? path === to : path.startsWith(to)
+  return React.createElement(Link, {
+    to,
+    className: [className, isActive ? activeClassName : ''].filter(Boolean).join(' '),
+    style: isActive ? { ...style, ...activeStyle } : style,
+    'aria-current': isActive ? 'page' : undefined,
+    ...rest,
+  }, children)
+}
