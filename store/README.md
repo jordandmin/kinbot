@@ -8,11 +8,18 @@ Official community plugins for KinBot. Each directory contains a self-contained 
 |--------|-------------|------|
 | [rss-reader](./rss-reader/) | Fetch and summarize RSS/Atom feeds | rss, news, productivity |
 
-## Contributing
+## Contributing a Plugin
 
-1. Fork this repo
-2. Create your plugin in `store/<plugin-name>/`
-3. Include: `plugin.json`, `index.ts`, `README.md`
-4. Open a PR - maintainers will review and merge
+```bash
+# Scaffold a new plugin
+bun store:create my-plugin -d "What it does" -a "Your Name" -i "🚀"
 
-See the [Plugin Development Guide](../docs/plugins.md) for details on the plugin API.
+# Validate your manifest
+bun store:validate my-plugin
+
+# Test locally
+cp -r store/my-plugin plugins/
+bun run dev
+```
+
+Then open a PR. See [CONTRIBUTING.md](../CONTRIBUTING.md#submitting-a-store-plugin) for full details and the [Plugin Development Guide](../docs/plugins.md) for the API reference.

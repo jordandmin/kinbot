@@ -88,6 +88,64 @@ Channel adapters live in `src/server/channels/` and implement the `ChannelAdapte
 4. Add the platform to `ChannelPlatform` in `src/shared/types.ts`
 5. Commit: `feat: add <platform> channel`
 
+## Submitting a Store Plugin
+
+The `store/` directory contains curated community plugins that users can install directly from the KinBot UI. Here's how to submit yours.
+
+### Scaffold a New Plugin
+
+```bash
+bun store:create my-plugin -d "What it does" -a "Your Name" -i "🚀"
+```
+
+This creates `store/my-plugin/` with the three required files:
+- `plugin.json` - manifest (metadata, config schema, permissions)
+- `index.ts` - entry point
+- `README.md` - documentation shown in the Store UI
+
+### Plugin Requirements
+
+- **Name** must match `[a-z0-9][a-z0-9-]*` and be unique in the store
+- **Manifest** must include `name`, `version`, `description`, and `main`
+- **README** is required and displayed in the plugin detail modal
+- **Permissions** must be minimal. Only request what you need (e.g., `http:api.example.com` instead of `http:*`)
+- **No external dependencies**. Plugins run in-process with Bun, use `ctx.http` for HTTP requests
+- **Config fields** must have `type`, `label`, and `description`
+
+### Validate Locally
+
+```bash
+bun store:validate my-plugin
+```
+
+This runs the same checks as CI: manifest schema, required files, TypeScript syntax, config field validation.
+
+### Test Locally
+
+Copy your plugin to the `plugins/` directory and restart KinBot:
+
+```bash
+cp -r store/my-plugin plugins/
+bun run dev
+```
+
+Verify it loads, the config UI renders correctly, and tools work as expected.
+
+### Submit a PR
+
+1. Fork the repo and create a branch: `git checkout -b store/my-plugin`
+2. Add only your plugin directory under `store/`
+3. Push and open a PR. The `store-plugins` CI workflow validates your manifest automatically.
+4. A maintainer will review the code, test the plugin, and merge if it looks good.
+
+### Tips
+
+- Look at `store/rss-reader/` as a reference implementation
+- Keep plugins focused: one clear purpose per plugin
+- Write helpful README examples so users know what prompts to try
+- Use `ctx.log` for debugging, `ctx.storage` for persistence, `ctx.config` for user settings
+- See the [Plugin Development Guide](docs/plugins.md) for the full API reference
+
 ## Code Style
 
 - **TypeScript** strict mode

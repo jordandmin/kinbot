@@ -1100,3 +1100,35 @@ Card, Stack, Button, Input, Combobox, TagInput, DataGrid, Modal, Badge, Stat, Di
 1. Update tool descriptions to document routing primitives (useHashRouter, Route, Link)
 2. Consider `ColorPicker` or `RichTextEditor` components
 3. Add TypeScript declarations for routing exports
+
+## 2026-03-05 (run 29) — Hash-Based Routing Components
+
+**What:** Added a complete hash-based routing system for multi-page mini-apps.
+
+### New Components (6)
+1. **`Router`** — Provider component, wraps the app, listens to hashchange events
+2. **`Route`** — Declares a route with path pattern (supports `:param` segments and `*` wildcard)
+3. **`Link`** — Navigation link that updates hash without page reload
+4. **`NavLink`** — Like Link but adds `active` class when current path matches (exact prop available)
+5. **`Navigate`** — Redirect component (navigates on mount)
+6. **`useHashRouter()`** — Hook returning `{ path, params, query, navigate }`
+
+### Features
+- Hash-based routing (no server config needed, works in iframes)
+- URL parameter extraction (`:id` patterns)
+- Query string parsing (`#/page?foo=bar`)
+- Wildcard routes for 404/catch-all
+- `navigate(path, { replace })` for programmatic navigation
+- NavLink with `activeClassName`, `activeStyle`, `aria-current="page"`
+
+### Files changed
+- `src/server/mini-app-sdk/kinbot-components.js` — +152 lines (routing implementation)
+- `src/server/mini-app-sdk/kinbot-components.d.ts` — +42 lines (TypeScript definitions)
+- `src/server/tools/mini-app-tools.ts` — updated import list + routing documentation
+
+**Tests:** 1875 pass, 0 fail. Build clean.
+
+**Next priorities:**
+1. Add a multi-page template demonstrating routing (e.g., dashboard with settings/about pages)
+2. Consider `ColorPicker` or `RichTextEditor` components
+3. Update component-showcase template to include routing demo section

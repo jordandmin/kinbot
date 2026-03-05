@@ -35,6 +35,7 @@
     "test": "bun test",
     "test:e2e": "npx playwright test",
     "store:validate": "bun scripts/validate-store-plugins.ts",
+    "store:create": "bun scripts/create-store-plugin.ts",
     "typecheck": "tsc --noEmit",
     "prepare": "husky"
   },
