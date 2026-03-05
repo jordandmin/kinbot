@@ -403,7 +403,15 @@ export async function searchMemories(
     queries.map((q) => hybridSearchSingleQuery(kinId, q, candidateLimit, scoreMap, K, ftsBoost)),
   )
 
-  // Apply temporal decay, importance weighting, and retrieval frequency boost to fused scores
+  // Detect subjects mentioned in the query for score boosting
+  const knownSubjects = await getDistinctSubjects(kinId)
+  const queryLower = query.toLowerCase()
+  const matchedSubjects = new Set(
+    knownSubjects.filter((s) => queryLower.includes(s.toLowerCase())),
+  )
+  const subjectBoostFactor = config.memory.subjectBoost ?? 1.3
+
+  // Apply temporal decay, importance weighting, retrieval frequency boost, and subject boost to fused scores
   for (const [, data] of scoreMap) {
     const decay = temporalDecayWeight(data.updatedAt, data.category)
     const imp = data.importance ?? 5
@@ -411,7 +419,9 @@ export async function searchMemories(
     // Logarithmic retrieval frequency boost: memories retrieved more often get a mild boost
     // log2(1) = 0 → boost = 1.0 (never retrieved), log2(11) ≈ 3.46 → boost ≈ 1.17
     const retrievalBoost = 1 + Math.log2(1 + data.retrievalCount) * 0.05
-    data.score *= decay * importanceWeight * retrievalBoost
+    // Subject boost: if the memory's subject matches an entity mentioned in the query, boost its score
+    const subjectBoost = data.subject && matchedSubjects.has(data.subject) ? subjectBoostFactor : 1.0
+    data.score *= decay * importanceWeight * retrievalBoost * subjectBoost
   }
 
   // Sort by weighted score descending

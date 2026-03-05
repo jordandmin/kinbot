@@ -78,6 +78,7 @@ export const config = {
     adaptiveKMinScoreRatio: Number(process.env.MEMORY_ADAPTIVE_K_MIN_SCORE_RATIO ?? 0.3),
     rrfK: Number(process.env.MEMORY_RRF_K ?? 60),
     ftsBoost: Number(process.env.MEMORY_FTS_BOOST ?? 1.2),
+    subjectBoost: Number(process.env.MEMORY_SUBJECT_BOOST ?? 1.3),
   },
 
   queue: {
