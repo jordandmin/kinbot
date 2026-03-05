@@ -703,3 +703,16 @@ interface NavLinkProps extends LinkProps {
   activeStyle?: React.CSSProperties;
 }
 export function NavLink(props: NavLinkProps): React.ReactElement;
+
+interface ColorPickerProps {
+  value?: string;
+  onChange?: (hex: string) => void;
+  label?: string;
+  error?: string;
+  swatches?: string[];
+  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  style?: React.CSSProperties;
+}
+export function ColorPicker(props: ColorPickerProps): React.ReactElement;

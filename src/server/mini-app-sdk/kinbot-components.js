@@ -4105,3 +4105,198 @@ export function NavLink({ to, exact, activeClassName = 'active', activeStyle, cl
     ...rest,
   }, children)
 }
+
+// ── Color utilities ──────────────────────────────────────────────────
+function hexToHsv(hex) {
+  hex = hex.replace('#', '')
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]
+  const r = parseInt(hex.slice(0,2),16)/255
+  const g = parseInt(hex.slice(2,4),16)/255
+  const b = parseInt(hex.slice(4,6),16)/255
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min
+  let h = 0
+  if (d) {
+    if (max === r) h = ((g-b)/d + (g<b?6:0))/6
+    else if (max === g) h = ((b-r)/d + 2)/6
+    else h = ((r-g)/d + 4)/6
+  }
+  return { h: h*360, s: max ? d/max : 0, v: max }
+}
+
+function hsvToHex(h, s, v) {
+  h = ((h % 360) + 360) % 360
+  const c = v * s, x = c * (1 - Math.abs((h/60)%2 - 1)), m = v - c
+  let r, g, b
+  if (h < 60)       { r=c; g=x; b=0 }
+  else if (h < 120) { r=x; g=c; b=0 }
+  else if (h < 180) { r=0; g=c; b=x }
+  else if (h < 240) { r=0; g=x; b=c }
+  else if (h < 300) { r=x; g=0; b=c }
+  else              { r=c; g=0; b=x }
+  const toHex = n => Math.round((n+m)*255).toString(16).padStart(2,'0')
+  return '#' + toHex(r) + toHex(g) + toHex(b)
+}
+
+/**
+ * ColorPicker — a full color picker with saturation/brightness area, hue slider, and hex input.
+ * Props: value (hex string), onChange(hex), label, error, swatches (array of hex), disabled, showAlpha, size ('sm'|'md'|'lg')
+ */
+export function ColorPicker({ value = '#3b82f6', onChange, label, error, swatches, disabled, size = 'md', className, style, ...rest }) {
+  const hsv = React.useMemo(() => hexToHsv(value), [value])
+  const [dragging, setDragging] = React.useState(null) // 'area' | 'hue'
+  const areaRef = React.useRef(null)
+  const hueRef = React.useRef(null)
+  const [hexInput, setHexInput] = React.useState(value)
+
+  React.useEffect(() => { setHexInput(value) }, [value])
+
+  const emit = React.useCallback((h, s, v) => {
+    if (disabled || !onChange) return
+    onChange(hsvToHex(h, s, v))
+  }, [disabled, onChange])
+
+  const handleAreaPointer = React.useCallback((e) => {
+    const rect = areaRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const s = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const v = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height))
+    emit(hsv.h, s, v)
+  }, [hsv.h, emit])
+
+  const handleHuePointer = React.useCallback((e) => {
+    const rect = hueRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const h = Math.max(0, Math.min(360, (e.clientX - rect.left) / rect.width * 360))
+    emit(h, hsv.s, hsv.v)
+  }, [hsv.s, hsv.v, emit])
+
+  React.useEffect(() => {
+    if (!dragging) return
+    const handler = dragging === 'area' ? handleAreaPointer : handleHuePointer
+    const onMove = (e) => { e.preventDefault(); handler(e) }
+    const onUp = () => setDragging(null)
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
+    return () => { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp) }
+  }, [dragging, handleAreaPointer, handleHuePointer])
+
+  const handleHexChange = (e) => {
+    const v = e.target.value
+    setHexInput(v)
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      onChange?.(v.toLowerCase())
+    }
+  }
+
+  const sizes = { sm: { area: 160, hue: 12 }, md: { area: 200, hue: 14 }, lg: { area: 260, hue: 16 } }
+  const sz = sizes[size] || sizes.md
+
+  const id = React.useId?.() || ''
+
+  return React.createElement('div', {
+    className: ['kb-color-picker', disabled && 'kb-disabled', className].filter(Boolean).join(' '),
+    style, ...rest,
+  },
+    label && React.createElement('label', { className: 'kb-color-picker-label', htmlFor: id + 'hex' }, label),
+    // Saturation/brightness area
+    React.createElement('div', {
+      ref: areaRef,
+      className: 'kb-color-picker-area',
+      style: {
+        width: sz.area, height: sz.area,
+        background: `hsl(${hsv.h}, 100%, 50%)`,
+        position: 'relative', borderRadius: 'var(--radius-md, 8px)', cursor: disabled ? 'default' : 'crosshair',
+        overflow: 'hidden', touchAction: 'none',
+      },
+      onPointerDown: (e) => { if (disabled) return; setDragging('area'); handleAreaPointer(e) },
+    },
+      React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(to right, #fff, transparent)' } }),
+      React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(to top, #000, transparent)' } }),
+      React.createElement('div', {
+        className: 'kb-color-picker-thumb',
+        style: {
+          position: 'absolute',
+          left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`,
+          width: 14, height: 14, borderRadius: '50%',
+          border: '2px solid #fff', boxShadow: '0 0 2px rgba(0,0,0,0.6)',
+          transform: 'translate(-50%, -50%)', pointerEvents: 'none',
+          background: value,
+        },
+      }),
+    ),
+    // Hue bar
+    React.createElement('div', {
+      ref: hueRef,
+      className: 'kb-color-picker-hue',
+      style: {
+        width: sz.area, height: sz.hue, marginTop: 8,
+        borderRadius: sz.hue / 2, cursor: disabled ? 'default' : 'pointer',
+        background: 'linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)',
+        position: 'relative', touchAction: 'none',
+      },
+      onPointerDown: (e) => { if (disabled) return; setDragging('hue'); handleHuePointer(e) },
+    },
+      React.createElement('div', {
+        style: {
+          position: 'absolute',
+          left: `${(hsv.h / 360) * 100}%`, top: '50%',
+          width: sz.hue + 2, height: sz.hue + 2, borderRadius: '50%',
+          border: '2px solid #fff', boxShadow: '0 0 2px rgba(0,0,0,0.6)',
+          transform: 'translate(-50%, -50%)', pointerEvents: 'none',
+          background: `hsl(${hsv.h}, 100%, 50%)`,
+        },
+      }),
+    ),
+    // Hex input + preview
+    React.createElement('div', {
+      style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, width: sz.area },
+    },
+      React.createElement('div', {
+        className: 'kb-color-picker-preview',
+        style: {
+          width: 32, height: 32, borderRadius: 'var(--radius-sm, 6px)',
+          background: value, border: '1px solid var(--color-border, #ddd)', flexShrink: 0,
+        },
+      }),
+      React.createElement('input', {
+        id: id + 'hex',
+        type: 'text',
+        value: hexInput,
+        onChange: handleHexChange,
+        onBlur: () => setHexInput(value),
+        disabled,
+        maxLength: 7,
+        className: 'kb-input',
+        style: { flex: 1, fontFamily: 'monospace', fontSize: '0.85rem' },
+        'aria-label': 'Hex color value',
+      }),
+    ),
+    // Swatches
+    swatches?.length > 0 && React.createElement('div', {
+      className: 'kb-color-picker-swatches',
+      style: { display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8, width: sz.area },
+    },
+      ...swatches.map((sw) =>
+        React.createElement('button', {
+          key: sw,
+          type: 'button',
+          disabled,
+          onClick: () => onChange?.(sw),
+          title: sw,
+          className: 'kb-color-picker-swatch',
+          style: {
+            width: 22, height: 22, borderRadius: 'var(--radius-sm, 4px)',
+            background: sw, border: sw === value ? '2px solid var(--color-primary, #3b82f6)' : '1px solid var(--color-border, #ddd)',
+            cursor: disabled ? 'default' : 'pointer', padding: 0,
+          },
+          'aria-label': `Select color ${sw}`,
+        }),
+      ),
+    ),
+    // Error
+    error && React.createElement('div', {
+      className: 'kb-field-error',
+      style: { marginTop: 4, color: 'var(--color-error, #ef4444)', fontSize: '0.8rem' },
+    }, error),
+  )
+}

@@ -1708,7 +1708,7 @@ export default {
   {
     id: 'component-showcase',
     name: 'Component Showcase',
-    description: 'An interactive storybook that demos all 47 @kinbot/components with live examples. Browse by category: Layout, Forms, Data Display, Feedback, Navigation, Overlays, Charts, and Extra.',
+    description: 'An interactive storybook that demos all 48 @kinbot/components with live examples. Browse by category: Layout, Forms, Data Display, Feedback, Navigation, Overlays, Charts, and Extra.',
     icon: '🧩',
     tags: ['components', 'storybook', 'demo', 'reference', 'ui'],
     suggestedSlug: 'component-showcase',
@@ -1773,12 +1773,12 @@ export default {
       BarChart, LineChart, PieChart, SparkLine,
       Stepper, StepperContent,
       FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput,
-      Combobox, TagInput
+      Combobox, TagInput, ColorPicker
     } from '@kinbot/components'
 
     const CATEGORIES = [
       { id: 'layout', label: 'Layout', items: ['Stack','Divider','Card','Grid','Panel'] },
-      { id: 'forms', label: 'Forms', items: ['Button','ButtonGroup','Input','Textarea','Select','Checkbox','Switch','RadioGroup','Slider','DatePicker','Combobox','TagInput','Form'] },
+      { id: 'forms', label: 'Forms', items: ['Button','ButtonGroup','Input','Textarea','Select','Checkbox','Switch','RadioGroup','Slider','DatePicker','Combobox','TagInput','ColorPicker','Form'] },
       { id: 'data', label: 'Data Display', items: ['Badge','Tag','Stat','Avatar','Tooltip','ProgressBar','Table','List','DataGrid','Accordion'] },
       { id: 'feedback', label: 'Feedback', items: ['Alert','Spinner','Skeleton','EmptyState'] },
       { id: 'nav', label: 'Navigation', items: ['Tabs','Breadcrumbs','Pagination','DropdownMenu','Stepper'] },
@@ -1878,6 +1878,12 @@ export default {
             suggestions={['React','TypeScript','Python','Rust','Go','Tailwind','Docker','Kubernetes']}
             maxTags={6} value={['React','TypeScript']}
             onChange={tags => console.log('Tags:', tags)} />
+        </div>
+        <div className="demo-section">
+          <div className="demo-label">ColorPicker</div>
+          <ColorPicker label="Brand Color" value="#3b82f6"
+            swatches={['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#000000','#ffffff']}
+            onChange={hex => console.log('Color:', hex)} />
         </div>
       </>
     }
