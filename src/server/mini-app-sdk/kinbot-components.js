@@ -4892,3 +4892,262 @@ function _calNavBtn() {
     transition: 'background 0.1s',
   }
 }
+
+// ─── DateRangePicker ──────────────────────────────────────────────────────────
+
+/**
+ * DateRangePicker - Compound component with two date inputs and a Calendar popover in range mode.
+ *
+ * Props:
+ *   value: { start?: string, end?: string } — YYYY-MM-DD strings
+ *   onChange: ({ start, end }) => void
+ *   label?: string
+ *   error?: string
+ *   placeholder?: { start?: string, end?: string }
+ *   min?: string — minimum selectable date (YYYY-MM-DD)
+ *   max?: string — maximum selectable date (YYYY-MM-DD)
+ *   locale?: string — locale for Calendar day/month names (default 'en')
+ *   weekStart?: number — 0=Sun, 1=Mon (default 1)
+ *   disabled?: boolean
+ *   presets?: Array<{ label: string, start: string, end: string }> — quick-select presets
+ *   separator?: string — text between inputs (default '→')
+ *   className?: string
+ *   style?: object
+ */
+export function DateRangePicker({
+  value = {},
+  onChange,
+  label,
+  error,
+  placeholder = {},
+  min,
+  max,
+  locale = 'en',
+  weekStart = 1,
+  disabled,
+  presets,
+  separator = '→',
+  className,
+  style,
+  ...rest
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef(null)
+  const autoId = useId()
+
+  // Close on outside click or Escape
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false)
+    }
+    function handleEsc(e) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleEsc)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleEsc)
+    }
+  }, [open])
+
+  function handleCalendarChange(range) {
+    if (onChange) onChange(range)
+    // Auto-close when both dates are selected
+    if (range && range.start && range.end) {
+      setTimeout(() => setOpen(false), 200)
+    }
+  }
+
+  function handlePreset(preset) {
+    if (onChange) onChange({ start: preset.start, end: preset.end })
+    setTimeout(() => setOpen(false), 150)
+  }
+
+  function handleClear() {
+    if (onChange) onChange({ start: null, end: null })
+  }
+
+  function formatDisplay(dateStr) {
+    if (!dateStr) return null
+    const d = _calParse(dateStr)
+    if (!d) return dateStr
+    try {
+      return d.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
+    } catch {
+      return dateStr
+    }
+  }
+
+  const borderColor = error ? 'var(--color-destructive, #ef4444)' : 'var(--color-border)'
+  const focusBorder = 'var(--color-ring, var(--color-primary))'
+
+  const inputBase = {
+    flex: 1,
+    minWidth: 0,
+    padding: '0.5rem 0.75rem',
+    fontSize: '0.875rem',
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--color-foreground)',
+    outline: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1,
+  }
+
+  const hasValue = value.start || value.end
+
+  return React.createElement('div', {
+    ref: containerRef,
+    className: cn('kb-date-range-picker', className),
+    style: mergeStyles({ position: 'relative', display: 'inline-flex', flexDirection: 'column', gap: '0.375rem' }, style),
+    ...rest,
+  },
+    // Label
+    label && React.createElement('label', {
+      htmlFor: autoId,
+      style: { fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-foreground)' },
+    }, label),
+
+    // Input row
+    React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        border: `1px solid ${borderColor}`,
+        borderRadius: 'var(--radius-md, 0.375rem)',
+        background: 'var(--color-card, var(--color-background))',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+        ...(open ? { borderColor: focusBorder, boxShadow: `0 0 0 2px color-mix(in srgb, ${focusBorder} 20%, transparent)` } : {}),
+      },
+      onClick: () => { if (!disabled) setOpen(!open) },
+    },
+      // Start display
+      React.createElement('div', {
+        id: autoId,
+        style: inputBase,
+      }, value.start ? formatDisplay(value.start) : React.createElement('span', {
+        style: { color: 'var(--color-text-muted, rgba(128,128,128,0.6))' },
+      }, placeholder.start || 'Start date')),
+
+      // Separator
+      React.createElement('span', {
+        style: { padding: '0 0.25rem', color: 'var(--color-text-muted, rgba(128,128,128,0.5))', fontSize: '0.875rem', flexShrink: 0 },
+      }, separator),
+
+      // End display
+      React.createElement('div', {
+        style: inputBase,
+      }, value.end ? formatDisplay(value.end) : React.createElement('span', {
+        style: { color: 'var(--color-text-muted, rgba(128,128,128,0.6))' },
+      }, placeholder.end || 'End date')),
+
+      // Clear button
+      hasValue && !disabled && React.createElement('button', {
+        type: 'button',
+        onClick: (e) => { e.stopPropagation(); handleClear() },
+        'aria-label': 'Clear dates',
+        style: {
+          background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.5rem',
+          fontSize: '1rem', color: 'var(--color-text-muted)', lineHeight: 1,
+        },
+      }, '×'),
+
+      // Calendar icon
+      React.createElement('span', {
+        style: { padding: '0 0.625rem 0 0.25rem', fontSize: '1rem', color: 'var(--color-text-muted)', flexShrink: 0 },
+      }, '📅'),
+    ),
+
+    // Dropdown
+    open && React.createElement('div', {
+      role: 'dialog',
+      'aria-label': 'Date range picker',
+      style: {
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        marginTop: '0.375rem',
+        zIndex: 50,
+        background: 'var(--color-card, var(--color-background))',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg, 0.5rem)',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+        padding: '0.75rem',
+        animation: 'fade-in 0.15s ease-out',
+        minWidth: '20rem',
+      },
+    },
+      // Presets row
+      presets && presets.length > 0 && React.createElement('div', {
+        style: {
+          display: 'flex', flexWrap: 'wrap', gap: '0.375rem',
+          paddingBottom: '0.625rem', marginBottom: '0.625rem',
+          borderBottom: '1px solid var(--color-border, rgba(128,128,128,0.15))',
+        },
+      }, presets.map((p, i) =>
+        React.createElement('button', {
+          key: i,
+          type: 'button',
+          onClick: () => handlePreset(p),
+          style: {
+            padding: '0.25rem 0.625rem',
+            fontSize: '0.75rem',
+            borderRadius: 'var(--radius-sm, 0.25rem)',
+            border: '1px solid var(--color-border, rgba(128,128,128,0.2))',
+            background: (value.start === p.start && value.end === p.end)
+              ? 'var(--color-primary, #6366f1)' : 'transparent',
+            color: (value.start === p.start && value.end === p.end)
+              ? 'white' : 'var(--color-foreground)',
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+            fontWeight: 500,
+          },
+        }, p.label)
+      )),
+
+      // Calendar
+      React.createElement(Calendar, {
+        mode: 'range',
+        value: { start: value.start || null, end: value.end || null },
+        onChange: handleCalendarChange,
+        min,
+        max,
+        locale,
+        weekStart,
+      }),
+
+      // Selected range summary
+      (value.start || value.end) && React.createElement('div', {
+        style: {
+          marginTop: '0.5rem', paddingTop: '0.5rem',
+          borderTop: '1px solid var(--color-border, rgba(128,128,128,0.15))',
+          fontSize: '0.75rem', color: 'var(--color-text-muted)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        },
+      },
+        React.createElement('span', null,
+          value.start && value.end
+            ? `${formatDisplay(value.start)} – ${formatDisplay(value.end)}`
+            : value.start
+              ? `From ${formatDisplay(value.start)} — select end date`
+              : `Until ${formatDisplay(value.end)}`
+        ),
+        value.start && value.end && React.createElement('span', {
+          style: { fontWeight: 500 },
+        }, (() => {
+          const s = _calParse(value.start), e = _calParse(value.end)
+          if (!s || !e) return ''
+          const days = Math.round((e - s) / 86400000) + 1
+          return `${days} day${days !== 1 ? 's' : ''}`
+        })()),
+      ),
+    ),
+
+    // Error message
+    error && React.createElement('p', {
+      style: { fontSize: '0.75rem', color: 'var(--color-destructive, #ef4444)' },
+    }, error),
+  )
+}

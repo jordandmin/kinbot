@@ -1773,7 +1773,7 @@ export default {
       BarChart, LineChart, PieChart, SparkLine,
       Stepper, StepperContent,
       FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput,
-      Combobox, TagInput, ColorPicker, MarkdownEditor, Calendar
+      Combobox, TagInput, ColorPicker, MarkdownEditor, Calendar, DateRangePicker
     } from '@kinbot/components'
 
     const CATEGORIES = [
@@ -1784,7 +1784,7 @@ export default {
       { id: 'nav', label: 'Navigation', items: ['Tabs','Breadcrumbs','Pagination','DropdownMenu','Stepper'] },
       { id: 'overlays', label: 'Overlays', items: ['Modal','Drawer','Popover'] },
       { id: 'charts', label: 'Charts', items: ['BarChart','LineChart','PieChart','SparkLine'] },
-      { id: 'extra', label: 'Extra', items: ['FileUpload','CodeBlock','Timeline','AvatarGroup','NumberInput','Calendar'] },
+      { id: 'extra', label: 'Extra', items: ['FileUpload','CodeBlock','Timeline','AvatarGroup','NumberInput','Calendar','DateRangePicker'] },
     ]
 
     // ─── Demo sections ───
@@ -2098,6 +2098,19 @@ export default {
           <Calendar mode="range" value={{ start: '2026-03-10', end: '2026-03-18' }}
             onChange={r => KinBot.toast('Range: ' + r.start + ' → ' + r.end)} />
         </div>
+        <div className="demo-box">
+          <div className="demo-label">DateRangePicker (with presets)</div>
+          <DateRangePicker
+            label="Select period"
+            value={{ start: '2026-03-01', end: '2026-03-15' }}
+            onChange={r => KinBot.toast('Range: ' + (r.start || '?') + ' → ' + (r.end || '?'))}
+            presets={[
+              { label: 'Last 7 days', start: '2026-02-26', end: '2026-03-05' },
+              { label: 'This month', start: '2026-03-01', end: '2026-03-31' },
+              { label: 'Last 30 days', start: '2026-02-03', end: '2026-03-05' },
+            ]}
+          />
+        </div>
       </>
     }
 
@@ -2109,7 +2122,7 @@ export default {
       nav: { title: 'Navigation', desc: 'Tabs, breadcrumbs, pagination, dropdown menus, stepper', render: NavDemo },
       overlays: { title: 'Overlays', desc: 'Modal, Drawer, Popover', render: OverlaysDemo },
       charts: { title: 'Charts', desc: 'Bar, Line, Pie, SparkLine', render: ChartsDemo },
-      extra: { title: 'Extra', desc: 'FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput, Calendar', render: ExtraDemo },
+      extra: { title: 'Extra', desc: 'FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput, Calendar, DateRangePicker', render: ExtraDemo },
     }
 
     function App() {

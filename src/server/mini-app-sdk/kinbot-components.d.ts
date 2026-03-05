@@ -754,3 +754,27 @@ export interface CalendarProps {
   style?: React.CSSProperties;
 }
 export function Calendar(props: CalendarProps): React.ReactElement;
+
+// ── DateRangePicker ─────────────────────────────────────────────────────────
+export interface DateRangePreset {
+  label: string;
+  start: string;
+  end: string;
+}
+export interface DateRangePickerProps {
+  value?: { start?: string; end?: string };
+  onChange?: (value: { start: string | null; end: string | null }) => void;
+  label?: string;
+  error?: string;
+  placeholder?: { start?: string; end?: string };
+  min?: string;
+  max?: string;
+  locale?: string;
+  weekStart?: 0 | 1;
+  disabled?: boolean;
+  presets?: DateRangePreset[];
+  separator?: string;
+  className?: string;
+  style?: React.CSSProperties;
+}
+export function DateRangePicker(props: DateRangePickerProps): React.ReactElement;
