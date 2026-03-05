@@ -170,13 +170,14 @@ export const TaskResultCard = memo(function TaskResultCard(props: TaskResultCard
 
   const task = resolveTask(props)
 
-  // Fallback: can't parse — show as plain text
+  // Fallback: can't parse — show truncated plain text
   if (!task) {
     const content = props.mode === 'message' ? props.content : ''
+    const truncated = content.length > 300 ? content.slice(0, 300) + '...' : content
     return (
       <div className="flex justify-center py-2 animate-fade-in">
         <div className="rounded-lg bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
-          {content}
+          {truncated}
         </div>
       </div>
     )

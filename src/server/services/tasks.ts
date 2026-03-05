@@ -174,10 +174,14 @@ export async function spawnTask(params: SpawnParams) {
   // Notify source Kin about being spawned (only for spawn_type = 'other')
   if (params.spawnType === 'other' && params.sourceKinId) {
     const taskLabel = params.title ?? params.description
+    // Truncate description to avoid leaking raw prompts into the conversation UI
+    const briefDesc = params.description.length > 200
+      ? params.description.slice(0, 200) + '...'
+      : params.description
     notifySourceKin(
       params.sourceKinId,
       params.parentKinId,
-      `[Task assigned: ${taskLabel}] ${params.description}`,
+      `[Task assigned: ${taskLabel}] ${briefDesc}`,
       taskId,
     ).catch((err) => log.warn({ taskId, sourceKinId: params.sourceKinId, err }, 'Failed to notify source Kin on spawn'))
   }
