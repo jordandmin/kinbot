@@ -1596,5 +1596,11 @@
       "noResults": "No apps match your search",
       "empty": "No apps available yet"
     }
+  },
+  "accessibility": {
+    "themeToggle": "Toggle theme",
+    "paletteToggle": "Change color palette",
+    "notifications": "Notifications",
+    "kinSettings": "Kin settings"
   }
 }

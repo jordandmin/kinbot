@@ -1596,5 +1596,11 @@
       "noResults": "Aucune app ne correspond",
       "empty": "Aucune app disponible"
     }
+  },
+  "accessibility": {
+    "themeToggle": "Changer le thème",
+    "paletteToggle": "Changer la palette de couleurs",
+    "notifications": "Notifications",
+    "kinSettings": "Paramètres du Kin"
   }
 }

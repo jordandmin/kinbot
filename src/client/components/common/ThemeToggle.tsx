@@ -10,6 +10,7 @@ import {
 } from '@/client/components/ui/dropdown-menu'
 import { Sun, Moon, Monitor, Contrast } from 'lucide-react'
 import { usePalette } from '@/client/components/theme-provider'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
 
 export function ThemeToggle() {
   const { t } = useTranslation()
@@ -18,15 +19,20 @@ export function ThemeToggle() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm">
-          {resolvedTheme === 'dark' ? (
-            <Moon className="size-4" />
-          ) : (
-            <Sun className="size-4" />
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label={t('accessibility.themeToggle')}>
+              {resolvedTheme === 'dark' ? (
+                <Moon className="size-4" />
+              ) : (
+                <Sun className="size-4" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{t('accessibility.themeToggle')}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme('light')} className={theme === 'light' ? 'bg-accent' : ''}>
           <Sun className="size-4" />

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Bell } from 'lucide-react'
 import { useNotificationSound } from '@/client/hooks/useNotificationSound'
@@ -18,6 +19,7 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ onOpenSettings }: NotificationBellProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const {
@@ -58,7 +60,7 @@ export function NotificationBell({ onOpenSettings }: NotificationBellProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative size-8">
+        <Button variant="ghost" size="icon" className="relative size-8" aria-label={t('accessibility.notifications')}>
           <Bell className="size-4" />
           {unreadCount > 0 && (
             <Badge

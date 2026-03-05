@@ -399,9 +399,14 @@ export const ConversationHeader = memo(function ConversationHeader({
       )}
 
       {/* Settings button */}
-      <Button variant="ghost" size="icon-sm" onClick={onEdit}>
-        <Settings2 className="size-4" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label={t('accessibility.kinSettings')}>
+            <Settings2 className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{t('accessibility.kinSettings')}</TooltipContent>
+      </Tooltip>
     </div>
   )
 })
