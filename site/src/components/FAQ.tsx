@@ -109,6 +109,7 @@ const faqs: FAQItem[] = [
     category: 'Features',
   },
   {
+    question: 'Can agents create their own tools?',
     answer:
       'Yes. Kins can create custom tools at runtime (with user approval). Combined with MCP server support, this means your agents can extend their own capabilities — connecting to databases, calling APIs, running code, or interacting with any system you expose. No code changes needed.',
     category: 'Features',
