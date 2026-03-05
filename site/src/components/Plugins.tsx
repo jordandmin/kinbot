@@ -129,14 +129,21 @@ export function Plugins() {
       <div className="container-section relative z-10">
         {/* Section header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-muted mb-6">
+          <div
+            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm mb-6"
+            style={{
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-secondary)',
+              color: 'var(--color-muted-foreground)',
+            }}
+          >
             <Puzzle className="w-4 h-4" style={{ color: 'var(--color-glow-2)' }} />
             Extensibility
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="gradient-text">Plugin System</span>
           </h2>
-          <p className="text-lg text-muted max-w-2xl mx-auto">
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
             Extend KinBot with custom tools, providers, channels, and hooks.
             TypeScript-first, hot-reloadable, and secure by design.
           </p>
@@ -147,24 +154,29 @@ export function Plugins() {
           {pluginTypes.map((type) => (
             <div
               key={type.name}
-              className="card-base p-6 group hover:border-white/20 transition-all duration-300"
+              className="glass-strong rounded-xl p-6 group transition-all duration-300"
             >
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
                 style={{
-                  background: `linear-gradient(135deg, ${type.accent}20, ${type.accent}10)`,
-                  border: `1px solid ${type.accent}30`,
+                  background: `color-mix(in oklch, ${type.accent} 12%, var(--color-background))`,
+                  border: `1px solid color-mix(in oklch, ${type.accent} 25%, transparent)`,
                 }}
               >
                 <type.icon className="w-6 h-6" style={{ color: type.accent }} />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{type.name}</h3>
-              <p className="text-sm text-muted mb-4">{type.description}</p>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-foreground)' }}>{type.name}</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>{type.description}</p>
               <div className="flex flex-wrap gap-1.5">
                 {type.examples.map((ex) => (
                   <span
                     key={ex}
-                    className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-muted border border-white/5"
+                    className="text-xs px-2 py-0.5 rounded-full"
+                    style={{
+                      background: 'var(--color-secondary)',
+                      color: 'var(--color-muted-foreground)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   >
                     {ex}
                   </span>
@@ -181,15 +193,15 @@ export function Plugins() {
               <div
                 className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
                 style={{
-                  background: 'linear-gradient(135deg, var(--color-glow-2)15, var(--color-glow-2)08)',
-                  border: '1px solid var(--color-glow-2)20',
+                  background: 'color-mix(in oklch, var(--color-glow-2) 12%, var(--color-background))',
+                  border: '1px solid color-mix(in oklch, var(--color-glow-2) 25%, transparent)',
                 }}
               >
                 <feat.icon className="w-5 h-5" style={{ color: 'var(--color-glow-2)' }} />
               </div>
               <div>
-                <h4 className="font-semibold text-sm mb-1">{feat.title}</h4>
-                <p className="text-sm text-muted">{feat.description}</p>
+                <h4 className="font-semibold text-sm mb-1" style={{ color: 'var(--color-foreground)' }}>{feat.title}</h4>
+                <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>{feat.description}</p>
               </div>
             </div>
           ))}
@@ -197,30 +209,36 @@ export function Plugins() {
 
         {/* Code examples */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card-base overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+          <div className="glass-strong rounded-xl overflow-hidden">
+            <div
+              className="flex items-center gap-2 px-4 py-3"
+              style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-secondary)' }}
+            >
               <div className="flex gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-500/60" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
                 <div className="w-3 h-3 rounded-full bg-green-500/60" />
               </div>
-              <span className="text-xs text-muted ml-2 font-mono">plugin.json</span>
+              <span className="text-xs ml-2 font-mono" style={{ color: 'var(--color-muted-foreground)' }}>plugin.json</span>
             </div>
-            <pre className="p-4 text-sm font-mono text-muted overflow-x-auto leading-relaxed">
+            <pre className="p-4 text-sm font-mono overflow-x-auto leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
               <code>{manifestExample}</code>
             </pre>
           </div>
 
-          <div className="card-base overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
+          <div className="glass-strong rounded-xl overflow-hidden">
+            <div
+              className="flex items-center gap-2 px-4 py-3"
+              style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-secondary)' }}
+            >
               <div className="flex gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-500/60" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
                 <div className="w-3 h-3 rounded-full bg-green-500/60" />
               </div>
-              <span className="text-xs text-muted ml-2 font-mono">index.ts</span>
+              <span className="text-xs ml-2 font-mono" style={{ color: 'var(--color-muted-foreground)' }}>index.ts</span>
             </div>
-            <pre className="p-4 text-sm font-mono text-muted overflow-x-auto leading-relaxed">
+            <pre className="p-4 text-sm font-mono overflow-x-auto leading-relaxed" style={{ color: 'var(--color-muted-foreground)' }}>
               <code>{codeExample}</code>
             </pre>
           </div>
@@ -228,13 +246,15 @@ export function Plugins() {
 
         {/* CTA */}
         <div className="text-center mt-12">
-          <p className="text-muted mb-4">
+          <p className="mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
             Create your first plugin in under a minute
           </p>
-          <div className="inline-flex items-center gap-3 card-base px-5 py-3 font-mono text-sm">
+          <div
+            className="inline-flex items-center gap-3 glass-strong rounded-xl px-5 py-3 font-mono text-sm"
+          >
             <Terminal className="w-4 h-4" style={{ color: 'var(--color-glow-2)' }} />
-            <span className="text-muted">$</span>
-            <span>bunx create-kinbot-plugin</span>
+            <span style={{ color: 'var(--color-muted-foreground)' }}>$</span>
+            <span style={{ color: 'var(--color-foreground)' }}>bunx create-kinbot-plugin</span>
           </div>
         </div>
       </div>
