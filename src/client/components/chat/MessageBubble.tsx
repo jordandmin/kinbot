@@ -106,7 +106,23 @@ function buildContentParts(content: string, toolCalls: ToolCallViewItem[]): Cont
   // Remaining text after the last tool call
   if (cursor < content.length) {
     const text = content.slice(cursor)
-    if (text.trim()) parts.push({ type: 'text', text })
+    if (text.trim()) {
+      // Deduplicate: if trailing text is very similar to a prior text part, skip it.
+      // This handles LLMs that repeat their response after tool calls (e.g. Memorize).
+      const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase()
+      const trailing = normalize(text)
+      const isDuplicate = trailing.length > 20 && parts.some(
+        (p) => p.type === 'text' && (() => {
+          const prev = normalize(p.text)
+          // Check if one contains the other (allowing minor wording differences)
+          return prev.length > 20 && (
+            trailing.startsWith(prev.slice(0, Math.floor(prev.length * 0.6))) ||
+            prev.startsWith(trailing.slice(0, Math.floor(trailing.length * 0.6)))
+          )
+        })(),
+      )
+      if (!isDuplicate) parts.push({ type: 'text', text })
+    }
   }
 
   return parts
