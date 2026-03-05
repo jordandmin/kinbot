@@ -42,8 +42,12 @@ COPY --from=build /app/src/shared ./src/shared
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/drizzle.config.ts ./drizzle.config.ts
 
-# Create data directory
-RUN mkdir -p /app/data
+# Create non-root user for security
+RUN groupadd --gid 1001 kinbot && \
+    useradd --uid 1001 --gid kinbot --shell /bin/sh --create-home kinbot
+
+# Create data directory with correct ownership
+RUN mkdir -p /app/data && chown -R kinbot:kinbot /app/data
 
 # Environment
 ENV NODE_ENV=production
@@ -54,6 +58,9 @@ ENV KINBOT_DATA_DIR=/app/data
 EXPOSE 3000
 
 VOLUME ["/app/data"]
+
+# Run as non-root user
+USER kinbot
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

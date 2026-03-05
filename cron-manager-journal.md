@@ -1,5 +1,62 @@
 # KinBot Cron Manager Journal
 
+## 2026-03-05 07:00 UTC
+### Audit summary
+- **Active KinBot crons:** 18 (+ 4 non-KinBot: PinchChat, woodbrass-reply-check, reddit-token-refresh, bot-chronicles, HN Show HN one-shot)
+
+### Healthy (productive, well-tuned)
+- **kinbot-mini-apps** (2h, Opus) — Incredibly productive. 29 runs visible, shipped ~50 components, 25 hooks, SDK v1.14+, routing, charts, templates. Consistently ships. Occasional timeouts (300s) but recovers. 1875 tests now.
+- **kinbot-memory-research** (3h, Opus) — Steady R&D work on hybrid search, re-ranking, consolidation. Good interval.
+- **kinbot-add-tests** (2h, Opus) — Very productive, test count went from ~200 to 1875+. Occasional timeouts and "AI overloaded" but recovers well.
+- **kinbot-release** (3x/day, Opus) — Clean workflow, skips when nothing to release. Well-behaved.
+- **kinbot-ci-watchdog** (3h, Opus) — Mostly "CI green ✅" in 8s. Fixed multiple real CI breaks. Efficient at current interval.
+- **kinbot-promo** (4x/day, Opus) — Reddit API failures frequent but falls back to Twitter. Always produces actions.
+- **kinbot-qa-explorer** (4h, Opus) — Creating useful issues via browser testing. Found real bugs (#22, #46, #54, etc). 900s timeout appropriate.
+- **kinbot-e2e-tests** (6h, Opus) — Focused on fixing/adding Playwright tests. Good interval.
+- **kinbot-improve-cli** (6h, Opus) — Steady installer improvements.
+- **kinbot-github-maintenance** (4h, Opus) — README, CI, repo hygiene. Productive.
+- **kinbot-improve-site** (4h, Opus) — Landing page improvements, plugin section. Productive.
+- **kinbot-i18n-audit** (12h, Opus) — Appropriate interval, finds real i18n gaps.
+- **kinbot-sse-reactivity** (12h, Opus) — Appropriate interval, finds and fixes real SSE gaps.
+- **kinbot-consistency-guardian** (12h, Opus) — Refactoring/consistency work. Appropriate.
+
+### Issues found & actions taken
+
+1. **kinbot-community** (was 1h → changed to **4h**)
+   - **Problem:** MASSIVE waste. Ran every hour on Opus, and ~80% of runs said "Nothing to do" in 10-15s (2 i18n issues sitting there as "good first issue" templates). When there ARE real issues/PRs, it handles them well, but the idle polling is burning tokens.
+   - **Evidence:** 50+ consecutive "Nothing to do" runs visible in history, each taking 10-15s on Opus.
+   - **Action:** Changed interval from 1h to 4h. Still responsive enough for community activity. The QA explorer and other crons create issues faster than community members do.
+
+2. **kinbot-plugin-improve** (prompt fixed — no more PR creation)
+   - **Problem:** Every single run failed at the end trying `gh pr create` which errored "you must first push the current branch to a remote". The cron was working on feature branches and trying to create PRs, but since it's all the same GitHub user (MarlBurroW), it can't approve its own PRs anyway. The work was being done but the PR step always failed.
+   - **Evidence:** Last 5 runs all show the same PR creation failure.
+   - **Action:** Fixed the prompt to work directly on main branch (no feature branches, no PRs). This matches how all other KinBot crons work.
+
+### No action needed
+- **kinbot-ci-watchdog** — Efficient at 3h. Already optimized to 10.8Kms interval last audit.
+- **woodbrass-reply-check** — Already on Gemini Flash, finishes in <1s. Will auto-resolve when the Woodbrass order is delivered.
+- **HN Show HN** — One-shot scheduled for tomorrow, will auto-delete after running.
+
+### Cost analysis
+**Savings from today:**
+- kinbot-community: ~18 wasted Opus runs/day eliminated (from 24 to 6 runs/day)
+- kinbot-plugin-improve: no longer wastes 30s per run on failed PR creation
+
+### Proposals (for Nicolas to decide)
+1. **Model downgrade candidate:**
+   - `kinbot-ci-watchdog` — 90%+ of runs are "CI green" in 8s on Opus. Could use Gemini Flash for the check, saving significant cost. Only needs Opus when actually fixing CI.
+
+2. **Potential merge:**
+   - `kinbot-community` and `kinbot-qa-explorer` sometimes overlap (QA files issues, community implements them). Could potentially coordinate better, but they serve different purposes so probably fine as-is.
+
+3. **`.marlbot-context.md` is missing** — Multiple crons reference this file but it doesn't exist anymore. Several crons show `cat .marlbot-context.md: No such file or directory`. This causes them to proceed without context. Either recreate the file or remove references from prompts.
+
+### Next audit focus
+- Monitor kinbot-community at 4h — does it miss any real issues?
+- Monitor kinbot-plugin-improve — does the main-branch workflow cause conflicts?
+- Check if `.marlbot-context.md` needs to be recreated
+- Review kinbot-mini-apps timeout situation (7 timeouts in ~60 runs, maybe bump to 600s)
+
 ## 2026-03-04 21:06 UTC
 ### Audit summary
 - **Active KinBot crons:** 16
