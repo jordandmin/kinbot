@@ -62,6 +62,12 @@ export default defineConfig({
 					label: 'Channels',
 					items: [
 						{ label: 'Overview', slug: 'channels/overview' },
+						{ label: 'Telegram', slug: 'channels/telegram' },
+						{ label: 'Discord', slug: 'channels/discord' },
+						{ label: 'Slack', slug: 'channels/slack' },
+						{ label: 'WhatsApp', slug: 'channels/whatsapp' },
+						{ label: 'Signal', slug: 'channels/signal' },
+						{ label: 'Matrix', slug: 'channels/matrix' },
 					],
 				},
 				{
