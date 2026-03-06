@@ -115,3 +115,60 @@
 - **New since last audit:** `kinbot-docs-site` (2h, Opus) created today
 
 [...previous entries truncated for brevity...]
+
+## 2026-03-06 21:04 UTC
+### Audit summary
+- **Active KinBot crons:** 17 (after disabling kinbot-docs-theme)
+- **Non-KinBot active:** PinchChat, woodbrass-reply-check, reddit-token-refresh, bot-chronicles
+
+### Healthy (productive, no issues)
+- **kinbot-docs-content** (2h, Opus) — Excellent. Full docs site migrated, accuracy reviews underway. Memory section rewritten with full pipeline docs.
+- **kinbot-add-tests** (2h, Opus, 900s) — Steady. 484s runs, fixing and adding tests.
+- **kinbot-plugin-improve** (2h, Opus) — Productive. Store plugins, bug fixes.
+- **kinbot-memory-research** (3h, Opus, 600s) — Deep R&D. 325s runs, implementing real improvements.
+- **kinbot-ci-watchdog** (3h, Opus) — Working as intended. ~8s when green, fixes real CI breaks.
+- **kinbot-promo** (4x/day, Opus) — Active on GitHub, Reddit, Twitter.
+- **kinbot-qa-explorer** (4h, Opus, 900s) — Finding real bugs, filing issues.
+- **kinbot-community** (4h, Opus, 600s) — Implementing issues, reviewing PRs. 410s runs.
+- **kinbot-github-maintenance** (4h, Opus) — Good hygiene work.
+- **kinbot-improve-site** (4h, Opus, 600s) — Landing page improvements.
+- **kinbot-consistency-guardian** (12h, Opus) — Refactoring, extracting shared components.
+- **kinbot-i18n-audit** (12h, Opus) — Appropriate interval.
+- **kinbot-sse-reactivity** (12h, Opus) — SSE event fixes.
+- **kinbot-e2e-tests** (6h, Opus, 600s) — Fixing real E2E failures.
+- **kinbot-improve-cli** (6h, Opus, 600s) — CLI installer improvements.
+- **kinbot-release** (3x/day, Opus) — v0.14.0 shipped.
+
+### Issues found & actions taken
+
+1. **kinbot-docs-theme: COMPLETED, still running every 30min** ⚠️
+   - Last run literally said "Theme is complete. Nothing left to do here." with all 7 priority items checked off.
+   - Was running every 30min on Opus, burning tokens for nothing.
+   - **Action: DISABLED.** Task is done. If Nicolas wants further theme tweaks, he can re-enable it.
+
+2. **woodbrass-reply-check: too frequent**
+   - Running every 1h, completing in ~600ms each time (Gemini Flash). Always finds nothing.
+   - Cheap model but still wasteful at 24 runs/day.
+   - **Action: Changed interval from 1h to 4h.** Still catches replies same-day.
+
+3. **Rate limiting wave (earlier today)**
+   - kinbot-ci-watchdog, kinbot-docs-content, and kinbot-docs-theme all hit API rate limits around 13:00-17:00 UTC.
+   - With docs-theme now disabled, one less Opus consumer.
+
+### Proposals (for Nicolas to decide)
+
+1. **Model downgrade: kinbot-ci-watchdog** → Gemini Flash (6th time proposing). 90%+ runs are "CI is green ✅" in 8s. Opus is massive overkill for checking `gh run list`. When CI actually breaks, Flash can still read logs and make fixes.
+
+2. **`.marlbot-context.md` still missing** (6th time noting). Every KinBot cron references it. Either recreate it or remove references.
+
+3. **woodbrass-reply-check** — Consider disabling entirely once Nicolas confirms the delivery is resolved. It's been running for days with zero hits.
+
+### Cost analysis
+- 30 commits in git log. Docs site (content + theme) dominated today's output.
+- v0.14.0 released.
+- Disabling docs-theme saves ~48 Opus runs/day (every 30min). Significant cost savings.
+
+### Next audit focus
+- Monitor if any cron has become redundant now that docs site is complete
+- Check if kinbot-ci-watchdog really needs Opus
+- Verify rate limiting improves with one fewer active cron

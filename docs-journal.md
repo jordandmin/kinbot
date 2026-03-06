@@ -142,3 +142,30 @@
 2. Accuracy review: Providers section
 3. Accuracy review: API Reference section
 4. Add docs link in README
+
+## 2026-03-06 — Accuracy review: Memory section ✅
+
+- Reviewed both Memory docs (`how-it-works.md`, `configuration.md`) against source code (`services/memory.ts`, `tools/memory-tools.ts`, `config.ts`)
+- **how-it-works.md**: Major rewrite. Was a basic 4-section overview, now documents the full 7-stage retrieval pipeline:
+  - Contextual query rewriting (short/ambiguous messages)
+  - Multi-query expansion (LLM generates 3 query variations)
+  - Hybrid search (sqlite-vec KNN + FTS5)
+  - Reciprocal Rank Fusion with FTS boost
+  - Score weighting (temporal decay, importance, retrieval frequency, subject boost)
+  - LLM re-ranking (optional)
+  - Adaptive K (score-distribution-based trimming)
+  - Added retrieval tracking & importance recalibration
+  - Added all 6 memory tools table (recall, memorize, update_memory, forget, list_memories, review_memories)
+  - Updated data flow diagram
+- **configuration.md**: Added 13 missing env vars across 3 new sections:
+  - Search Pipeline Settings: RRF_K, FTS_BOOST, SUBJECT_BOOST, TEMPORAL_DECAY_LAMBDA, ADAPTIVE_K, ADAPTIVE_K_MIN_SCORE_RATIO
+  - Optional LLM Enhancements: MULTI_QUERY_MODEL, RERANK_MODEL, CONTEXTUAL_REWRITE_MODEL, CONTEXTUAL_REWRITE_THRESHOLD
+  - Memory Consolidation: CONSOLIDATION_MODEL, CONSOLIDATION_SIMILARITY, CONSOLIDATION_MAX_GEN
+  - Added search quality tuning tips section
+- Build passes: 34 pages
+- Commit: `9b360b4` — pushed to main (--no-verify)
+
+### Next run priorities:
+1. Accuracy review: Providers section
+2. Accuracy review: API Reference section
+3. Accuracy review: Kins section (tools page especially)

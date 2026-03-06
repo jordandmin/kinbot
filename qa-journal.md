@@ -666,3 +666,54 @@
 ### Next run
 - Area 13: MCP servers (add, configure, remove)
 - Area 14: Account (profile, password, language settings)
+
+## 2026-03-06 20:40 UTC
+### Area tested: MCP Servers (Area 13)
+- **Pages visited:** Code review of McpServersSettings.tsx, McpServerFormDialog.tsx, McpServerCard.tsx, mcp-servers.ts (routes), mcp.ts (service), mcp-tools.ts (Kin tools), mcp.test.ts (unit tests), schema.ts, 14-mcp-servers.spec.ts (E2E)
+- **Note:** Browser unavailable (sandbox disabled, Chrome extension relay not attached), testing done via thorough code review
+
+#### Bugs found: 3
+
+1. **Server accepts whitespace-only MCP server names/commands** - Issue #95
+   - POST uses `!body.name` (truthy for `"   "`), PATCH has zero validation
+   - Same pattern as contacts (#85) and webhooks (#89)
+
+2. **API exposes env var values (secrets) to frontend** - Issue #96
+   - `serialize()` returns full env object including API keys and tokens
+   - PasswordInput hides visually but values are in API response (DevTools)
+   - Security concern
+
+3. **Connection pool has no reconnection or cleanup** - Issue #98
+   - Dead connections stay in pool, no timeout on connect, no shutdown hook
+   - Tool calls silently fail if MCP process crashes
+
+#### UX suggestions: 2
+
+4. **No connection status indicator or health check** - Issue #97
+   - "Active" badge = approval status, not connection health
+   - No way to test if server works, no tool count, no error feedback
+
+5. **Unicode chars silently dropped from tool names** - Issue #99
+   - Non-Latin server names produce empty/colliding tool key prefixes
+
+#### All clear:
+- MCP server CRUD flow (create/edit/delete) works correctly
+- E2E test coverage is comprehensive (create, edit, delete, empty state)
+- Form validation on client side (name + command required)
+- SSE real-time updates for server CRUD events
+- ConfirmDeleteButton for safe deletion
+- Approval workflow for Kin-created servers (pending_approval status)
+- Auto-disconnect on config change (command/args/env)
+- PATH augmentation for child processes (NVM detection)
+- JSON Schema to Zod conversion is well-tested
+- Tool access control per Kin (mcpAccess allowlist + auto-enabled for creator)
+- Lazy connection pooling (connect on first use)
+- Empty state with call to action
+- Loading skeleton while fetching
+- Help panel with documentation
+- Env var key/value UI with PasswordInput for values
+- Delete cascade removes kin_mcp_servers junction entries
+
+### Next run
+- Area 14: Account (profile, password, language settings)
+- Area 15: Quick chat / Ephemeral sessions
