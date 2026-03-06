@@ -15,6 +15,12 @@ mock.module('@/server/services/memory', () => mockMemory)
 mock.module('@/server/logger', () => ({
   createLogger: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} }),
 }))
+mock.module('@/server/config', () => ({
+  config: { memory: { extractionModel: undefined } },
+}))
+mock.module('@/server/services/app-settings', () => ({
+  getExtractionModel: mock(() => Promise.resolve(undefined)),
+}))
 
 // Import after mocks
 const {
@@ -23,6 +29,7 @@ const {
   updateMemoryTool,
   forgetTool,
   listMemoriesTool,
+  reviewMemoriesTool,
 } = await import('@/server/tools/memory-tools')
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -47,7 +54,7 @@ describe('memory-tools', () => {
 
   describe('availability', () => {
     it('all memory tools are main-only', () => {
-      const tools = [recallTool, memorizeTool, updateMemoryTool, forgetTool, listMemoriesTool]
+      const tools = [recallTool, memorizeTool, updateMemoryTool, forgetTool, listMemoriesTool, reviewMemoriesTool]
       for (const t of tools) {
         expect(t.availability).toEqual(['main'])
       }

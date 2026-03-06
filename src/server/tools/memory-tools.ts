@@ -1,4 +1,5 @@
 import { tool } from 'ai'
+import { generateText } from 'ai'
 import { z } from 'zod'
 import {
   searchMemories,
@@ -8,6 +9,8 @@ import {
   listMemories,
 } from '@/server/services/memory'
 import { createLogger } from '@/server/logger'
+import { config } from '@/server/config'
+import { getExtractionModel } from '@/server/services/app-settings'
 import type { ToolRegistration } from '@/server/tools/types'
 import type { MemoryCategory } from '@/shared/types'
 
@@ -202,6 +205,119 @@ export const listMemoriesTool: ToolRegistration = {
             importance: m.importance,
             age: formatMemoryAge(m.updatedAt),
           })),
+        }
+      },
+    }),
+}
+
+/**
+ * review_memories — audit memory health and identify issues.
+ * Uses an LLM to detect contradictions, near-duplicates, stale entries, and clutter.
+ * Available to main agents only.
+ */
+export const reviewMemoriesTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Audit your memory for quality issues. Analyzes all stored memories and identifies: ' +
+        'contradictions (conflicting facts), near-duplicates (redundant entries), ' +
+        'stale entries (likely outdated), and low-value clutter. ' +
+        'Returns actionable suggestions you can act on with update_memory or forget. ' +
+        'Use this periodically to keep your memory clean and accurate.',
+      inputSchema: z.object({
+        subject: z
+          .string()
+          .optional()
+          .describe('Optional: only review memories about a specific subject'),
+      }),
+      execute: async ({ subject }) => {
+        log.debug({ kinId: ctx.kinId, subject }, 'Review memories invoked')
+
+        const allMemories = await listMemories(ctx.kinId, {
+          subject: subject || undefined,
+        })
+
+        if (allMemories.length === 0) {
+          return { issues: [], summary: 'No memories to review.' }
+        }
+
+        // Cap at 200 memories to avoid huge prompts
+        const memoriesToReview = allMemories.slice(0, 200)
+
+        const memoriesList = memoriesToReview
+          .map((m, i) => {
+            const age = formatMemoryAge(m.updatedAt)
+            const imp = m.importance != null ? ` [importance: ${m.importance}]` : ''
+            const subj = m.subject ? ` (subject: ${m.subject})` : ''
+            return `[${i}] id=${m.id} | ${m.category}${subj}${imp} | ${age}\n${m.content}`
+          })
+          .join('\n\n')
+
+        const reviewPrompt =
+          `You are a memory quality auditor. Review the following memories and identify issues.\n\n` +
+          `Look for:\n` +
+          `1. **Contradictions**: Two memories that state conflicting facts (e.g., "likes coffee" vs "hates coffee")\n` +
+          `2. **Near-duplicates**: Memories that say essentially the same thing (redundant entries)\n` +
+          `3. **Stale/outdated**: Memories that are likely no longer accurate based on context clues (e.g., "is 25 years old" stored 3 years ago)\n` +
+          `4. **Low-value clutter**: Trivial, vague, or overly specific memories that waste space\n\n` +
+          `Return a JSON object with:\n` +
+          `{\n` +
+          `  "issues": [\n` +
+          `    {\n` +
+          `      "type": "contradiction" | "duplicate" | "stale" | "clutter",\n` +
+          `      "memoryIds": ["id1", "id2"],  // IDs of affected memories\n` +
+          `      "description": "Brief explanation of the issue",\n` +
+          `      "suggestion": "delete" | "merge" | "update",\n` +
+          `      "suggestedContent": "Merged/corrected content if applicable"\n` +
+          `    }\n` +
+          `  ],\n` +
+          `  "summary": "Brief overall health assessment"\n` +
+          `}\n\n` +
+          `Rules:\n` +
+          `- Only flag genuine issues. Don't be overzealous.\n` +
+          `- For duplicates, suggest merging into the better-worded version.\n` +
+          `- For contradictions, flag both memories and let the Kin decide which is correct.\n` +
+          `- If everything looks clean, return an empty issues array with a positive summary.\n` +
+          `- Be conservative: when in doubt, don't flag it.\n\n` +
+          `## Memories to review (${memoriesToReview.length} total)\n\n${memoriesList}`
+
+        // Resolve model (prefer extraction model, fall back to Kin's model)
+        const { resolveLLMModel } = await import('@/server/services/kin-engine')
+        const settingsExtractionModel = await getExtractionModel()
+        const effectiveModel = settingsExtractionModel ?? config.memory.extractionModel
+        const model = await resolveLLMModel(effectiveModel ?? 'gpt-4.1-mini', null)
+
+        if (!model) {
+          return { issues: [], summary: 'No LLM model available for review.' }
+        }
+
+        try {
+          const result = await generateText({
+            model,
+            messages: [{ role: 'user', content: reviewPrompt }],
+          })
+
+          const jsonMatch = result.text.match(/\{[\s\S]*\}/)
+          if (!jsonMatch) {
+            return { issues: [], summary: 'Review completed but no issues detected.' }
+          }
+
+          const parsed = JSON.parse(jsonMatch[0]) as {
+            issues: Array<{
+              type: string
+              memoryIds: string[]
+              description: string
+              suggestion: string
+              suggestedContent?: string
+            }>
+            summary: string
+          }
+
+          return parsed
+        } catch (err) {
+          log.error({ kinId: ctx.kinId, err }, 'Memory review LLM error')
+          return { issues: [], summary: 'Review failed due to an error.' }
         }
       },
     }),
