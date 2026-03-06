@@ -1,5 +1,49 @@
 # KinBot Cron Manager Journal
 
+## 2026-03-06 07:14 UTC
+### Audit summary
+- **Gateway timeout** — cron list/runs API timed out twice (60s). Could not pull live cron status or run histories this audit. Assessment based on git log and previous journal state.
+- **27 commits since last audit** (18h ago) — ecosystem extremely productive
+- **v0.12.0 released** (cd519ee)
+
+### Productivity by cron (inferred from commits)
+- **kinbot-memory-research** — contextual query rewriting, importance/age enrichment, embedding dimension bump (768→1536). 3 commits. Excellent.
+- **kinbot-mini-apps** — Kanban board, DateRangePicker. 2 commits. Still the star.
+- **kinbot-add-tests** — contact-tools, database-tools, settings routes, prompt-builder helpers, fixed 11 failing tests. 5 commits. Very productive.
+- **kinbot-docs-site** — Scaffolded Starlight docs, migrated Getting Started + Plugins sections. 3 commits. New cron delivering immediately.
+- **kinbot-improve-site** — Tech Stack section, Plugin Store showcase. 2 commits.
+- **kinbot-improve-cli** — Config wizard expansion. 1 commit.
+- **kinbot-plugin-improve** — plugin management tools (#68), github-notifications plugin, bookmarks plugin, system-monitor plugin. 4 commits. Very productive.
+- **kinbot-qa-explorer** — Closed #71 (model picker fix), #73, #74, #76 (cron UI fixes). 3 commits fixing real issues.
+- **kinbot-e2e-tests** — Fixed mini-app gallery E2E test. 1 commit.
+- **kinbot-release** — v0.12.0 shipped. 1 commit.
+- **kinbot-community** — Likely handled some issue closures (can't confirm without run data).
+
+### Issues found
+1. **Gateway timeout on cron API** — Both cron list attempts failed with 60s timeout. This is unusual and may indicate gateway load or a stuck cron operation. Worth monitoring — if it persists, may need a gateway restart.
+2. **`.marlbot-context.md` still missing** — 4th audit noting this. Every KinBot cron references it. This is now a recurring proposal that needs Nicolas's attention.
+3. **kinbot-community self-PR-approval** — Still not fixed in prompt (proposed last audit). Low priority but wastes a tool call per PR.
+
+### Actions taken
+- **None** — could not access cron API to make changes. Ecosystem is healthy based on git output. No action needed.
+
+### Proposals (carried forward + new)
+1. **`.marlbot-context.md` recreation** — URGENT (4th time proposing). Have a cron generate it or have Nicolas create it manually.
+2. **Model downgrade: kinbot-ci-watchdog** → Gemini Flash (3rd time proposing). 95%+ runs are trivial "CI green" checks.
+3. **kinbot-community prompt fix** — Remove self-PR-approval attempts.
+4. **NEW: Gateway health** — If cron API timeouts persist, investigate gateway load. 19+ active crons on Opus may be straining the scheduler.
+
+### Cost analysis
+- 27 commits in 18h = ~1.5 commits/hour. Excellent ROI.
+- No evidence of wasted cycles from git log (no revert commits, no duplicate work).
+- Docs-site cron delivering immediately — good investment.
+
+### Next audit focus
+- Retry cron API access — if still timing out, flag for Nicolas
+- Check if `.marlbot-context.md` was created
+- Verify kinbot-plugin-improve is not creating conflicts with store plugins
+- Monitor docs-site for Pages workflow success
+
 ## 2026-03-05 13:01 UTC
 ### Audit summary
 - **Active KinBot crons:** 19 (+ 3 non-KinBot: PinchChat, woodbrass-reply-check, reddit-token-refresh, bot-chronicles, HN Show HN one-shot)
