@@ -118,7 +118,6 @@ header.header {
 }
 
 /* ─── GRADIENT HEADINGS ───────────────────────────────── */
-.sl-markdown-content h1,
 .hero h1,
 h1.gradient-heading {
 	background: linear-gradient(
@@ -130,6 +129,46 @@ h1.gradient-heading {
 	-webkit-background-clip: text !important;
 	-webkit-text-fill-color: transparent !important;
 	background-clip: text !important;
+}
+
+/* h2: subtle accent underline */
+.sl-markdown-content h2 {
+	position: relative;
+	padding-bottom: 0.5rem;
+}
+
+.sl-markdown-content h2::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 3rem;
+	height: 2px;
+	border-radius: 1px;
+	background: linear-gradient(
+		90deg,
+		var(--kb-gradient-start),
+		var(--kb-gradient-mid)
+	);
+	opacity: 0.5;
+}
+
+/* h3: small accent dot */
+.sl-markdown-content h3 {
+	position: relative;
+	padding-inline-start: 0.875rem;
+}
+
+.sl-markdown-content h3::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0.55em;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--kb-gradient-mid);
+	opacity: 0.6;
 }
 
 /* ─── CARDS (glass effect) ────────────────────────────── */
@@ -373,19 +412,6 @@ h1.gradient-heading {
 	font-size: 1.15rem !important;
 }
 
-/* ─── PAGINATION ──────────────────────────────────────── */
-.pagination-links a {
-	background: var(--kb-glass-bg) !important;
-	backdrop-filter: blur(8px) !important;
-	border: 1px solid var(--kb-glass-border) !important;
-	border-radius: 0.75rem !important;
-	transition: border-color 0.2s ease !important;
-}
-
-.pagination-links a:hover {
-	border-color: oklch(0.60 0.22 300 / 0.30) !important;
-}
-
 /* ─── SEARCH MODAL ────────────────────────────────────── */
 [data-theme='dark'] dialog.pagefind-ui {
 	background: oklch(0.13 0.03 298 / 0.95) !important;
@@ -399,18 +425,6 @@ h1.gradient-heading {
 		backdrop-filter: blur(20px) saturate(200%) !important;
 		-webkit-backdrop-filter: blur(20px) saturate(200%) !important;
 	}
-}
-
-/* ─── TABLE OF CONTENTS ───────────────────────────────── */
-starlight-toc a[aria-current='true'],
-.right-sidebar a[aria-current='true'] {
-	color: var(--sl-color-accent) !important;
-	font-weight: 600;
-}
-
-starlight-toc a:hover,
-.right-sidebar a:hover {
-	color: var(--sl-color-accent-high) !important;
 }
 
 /* ─── CARD GRID (splash page) ─────────────────────────── */
@@ -572,6 +586,38 @@ site-search button:hover {
 .sl-steps > li::marker {
 	color: var(--sl-color-accent) !important;
 	font-weight: 700;
+}
+
+/* ─── FOCUS VISIBLE (A11Y) ────────────────────────────── */
+*:focus-visible {
+	outline: 2px solid var(--sl-color-accent) !important;
+	outline-offset: 2px !important;
+	border-radius: 0.25rem;
+}
+
+*:focus:not(:focus-visible) {
+	outline: none !important;
+}
+
+/* ─── SMOOTH PAGE TRANSITIONS ─────────────────────────── */
+.main-pane {
+	animation: kb-fade-in 0.2s ease-out;
+}
+
+@keyframes kb-fade-in {
+	from { opacity: 0; transform: translateY(6px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── ANCHOR HEADING HOVER LINK ───────────────────────── */
+.sl-markdown-content :is(h2, h3, h4) a {
+	text-decoration: none !important;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.sl-markdown-content :is(h2, h3, h4):hover a {
+	opacity: 0.5;
 }
 
 /* ─── REDUCED MOTION ──────────────────────────────────── */

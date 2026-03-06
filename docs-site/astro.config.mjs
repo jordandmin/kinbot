@@ -26,6 +26,9 @@ export default defineConfig({
 				Hero: './src/components/Hero.astro',
 				Footer: './src/components/Footer.astro',
 				PageFrame: './src/components/PageFrame.astro',
+				PageTitle: './src/components/PageTitle.astro',
+				TableOfContents: './src/components/TableOfContents.astro',
+				Pagination: './src/components/Pagination.astro',
 			},
 			sidebar: [
 				{
