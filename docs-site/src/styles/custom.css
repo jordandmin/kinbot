@@ -772,6 +772,63 @@ footer.sl-markdown-content {
 	margin-top: 2rem;
 }
 
+/* ─── SEARCH HIGHLIGHT COLORS ─────────────────────────── */
+mark,
+.pagefind-ui__result-excerpt mark,
+.pagefind-ui mark {
+	background: oklch(0.60 0.22 300 / 0.20) !important;
+	color: inherit !important;
+	border-radius: 0.125rem;
+	padding: 0.05em 0.15em;
+}
+
+:root[data-theme='light'] mark,
+:root[data-theme='light'] .pagefind-ui mark {
+	background: oklch(0.52 0.24 300 / 0.15) !important;
+}
+
+/* ─── PRINT STYLESHEET ────────────────────────────────── */
+@media print {
+	body::before,
+	body::after,
+	.page::before,
+	.kb-back-to-top,
+	.kb-scroll-progress,
+	.kb-announcement-bar,
+	header.header::before,
+	nav.sidebar,
+	.right-sidebar-panel,
+	.kb-site-footer,
+	.pagination-links,
+	site-search,
+	starlight-theme-select {
+		display: none !important;
+	}
+
+	body {
+		background: white !important;
+		color: black !important;
+	}
+
+	.sl-markdown-content h1,
+	.sl-markdown-content h2,
+	.sl-markdown-content h3 {
+		-webkit-text-fill-color: initial !important;
+		background: none !important;
+		color: black !important;
+	}
+
+	.sl-markdown-content a::after {
+		content: ' (' attr(href) ')';
+		font-size: 0.8em;
+		color: #666;
+	}
+
+	.expressive-code {
+		border: 1px solid #ccc !important;
+	}
+}
+
 /* ─── REDUCED MOTION ──────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
 	*,
