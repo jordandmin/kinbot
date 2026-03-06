@@ -117,7 +117,7 @@ export default definePlugin({
 function HighlightedCode({ code }: { code: string }) {
   const html = useMemo(() => highlight(code), [code])
   return (
-    <pre className="p-4 text-sm font-mono overflow-x-auto leading-relaxed">
+    <pre className="sh p-4 text-sm font-mono overflow-x-auto leading-relaxed">
       <code dangerouslySetInnerHTML={{ __html: html }} />
     </pre>
   )

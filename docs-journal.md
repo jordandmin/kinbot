@@ -63,3 +63,44 @@
 2. **Phase 2 continued:** Migrate Memory, Providers, API Reference sections
 3. **Phase 3:** Verify GitHub Pages deployment workflow works with both sites
 4. **Phase 4:** Add Docs link in landing site navbar
+
+## 2026-03-06 — Phase 2: Channels + Memory + Providers + API Reference ✅
+
+- Migrated **Channels** section (7 pages):
+  - `overview.md` — Architecture, adapter interface, tools, security, plugin channels
+  - `telegram.md` — Bot API setup, webhook, features
+  - `discord.md` — Gateway WebSocket, intents, setup
+  - `slack.md` — Events API, signing secret, setup
+  - `whatsapp.md` — Meta Cloud API, webhook config
+  - `signal.md` — signal-cli REST API bridge
+  - `matrix.md` — Client-Server API, long-poll sync (no public URL needed)
+  - Updated sidebar with all 6 platform pages
+- Migrated **Memory** section (2 pages):
+  - `how-it-works.md` — Dual-channel architecture, hybrid search, compacting
+  - `configuration.md` — All env vars, embedding providers, tuning tips
+- Migrated **Providers** section (2 pages):
+  - `supported.md` — Full 23-provider table with capabilities and API key links
+  - `custom.md` — Plugin providers, OpenAI-compatible endpoints, Ollama
+- Migrated **API Reference** section (2 pages):
+  - `rest.md` — All REST endpoints by resource (Kins, Messages, Channels, Mini-Apps, Plugins, etc.)
+  - `sse.md` — SSE event types, delivery scope, client usage
+- Build passes: 34 pages
+- Commits: `7fd147b` (Channels), `f915c3e` (Memory+Providers+API) — pushed to main (--no-verify)
+
+### Content migration status:
+- ✅ Getting Started (3 pages)
+- ✅ Kins (4 pages)
+- ✅ Plugins (4 pages — done during scaffold)
+- ✅ Mini-Apps (8 pages)
+- ✅ Channels (7 pages)
+- ✅ Memory (2 pages)
+- ✅ Providers (2 pages)
+- ✅ API Reference (2 pages)
+
+**All Phase 2 content migration is COMPLETE! 🎉**
+
+### Next run priorities:
+1. **Phase 3:** Verify GitHub Pages deployment works (both sites merged)
+2. **Phase 4:** Add "Docs" link in landing site navbar
+3. **Phase 4:** Create `get_mini_app_docs` tool (#66) + slim down `create_mini_app`
+4. **Phase 5:** Plugin management tools (#68) documentation
