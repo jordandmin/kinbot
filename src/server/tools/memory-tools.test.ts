@@ -59,20 +59,22 @@ describe('memory-tools', () => {
   describe('recall', () => {
     it('returns matching memories', async () => {
       mockMemory.searchMemories.mockResolvedValueOnce([
-        { id: 'mem-1', content: 'User likes TypeScript', category: 'preference', subject: 'user' },
-        { id: 'mem-2', content: 'Project uses Bun', category: 'fact', subject: 'project' },
+        { id: 'mem-1', content: 'User likes TypeScript', category: 'preference', subject: 'user', importance: 7, score: 0.9, updatedAt: new Date('2025-01-01') },
+        { id: 'mem-2', content: 'Project uses Bun', category: 'fact', subject: 'project', importance: 5, score: 0.8, updatedAt: null },
       ])
 
       const result = await execute(recallTool, { query: 'typescript' })
 
       expect(mockMemory.searchMemories).toHaveBeenCalledWith('kin-abc', 'typescript', undefined)
       expect(result.memories).toHaveLength(2)
-      expect(result.memories[0]).toEqual({
+      expect(result.memories[0]).toMatchObject({
         id: 'mem-1',
         content: 'User likes TypeScript',
         category: 'preference',
         subject: 'user',
+        importance: 7,
       })
+      expect(result.memories[0].age).toBeDefined()
     })
 
     it('passes limit when provided', async () => {

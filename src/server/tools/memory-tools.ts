@@ -16,6 +16,24 @@ const log = createLogger('tools:memory')
 const CATEGORIES: [string, ...string[]] = ['fact', 'preference', 'decision', 'knowledge']
 
 /**
+ * Format a memory's age as a human-readable relative time string.
+ */
+function formatMemoryAge(updatedAt: Date | null): string | null {
+  if (!updatedAt) return null
+  const diffMs = Date.now() - updatedAt.getTime()
+  const diffMin = Math.round(diffMs / 60_000)
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHours = Math.round(diffMin / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.round(diffHours / 24)
+  if (diffDays < 30) return `${diffDays}d ago`
+  const diffMonths = Math.round(diffDays / 30)
+  if (diffMonths < 12) return `${diffMonths}mo ago`
+  return `${Math.round(diffDays / 365)}y ago`
+}
+
+/**
  * recall — semantic + keyword search in the Kin's long-term memory.
  * Available to main agents only.
  */
@@ -26,7 +44,7 @@ export const recallTool: ToolRegistration = {
       description:
         'Search your long-term memory for relevant information. Use this when you need ' +
         'to remember facts, preferences, decisions, or knowledge from past interactions. ' +
-        'Returns the most relevant memories ranked by relevance.',
+        'Returns the most relevant memories ranked by relevance, with importance scores and age.',
       inputSchema: z.object({
         query: z.string().describe('What to search for (semantic + keyword search)'),
         limit: z
@@ -46,6 +64,8 @@ export const recallTool: ToolRegistration = {
             content: m.content,
             category: m.category,
             subject: m.subject,
+            importance: m.importance,
+            age: formatMemoryAge(m.updatedAt),
           })),
         }
       },
@@ -179,6 +199,8 @@ export const listMemoriesTool: ToolRegistration = {
             content: m.content,
             category: m.category,
             subject: m.subject,
+            importance: m.importance,
+            age: formatMemoryAge(m.updatedAt),
           })),
         }
       },
