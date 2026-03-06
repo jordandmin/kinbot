@@ -31,6 +31,7 @@ After installation, configure the plugin via **Settings → Plugins → Configur
 | `notes` | 📝 | Quick note-taking and retrieval |
 | `github-notifications` | 🔔 | Monitor GitHub notifications and activity |
 | `home-automation` | 🏠 | Control your smart home via Home Assistant |
+| `calendar` | 📅 | Manage events, reminders, and scheduling |
 
 More plugins are added by the community regularly.
 
