@@ -12,12 +12,15 @@ const resourceLinks = [
   { label: 'GitHub', href: 'https://github.com/MarlBurroW/kinbot' },
   { label: 'Releases', href: 'https://github.com/MarlBurroW/kinbot/releases' },
   { label: 'Issues', href: 'https://github.com/MarlBurroW/kinbot/issues' },
+  { label: 'Discussions', href: 'https://github.com/MarlBurroW/kinbot/discussions' },
   { label: 'Contributing', href: 'https://github.com/MarlBurroW/kinbot/blob/main/CONTRIBUTING.md' },
   { label: 'Troubleshooting', href: 'https://github.com/MarlBurroW/kinbot/blob/main/TROUBLESHOOTING.md' },
   { label: 'Security Policy', href: 'https://github.com/MarlBurroW/kinbot/blob/main/SECURITY.md' },
+  { label: 'E2E Report', href: 'https://marlburrow.github.io/kinbot/e2e-report/' },
 ]
 
 const communityLinks = [
+  { label: 'Discussions', href: 'https://github.com/MarlBurroW/kinbot/discussions' },
   { label: 'Star on GitHub', href: 'https://github.com/MarlBurroW/kinbot/stargazers' },
   { label: 'Report a Bug', href: 'https://github.com/MarlBurroW/kinbot/issues/new?template=bug_report.yml' },
   { label: 'Request a Feature', href: 'https://github.com/MarlBurroW/kinbot/issues/new?template=feature_request.yml' },

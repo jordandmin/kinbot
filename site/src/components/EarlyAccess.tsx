@@ -1,4 +1,4 @@
-import { FlaskConical, MessageSquarePlus, Github, Rocket, Heart } from 'lucide-react'
+import { FlaskConical, MessageSquarePlus, Github, Rocket, Heart, MessagesSquare } from 'lucide-react'
 
 export function EarlyAccess() {
   return (
@@ -77,6 +77,16 @@ export function EarlyAccess() {
           >
             <Rocket size={18} />
             Try it out
+          </a>
+          <a
+            href="https://github.com/MarlBurroW/kinbot/discussions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 glass"
+            style={{ color: 'var(--color-foreground)' }}
+          >
+            <MessagesSquare size={18} />
+            Join Discussions
           </a>
           <a
             href="https://github.com/MarlBurroW/kinbot/issues/new"
