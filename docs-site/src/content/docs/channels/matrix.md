@@ -32,6 +32,7 @@ Matrix integration uses the [Client-Server API](https://spec.matrix.org/latest/c
 - Image and file attachments (via Matrix content repository)
 - Room and DM support
 - Automatic message chunking
+- Typing indicator
 - Long-poll sync (no webhook needed, works behind NAT/firewalls)
 
 ## Advantages

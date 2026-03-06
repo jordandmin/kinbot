@@ -53,4 +53,5 @@ The adapter handles all Gateway lifecycle events:
 - Reply threading
 - Automatic message chunking
 - DM and server channel support
+- Typing indicator
 - Bot ignores its own messages automatically

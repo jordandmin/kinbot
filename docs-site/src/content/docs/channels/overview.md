@@ -30,9 +30,12 @@ Each platform has a **channel adapter** that implements a common interface:
 
 ```
 ChannelAdapter
-├── start(channelId, config, onMessage)  → Connect to platform
-├── stop(channelId)                       → Disconnect
-└── sendMessage(channelId, config, params) → Send outbound message
+├── start(channelId, config, onMessage)    → Connect to platform
+├── stop(channelId)                         → Disconnect
+├── sendMessage(channelId, config, params)  → Send outbound message
+├── validateConfig(config)                  → Test credentials before saving
+├── getBotInfo(config)                      → Get bot name/username for display
+└── sendTypingIndicator?(channelId, config, chatId) → Show typing (optional)
 ```
 
 Adapters handle platform-specific details: webhook verification, gateway heartbeats, API authentication, file uploads, and message formatting. The rest of KinBot treats all channels identically.

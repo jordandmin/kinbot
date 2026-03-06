@@ -34,6 +34,7 @@ KinBot automatically registers a webhook with Telegram pointing to your instance
 - Image, document, audio, and video attachments (inbound and outbound)
 - Reply threading via `reply_to_message_id`
 - Automatic message chunking at paragraph/line boundaries
+- Typing indicator (`sendChatAction`)
 - Group chat support (with optional chat ID filtering)
 
 ## Requirements
