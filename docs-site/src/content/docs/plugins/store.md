@@ -35,17 +35,90 @@ Configure and enable the plugin via **Settings → Plugins**.
 
 More plugins are added by the community regularly.
 
-## Via Kin Tools
+## Kin Plugin Management Tools
 
-Kins can browse and install plugins autonomously:
+Kins have 8 built-in tools for managing plugins autonomously. These are **main-only** and **opt-in** (disabled by default, enable in Kin settings).
+
+### `list_installed_plugins`
+
+List all installed plugins with status, version, type, and error info.
 
 ```
-"Browse the plugin store for RSS plugins"
-→ Kin calls browse_plugin_store({ query: "rss" })
-
-"Install the RSS reader plugin"
-→ Kin calls install_plugin({ name: "rss-reader", source: "store" })
+"What plugins do I have installed?"
+→ returns: name, version, enabled, error, tool/provider/channel/hook counts
 ```
+
+### `browse_plugin_store`
+
+Search the community plugin registry by name, description, or tag.
+
+```
+"Find me an RSS plugin"
+→ browse_plugin_store({ query: "rss" })
+→ returns: matching plugins with name, version, description, author, tags
+```
+
+### `get_plugin_details`
+
+Get detailed info about an installed plugin: config schema, registered tools, providers, channels, hooks, and current config.
+
+```
+"Show me the RSS reader plugin details"
+→ get_plugin_details({ name: "rss-reader" })
+→ returns: full manifest, permissions, configSchema, currentConfig, tools, providers, etc.
+```
+
+### `install_plugin`
+
+Install from the store (by name), a git URL, or an npm package. The plugin must still be enabled after installation.
+
+```
+"Install the RSS reader"
+→ install_plugin({ source: "store", name: "rss-reader" })
+
+"Install this plugin from GitHub"
+→ install_plugin({ source: "git", name: "https://github.com/user/kinbot-plugin-foo" })
+```
+
+### `uninstall_plugin`
+
+Remove an installed plugin completely (files and config).
+
+```
+"Remove the pomodoro plugin"
+→ uninstall_plugin({ name: "pomodoro" })
+```
+
+### `enable_plugin`
+
+Enable a disabled plugin so it becomes active.
+
+```
+"Turn on the RSS reader"
+→ enable_plugin({ name: "rss-reader" })
+```
+
+### `disable_plugin`
+
+Disable a plugin without uninstalling it.
+
+```
+"Disable the system monitor"
+→ disable_plugin({ name: "system-monitor" })
+```
+
+### `configure_plugin`
+
+Update a plugin's configuration by passing key-value pairs.
+
+```
+"Set the RSS reader to show 20 items max"
+→ configure_plugin({ name: "rss-reader", config: { maxItems: "20" } })
+```
+
+:::note
+These tools require explicit user confirmation for install/uninstall actions. Kins will not autonomously install plugins without being asked.
+:::
 
 ## Publishing Your Plugin
 
