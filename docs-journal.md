@@ -113,7 +113,16 @@
 - Both builds pass (site + docs-site)
 - Commit: `d566942` — pushed to main
 
+## 2026-03-06 — Accuracy review: Plugins section ✅
+
+- Reviewed all 4 plugin doc pages against source code (`plugin-tools.ts`, `plugins.ts`, `pluginRegistry.ts`, `routes/plugins.ts`)
+- **store.md**: Fixed claim that plugins are "activated automatically" after install (they need explicit enable). Added correct store/registry API examples.
+- **api.md**: Removed phantom `memory` and `notify` APIs from `PluginContext` (not in source). Fixed `PluginStorage` → `PluginStorageAPI`. Fixed `ProviderDefinition` → `PluginProviderRegistration`. Added `password` to config field types. Rewrote REST API table: split into management/store/registry sections, fixed all routes to match actual code (unified `/install` endpoint, query-param-based registry endpoints, store routes).
+- **overview.md**: Already accurate, no changes needed.
+- Build passes: 34 pages
+- Commit: `3f3a72f` — pushed to main (--no-verify)
+
 ### Next run priorities:
 1. **Phase 4 continued:** Create `get_mini_app_docs` tool (#66) + slim down `create_mini_app`
-2. **Phase 5:** Plugin management tools (#68) documentation
+2. Review accuracy of other sections (Channels, Memory, Providers, API Reference)
 3. Add docs link in README

@@ -631,3 +631,38 @@
 ### Next run
 - Area 12: Webhooks (create, edit, test, delete)
 - Area 13: MCP servers (add, configure, remove)
+
+## 2026-03-06 16:40 UTC
+### Area tested: Webhooks (Area 12)
+- **Pages visited:** Code review of WebhooksSettings.tsx, WebhookFormDialog.tsx, WebhookCard.tsx, WebhookLogDialog.tsx, webhooks.ts (routes), webhooks-incoming.ts (routes), webhooks.ts (service), webhook-tools.ts, schema.ts (webhooks + webhookLogs tables), 09-webhook-management.spec.ts (E2E)
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 3 (issues #89, #92, #94)
+  - #89: Server accepts whitespace-only webhook names (no trim/validation)
+  - #92: WebhookFormDialog swallows API errors silently (try/finally, no catch)
+  - #94: Webhook creation does not validate kinId exists (FK error leaks to user)
+
+- **UX suggestions:** 3 (issues #90, #91, #93)
+  - #90: Webhook logs grow unbounded with no retention/cleanup
+  - #91: Incoming webhook endpoint has no rate limiting
+  - #93: Inactive webhooks should have visual distinction beyond toggle switch
+
+- **All clear:**
+  - Token generation and reveal flow is well-designed (shown once, hidden by default, copy buttons)
+  - Constant-time token comparison (timingSafeEqual) for security
+  - SSE real-time updates for webhook CRUD and triggers
+  - Webhook log dialog with expandable payloads and source IP display
+  - Copy URL button on each card
+  - Regenerate token with confirmation dialog
+  - ConfirmDeleteButton for safe deletion
+  - Max webhooks per Kin limit (configurable, default 20)
+  - Max payload size limit (1MB) on incoming endpoint
+  - Webhook tools for Kins (create/update/delete/list) with ownership verification
+  - E2E test coverage is comprehensive (create, edit, toggle, delete, token reveal, empty state)
+  - Log payload truncation to 10KB in DB
+  - Help panel with documentation bullets
+  - Empty state with call-to-action
+
+### Next run
+- Area 13: MCP servers (add, configure, remove)
+- Area 14: Account (profile, password, language settings)
