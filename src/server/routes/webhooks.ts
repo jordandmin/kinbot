@@ -70,17 +70,27 @@ webhookRoutes.post('/', async (c) => {
     description?: string
   }>()
 
-  if (!body.kinId || !body.name) {
+  const trimmedName = body.name?.trim()
+  if (!body.kinId || !trimmedName) {
     return c.json(
       { error: { code: 'VALIDATION_ERROR', message: 'kinId and name are required' } },
       400,
     )
   }
 
+  // Validate that the Kin exists before attempting to create the webhook
+  const targetKin = await db.select({ id: kins.id }).from(kins).where(eq(kins.id, body.kinId)).get()
+  if (!targetKin) {
+    return c.json(
+      { error: { code: 'NOT_FOUND', message: 'Kin not found' } },
+      404,
+    )
+  }
+
   try {
     const webhook = await createWebhook({
       kinId: body.kinId,
-      name: body.name,
+      name: trimmedName,
       description: body.description,
       createdBy: 'user',
     })
@@ -115,6 +125,18 @@ webhookRoutes.patch('/:id', async (c) => {
     description?: string | null
     isActive?: boolean
   }>()
+
+  // Validate name is non-empty after trimming if provided
+  if (body.name !== undefined) {
+    const trimmedName = body.name.trim()
+    if (!trimmedName) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Name cannot be empty' } },
+        400,
+      )
+    }
+    body.name = trimmedName
+  }
 
   try {
     const updated = await updateWebhook(webhookId, body)

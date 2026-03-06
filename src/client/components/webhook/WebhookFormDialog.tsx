@@ -14,7 +14,7 @@ import {
 } from '@/client/components/ui/dialog'
 import { KinSelector } from '@/client/components/common/KinSelector'
 import type { KinOption } from '@/client/components/common/KinSelectItem'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import type { WebhookSummary } from '@/shared/types'
 
@@ -43,6 +43,7 @@ export function WebhookFormDialog({
   const [description, setDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (webhook) {
@@ -56,11 +57,13 @@ export function WebhookFormDialog({
       setIsActive(true)
       setSelectedKinId('')
     }
+    setError(null)
   }, [webhook, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
 
     try {
       if (isEdit && onUpdate && webhook) {
@@ -78,6 +81,9 @@ export function WebhookFormDialog({
         })
       }
       onOpenChange(false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -137,6 +143,13 @@ export function WebhookFormDialog({
             <div className="flex items-center justify-between">
               <Label>{t('settings.webhooks.active')}</Label>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
+            </div>
+          )}
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
