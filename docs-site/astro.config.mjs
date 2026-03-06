@@ -24,11 +24,6 @@ export default defineConfig({
 				baseUrl: 'https://github.com/MarlBurroW/kinbot/edit/main/docs-site/',
 			},
 			lastUpdated: true,
-			logo: {
-				dark: './src/assets/logo-dark.svg',
-				light: './src/assets/logo-light.svg',
-				replacesTitle: false,
-			},
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/MarlBurroW/kinbot' },
 			],

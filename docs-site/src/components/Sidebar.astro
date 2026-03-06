@@ -10,11 +10,15 @@ import Default from '@astrojs/starlight/components/Sidebar.astro';
 	/* Active link: gradient left border + subtle glow */
 	:global(nav.sidebar a[aria-current='page']) {
 		position: relative;
-		background: oklch(0.60 0.22 300 / 0.08) !important;
+		background: oklch(0.60 0.22 300 / 0.15) !important;
 		border-radius: 0.5rem !important;
 		padding-inline-start: 0.875rem !important;
 		margin-inline-start: -0.25rem;
 		transition: background 0.2s ease !important;
+	}
+
+	:global(:root[data-theme='light'] nav.sidebar a[aria-current='page']) {
+		background: oklch(0.60 0.22 300 / 0.10) !important;
 	}
 
 	:global(nav.sidebar a[aria-current='page'])::before {
