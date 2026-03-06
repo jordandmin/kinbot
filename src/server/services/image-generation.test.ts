@@ -61,12 +61,17 @@ mock.module('@/server/config', () => ({
   },
 }))
 
+const _realAppSettings = await import('@/server/services/app-settings')
 mock.module('@/server/services/app-settings', () => ({
+  ..._realAppSettings,
   getEmbeddingModel: mock(() => Promise.resolve(null)),
 }))
 
 mock.module('@/server/services/encryption', () => ({
+  encrypt: mock((val: string) => Promise.resolve(val)),
   decrypt: mock((val: string) => Promise.resolve(val)),
+  encryptBuffer: mock((data: Uint8Array) => Promise.resolve(data)),
+  decryptBuffer: mock((data: Uint8Array) => Promise.resolve(data)),
 }))
 
 mock.module('@/server/sse/index', () => ({

@@ -18,7 +18,10 @@ mock.module('@/server/logger', () => ({
 mock.module('@/server/config', () => ({
   config: { memory: { extractionModel: undefined } },
 }))
+// Spread all real exports to avoid poisoning the module for other test files
+const _realAppSettings = await import('@/server/services/app-settings')
 mock.module('@/server/services/app-settings', () => ({
+  ..._realAppSettings,
   getExtractionModel: mock(() => Promise.resolve(undefined)),
 }))
 

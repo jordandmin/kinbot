@@ -13,7 +13,17 @@ const mockHasImageCapability = mock(() => Promise.resolve(true))
 
 mock.module('@/server/services/image-generation', () => ({
   generateImage: mockGenerateImage,
+  generateAvatarImage: mockGenerateImage,
   hasImageCapability: mockHasImageCapability,
+  findLLMProvider: mock(() => Promise.resolve(null)),
+  buildAvatarPrompt: mock(() => Promise.resolve('')),
+  ImageGenerationError: class ImageGenerationError extends Error {
+    code: string
+    constructor(code: string, message: string) {
+      super(message)
+      this.code = code
+    }
+  },
 }))
 
 const mockDbAll = mock(() => Promise.resolve([]))
@@ -46,12 +56,18 @@ const mockListModelsForProvider = mock(() =>
   ]),
 )
 
+// Import real providers/index to spread all exports — only override listModelsForProvider
+const _realProvidersIndex = await import('@/server/providers/index')
 mock.module('@/server/providers/index', () => ({
+  ..._realProvidersIndex,
   listModelsForProvider: mockListModelsForProvider,
 }))
 
 mock.module('@/server/services/encryption', () => ({
+  encrypt: mock(() => Promise.resolve('encrypted')),
   decrypt: mock(() => Promise.resolve(JSON.stringify({ apiKey: 'test-key' }))),
+  encryptBuffer: mock(() => Promise.resolve(new Uint8Array())),
+  decryptBuffer: mock(() => Promise.resolve(new Uint8Array())),
 }))
 
 mock.module('@/server/config', () => ({
@@ -64,9 +80,11 @@ mock.module('@/server/logger', () => ({
   createLogger: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} }),
 }))
 
-// Prevent actual filesystem writes
+// Prevent actual filesystem writes — spread real fs/promises to preserve all exports
+const _realFsPromises = await import('node:fs/promises')
 const mockMkdir = mock(() => Promise.resolve(undefined))
 mock.module('fs/promises', () => ({
+  ..._realFsPromises,
   mkdir: mockMkdir,
 }))
 

@@ -45,7 +45,10 @@ mock.module('@/server/services/encryption', () => ({
   _setTestKey: async () => {},
 }))
 
+// Spread real exports to avoid poisoning the module for other test files
+const _realAppSettings = await import('@/server/services/app-settings')
 mock.module('@/server/services/app-settings', () => ({
+  ..._realAppSettings,
   getDefaultSearchProvider: async () => null,
 }))
 

@@ -41,6 +41,8 @@ mock.module('@/server/db/schema', () => ({
 }))
 
 mock.module('@/server/services/app-settings', () => ({
+  getSetting: mock(() => Promise.resolve(null)),
+  setSetting: mock(() => Promise.resolve()),
   getGlobalPrompt: mockGetGlobalPrompt,
   setGlobalPrompt: mockSetGlobalPrompt,
   deleteSetting: mockDeleteSetting,

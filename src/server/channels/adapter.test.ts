@@ -166,9 +166,10 @@ describe('readAttachmentBlob', () => {
   })
 
   it('reads existing local file as blob', async () => {
-    // Write a temp file to test local reading
-    const tmpPath = '/tmp/kinbot-test-adapter-blob.txt'
-    await Bun.write(tmpPath, 'hello-blob')
+    // Write a temp file to test local reading (unique name to avoid parallel conflicts)
+    const tmpPath = `/tmp/kinbot-test-adapter-blob-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`
+    const { writeFileSync } = await import('fs')
+    writeFileSync(tmpPath, 'hello-blob')
     try {
       const att: OutboundAttachment = {
         source: tmpPath,
@@ -178,8 +179,8 @@ describe('readAttachmentBlob', () => {
       const text = await result.text()
       expect(text).toBe('hello-blob')
     } finally {
-      const { unlinkSync } = await import('fs')
-      unlinkSync(tmpPath)
+      const { unlinkSync, existsSync } = await import('fs')
+      if (existsSync(tmpPath)) unlinkSync(tmpPath)
     }
   })
 
