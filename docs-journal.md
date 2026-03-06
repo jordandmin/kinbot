@@ -104,3 +104,16 @@
 2. **Phase 4:** Add "Docs" link in landing site navbar
 3. **Phase 4:** Create `get_mini_app_docs` tool (#66) + slim down `create_mini_app`
 4. **Phase 5:** Plugin management tools (#68) documentation
+
+## 2026-03-06 — Phase 4: Landing navbar Docs link ✅
+
+- Added "Docs" button to landing site navbar (desktop + mobile)
+- Uses BookOpen icon, glass-style button to differentiate from GitHub CTA
+- Mobile menu: Docs link above GitHub link
+- Both builds pass (site + docs-site)
+- Commit: `d566942` — pushed to main
+
+### Next run priorities:
+1. **Phase 4 continued:** Create `get_mini_app_docs` tool (#66) + slim down `create_mini_app`
+2. **Phase 5:** Plugin management tools (#68) documentation
+3. Add docs link in README

@@ -9,6 +9,7 @@ const productLinks = [
 ]
 
 const resourceLinks = [
+  { label: 'Documentation', href: '/kinbot/docs/' },
   { label: 'GitHub', href: 'https://github.com/MarlBurroW/kinbot' },
   { label: 'Releases', href: 'https://github.com/MarlBurroW/kinbot/releases' },
   { label: 'Issues', href: 'https://github.com/MarlBurroW/kinbot/issues' },
