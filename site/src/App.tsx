@@ -100,6 +100,7 @@ const Comparison = lazy(() => import('./components/Comparison').then(m => ({ def
 const Providers = lazy(() => import('./components/Providers').then(m => ({ default: m.Providers })))
 const Channels = lazy(() => import('./components/Channels').then(m => ({ default: m.Channels })))
 const Architecture = lazy(() => import('./components/Architecture').then(m => ({ default: m.Architecture })))
+const TechStack = lazy(() => import('./components/TechStack').then(m => ({ default: m.TechStack })))
 const Install = lazy(() => import('./components/Install').then(m => ({ default: m.Install })))
 const Pricing = lazy(() => import('./components/Pricing').then(m => ({ default: m.Pricing })))
 const FAQ = lazy(() => import('./components/FAQ').then(m => ({ default: m.FAQ })))
@@ -216,6 +217,11 @@ export default function App() {
         <Suspense fallback={<SectionFallback />}>
           <ScrollReveal>
             <Architecture />
+          </ScrollReveal>
+        </Suspense>
+        <Suspense fallback={<SectionFallback />}>
+          <ScrollReveal>
+            <TechStack />
           </ScrollReveal>
         </Suspense>
         <SectionDivider variant="glow" />
