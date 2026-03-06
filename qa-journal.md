@@ -587,3 +587,47 @@
 - Area 11: Contacts (add, approve, edit, delete)
 - Area 12: Webhooks (create, edit, test, delete)
 - Area 13: MCP servers (add, configure, remove)
+
+## 2026-03-06 12:40 UTC
+### Area tested: Contacts (Area 11)
+- **Pages visited:** Code review of ContactsSettings.tsx, ContactCard.tsx, ContactFormDialog.tsx, ContactNotes.tsx, ContactPlatformIds.tsx, ApprovalDialog.tsx, contacts.ts (routes), contacts.ts (service), channels.ts (service for platform IDs), schema.ts (FK cascades)
+- **Note:** Browser unavailable (sandbox disabled, Chrome extension relay not attached), testing done via thorough code review
+
+#### Bugs found: 3
+
+1. **No Kin selector for "kin" type contacts** - Issue #84
+   - ContactFormDialog shows user selector for "human" but no Kin selector for "kin" type
+   - linkedKinId always null from UI, breaking prompt builder resolution
+
+2. **Server accepts whitespace-only and empty contact names** - Issue #85
+   - POST checks `!name` (truthy for `"   "`), PATCH has no name validation at all
+   - Client validates but server should not depend on it
+
+3. **createContact silently returns existing on duplicate linkedUserId** - Issue #86
+   - Returns existing contact with 201 status instead of 409 conflict
+   - UI shows "Contact added" toast even though nothing was created
+
+#### UX suggestions: 2
+
+4. **Delete confirmation should warn about cascading effects** - Issue #87
+   - Deleting contact cascades to platform IDs (channel access revocation)
+   - Users not warned they're locking someone out of messaging
+
+5. **N+1 API calls for platform IDs** - Issue #88
+   - Each ContactCard fetches platform IDs separately
+   - Should be included in contact detail response like identifiers/notes
+
+#### All clear:
+- Contact CRUD flow (create/edit/delete) works correctly via UI
+- Identifier management (add/remove/edit with LabelCombo) is well-built
+- Notes system with per-Kin scoping (global/private) is solid
+- SSE real-time updates for contact changes
+- Approval dialog for channel users (create new or link existing)
+- FK cascade on delete properly configured for identifiers, notes, platform IDs
+- Platform ID display with platform icons and hover-to-revoke UX
+- Empty state with call to action
+- Loading skeleton while fetching
+
+### Next run
+- Area 12: Webhooks (create, edit, test, delete)
+- Area 13: MCP servers (add, configure, remove)

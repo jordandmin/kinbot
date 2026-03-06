@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Moon, Sun, Github, Menu, X, Star } from 'lucide-react'
+import { Moon, Sun, Github, Menu, X, Star, BookOpen } from 'lucide-react'
 import { useGitHubData } from './GitHubDataProvider'
 
 interface NavbarProps {
@@ -135,6 +135,18 @@ export function Navbar({ dark, onToggleDark }: NavbarProps) {
             {dark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <a
+            href="/kinbot/docs/"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
+            style={{
+              background: 'color-mix(in oklch, var(--color-glow-1) 15%, transparent)',
+              color: 'var(--color-foreground)',
+              border: '1px solid color-mix(in oklch, var(--color-glow-1) 25%, transparent)',
+            }}
+          >
+            <BookOpen size={15} />
+            Docs
+          </a>
+          <a
             href="https://github.com/MarlBurroW/kinbot"
             target="_blank"
             rel="noopener noreferrer"
@@ -219,10 +231,23 @@ export function Navbar({ dark, onToggleDark }: NavbarProps) {
             })}
           </div>
           <a
+            href="/kinbot/docs/"
+            onClick={handleNavClick}
+            className="flex items-center justify-center gap-2 mt-4 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+            style={{
+              background: 'color-mix(in oklch, var(--color-glow-1) 15%, transparent)',
+              color: 'var(--color-foreground)',
+              border: '1px solid color-mix(in oklch, var(--color-glow-1) 25%, transparent)',
+            }}
+          >
+            <BookOpen size={15} />
+            Documentation
+          </a>
+          <a
             href="https://github.com/MarlBurroW/kinbot"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 mt-4 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+            className="flex items-center justify-center gap-2 mt-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
             style={{
               background: 'var(--color-primary)',
               color: 'var(--color-primary-foreground)',
