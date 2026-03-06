@@ -592,6 +592,16 @@ bash install.sh --doctor
 
 ---
 
+## 💬 Community & Support
+
+- **Issues** — [Report bugs or request features](https://github.com/MarlBurroW/kinbot/issues)
+- **Discussions** — Questions, ideas, and show & tell (coming soon)
+- **Contributing** — [Read the guide](CONTRIBUTING.md) to get started
+- **Security** — [Report vulnerabilities responsibly](SECURITY.md)
+- **Changelog** — [See what's new](CHANGELOG.md)
+
+If KinBot is useful to you, consider [starring the repo](https://github.com/MarlBurroW/kinbot) — it helps others discover the project.
+
 ## Contributing
 
 Contributions are welcome! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide: setup, adding providers/channels, code style, and commit conventions.
