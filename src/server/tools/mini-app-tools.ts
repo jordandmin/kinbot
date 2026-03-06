@@ -34,166 +34,20 @@ export const createMiniAppTool: ToolRegistration = {
   create: (ctx) =>
     tool({
       description:
-        'Create a new mini web application. The app will appear in the KinBot sidebar and can be opened in a side panel. ' +
-        'Provide the full HTML content for the initial index.html. ' +
-        '**IMPORTANT: Use React for all mini-apps.** JSX is transpiled server-side — no build step needed. ' +
-        'Use `<script type="text/jsx">` for inline JSX (automatically transpiled to ES modules), or `.jsx`/`.tsx` files for external scripts. ' +
-        '**React Setup:** Create an `app.json` file via write_mini_app_file with these dependencies: ' +
-        '`{"dependencies": {"react": "https://esm.sh/react@19", ' +
-        '"react-dom/client": "https://esm.sh/react-dom@19/client", "@kinbot/react": "/api/mini-apps/sdk/kinbot-react.js"}}`. ' +
-        '**React App Pattern:** `<div id="root"></div>` + `<script type="text/jsx">` containing: ' +
-        '`import { useState } from "react"; import { createRoot } from "react-dom/client"; import { useKinBot, useStorage, toast } from "@kinbot/react"; ' +
-        'function App() { const { ready } = useKinBot(); if (!ready) return <div>Loading...</div>; return <AppContent />; } ' +
-        'createRoot(document.getElementById("root")).render(<App />);`. ' +
-        '**@kinbot/react Hooks:** ' +
-        '`useKinBot()` → `{ app, ready, theme, locale, isFullPage, api }` (handles the KinBot lifecycle — MUST be called at root, wait for `ready` before rendering content; ' +
-        '`api` is the backend API client — use it after ready is true), ' +
-        '`useStorage(key, defaultValue)` → `[value, setValue, loading]` (reactive key-value storage with auto-persist — like useState but persistent; ' +
-        'setValue accepts a value or an updater function like useState; loading is true while fetching initial value), ' +
-        '`useTheme()` → `{ mode, palette }` (reactive theme, lighter alternative to useKinBot when you only need theme), ' +
-        '`useKin()` → `{ kin, loading }` (reactive access to parent Kin info: id, name, avatarUrl), ' +
-        '`useUser()` → `{ user, loading }` (reactive access to current user info: id, name, locale, timezone, avatarUrl), ' +
-        '`useMemory()` → `{ search, store, results, loading }` (search/store Kin memories from mini-apps), ' +
-        '`useConversation()` → `{ history, send, messages, loading }` (interact with Kin conversation), ' +
-        '`useForm(initialValues, validate?)` → `{ values, errors, touched, handleChange, handleBlur, handleSubmit, reset, isValid, isDirty }` (form state management with validation), ' +
-        '`useMediaQuery(query)` → `boolean` (reactive CSS media query, e.g. useMediaQuery("(min-width: 768px)")), ' +
-        '`useDebounce(value, delayMs?)` → debounced value (default 300ms), ' +
-        '`useInterval(callback, delayMs)` (declarative setInterval, pass null to pause), ' +
-        '`useClickOutside(ref, handler)` (call handler when click outside ref element), ' +
-        '`useShortcut(key, callback)` (register keyboard shortcut, auto-cleanup on unmount — e.g. useShortcut("ctrl+k", openSearch)), ' +
-        '`useApps()` → `{ apps, loading, refresh }` (list other mini-apps from the same Kin, fetches on mount), ' +
-        '`useSharedData(onData?)` → `{ data, clear }` (listen for data shared from another app via KinBot.share()), ' +
-        '`usePrevious(value)` → previous value from last render (useful for comparing state changes), ' +
-        '`useOnline()` → `boolean` (reactive network status — true when browser is online), ' +
-        '`useClipboard()` → `{ copy, paste, copied, loading }` (reactive clipboard — copy(text) returns Promise<boolean>, copied auto-resets after 2s, paste() returns Promise<string|null>), ' +
-        '`useNotification()` → `{ notify, lastSent }` (send browser notifications via parent — notify(title, body?) returns Promise<boolean>), ' +
-        '`useDownload()` → `{ download, downloading }` (trigger file downloads — download(filename, content, mimeType?) where content can be string/object/Blob/ArrayBuffer; objects auto-serialize to JSON), ' +
-        '`useFetch(url, options?)` → `{ data, loading, error, refetch, status }` (fetch external data via KinBot.http proxy — auto-fetches on mount and when url changes; pass null to skip; options: {method, body, headers, json (default true), enabled (default true)}), ' +
-        '`useApi(path, options?)` → `{ data, loading, error, refetch }` (fetch from mini-app backend _server.js via KinBot.api — auto-fetches on mount; path like "/items"; options: {method, body, enabled}), ' +
-        '`useAsync(asyncFn)` → `{ run, data, loading, error, reset }` (wrap any async function with loading/error states — call run(...args) manually; great for mutations like POST/DELETE), ' +
-        '`useEventStream(eventName?, callback?)` → `{ messages, connected, clear }` (subscribe to SSE events from backend — auto-connects on mount, disconnects on unmount; with callback: no accumulation; without: messages accumulate as [{event, data, ts}]). ' +
-        '`useInfiniteScroll(path, options?)` → `{ items, loading, loadingMore, error, hasMore, loadMore, reset, sentinelRef }` (infinite scroll / load-more pagination — fetches pages from backend or external API and merges results; options: source "api"|"http", pageSize, pageParam, limitParam, getItems, getHasMore, autoLoad, threshold; use sentinelRef with autoLoad for IntersectionObserver auto-trigger). ' +
-        '`usePagination(path, options?)` → `{ items, loading, error, page, totalPages, setPage, next, prev, refetch }` (traditional page-based pagination — replaces items on each page change; options: source, pageSize, pageParam, limitParam, getItems, getTotal for computing totalPages). ' +
-        '`useLocalStorage(key, defaultValue)` → `[value, setValue, remove]` (persistent state using browser localStorage — NOT synced via KinBot storage; useful for UI preferences like collapsed panels, sort order, sidebar width; keys auto-prefixed with "kb:"; syncs across tabs; setValue accepts value or updater function like useState). ' +
-        '`useBreakpoint()` → `"xs"|"sm"|"md"|"lg"|"xl"` (reactive current breakpoint based on window width: xs <640px, sm ≥640px, md ≥768px, lg ≥1024px, xl ≥1280px — great for conditional rendering based on screen size). ' +
-        '`useHashRouter(defaultPath?)` → `{ path, params, navigate, back }` (hash-based router for multi-page mini-apps — path from "#/page?key=val", params as object, navigate(path, params?) to change route, back() for browser back; supports browser back/forward). ' +
-        '`Route` component: `<Route path="/settings" current={path}>...</Route>` (renders children when path matches current; use `fallback` prop for 404). ' +
-        '`Link` component: `<Link to="/settings" params={{tab:"general"}} active={path==="/settings"}>Settings</Link>` (hash navigation anchor). ' +
-        '**@kinbot/react Exports (convenience re-exports from KinBot SDK):** ' +
-        '`toast(message, type)` (type: "info"|"success"|"warning"|"error"), ' +
-        '`confirm(message, options?)` → Promise<boolean> (options: {title?, confirmLabel?, cancelLabel?, variant?: "default"|"destructive"}), ' +
-        '`prompt(message, options?)` → Promise<string|null> (options: {title?, placeholder?, defaultValue?, confirmLabel?, cancelLabel?}), ' +
-        '`navigate(path)`, `fullpage(bool)`, `setTitle(title)`, `setBadge(value)`, `openApp(slug)`, ' +
-        '`clipboard` (.write(text) → Promise<boolean>, .read() → Promise<string|null>), ' +
-        '`storage` (.get/.set/.delete/.list/.clear — direct access to KV storage), ' +
-        '`api` (call backend routes: `api.get("/path")` → GET JSON, `api.post("/path", data)` → POST JSON, ' +
-        '`api.put("/path", data)` → PUT JSON, `api.patch("/path", data)` → PATCH JSON, `api.delete("/path")` → DELETE, ' +
-        '`api.json("/path", options?)` → any method with JSON parsing, `api("/path", options?)` → raw Response), ' +
-        '`http` (external HTTP proxy: `http(url, opts?)`, `http.json(url)`, `http.post(url, data)` — 60 req/min, 5MB max, 15s timeout), ' +
-        '`events` (SSE from backend: `.on(event, cb)`, `.subscribe(cb)`, `.close()`, `.connected`), ' +
-        '`shortcut` (register keyboard shortcuts: `shortcut("ctrl+k", cb)` — returns unregister function), ' +
-        '`apps` (list/get mini-apps: `apps.list()`, `apps.get(id)`), ' +
-        '`download` (trigger file download: `download(filename, content, mimeType?)`). ' +
-        '**@kinbot/components — React Component Library:** Add `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"` to app.json dependencies. ' +
-        'Import: `import { Card, Button, Input, Select, Textarea, Checkbox, Switch, Badge, Tag, Stat, Avatar, Tooltip, ProgressBar, ' +
-        'Alert, Spinner, Skeleton, EmptyState, Tabs, Table, List, Pagination, Modal, Drawer, Stack, Divider, ButtonGroup, Grid, Breadcrumbs, Popover, Form, DataGrid, Accordion, DropdownMenu, Panel, RadioGroup, Slider, DatePicker, DateRangePicker, BarChart, LineChart, PieChart, SparkLine, Stepper, StepperContent, FileUpload, CodeBlock, Timeline, AvatarGroup, NumberInput, Combobox, TagInput, ColorPicker, MarkdownEditor, Calendar, Kanban, Router, Route, Link, NavLink, Navigate, useHashRouter } from "@kinbot/components"`. ' +
-        'All components auto-adapt to light/dark theme. Key components: ' +
-        '`Card` (+ Card.Header, Card.Title, Card.Description, Card.Content, Card.Footer), ' +
-        '`Button` (variant: primary|secondary|destructive|ghost|shine, size: sm|md|lg|icon), ' +
-        '`Input/Textarea/Select` (label, error props for form validation), ' +
-        '`Switch` (checked, onChange, label), `Checkbox` (label), ' +
-        '`Badge` (variant: primary|destructive|success|warning|outline), `Tag` (onRemove for removable tags), ' +
-        '`Stat` (value, label, trend, trendUp), `Avatar` (src or initials fallback), ' +
-        '`Tooltip` (text, position: top|bottom|left|right), `ProgressBar` (value, max, showLabel), ' +
-        '`Alert` (variant: info|success|warning|error, title, dismissible), ' +
-        '`Tabs` (tabs: [{id, label}], active, onChange), `Table` (columns: [{key, label, render?}], data), ' +
-        '`Modal` (open, onClose, title, size: sm|md|lg), `Drawer` (open, onClose, title, side: left|right), ' +
-        '`Stack` (direction, gap, align, justify), `Divider`, `Pagination` (page, totalPages, onChange), ' +
-        '`Spinner`, `Skeleton`, `EmptyState` (icon, title, description, action), `List` (items: [{content}], divided), ' +
-        '`Grid` (columns, minChildWidth for auto-fit responsive, gap; Grid.Item with colSpan/rowSpan), ' +
-        '`Breadcrumbs` (items: [{label, href?, onClick?}], separator), ' +
-        '`Popover` (trigger, content, placement: top|bottom|left|right, controlled via open/onOpenChange), ' +
-        '`Form` (compound form with validation: onSubmit receives values object; Form.Field wraps Input/Select/Textarea/Checkbox/Switch with auto-binding of value/onChange/onBlur/error; ' +
-        'rules: ["required", "email", {type:"minLength",value:3,message?:"Too short"}, {type:"maxLength",value:50}, {type:"min",value:0}, {type:"max",value:100}, {type:"pattern",value:/regex/}, {type:"match",value:"fieldName"}, customFn]; ' +
-        'Form.Submit auto-disables during submit with loadingText; Form.Reset clears to initialValues; Form.Actions aligns buttons), ' +
-        '`DataGrid` (feature-rich data table: columns [{key, label, sortable?, filterable?, align?, width?, render?}], data, pageSize (default 10), pageSizeOptions?: number[], ' +
-        'selectable + onSelectionChange, onRowClick, striped, compact, searchable + searchPlaceholder, stickyHeader + maxHeight, emptyText; ' +
-        'built-in sorting with locale-aware compare, per-column text filters, global search, dynamic page size selector, checkbox row selection; use DataGrid instead of Table+Pagination for data-heavy apps), ' +
-        '`Accordion` (items: [{id, title, content, disabled?}], multiple?: boolean for multi-open, defaultOpen?: string[]; collapsible content sections with smooth animation), ' +
-        '`DropdownMenu` (trigger: ReactNode, items: [{label, onClick?, icon?, disabled?, destructive?, divider?: boolean}], align: "start"|"end"; click-triggered context menu with keyboard support), ' +
-        '`Panel` (collapsible panel with title bar: title, icon?, collapsible?: boolean, defaultOpen?: boolean, actions?: ReactNode, variant: "default"|"outlined"|"filled"), ' +
-        '`RadioGroup` (name?, options: [{value, label, disabled?}], value, onChange, direction: "column"|"row", label?, error?), ' +
-        '`Slider` (range input: value, min, max, step, onChange, label?, showValue?: boolean, formatValue?: fn, disabled?), ' +
-        '`DatePicker` (date input: value, onChange, label?, error?, type: "date"|"datetime-local"|"time", min?, max?, disabled?). ' +
-        '**Charts:** `BarChart` (data: [{label, value, color?}], width?, height?, showValues?, showGrid?, barRadius?, gap?, animate?), ' +
-        '`LineChart` (data: [{label, value}] or [{label, values: number[]}] for multi-series, series?: string[], showDots?, showArea?, curved?, animate?), ' +
-        '`PieChart` (data: [{label, value, color?}], donut?: boolean, showLabels?, showLegend?, animate?), ' +
-        '`SparkLine` (data: number[], width?, height?, color?, showArea?, strokeWidth?). ' +
-        'Charts use --color-chart-1 through --color-chart-5 CSS variables for theme-aware colors. ' +
-        '**Stepper:** `Stepper` (steps: [{label, description?, icon?}], activeStep, onStepClick?, variant?: "default"|"compact", allowClickAhead?). ' +
-        '`StepperContent` (activeStep, animated?, children) renders only the child at activeStep index. Great for multi-step wizards and onboarding flows. ' +
-        '**New components:** `FileUpload` (drag-and-drop zone: accept, multiple, maxSize, maxFiles, onFiles, onError, compact, label, hint — validates file type/size), ' +
-        '`CodeBlock` (code display: code, language, showCopy, showLineNumbers, maxHeight — monospace with copy button), ' +
-        '`Timeline` (chronological events: items [{title, description?, time?, icon?, color?}] — vertical timeline with dots/icons), ' +
-        '`AvatarGroup` (stacked avatars: avatars [{src?, name?}], max, size sm|md|lg — overflow +N indicator), ' +
-        '`NumberInput` (numeric +/- stepper: value, onChange, min, max, step, label, error, size sm|md|lg), ' +
-        '`Combobox` (searchable select dropdown: options [{value, label, icon?, description?, disabled?}], value, onChange, placeholder, clearable, label, error — keyboard nav + filtering), ' +
-        '`TagInput` (multi-tag entry: value string[], onChange, suggestions string[], placeholder, maxTags, validate fn, variant default|primary, size sm|md — Enter/comma to add, Backspace to remove), ' +
-        '`ColorPicker` (full color picker with saturation/brightness area, hue slider, hex input: value hex string, onChange(hex), label, error, swatches hex[], disabled, size sm|md|lg). ' +
-        '`MarkdownEditor` (markdown editor with toolbar, live preview, split view: value string, onChange(string), label, error, placeholder, minHeight, maxHeight, showPreview, showToolbar, disabled; built-in toolbar for bold/italic/headings/lists/code/links/images; Ctrl+B/I/E/K shortcuts; write/split/preview modes; word/char count; basic markdown rendering in preview). ' +
-        '`Calendar` (visual month calendar: mode single|multiple|range; value is date string, string[] or {start,end}; onChange; events [{date,color?,label?}] show colored dots; min/max date constraints; weekStart 0=Sun 1=Mon; showOutsideDays; locale for day/month names). ' +
-        '`DateRangePicker` (compound: two-input field with Calendar popover in range mode; value {start?,end?} YYYY-MM-DD; onChange({start,end}); label, error, placeholder {start?,end?}, min, max, locale, weekStart, disabled; presets [{label,start,end}] for quick-select buttons like "Last 7 days"; separator string between inputs; auto-closes on selection; shows day count). ' +
-        '`Kanban` (drag-and-drop kanban board: columns [{id, title, color?, cards: [{id, title, description?, tags?, avatar?, priority?: "high"|"medium"|"low"}]}], onChange(columns), onCardClick(card, colId), renderCard for custom rendering; allowAddCards, allowAddColumns, allowDeleteCards, allowDeleteColumns, allowEditCards (double-click); cardPlaceholder, columnPlaceholder, minCardWidth, maxCardWidth; cards show priority dots, tags, avatars; inline editing and card/column CRUD built-in). ' +
-        '**Routing (hash-based):** `Router` wraps your app, `Route` declares paths (supports :params), `Link`/`NavLink` for navigation, `Navigate` for redirects, `useHashRouter()` hook returns {path, params, query, navigate}. ' +
-        'Example: `<Router><Route path="/" element={<Home/>}/><Route path="/users/:id" element={<UserDetail/>}/><Route path="*" element={<NotFound/>}/></Router>`. ' +
-        'NavLink adds "active" class when path matches (exact prop for exact match). ' +
-        '**Design System CSS** (auto-injected): CSS variables like ' +
-        'var(--color-primary), var(--color-background), var(--color-foreground), var(--color-muted), var(--color-card), var(--color-border). ' +
-        'Utility classes: .glass-strong, .surface-card, .gradient-primary, .btn-shine, .card-hover, .animate-fade-in-up. ' +
-        '**Animations:** .animate-fade-in, .animate-fade-out, .animate-fade-in-up, .animate-fade-in-down, .animate-fade-out-up, .animate-fade-out-down, ' +
-        '.animate-slide-in-left, .animate-slide-in-right, .animate-slide-out-left, .animate-slide-out-right, ' +
-        '.animate-scale-in, .animate-scale-out, .animate-bounce-in, .animate-shake, .animate-spin, .animate-ping, .animate-wiggle, ' +
-        '.animate-collapse-down, .animate-expand-up, .animate-flip-in-x, .animate-flip-in-y, .animate-levitate. ' +
-        'Animation modifiers: .delay-1 to .delay-10, .duration-75/100/150/200/300/500/700/1000. ' +
-        '**Transitions:** .transition-all, .transition-colors, .transition-opacity, .transition-transform, .transition-shadow, ' +
-        '.transition-fast/normal/slow/slower, .ease-in/out/in-out/bounce/spring. Respects prefers-reduced-motion. ' +
-        'Layout (Tailwind-like): .flex, .flex-col, .grid, .grid-cols-2, .items-center, .justify-between, .gap-4, ' +
-        '.p-4, .px-3, .py-2, .m-4, .mx-auto, .w-full, .h-full, .max-w-md, .text-sm, .text-xl, .font-bold, .text-center, ' +
-        '.bg-card, .bg-muted, .border, .rounded-lg, .shadow-md, .space-y-4, .overflow-auto, .relative, .absolute, .transition. ' +
-        'Components: .btn, .btn-primary, .btn-secondary, .btn-destructive, .btn-ghost, .btn-sm, .btn-lg, ' +
-        '.card, .card-header, .card-title, .card-content, .input, .textarea, .badge, .table, .label, .separator, ' +
-        '.select, .checkbox, .switch, .radio, .progress, .alert, .avatar, .kbd, .spinner. ' +
-        '**Responsive CSS utilities** (Tailwind-style, mobile-first): Breakpoints: sm (≥640px), md (≥768px), lg (≥1024px), xl (≥1280px). ' +
-        'Prefix any utility with `sm:`, `md:`, `lg:`, `xl:` for responsive variants. ' +
-        'Available: display (hidden/block/flex/grid/inline/inline-block/inline-flex), flex-direction (flex-row/flex-col/flex-wrap), ' +
-        'grid columns (grid-cols-1 to grid-cols-12), gap (gap-0 to gap-8), padding (p-/px-/py- 0 to 8), text alignment, ' +
-        'width (w-full/w-auto/w-1\\/2/w-1\\/3/w-2\\/3/w-1\\/4/w-3\\/4), max-width, justify/align/self. ' +
-        'Example: `className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"`. ' +
-        'CSS variables `--breakpoint-sm/md/lg/xl` available for JS access. ' +
-        'For JS-level breakpoint detection, use the `useBreakpoint()` hook. ' +
-        'Theme (light/dark) and palette are automatically synced. ' +
-        '**TypeScript Definitions:** Available at `/api/mini-apps/sdk/kinbot-sdk.d.ts`, `/api/mini-apps/sdk/kinbot-react.d.ts`, `/api/mini-apps/sdk/kinbot-components.d.ts` for full API type documentation. ' +
-        'For additional files, use write_mini_app_file after creation. Relative paths resolve to the app\'s static directory. ' +
-        '**Backend API (_server.js):** Create via write_mini_app_file. Must export default function receiving ctx, returning a Hono app. ' +
-        'Example: `export default function(ctx) { const app = new ctx.Hono(); app.get("/hello", (c) => c.json({ message: "Hello!" })); return app; }`. ' +
-        'Context: `ctx.Hono`, `ctx.storage`, `ctx.events` (.emit(event, data)), `ctx.appId`, `ctx.kinId`, `ctx.appName`, `ctx.log`. ' +
-        'Routes at `/api/mini-apps/<appId>/api/*`. Frontend: `const { api } = useKinBot()` then `api.get("/path")`, `api.post("/path", data)`, `api.delete("/path")`. ' +
-        '**Real-time Events (SSE):** Backend: `ctx.events.emit("update", {count: 42})`. Frontend: `events.on("update", (data) => ...)`. ' +
-        '`KinBot.sendMessage(text, options?)` → Promise<boolean> (send a message to the Kin\'s conversation; ' +
-        'options: {silent?: boolean}; rate limited to 5 per 30s). ' +
-        '`KinBot.kin` → {id, name, avatarUrl} (info about the parent Kin). ' +
-        '`KinBot.user` → {id, name, pseudonym, locale, timezone, avatarUrl} (info about the current user). ' +
-        '`KinBot.resize(width?, height?)` → request panel resize (width: 320-1200px, height: 200-2000px). ' +
-        '`KinBot.notification(title, body?)` → Promise<boolean> (show a browser notification via the parent window). ' +
-        '`KinBot.shortcut(key, callback)` → register keyboard shortcuts (e.g. "ctrl+k", "meta+shift+p", "escape"). Returns unregister function. Pass null to remove. ' +
-        '`KinBot.apps.list()` → Promise<Array> (list all mini-apps from the same Kin: {id, name, slug, description, icon, version}). ' +
-        '`KinBot.apps.get(appId)` → Promise<object> (get details of a specific mini-app). ' +
-        '`KinBot.memory.search(query, limit?)` → Promise<Array> (semantic search the Kin\'s memories: {id, content, category, subject, score, updatedAt}; default 20, max 50). ' +
-        '`KinBot.memory.store(content, {category?, subject?})` → Promise<object> (store a new memory; category: fact|preference|decision|knowledge, default knowledge; max 2000 chars). ' +
-        '`KinBot.conversation.history(limit?)` → Promise<Array> (get recent messages: {id, role, content, createdAt, sourceType}; default 20, max 100). ' +
-        '`KinBot.conversation.send(text, options?)` → Promise<boolean> (send a message to the Kin; alias of sendMessage). ' +
-        '`KinBot.share(targetSlug, data)` → Promise<boolean> (share JSON data with another mini-app and open it; the target app receives it via `KinBot.on("shared-data", ({from, fromName, data, ts}) => ...)`). ' +
-        '`KinBot.download(filename, content, mimeType?)` → Promise<boolean> (trigger a file download; content can be a string, object (auto-JSON), Blob, or ArrayBuffer; mimeType is auto-detected if omitted).',
+        'Create a new mini web application. The app will appear in the KinBot sidebar. ' +
+        '**Call `get_mini_app_docs` first** to get the full SDK reference (hooks, components, guidelines). ' +
+        '**Use React** with `<script type="text/jsx">` (server-side transpilation, no build step). ' +
+        '**Setup:** Create `app.json` via write_mini_app_file: ' +
+        '`{"dependencies": {"react": "https://esm.sh/react@19", "react-dom/client": "https://esm.sh/react-dom@19/client", ' +
+        '"@kinbot/react": "/api/mini-apps/sdk/kinbot-react.js"}}`. ' +
+        'For components add: `"@kinbot/components": "/api/mini-apps/sdk/kinbot-components.js"`. ' +
+        '**Pattern:** `<div id="root"></div>` + `<script type="text/jsx">` with: ' +
+        '`import { createRoot } from "react-dom/client"; import { useKinBot } from "@kinbot/react"; ' +
+        'function App() { const { ready } = useKinBot(); if (!ready) return <div>Loading...</div>; return <Content />; } ' +
+        'createRoot(document.getElementById("root")).render(<App />);` ' +
+        '**Key hooks:** useKinBot (lifecycle), useStorage (persistent state), useApi (backend calls), useTheme, useForm. ' +
+        '**Backend:** Write `_server.js` that exports default function(ctx) returning a Hono app. ' +
+        'For additional files, use write_mini_app_file. Use templates via get_mini_app_templates.',
       inputSchema: z.object({
         name: z.string().describe('Display name of the app (e.g. "Todo Tracker")'),
         slug: z.string().regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/).describe('URL-safe identifier in kebab-case (e.g. "todo-tracker"). Must be unique among your apps.'),

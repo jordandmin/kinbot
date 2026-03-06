@@ -135,6 +135,7 @@ import {
   rollbackMiniAppTool,
 } from '@/server/tools/mini-app-tools'
 import { getMiniAppTemplatesTool } from '@/server/tools/mini-app-templates'
+import { getMiniAppDocsTool } from '@/server/tools/mini-app-docs'
 import { browseMiniAppsTool, cloneMiniAppTool } from '@/server/tools/mini-app-gallery'
 import { attachFileTool } from '@/server/tools/attach-file-tool'
 import {
@@ -307,6 +308,7 @@ export function registerAllTools(): void {
   toolRegistry.register('list_mini_app_snapshots', listMiniAppSnapshotsTool)
   toolRegistry.register('rollback_mini_app', rollbackMiniAppTool)
   toolRegistry.register('get_mini_app_templates', getMiniAppTemplatesTool)
+  toolRegistry.register('get_mini_app_docs', getMiniAppDocsTool)
   toolRegistry.register('browse_mini_apps', browseMiniAppsTool)
   toolRegistry.register('clone_mini_app', cloneMiniAppTool)
 
