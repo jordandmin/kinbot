@@ -1,7 +1,7 @@
 // ─── Plugin System Types ─────────────────────────────────────────────────────
 
 export interface PluginConfigField {
-  type: 'string' | 'number' | 'boolean' | 'select' | 'text'
+  type: 'string' | 'number' | 'boolean' | 'select' | 'text' | 'password'
   label: string
   description?: string
   required?: boolean

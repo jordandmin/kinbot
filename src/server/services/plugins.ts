@@ -119,7 +119,7 @@ export function validateManifest(data: unknown): { valid: boolean; errors: strin
           continue
         }
         const f = field as Record<string, unknown>
-        const validTypes = ['string', 'number', 'boolean', 'select', 'text']
+        const validTypes = ['string', 'number', 'boolean', 'select', 'text', 'password']
         if (!validTypes.includes(f.type as string)) {
           errors.push(`config.${key}.type must be one of: ${validTypes.join(', ')}`)
         }

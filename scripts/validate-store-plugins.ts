@@ -16,7 +16,7 @@ const STORE_DIR = resolve(import.meta.dir, '..', 'store')
 // Required fields in plugin.json
 const REQUIRED_MANIFEST_FIELDS = ['name', 'version', 'description', 'main'] as const
 const OPTIONAL_MANIFEST_FIELDS = ['author', 'homepage', 'license', 'kinbot', 'icon', 'permissions', 'config', 'tags'] as const
-const VALID_CONFIG_TYPES = ['string', 'number', 'boolean', 'select', 'text'] as const
+const VALID_CONFIG_TYPES = ['string', 'number', 'boolean', 'select', 'text', 'password'] as const
 const VALID_PERMISSIONS = ['http:*', 'fs:read', 'fs:write', 'env:read', 'db:read', 'db:write'] as const
 
 interface ValidationError {

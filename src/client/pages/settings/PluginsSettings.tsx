@@ -608,6 +608,15 @@ function ConfigFieldRenderer({
         </Select>
       )}
 
+      {field.type === 'password' && (
+        <PasswordInput
+          id={fieldKey}
+          value={value ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+        />
+      )}
+
       {field.type === 'text' && (
         <Textarea
           id={fieldKey}
