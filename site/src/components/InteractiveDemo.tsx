@@ -106,6 +106,34 @@ const scenarios: Scenario[] = [
       },
     ],
   },
+  {
+    title: 'Plugin system',
+    description: 'Extend KinBot with community or custom plugins',
+    messages: [
+      { role: 'user', text: "Atlas, I want you to be able to control my Home Assistant setup. Is there a plugin for that?" },
+      {
+        role: 'assistant',
+        text: "Let me check the plugin registry... Yes! There's a **home-assistant** plugin that exposes tools for controlling lights, switches, sensors, and automations. Want me to install it?",
+      },
+      { role: 'user', text: "Yeah, go for it." },
+      {
+        role: 'assistant',
+        text: "Installing from the registry... Done! The plugin needs your Home Assistant URL and a long-lived access token. I've opened the settings page for you to fill those in securely (they'll be encrypted in the vault).",
+        memoryNote: 'Home Assistant plugin installed, needs URL + token config',
+      },
+      { role: 'user', text: "All configured. Can you turn off the office lights?" },
+      {
+        role: 'assistant',
+        text: "Done, **office lights** are off. I can see 47 entities from your Home Assistant. Want me to set up a cron to turn off all lights at midnight?",
+        cronNote: 'Plugin tool used: home_assistant.turn_off',
+      },
+      { role: 'user', text: "Nice. What if I need something custom that doesn't exist yet?" },
+      {
+        role: 'assistant',
+        text: "You can scaffold a new plugin in seconds with `bunx create-kinbot-plugin`. It generates a TypeScript template with manifest, types, and examples. Drop it in the plugins/ folder and it hot-reloads instantly, no restart needed.",
+      },
+    ],
+  },
 ]
 
 function TypingIndicator() {

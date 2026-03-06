@@ -1,5 +1,46 @@
 # Docs Theme Journal
 
+## Run 8 — 2026-03-06
+
+### Done
+1. **Dismissible announcement bar** — localStorage-backed dismiss:
+   - Added X button to announcement bar
+   - Smooth collapse animation (max-height + opacity transition)
+   - Persists dismissal via `kb-announcement-dismissed` localStorage key
+   - Accessible: proper button with aria-label
+
+2. **Edit link + Last updated** — Enabled in astro.config:
+   - `editLink.baseUrl` pointing to GitHub edit URL
+   - `lastUpdated: true` for all pages
+   - CSS: pill-shaped edit link button with glass border + hover accent
+   - Last updated text styled to match
+
+3. **Footer redesign** — Multi-column layout matching landing site:
+   - Gradient glow divider (matching landing's SectionDivider glow variant)
+   - Two columns: Resources (landing, GitHub, releases) + Community (discussions, issues, contributing)
+   - External link indicators (arrow icon)
+   - "Built with Starlight" credit
+   - Mobile responsive (stacks vertically)
+
+4. **CSS polish**:
+   - 404 page gradient heading
+   - Link hover glow (subtle text-shadow)
+   - Footer area border separator for edit/updated zone
+
+### Build
+- ✅ Clean build, 34 pages, 0 errors
+
+### Registered overrides in astro.config
+- Header, Head, SiteTitle, Sidebar, Hero, Footer, PageFrame, PageTitle, TableOfContents, Pagination, MobileTableOfContents, MobileMenuFooter, TwoColumnContent (13 total, unchanged)
+
+### Next priorities
+- Visual verification on deployed site
+- Consider ContentPanel override
+- Mobile responsive verification of new footer
+- Potential: custom 404 page with Aurora styling
+- Potential: search result highlight colors
+- Potential: print stylesheet polish
+
 ## Run 7 — 2026-03-06
 
 ### Done
