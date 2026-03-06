@@ -195,7 +195,7 @@ export async function deleteMemory(memoryId: string, kinId: string) {
  * Facts and knowledge decay very slowly; preferences and decisions decay faster.
  * Returns a multiplier in (0, 1].
  */
-function temporalDecayWeight(updatedAt: Date | null, category: string): number {
+function temporalDecayWeight(updatedAt: Date | null, category: string, importance?: number | null): number {
   const lambda = config.memory.temporalDecayLambda
   if (lambda <= 0 || !updatedAt) return 1 // No decay
 
@@ -210,8 +210,17 @@ function temporalDecayWeight(updatedAt: Date | null, category: string): number {
     decision: 2.0,   // Faster decay (half-life ~35 days at λ=0.01)
   }
 
-  const effectiveLambda = lambda * (categoryMultiplier[category] ?? 1)
-  return Math.exp(-effectiveLambda * daysSinceUpdate)
+  // Importance-gated decay: high-importance memories decay slower.
+  // importance 1-10, default 5. Scale: imp 10 → 0.3x decay rate, imp 1 → 1.4x decay rate.
+  const imp = importance ?? 5
+  const importanceGate = 1.5 - (imp / 10) // 10→0.5, 5→1.0, 1→1.4
+
+  const effectiveLambda = lambda * (categoryMultiplier[category] ?? 1) * importanceGate
+
+  // Decay floor: never let temporal decay push below 0.3, ensuring old but
+  // semantically relevant memories remain retrievable.
+  const decayFloor = config.memory.temporalDecayFloor ?? 0.3
+  return Math.max(decayFloor, Math.exp(-effectiveLambda * daysSinceUpdate))
 }
 
 // ─── Multi-Query Generation ──────────────────────────────────────────────────
@@ -413,7 +422,7 @@ export async function searchMemories(
 
   // Apply temporal decay, importance weighting, retrieval frequency boost, and subject boost to fused scores
   for (const [, data] of scoreMap) {
-    const decay = temporalDecayWeight(data.updatedAt, data.category)
+    const decay = temporalDecayWeight(data.updatedAt, data.category, data.importance)
     const imp = data.importance ?? 5
     const importanceWeight = 0.5 + (imp / 10)
     // Logarithmic retrieval frequency boost: memories retrieved more often get a mild boost
