@@ -1,26 +1,38 @@
 ---
 title: Plugins Overview
-description: Extend KinBot with community and custom plugins.
+description: Extend KinBot with custom tools, providers, channels, and hooks.
 ---
 
-# Plugins Overview
+KinBot's plugin system lets you extend functionality without modifying core code. Drop a folder into `plugins/` and get new capabilities instantly.
 
-KinBot's plugin system lets you extend functionality with community or custom plugins. Plugins can provide:
+## What Plugins Can Do
 
-- **Tools** — new capabilities for Kins (e.g. weather lookup, RSS feeds)
-- **Providers** — additional AI/search providers
-- **Channels** — new messaging platforms
-- **Hooks** — custom logic that runs before/after tool calls
+A single plugin can contribute one or more of these:
+
+| Type | Description |
+|------|-------------|
+| **Tools** | New AI-callable functions for Kins (weather, SMS, RSS...) |
+| **Providers** | Custom LLM, embedding, image, or search providers |
+| **Channels** | New messaging platforms |
+| **Hooks** | Intercept lifecycle events (before/after chat, tool calls...) |
+
+## Design Principles
+
+1. **Low barrier to entry** — A plugin is a folder with a manifest and a TypeScript file
+2. **TypeScript-first** — Compiled by Bun at load time, no separate build step
+3. **Safe by default** — Plugins declare permissions; users approve before activation
+4. **Kin-scoped** — Enable plugins globally or per-Kin
+5. **Compatible** — Built-in tools remain unchanged; plugins use the same patterns
 
 ## Managing Plugins
 
 ### Via the UI
 
-Navigate to **Settings > Plugins** to browse, install, enable/disable, and configure plugins.
+Navigate to **Settings → Plugins** to browse, install, enable/disable, and configure plugins. The UI auto-generates settings forms from the plugin's config schema.
 
 ### Via Kin Tools
 
-Kins can manage plugins autonomously using built-in tools (opt-in, `defaultDisabled`):
+Kins can manage plugins autonomously using built-in tools (opt-in, disabled by default):
 
 | Tool | Description |
 |------|-------------|
@@ -35,37 +47,43 @@ Kins can manage plugins autonomously using built-in tools (opt-in, `defaultDisab
 
 To enable these tools for a Kin, go to the Kin's tool settings and enable the plugin management tools.
 
-### Via Store
+## Plugin Lifecycle
 
-See the [Plugin Store](/plugins/store/) documentation for browsing and installing community plugins.
-
-## Plugin Structure
-
-Every plugin needs a `plugin.json` manifest:
-
-```json
-{
-  "name": "my-plugin",
-  "version": "1.0.0",
-  "description": "What this plugin does",
-  "main": "index.ts",
-  "author": "Your Name",
-  "permissions": ["http"]
-}
+```
+Server Start
+  → Scan plugins/ directory
+  → Validate each plugin.json
+  → Register discovered plugins (not yet activated)
+  → Activate globally-enabled plugins
+  → For each Kin, activate Kin-specific plugins
 ```
 
-And an entry file (`index.ts`) that exports an `activate` function:
+### Enable/Disable Levels
 
-```typescript
-import type { PluginContext } from 'kinbot'
+Plugins have two levels of enablement:
 
-export async function activate(ctx: PluginContext) {
-  // Register tools, hooks, providers, or channels
-  return {
-    tools: { /* ... */ },
-    hooks: { /* ... */ },
-  }
-}
-```
+- **Global** — Plugin is active at the platform level. Its providers, channels, and hooks are registered.
+- **Per-Kin** — Plugin's tools are available to specific Kins. Configured in each Kin's settings.
 
-See [Developing Plugins](/plugins/developing/) for the full guide.
+### Hot Reload
+
+- **Config changes** — Applied immediately (no restart). Plugin deactivates, re-initializes with new config, then activates.
+- **Code changes** — Require clicking **Reload Plugins** or restarting KinBot.
+- **Manifest changes** — Require reload.
+
+## Installation Methods
+
+| Method | How | Use Case |
+|--------|-----|----------|
+| **Manual** | Copy folder to `plugins/` | Development, local plugins |
+| **Git** | Install via UI or API from a Git URL | Shared plugins |
+| **npm** | Install via UI or API from npm | Published packages |
+| **UI upload** | Upload ZIP via Plugin Manager | Non-technical users (future) |
+
+See [Developing Plugins](/kinbot/docs/plugins/developing/) for the full development guide.
+
+## Next Steps
+
+- [Developing Plugins](/kinbot/docs/plugins/developing/) — Build your first plugin
+- [Plugin API](/kinbot/docs/plugins/api/) — Full API reference
+- [Plugin Store](/kinbot/docs/plugins/store/) — Browse community plugins
