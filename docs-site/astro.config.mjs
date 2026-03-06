@@ -18,6 +18,10 @@ export default defineConfig({
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/MarlBurroW/kinbot' },
 			],
 			customCss: ['./src/styles/custom.css'],
+			components: {
+				Header: './src/components/Header.astro',
+				Head: './src/components/Head.astro',
+			},
 			sidebar: [
 				{
 					label: 'Getting Started',

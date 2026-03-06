@@ -1,4 +1,9 @@
-/* KinBot Docs — Aurora theme (matching landing site) */
+/* KinBot Docs — Aurora theme (matching landing site)
+ * Uses Starlight CSS custom properties + component overrides.
+ */
+
+/* ─── FONT IMPORT ─────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 
 /* ─── DARK MODE (default, matching landing site) ──────── */
 :root,
@@ -17,11 +22,19 @@
 	--sl-color-gray-7: oklch(0.12 0.03 298);
 	--sl-color-black: oklch(0.11 0.03 295);
 
-	--sl-color-bg-nav: oklch(0.13 0.03 298);
-	--sl-color-bg-sidebar: oklch(0.13 0.03 298);
+	--sl-color-bg-nav: oklch(0.13 0.03 298 / 0.80);
+	--sl-color-bg-sidebar: oklch(0.13 0.03 298 / 0.60);
 	--sl-color-hairline-shade: oklch(0.24 0.04 300);
 
 	--sl-font: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+	/* Aurora custom tokens */
+	--kb-gradient-start: oklch(0.60 0.22 300);
+	--kb-gradient-mid: oklch(0.66 0.24 340);
+	--kb-gradient-end: oklch(0.76 0.16 15);
+	--kb-glass-bg: oklch(0.15 0.035 298 / 0.40);
+	--kb-glass-border: oklch(0.60 0.22 300 / 0.15);
+	--kb-glass-strong-bg: oklch(0.15 0.035 298 / 0.68);
 }
 
 /* ─── LIGHT MODE ──────────────────────────────────────── */
@@ -40,74 +53,246 @@
 	--sl-color-gray-7: oklch(0.975 0.008 310);
 	--sl-color-black: oklch(0.99 0.005 310);
 
-	--sl-color-bg-nav: oklch(0.975 0.008 310);
-	--sl-color-bg-sidebar: oklch(0.99 0.005 310);
+	--sl-color-bg-nav: oklch(0.975 0.008 310 / 0.80);
+	--sl-color-bg-sidebar: oklch(0.99 0.005 310 / 0.60);
 	--sl-color-hairline-shade: oklch(0.88 0.015 310);
+
+	--kb-gradient-start: oklch(0.42 0.24 300);
+	--kb-gradient-mid: oklch(0.48 0.26 340);
+	--kb-gradient-end: oklch(0.55 0.20 15);
+	--kb-glass-bg: oklch(0.99 0.006 310 / 0.50);
+	--kb-glass-border: oklch(0.52 0.24 300 / 0.15);
+	--kb-glass-strong-bg: oklch(0.99 0.006 310 / 0.78);
+}
+
+/* ─── BACKGROUND ORBS ─────────────────────────────────── */
+body {
+	position: relative;
+}
+
+body::before,
+body::after {
+	content: '';
+	position: fixed;
+	border-radius: 50%;
+	pointer-events: none;
+	z-index: -1;
+	filter: blur(80px);
+}
+
+body::before {
+	width: 600px;
+	height: 600px;
+	top: -10%;
+	left: -5%;
+	background: radial-gradient(circle, oklch(0.60 0.22 300 / 0.08) 0%, transparent 70%);
+}
+
+body::after {
+	width: 500px;
+	height: 500px;
+	bottom: 10%;
+	right: -5%;
+	background: radial-gradient(circle, oklch(0.66 0.24 340 / 0.06) 0%, transparent 70%);
+}
+
+:root[data-theme='light'] body::before {
+	background: radial-gradient(circle, oklch(0.52 0.24 300 / 0.05) 0%, transparent 70%);
+}
+
+:root[data-theme='light'] body::after {
+	background: radial-gradient(circle, oklch(0.62 0.26 340 / 0.04) 0%, transparent 70%);
+}
+
+/* ─── HEADER: GLASS EFFECT ────────────────────────────── */
+header.header {
+	backdrop-filter: blur(16px) saturate(180%) !important;
+	-webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+	border-bottom: 1px solid var(--kb-glass-border) !important;
+}
+
+/* ─── SIDEBAR: GLASS EFFECT ───────────────────────────── */
+.sidebar-pane {
+	backdrop-filter: blur(12px) saturate(160%);
+	-webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* Sidebar active link with gradient accent */
+nav.sidebar a[aria-current='page'],
+starlight-menu-button + nav a[aria-current='page'] {
+	background: var(--sl-color-accent-low) !important;
+	border-left: 3px solid transparent;
+	border-image: linear-gradient(180deg, var(--kb-gradient-start), var(--kb-gradient-mid)) 1;
+	padding-left: 0.75rem;
+}
+
+/* Sidebar section headers */
+.sidebar-content .top-level > li > details > summary,
+.sidebar-content .top-level > li > a {
+	font-weight: 700 !important;
+	letter-spacing: -0.01em;
 }
 
 /* ─── GRADIENT HEADINGS ───────────────────────────────── */
-/* Dark mode: bright aurora gradient */
 .sl-markdown-content h1,
-.hero h1 {
-	background: linear-gradient(135deg, oklch(0.60 0.22 300) 0%, oklch(0.66 0.24 340) 50%, oklch(0.76 0.16 15) 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
-}
-
-/* Light mode: darker gradient for contrast on light bg */
-:root[data-theme='light'] .sl-markdown-content h1,
-:root[data-theme='light'] .hero h1 {
-	background: linear-gradient(135deg, oklch(0.42 0.24 300) 0%, oklch(0.48 0.26 340) 50%, oklch(0.55 0.20 15) 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
+.hero h1,
+h1.gradient-heading {
+	background: linear-gradient(
+		135deg,
+		var(--kb-gradient-start) 0%,
+		var(--kb-gradient-mid) 50%,
+		var(--kb-gradient-end) 100%
+	) !important;
+	-webkit-background-clip: text !important;
+	-webkit-text-fill-color: transparent !important;
+	background-clip: text !important;
 }
 
 /* ─── CARDS (glass effect) ────────────────────────────── */
-.card {
-	border: 1px solid var(--sl-color-hairline-shade);
+.card,
+.sl-markdown-content .card {
+	background: var(--kb-glass-bg);
+	backdrop-filter: blur(8px) saturate(160%);
+	-webkit-backdrop-filter: blur(8px) saturate(160%);
+	border: 1px solid var(--kb-glass-border);
 	border-radius: 0.75rem;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-:root[data-theme='dark'] .card {
-	background: oklch(0.15 0.035 298 / 0.65);
-	border-color: oklch(0.24 0.04 300);
-	backdrop-filter: blur(8px);
+.card:hover {
+	border-color: oklch(0.60 0.22 300 / 0.30);
+	box-shadow: 0 4px 20px oklch(0.60 0.22 300 / 0.08);
 }
 
-:root[data-theme='light'] .card {
-	background: oklch(0.99 0.005 310 / 0.85);
-	border-color: oklch(0.88 0.015 310);
+/* ─── STARLIGHT LINK CARDS ────────────────────────────── */
+.sl-link-card {
+	background: var(--kb-glass-bg) !important;
+	backdrop-filter: blur(8px) saturate(160%);
+	-webkit-backdrop-filter: blur(8px) saturate(160%);
+	border: 1px solid var(--kb-glass-border) !important;
+	border-radius: 0.75rem !important;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.sl-link-card:hover {
+	border-color: oklch(0.60 0.22 300 / 0.30) !important;
+	box-shadow: 0 4px 20px oklch(0.60 0.22 300 / 0.08) !important;
 }
 
 /* ─── CODE BLOCKS ─────────────────────────────────────── */
 :root[data-theme='dark'] .expressive-code {
-	--ec-codeBg: oklch(0.09 0.025 298);
-	--ec-codeBrdCol: oklch(0.24 0.04 300);
+	--ec-codeBg: oklch(0.09 0.025 298) !important;
+	--ec-codeBrdCol: oklch(0.24 0.04 300) !important;
+	--ec-codeSelBg: oklch(0.30 0.08 300 / 0.40) !important;
+	--ec-frm-edActTabBg: oklch(0.09 0.025 298) !important;
+	--ec-frm-edTabBg: oklch(0.12 0.03 298) !important;
+	--ec-frm-edTabBarBg: oklch(0.11 0.03 295) !important;
+	--ec-frm-edTabBarBrdBtmCol: oklch(0.24 0.04 300) !important;
 }
 
 :root[data-theme='light'] .expressive-code {
-	--ec-codeBg: oklch(0.97 0.008 310);
-	--ec-codeBrdCol: oklch(0.88 0.015 310);
+	--ec-codeBg: oklch(0.97 0.008 310) !important;
+	--ec-codeBrdCol: oklch(0.88 0.015 310) !important;
 }
 
-/* ─── SIDEBAR ACTIVE LINK ─────────────────────────────── */
-[data-theme='dark'] nav a[aria-current='page'] {
-	background: oklch(0.20 0.04 305);
+.expressive-code pre {
+	border-radius: 0.75rem !important;
+}
+
+/* ─── ASIDES (note, tip, caution, danger) ─────────────── */
+.starlight-aside {
+	background: var(--kb-glass-bg) !important;
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	border-radius: 0.75rem !important;
+	border-left-width: 3px !important;
+}
+
+.starlight-aside--note {
+	border-left-color: oklch(0.60 0.22 300) !important;
+}
+
+.starlight-aside--tip {
+	border-left-color: oklch(0.66 0.24 340) !important;
+}
+
+.starlight-aside--caution {
+	border-left-color: oklch(0.76 0.16 15) !important;
+}
+
+.starlight-aside--danger {
+	border-left-color: oklch(0.65 0.25 25) !important;
 }
 
 /* ─── BUTTONS (matching landing CTA style) ────────────── */
+.sl-link-button.sl-link-button--primary,
 .sl-link-button.primary {
-	background: linear-gradient(135deg, oklch(0.52 0.24 300), oklch(0.62 0.26 340));
-	border-color: transparent;
-	color: oklch(0.98 0.005 310);
-	transition: opacity 0.2s;
+	background: linear-gradient(135deg, var(--kb-gradient-start), var(--kb-gradient-mid)) !important;
+	border-color: transparent !important;
+	color: oklch(0.98 0.005 310) !important;
+	border-radius: 9999px !important;
+	padding: 0.625rem 1.5rem !important;
+	font-weight: 600 !important;
+	transition: opacity 0.2s, transform 0.2s !important;
 }
 
+.sl-link-button.sl-link-button--primary:hover,
 .sl-link-button.primary:hover {
 	opacity: 0.9;
-	color: oklch(0.98 0.005 310);
+	transform: translateY(-1px);
+}
+
+.sl-link-button.sl-link-button--minimal,
+.sl-link-button.secondary {
+	border: 1px solid var(--kb-glass-border) !important;
+	background: var(--kb-glass-bg) !important;
+	backdrop-filter: blur(8px) !important;
+	border-radius: 9999px !important;
+	padding: 0.625rem 1.5rem !important;
+	font-weight: 600 !important;
+	transition: border-color 0.2s, background 0.2s !important;
+}
+
+.sl-link-button.sl-link-button--minimal:hover,
+.sl-link-button.secondary:hover {
+	border-color: oklch(0.60 0.22 300 / 0.40) !important;
+	background: var(--kb-glass-strong-bg) !important;
+}
+
+/* ─── BADGES ──────────────────────────────────────────── */
+.sl-badge {
+	border-radius: 9999px !important;
+	font-weight: 600 !important;
+}
+
+/* ─── TABLE STYLING ───────────────────────────────────── */
+.sl-markdown-content table {
+	border: 1px solid var(--kb-glass-border);
+	border-radius: 0.75rem;
+	overflow: hidden;
+}
+
+.sl-markdown-content th {
+	background: var(--kb-glass-bg);
+}
+
+/* ─── SMOOTH SCROLLBAR ────────────────────────────────── */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: oklch(0.40 0.04 300 / 0.40);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: oklch(0.40 0.04 300 / 0.60);
 }
 
 /* ─── SUGAR-HIGH SYNTAX ───────────────────────────────── */
@@ -121,4 +306,57 @@
 	--sh-string: #86efac;
 	--sh-keyword: #f472b6;
 	--sh-comment: #64748b;
+}
+
+/* ─── CONTENT AREA TWEAKS ─────────────────────────────── */
+.sl-markdown-content {
+	line-height: 1.75;
+}
+
+.sl-markdown-content a:not(.sl-link-button) {
+	text-decoration-color: oklch(0.60 0.22 300 / 0.40);
+	text-underline-offset: 3px;
+	transition: text-decoration-color 0.2s;
+}
+
+.sl-markdown-content a:not(.sl-link-button):hover {
+	text-decoration-color: oklch(0.60 0.22 300);
+}
+
+/* ─── HERO SECTION ENHANCEMENTS ───────────────────────── */
+.hero .hero-html {
+	text-align: center;
+}
+
+.hero .tagline {
+	color: var(--sl-color-gray-2) !important;
+	font-size: 1.15rem !important;
+}
+
+/* ─── PAGINATION ──────────────────────────────────────── */
+.pagination-links a {
+	background: var(--kb-glass-bg) !important;
+	backdrop-filter: blur(8px) !important;
+	border: 1px solid var(--kb-glass-border) !important;
+	border-radius: 0.75rem !important;
+	transition: border-color 0.2s ease !important;
+}
+
+.pagination-links a:hover {
+	border-color: oklch(0.60 0.22 300 / 0.30) !important;
+}
+
+/* ─── SEARCH MODAL ────────────────────────────────────── */
+[data-theme='dark'] dialog.pagefind-ui {
+	background: oklch(0.13 0.03 298 / 0.95) !important;
+	backdrop-filter: blur(20px) !important;
+}
+
+/* ─── MOBILE MENU ─────────────────────────────────────── */
+@media (max-width: 50rem) {
+	.sidebar-pane {
+		background: var(--sl-color-bg-sidebar) !important;
+		backdrop-filter: blur(20px) saturate(200%) !important;
+		-webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+	}
 }

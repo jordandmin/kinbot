@@ -1,0 +1,28 @@
+---
+import Default from '@astrojs/starlight/components/Header.astro';
+---
+
+<Default><slot /></Default>
+
+<style>
+	/* Gradient accent line at the very top of the page */
+	:global(header.header) {
+		position: relative;
+	}
+
+	:global(header.header::before) {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: linear-gradient(
+			90deg,
+			oklch(0.60 0.22 300) 0%,
+			oklch(0.66 0.24 340) 50%,
+			oklch(0.76 0.16 15) 100%
+		);
+		z-index: 10;
+	}
+</style>
