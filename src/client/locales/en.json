@@ -420,7 +420,10 @@
       "executions": "{{count}} execution(s)",
       "duplicate": "Duplicate",
       "copy": "copy",
-      "historyError": "Failed to load execution history"
+      "historyError": "Failed to load execution history",
+      "runNow": "Run Now",
+      "triggerSuccess": "Job triggered successfully",
+      "triggerError": "Failed to trigger job"
     }
   },
   "chat": {

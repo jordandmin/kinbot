@@ -9,6 +9,7 @@ import {
   getCron,
   listCrons,
   approveCron,
+  triggerCronManually,
 } from '@/server/services/crons'
 import type { AppVariables } from '@/server/app'
 import { createLogger } from '@/server/logger'
@@ -132,6 +133,26 @@ cronRoutes.patch('/:id', async (c) => {
   } catch (err) {
     return c.json(
       { error: { code: 'CRON_UPDATE_ERROR', message: err instanceof Error ? err.message : 'Unknown error' } },
+      400,
+    )
+  }
+})
+
+// POST /api/crons/:id/trigger — manually trigger a cron
+cronRoutes.post('/:id/trigger', async (c) => {
+  const cronId = c.req.param('id')
+  const existing = await getCron(cronId)
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Cron not found' } }, 404)
+  }
+
+  try {
+    const { taskId } = await triggerCronManually(cronId)
+    log.info({ cronId, taskId, name: existing.name }, 'Cron manually triggered')
+    return c.json({ taskId })
+  } catch (err) {
+    return c.json(
+      { error: { code: 'CRON_TRIGGER_ERROR', message: err instanceof Error ? err.message : 'Unknown error' } },
       400,
     )
   }

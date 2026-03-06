@@ -420,7 +420,10 @@
       "executions": "{{count}} exécution(s)",
       "duplicate": "Dupliquer",
       "copy": "copie",
-      "historyError": "Erreur lors du chargement de l'historique"
+      "historyError": "Erreur lors du chargement de l'historique",
+      "runNow": "Exécuter",
+      "triggerSuccess": "Tâche déclenchée avec succès",
+      "triggerError": "Impossible de déclencher la tâche"
     }
   },
   "chat": {

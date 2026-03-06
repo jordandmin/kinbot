@@ -27,7 +27,9 @@ import {
   UserCheck,
   Cpu,
   Copy,
+  Play,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/client/lib/utils'
 import { formatRelativeTime, formatDurationBetween } from '@/client/lib/time'
 import { cronToHuman } from '@/client/lib/cron-human'
@@ -89,6 +91,7 @@ export function CronDetailModal({
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isTogglingActive, setIsTogglingActive] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
+  const [isTriggering, setIsTriggering] = useState(false)
 
   const kinName = cron.kinName
   const initials = kinName.slice(0, 2).toUpperCase()
@@ -129,6 +132,19 @@ export function CronDetailModal({
       // Error handled upstream
     } finally {
       setIsApproving(false)
+    }
+  }
+
+  async function handleTrigger() {
+    setIsTriggering(true)
+    try {
+      await api.post(`/crons/${cron.id}/trigger`)
+      toast.success(t('cron.detail.triggerSuccess'))
+      await fetchExecutions()
+    } catch {
+      toast.error(t('cron.detail.triggerError'))
+    } finally {
+      setIsTriggering(false)
     }
   }
 
@@ -348,6 +364,16 @@ export function CronDetailModal({
                 {t('cron.detail.duplicate')}
               </Button>
             )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleTrigger}
+              disabled={isTriggering}
+            >
+              {isTriggering ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : <Play className="mr-1.5 size-3.5" />}
+              {t('cron.detail.runNow')}
+            </Button>
             <Button
               type="button"
               variant="ghost"
