@@ -42,6 +42,7 @@ export default defineConfig({
 				Pagination: './src/components/Pagination.astro',
 				MobileTableOfContents: './src/components/MobileTableOfContents.astro',
 				MobileMenuFooter: './src/components/MobileMenuFooter.astro',
+				TwoColumnContent: './src/components/TwoColumnContent.astro',
 			},
 			sidebar: [
 				{

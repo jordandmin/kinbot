@@ -65,9 +65,17 @@
 	--kb-glass-strong-bg: oklch(0.99 0.006 310 / 0.78);
 }
 
+/* ─── BASE ────────────────────────────────────────────── */
+html {
+	scroll-behavior: smooth;
+	scroll-padding-top: calc(var(--sl-nav-height) + 1rem);
+}
+
 /* ─── BACKGROUND ORBS ─────────────────────────────────── */
 body {
 	position: relative;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 body::before,
@@ -97,11 +105,11 @@ body::after {
 }
 
 :root[data-theme='light'] body::before {
-	background: radial-gradient(circle, oklch(0.52 0.24 300 / 0.06) 0%, transparent 70%);
+	background: radial-gradient(circle, oklch(0.52 0.24 300 / 0.08) 0%, transparent 70%);
 }
 
 :root[data-theme='light'] body::after {
-	background: radial-gradient(circle, oklch(0.62 0.26 340 / 0.05) 0%, transparent 70%);
+	background: radial-gradient(circle, oklch(0.62 0.26 340 / 0.07) 0%, transparent 70%);
 }
 
 /* ─── HEADER: GLASS EFFECT ────────────────────────────── */
@@ -340,9 +348,44 @@ h1.gradient-heading {
 }
 
 /* ─── SEARCH MODAL ────────────────────────────────────── */
-[data-theme='dark'] dialog.pagefind-ui {
-	background: oklch(0.13 0.03 298 / 0.95) !important;
-	backdrop-filter: blur(20px) !important;
+dialog.pagefind-ui,
+dialog[open].pagefind-ui {
+	background: oklch(0.13 0.03 298 / 0.92) !important;
+	backdrop-filter: blur(24px) saturate(180%) !important;
+	-webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+	border: 1px solid var(--kb-glass-border) !important;
+	border-radius: 1rem !important;
+	box-shadow: 0 16px 48px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(0.60 0.22 300 / 0.08) !important;
+}
+
+:root[data-theme='light'] dialog.pagefind-ui,
+:root[data-theme='light'] dialog[open].pagefind-ui {
+	background: oklch(0.99 0.005 310 / 0.92) !important;
+	box-shadow: 0 16px 48px oklch(0.30 0.10 300 / 0.15), 0 0 0 1px oklch(0.52 0.24 300 / 0.08) !important;
+}
+
+/* Search results styling */
+dialog.pagefind-ui .pagefind-ui__result {
+	background: var(--kb-glass-bg) !important;
+	border: 1px solid var(--kb-glass-border) !important;
+	border-radius: 0.75rem !important;
+	padding: 0.75rem 1rem !important;
+	transition: border-color 0.2s ease !important;
+}
+
+dialog.pagefind-ui .pagefind-ui__result:hover {
+	border-color: oklch(0.60 0.22 300 / 0.30) !important;
+}
+
+/* Search result title */
+dialog.pagefind-ui .pagefind-ui__result-title {
+	font-weight: 600 !important;
+}
+
+/* Search dialog backdrop */
+dialog.pagefind-ui::backdrop {
+	background: oklch(0.05 0.02 295 / 0.60) !important;
+	backdrop-filter: blur(4px) !important;
 }
 
 /* ─── MOBILE MENU ─────────────────────────────────────── */
@@ -585,6 +628,42 @@ site-search button:hover {
 .pagefind-ui__search-input:focus {
 	border-color: oklch(0.60 0.22 300 / 0.40) !important;
 	box-shadow: 0 0 0 3px oklch(0.60 0.22 300 / 0.10) !important;
+}
+
+/* ─── MOBILE MENU TOGGLE ──────────────────────────────── */
+starlight-menu-button button {
+	border: 1px solid oklch(0.60 0.22 300 / 0.12) !important;
+	border-radius: 0.5rem !important;
+	transition: border-color 0.2s, background 0.2s !important;
+}
+
+starlight-menu-button button:hover {
+	border-color: oklch(0.60 0.22 300 / 0.25) !important;
+	background: oklch(0.60 0.22 300 / 0.06) !important;
+}
+
+/* ─── STARLIGHT TABS ──────────────────────────────────── */
+.starlight-tabs [role='tablist'] {
+	border-bottom-color: var(--kb-glass-border) !important;
+}
+
+.starlight-tabs [role='tab'] {
+	transition: color 0.2s, border-color 0.2s !important;
+}
+
+.starlight-tabs [role='tab'][aria-selected='true'] {
+	color: var(--sl-color-accent) !important;
+	border-bottom-color: var(--sl-color-accent) !important;
+}
+
+/* ─── SELECTION ───────────────────────────────────────── */
+::selection {
+	background: oklch(0.60 0.22 300 / 0.25);
+	color: inherit;
+}
+
+:root[data-theme='light'] ::selection {
+	background: oklch(0.52 0.24 300 / 0.20);
 }
 
 /* ─── REDUCED MOTION ──────────────────────────────────── */
