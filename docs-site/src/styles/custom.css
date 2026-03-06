@@ -1,33 +1,109 @@
-/* KinBot Docs - Custom Theme */
+/* KinBot Docs — Aurora theme (matching landing site) */
 
+/* ─── LIGHT MODE ──────────────────────────────────────── */
 :root {
-	--sl-color-accent-low: oklch(0.25 0.12 300);
+	--sl-color-accent-low: oklch(0.94 0.03 320);
 	--sl-color-accent: oklch(0.52 0.24 300);
 	--sl-color-accent-high: oklch(0.78 0.16 300);
-	--sl-color-white: oklch(0.96 0 0);
-	--sl-color-gray-1: oklch(0.88 0 0);
-	--sl-color-gray-2: oklch(0.78 0 0);
-	--sl-color-gray-3: oklch(0.58 0 0);
-	--sl-color-gray-4: oklch(0.38 0 0);
-	--sl-color-gray-5: oklch(0.24 0 0);
-	--sl-color-gray-6: oklch(0.16 0.02 300);
-	--sl-color-black: oklch(0.12 0.02 300);
-	--sl-font: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
+	--sl-color-white: oklch(0.14 0.03 300);
+	--sl-color-gray-1: oklch(0.40 0.04 300);
+	--sl-color-gray-2: oklch(0.62 0.03 310);
+	--sl-color-gray-3: oklch(0.78 0.02 310);
+	--sl-color-gray-4: oklch(0.90 0.02 310);
+	--sl-color-gray-5: oklch(0.94 0.02 310);
+	--sl-color-gray-6: oklch(0.975 0.008 310);
+	--sl-color-black: oklch(0.99 0.007 310);
+
+	--sl-color-bg-nav: oklch(0.975 0.008 310);
+	--sl-color-bg-sidebar: oklch(0.975 0.008 310);
+	--sl-color-hairline-shade: oklch(0.90 0.02 310);
+
+	--sl-font: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ─── DARK MODE ───────────────────────────────────────── */
 :root[data-theme='dark'] {
-	--sl-color-accent-low: oklch(0.22 0.14 300);
-	--sl-color-accent: oklch(0.62 0.26 340);
-	--sl-color-accent-high: oklch(0.82 0.14 340);
-	--sl-color-bg-nav: oklch(0.14 0.02 300);
-	--sl-color-bg-sidebar: oklch(0.14 0.02 300);
-	--sl-color-hairline-shade: oklch(0.2 0.04 300);
+	--sl-color-accent-low: oklch(0.20 0.04 305);
+	--sl-color-accent: oklch(0.68 0.22 300);
+	--sl-color-accent-high: oklch(0.86 0.14 340);
+
+	--sl-color-white: oklch(0.92 0.015 310);
+	--sl-color-gray-1: oklch(0.78 0.02 310);
+	--sl-color-gray-2: oklch(0.62 0.03 310);
+	--sl-color-gray-3: oklch(0.40 0.04 300);
+	--sl-color-gray-4: oklch(0.24 0.04 300);
+	--sl-color-gray-5: oklch(0.18 0.035 298);
+	--sl-color-gray-6: oklch(0.14 0.035 298);
+	--sl-color-black: oklch(0.11 0.03 295);
+
+	--sl-color-bg-nav: oklch(0.13 0.03 298);
+	--sl-color-bg-sidebar: oklch(0.13 0.03 298);
+	--sl-color-hairline-shade: oklch(0.24 0.04 300);
 }
 
-/* Subtle gradient on hero headings */
+/* ─── GRADIENT HEADINGS (matching landing site) ───────── */
 .sl-markdown-content h1 {
-	background: linear-gradient(135deg, oklch(0.62 0.26 300), oklch(0.62 0.26 340));
+	background: linear-gradient(135deg, oklch(0.60 0.22 300) 0%, oklch(0.66 0.24 340) 50%, oklch(0.76 0.16 15) 100%);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
+}
+
+/* Hero title gradient */
+.hero h1 {
+	background: linear-gradient(135deg, oklch(0.60 0.22 300) 0%, oklch(0.66 0.24 340) 50%, oklch(0.76 0.16 15) 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+/* ─── CARDS (glass effect) ────────────────────────────── */
+.card {
+	border: 1px solid var(--sl-color-hairline-shade);
+	border-radius: 0.75rem;
+	background: color-mix(in oklch, var(--sl-color-gray-6) 80%, transparent);
+	backdrop-filter: blur(8px);
+}
+
+:root[data-theme='dark'] .card {
+	background: oklch(0.15 0.035 298 / 0.65);
+	border-color: oklch(0.24 0.04 300);
+}
+
+/* ─── CODE BLOCKS ─────────────────────────────────────── */
+:root[data-theme='dark'] .expressive-code {
+	--ec-codeBg: oklch(0.13 0.03 298);
+	--ec-codeBrdCol: oklch(0.24 0.04 300);
+}
+
+/* ─── SIDEBAR ACTIVE LINK ─────────────────────────────── */
+[data-theme='dark'] nav a[aria-current='page'] {
+	background: oklch(0.20 0.04 305);
+}
+
+/* ─── BUTTONS (matching landing CTA style) ────────────── */
+.sl-link-button.primary {
+	background: linear-gradient(135deg, oklch(0.52 0.24 300), oklch(0.62 0.26 340));
+	border-color: transparent;
+	color: oklch(0.98 0.005 310);
+	transition: opacity 0.2s;
+}
+
+.sl-link-button.primary:hover {
+	opacity: 0.9;
+	color: oklch(0.98 0.005 310);
+}
+
+/* ─── SUGAR-HIGH SYNTAX ───────────────────────────────── */
+.sh {
+	--sh-class: #e879f9;
+	--sh-identifier: #e2e8f0;
+	--sh-sign: #94a3b8;
+	--sh-property: #67e8f9;
+	--sh-entity: #f9a8d4;
+	--sh-jsxliterals: #c4b5fd;
+	--sh-string: #86efac;
+	--sh-keyword: #f472b6;
+	--sh-comment: #64748b;
 }
