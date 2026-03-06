@@ -24,7 +24,7 @@ import { useDraftMessage } from '@/client/hooks/useDraftMessage'
 import { useFileUpload } from '@/client/hooks/useFileUpload'
 import { useAuth } from '@/client/hooks/useAuth'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
-import { ModelPicker } from '@/client/components/common/ModelPicker'
+// ModelPicker removed from quick chat to avoid changing Kin model globally (#71)
 import { X, Zap, MessageSquare, LogOut } from 'lucide-react'
 
 interface LLMModel {
@@ -39,15 +39,15 @@ interface QuickChatPanelProps {
   kinId: string
   kinName: string
   kinAvatarUrl: string | null
-  kinModel: string
-  llmModels: LLMModel[]
+  kinModel?: string
+  llmModels?: LLMModel[]
   sessionId: string
   onHide: () => void
   onEnd: (saveMemory?: boolean, memorySummary?: string) => void
-  onModelChange: (model: string) => void
+  onModelChange?: (model: string) => void
 }
 
-export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, kinModel, llmModels, sessionId, onHide, onEnd, onModelChange }: QuickChatPanelProps) {
+export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, sessionId, onHide, onEnd }: QuickChatPanelProps) {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { messages, streamingMessage, isProcessing, isStreaming, sendMessage, stopStreaming } = useQuickChat(sessionId, kinId)
@@ -113,12 +113,6 @@ export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, kinModel, llmMode
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <ModelPicker
-            models={llmModels}
-            value={kinModel}
-            onValueChange={onModelChange}
-            className="h-7 w-auto max-w-[200px] text-xs"
-          />
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleEndSession}>
