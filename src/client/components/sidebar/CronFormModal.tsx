@@ -134,8 +134,8 @@ export function CronFormModal({
           name,
           schedule,
           taskDescription,
-          targetKinId: targetKinId || undefined,
-          model: model || undefined,
+          targetKinId: targetKinId || null,
+          model: model || null,
         })
       } else if (onCreate) {
         await onCreate({

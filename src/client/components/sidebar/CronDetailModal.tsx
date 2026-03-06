@@ -85,6 +85,7 @@ export function CronDetailModal({
   const { t, i18n } = useTranslation()
   const [executions, setExecutions] = useState<TaskSummary[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [historyError, setHistoryError] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isTogglingActive, setIsTogglingActive] = useState(false)
   const [isApproving, setIsApproving] = useState(false)
@@ -94,11 +95,12 @@ export function CronDetailModal({
 
   const fetchExecutions = useCallback(async () => {
     setIsLoadingHistory(true)
+    setHistoryError(false)
     try {
       const data = await api.get<TasksResponse>(`/tasks?cronId=${cron.id}&limit=20&offset=0`)
       setExecutions(data.tasks)
     } catch {
-      // Silently fail
+      setHistoryError(true)
     } finally {
       setIsLoadingHistory(false)
     }
@@ -257,6 +259,17 @@ export function CronDetailModal({
                 {isLoadingHistory ? (
                   <div className="flex justify-center py-4">
                     <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : historyError ? (
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <p className="text-xs text-destructive">{t('cron.detail.historyError')}</p>
+                    <button
+                      type="button"
+                      onClick={fetchExecutions}
+                      className="text-xs text-primary underline hover:no-underline"
+                    >
+                      {t('common.retry')}
+                    </button>
                   </div>
                 ) : executions.length === 0 ? (
                   <p className="py-4 text-center text-xs text-muted-foreground">

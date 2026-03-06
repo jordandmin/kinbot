@@ -29,7 +29,8 @@
       "keepEditing": "Keep editing",
       "discard": "Discard changes"
     },
-    "url": "URL"
+    "url": "URL",
+    "retry": "Retry"
   },
   "errors": {
     "backendUnavailable": "Unable to reach the server. Please check that the backend is running and try again.",
@@ -418,7 +419,8 @@
       "historyEmpty": "No executions yet",
       "executions": "{{count}} execution(s)",
       "duplicate": "Duplicate",
-      "copy": "copy"
+      "copy": "copy",
+      "historyError": "Failed to load execution history"
     }
   },
   "chat": {

@@ -29,7 +29,8 @@
       "keepEditing": "Continuer",
       "discard": "Abandonner"
     },
-    "url": "URL"
+    "url": "URL",
+    "retry": "Réessayer"
   },
   "errors": {
     "backendUnavailable": "Impossible de joindre le serveur. Vérifiez que le backend est en cours d'exécution et réessayez.",
@@ -418,7 +419,8 @@
       "historyEmpty": "Aucune exécution",
       "executions": "{{count}} exécution(s)",
       "duplicate": "Dupliquer",
-      "copy": "copie"
+      "copy": "copie",
+      "historyError": "Erreur lors du chargement de l'historique"
     }
   },
   "chat": {

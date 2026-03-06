@@ -116,8 +116,8 @@ cronRoutes.patch('/:id', async (c) => {
     name?: string
     schedule?: string
     taskDescription?: string
-    targetKinId?: string
-    model?: string
+    targetKinId?: string | null
+    model?: string | null
     isActive?: boolean
   }>()
 
