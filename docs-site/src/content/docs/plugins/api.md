@@ -11,10 +11,8 @@ The `PluginContext` object is passed to your plugin's entry function. It provide
 interface PluginContext {
   config: Record<string, any>
   log: PluginLogger
-  storage: PluginStorage
+  storage: PluginStorageAPI
   http: PluginHTTPClient
-  memory: PluginMemoryAPI
-  notify: PluginNotifyAPI
   manifest: PluginManifest
 }
 ```
@@ -92,27 +90,6 @@ const res = await ctx.http.fetch('https://api.example.com/data', {
 const data = await res.json()
 ```
 
-### `ctx.memory`
-
-Access Kin memory (requires `memory:read` and/or `memory:write` permissions):
-
-```typescript
-interface PluginMemoryAPI {
-  recall(query: string, kinId: string, limit?: number): Promise<MemoryEntry[]>
-  memorize(kinId: string, content: string, metadata?: Record<string, string>): Promise<string>
-}
-```
-
-### `ctx.notify`
-
-Send notifications to users (requires `notify` permission):
-
-```typescript
-interface PluginNotifyAPI {
-  send(kinId: string, message: string): Promise<void>
-}
-```
-
 ### `ctx.manifest`
 
 The parsed `plugin.json` manifest object, read-only.
@@ -122,7 +99,7 @@ The parsed `plugin.json` manifest object, read-only.
 ```typescript
 interface PluginExports {
   tools?: Record<string, ToolRegistration>
-  providers?: Record<string, ProviderDefinition>
+  providers?: Record<string, PluginProviderRegistration>
   channels?: Record<string, ChannelAdapter>
   hooks?: Partial<Record<HookName, HookHandler>>
   activate?(): Promise<void>
@@ -174,7 +151,7 @@ interface PluginManifest {
 }
 
 interface PluginConfigField {
-  type: 'string' | 'number' | 'boolean' | 'select' | 'text'
+  type: 'string' | 'number' | 'boolean' | 'select' | 'text' | 'password'
   label: string
   description?: string
   required?: boolean
@@ -194,33 +171,55 @@ interface PluginConfigField {
 
 Plugin management is also available via the REST API:
 
+**Plugin management:**
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/plugins` | List all plugins with status |
+| `GET` | `/api/plugins` | List all installed plugins with status |
 | `POST` | `/api/plugins/:name/enable` | Enable a plugin |
 | `POST` | `/api/plugins/:name/disable` | Disable a plugin |
 | `GET` | `/api/plugins/:name/config` | Get plugin config (secrets masked) |
 | `PUT` | `/api/plugins/:name/config` | Update plugin config |
-| `POST` | `/api/plugins/install/git` | Install from Git URL |
-| `POST` | `/api/plugins/install/npm` | Install from npm package |
+| `POST` | `/api/plugins/install` | Install from git or npm (`{ source, url/package }`) |
 | `DELETE` | `/api/plugins/:name` | Uninstall a plugin |
 | `POST` | `/api/plugins/:name/update` | Update an installed plugin |
 | `POST` | `/api/plugins/reload` | Reload all plugins |
-| `GET` | `/api/plugins/registry` | Browse the plugin registry |
-| `GET` | `/api/plugins/registry/:name/readme` | Fetch a registry plugin's README |
+
+**Built-in store:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/plugins/store` | List available store plugins |
+| `GET` | `/api/plugins/store/:name` | Get store plugin details + README |
+| `POST` | `/api/plugins/store/:name/install` | Install a store plugin |
+
+**Community registry:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/plugins/registry` | Browse the community registry (add `?refresh=true` to force) |
+| `GET` | `/api/plugins/registry/search` | Search registry (`?q=...&tag=...`) |
+| `GET` | `/api/plugins/registry/readme` | Fetch a plugin's README (`?repo=<github-url>`) |
+| `GET` | `/api/plugins/version` | Get KinBot version for compatibility checks |
 
 ### Install from Git
 
 ```bash
-curl -X POST http://localhost:3000/api/plugins/install/git \
+curl -X POST http://localhost:3000/api/plugins/install \
   -H 'Content-Type: application/json' \
-  -d '{"url": "https://github.com/user/kinbot-plugin-weather"}'
+  -d '{"source": "git", "url": "https://github.com/user/kinbot-plugin-weather"}'
 ```
 
 ### Install from npm
 
 ```bash
-curl -X POST http://localhost:3000/api/plugins/install/npm \
+curl -X POST http://localhost:3000/api/plugins/install \
   -H 'Content-Type: application/json' \
-  -d '{"package": "kinbot-plugin-weather"}'
+  -d '{"source": "npm", "package": "kinbot-plugin-weather"}'
+```
+
+### Install from Store
+
+```bash
+curl -X POST http://localhost:3000/api/plugins/store/weather/install
 ```

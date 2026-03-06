@@ -16,9 +16,9 @@ Navigate to **Settings → Plugins → Store** to browse available plugins. Each
 
 ## Installing from the Store
 
-Click **Install** on any plugin to download and activate it. The plugin is cloned into your `plugins/` directory and activated automatically.
+Click **Install** on any plugin to download it into your `plugins/` directory. After installation, the plugin still needs to be **enabled** before it becomes active.
 
-After installation, configure the plugin via **Settings → Plugins → Configure**.
+Configure and enable the plugin via **Settings → Plugins**.
 
 ## Available Plugins
 
@@ -56,9 +56,21 @@ Want to list your plugin in the store? See the [Publishing section](/kinbot/docs
 The registry can also be accessed programmatically:
 
 ```bash
-# Browse the registry
+# Browse the registry (returns plugins + tags)
 curl http://localhost:3000/api/plugins/registry
 
-# Get a plugin's README
-curl http://localhost:3000/api/plugins/registry/rss-reader/readme
+# Search/filter the registry
+curl "http://localhost:3000/api/plugins/registry/search?q=weather&tag=utility"
+
+# Fetch a plugin's README (by repo URL)
+curl "http://localhost:3000/api/plugins/registry/readme?repo=https://github.com/user/kinbot-plugin-weather"
+
+# List built-in store plugins
+curl http://localhost:3000/api/plugins/store
+
+# Get store plugin details + README
+curl http://localhost:3000/api/plugins/store/rss-reader
+
+# Install a store plugin
+curl -X POST http://localhost:3000/api/plugins/store/rss-reader/install
 ```
