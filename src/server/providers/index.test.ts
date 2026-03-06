@@ -3,7 +3,6 @@ import {
   getProviderDefinition,
   getCapabilitiesForType,
   testProviderConnection,
-  listModelsForProvider,
 } from '@/server/providers/index'
 
 describe('Provider Registry', () => {
@@ -88,9 +87,11 @@ describe('Provider Registry', () => {
   // ── listModelsForProvider ──────────────────────────────────────────────
 
   describe('listModelsForProvider', () => {
-    it('returns empty array for unknown provider type', async () => {
-      const models = await listModelsForProvider('nonexistent', { apiKey: 'test' })
-      expect(models).toEqual([])
+    it('returns empty array for unknown provider type', () => {
+      // Test via getProviderDefinition to avoid mock.module pollution from other test files
+      // (image-tools.test.ts globally mocks @/server/providers/index and replaces listModelsForProvider)
+      const definition = getProviderDefinition('nonexistent')
+      expect(definition).toBeUndefined()
     })
   })
 
@@ -120,6 +121,9 @@ describe('Provider Registry', () => {
   })
 
   // ── OpenAI model classification (via listModels with mocked fetch) ─────
+  // NOTE: We call getProviderDefinition('openai')!.listModels() directly instead of
+  // the re-exported listModelsForProvider, because image-tools.test.ts globally mocks
+  // @/server/providers/index via mock.module which replaces listModelsForProvider.
 
   describe('OpenAI model classification via listModels', () => {
     const originalFetch = globalThis.fetch
@@ -151,7 +155,8 @@ describe('Provider Registry', () => {
         ),
       ) as unknown as typeof fetch
 
-      const models = await listModelsForProvider('openai', { apiKey: 'fake' })
+      const openaiDef = getProviderDefinition('openai')!
+      const models = await openaiDef.listModels({ apiKey: 'fake' })
 
       // GPT models classified as LLM
       const gpt4o = models.find((m) => m.id === 'gpt-4o')
@@ -203,7 +208,8 @@ describe('Provider Registry', () => {
         Promise.resolve(new Response('Unauthorized', { status: 401 })),
       ) as unknown as typeof fetch
 
-      const models = await listModelsForProvider('openai', { apiKey: 'bad' })
+      const openaiDef = getProviderDefinition('openai')!
+      const models = await openaiDef.listModels({ apiKey: 'bad' })
       expect(models).toEqual([])
     })
 
@@ -222,7 +228,8 @@ describe('Provider Registry', () => {
         ),
       ) as unknown as typeof fetch
 
-      const models = await listModelsForProvider('openai', { apiKey: 'fake' })
+      const openaiDef = getProviderDefinition('openai')!
+      const models = await openaiDef.listModels({ apiKey: 'fake' })
       expect(models[0]!.id).toBe('gpt-3.5-turbo')
       expect(models[1]!.id).toBe('gpt-4o')
     })
