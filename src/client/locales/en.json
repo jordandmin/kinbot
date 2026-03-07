@@ -344,8 +344,9 @@
       "generating": "Generating...",
       "noImageProvider": "No image provider configured. Add one in Settings.",
       "createFirst": "Save the Kin first to enable generation.",
-      "uploadHint": "Click to select or drag & drop an image",
-      "imageModel": "Image model"
+      "uploadHint": "Click to select or drag & drop an image (any size)",
+      "imageModel": "Image model",
+      "cropConfirm": "Crop & use"
     },
     "wizard": {
       "title": "Describe your Kin",
