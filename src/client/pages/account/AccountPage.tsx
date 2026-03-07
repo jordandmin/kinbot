@@ -94,6 +94,21 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const MAX_SIZE = 2 * 1024 * 1024
+    const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+
+    if (file.size > MAX_SIZE) {
+      toast.error(t('account.avatarTooLarge', 'Avatar must be under 2MB'))
+      e.target.value = ''
+      return
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error(t('account.avatarInvalidType', 'Avatar must be PNG, JPEG, GIF, or WebP'))
+      e.target.value = ''
+      return
+    }
+
     setAvatarFile(file)
     const reader = new FileReader()
     reader.onload = () => setAvatarPreview(reader.result as string)
@@ -110,11 +125,15 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
       if (avatarFile) {
         const formData = new FormData()
         formData.append('file', avatarFile)
-        await fetch('/api/me/avatar', {
+        const avatarRes = await fetch('/api/me/avatar', {
           method: 'POST',
           credentials: 'include',
           body: formData,
         })
+        if (!avatarRes.ok) {
+          const body = await avatarRes.json().catch(() => null) as { error?: { message?: string } } | null
+          throw new Error(body?.error?.message ?? `Avatar upload failed (${avatarRes.status})`)
+        }
         setAvatarFile(null)
       }
 
