@@ -8,6 +8,12 @@ import { db } from '@/server/db/index'
 import { createLogger } from '@/server/logger'
 import { providers } from '@/server/db/schema'
 import { decrypt } from '@/server/services/encryption'
+
+/** Provider types that use the OpenAI-compatible SDK (createOpenAI) */
+const OPENAI_COMPATIBLE_PROVIDERS = new Set([
+  'openrouter', 'deepseek', 'fireworks', 'together', 'groq',
+  'mistral', 'perplexity', 'xai', 'ollama', 'cohere',
+])
 import { config } from '@/server/config'
 
 const log = createLogger('image-gen')
@@ -244,7 +250,7 @@ export async function buildAvatarPrompt(kin: {
   if (llmProvider.type === 'anthropic') {
     const anthropic = createAnthropic({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = anthropic('claude-haiku-4-5-20251001')
-  } else if (llmProvider.type === 'openai') {
+  } else if (llmProvider.type === 'openai' || OPENAI_COMPATIBLE_PROVIDERS.has(llmProvider.type)) {
     const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = openai('gpt-4o-mini')
   } else if (llmProvider.type === 'gemini') {

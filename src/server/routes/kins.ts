@@ -32,6 +32,12 @@ import {
 import { getHubKinId } from '@/server/services/app-settings'
 import { listModelsForProvider } from '@/server/providers/index'
 import type { AppVariables } from '@/server/app'
+
+/** Provider types that use the OpenAI-compatible SDK (createOpenAI) */
+const OPENAI_COMPATIBLE_PROVIDERS = new Set([
+  'openrouter', 'deepseek', 'fireworks', 'together', 'groq',
+  'mistral', 'perplexity', 'xai', 'ollama', 'cohere',
+])
 import { createLogger } from '@/server/logger'
 import { getModelContextWindow } from '@/shared/model-context-windows'
 
@@ -125,7 +131,7 @@ kinRoutes.post('/generate-config', async (c) => {
       }) as unknown as typeof fetch,
     })
     model = anthropic('claude-haiku-4-5-20251001')
-  } else if (llmProvider.type === 'openai') {
+  } else if (llmProvider.type === 'openai' || OPENAI_COMPATIBLE_PROVIDERS.has(llmProvider.type)) {
     const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = openai('gpt-4o-mini')
   } else if (llmProvider.type === 'gemini') {
