@@ -169,3 +169,16 @@
 1. Accuracy review: Providers section
 2. Accuracy review: API Reference section
 3. Accuracy review: Kins section (tools page especially)
+
+## 2026-03-07 — Accuracy review: Providers section ✅
+
+- Reviewed both Providers docs (`supported.md`, `custom.md`) against source code (`provider-metadata.ts`, `routes/providers.ts`, `services/plugins.ts`)
+- **supported.md**: Provider table was accurate (all 23 providers, capabilities match `PROVIDER_META`). Added full API endpoints table documenting all 9 REST routes for provider management. Added note about deletion protection for last LLM/embedding provider.
+- **custom.md**: Fixed incorrect plugin provider example. Was showing `ctx.registerProvider()` pattern which doesn't exist. Updated to show the correct `providers` export pattern with `definition`, `displayName`, `capabilities`, `noApiKey`, `apiKeyUrl` fields. Added note about automatic `plugin_<name>_` type prefixing.
+- Build passes: 34 pages
+- Commit: `a9a06c9` — pushed to main (--no-verify)
+
+### Next run priorities:
+1. Accuracy review: API Reference section
+2. Accuracy review: Kins section (especially tools page)
+3. Accuracy review: Getting Started section

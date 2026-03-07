@@ -749,3 +749,51 @@
 ### Next run
 - Area 15: Quick chat / Ephemeral sessions
 - Area 9: Settings page (all tabs, toggle options, save/cancel)
+
+## 2026-03-07 04:40 UTC
+### Area tested: Quick Chat / Ephemeral Sessions (Area 15)
+- **Pages visited:** Code review of QuickChatPanel.tsx, QuickSessionHistory.tsx, useQuickChat.ts, useQuickSession.ts, useQuickSessionHistory.ts, quick-sessions.ts (routes), quick-session-cleanup.ts, ChatPanel.tsx (integration), schema.ts, config.ts
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+#### Bugs found: 5 (issues created: #113, #114, #115, #116, #117)
+
+1. **closeSession clears UI state even when API call fails** - Issue #113
+   - `setActiveSession(null)` runs in all cases, even on error
+   - Session becomes invisible client-side but stays active on server
+
+2. **Expired sessions still accept messages until cleanup runs** - Issue #114
+   - Message endpoint only checks `status !== 'active'`, not `expiresAt`
+   - Up to 60-min gap where expired sessions accept messages
+
+3. **All client hooks silently swallow errors** - Issue #115
+   - Empty `catch` blocks across useQuickChat, useQuickSession, useQuickSessionHistory
+   - No toast, no error state, no retry UI
+
+4. **Title and memory summary have no server-side validation** - Issue #116
+   - Whitespace-only titles accepted, no length limit on title or memorySummary
+   - Same recurring pattern as #85, #89, #95, #101
+
+5. **quick_sessions.created_by FK missing onDelete cascade** - Issue #117
+   - User deletion orphans quick sessions
+   - kinId has cascade, createdBy does not
+
+#### All clear:
+- Quick session creation flow with max active limit (1 per user per kin) works correctly
+- Session ownership verification (loadSession helper) is solid
+- Idempotent close (already-closed returns ok) is good
+- Expiration/cleanup system with configurable intervals works
+- SSE real-time updates for session closed events
+- Streaming message support with batched token updates (50ms)
+- Optimistic message insertion with rollback on error
+- Memory save on close with proper embedding via createMemory
+- Session history with message count and date formatting
+- Sheet-based side panel UI is clean
+- Draft message persistence per session
+- File upload support in quick chat
+- Stop streaming functionality
+- Empty state with helpful message
+- Auto-scroll on new messages
+- Lazy-loaded components (Suspense + lazy import)
+
+### Next run
+- Area 9: Settings page (all tabs, toggle options, save/cancel)

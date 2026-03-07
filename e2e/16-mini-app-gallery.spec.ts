@@ -140,7 +140,7 @@ test.describe.serial('Mini App Gallery', () => {
 
     // Verify dialog title and description
     await expect(page.getByRole('heading', { name: 'App Gallery' })).toBeVisible()
-    await expect(page.getByText('Browse and clone mini-apps from other Kins.')).toBeVisible()
+    await expect(page.getByText('Browse mini-apps from all Kins.')).toBeVisible()
   })
 
   test('should display gallery apps with correct details', async ({ page }) => {
