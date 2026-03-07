@@ -43,21 +43,18 @@ export const ConversationSearch = React.memo(function ConversationSearch({ onClo
     inputRef.current?.focus()
   }, [])
 
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      } else if (e.key === 'Enter' && matchCount > 0) {
-        if (e.shiftKey) {
-          setCurrentIndex((prev) => (prev - 1 + matchCount) % matchCount)
-        } else {
-          setCurrentIndex((prev) => (prev + 1) % matchCount)
-        }
+  // Keyboard navigation (handled via onKeyDown on the input element)
+  const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      onClose()
+    } else if (e.key === 'Enter' && matchCount > 0) {
+      e.preventDefault()
+      if (e.shiftKey) {
+        setCurrentIndex((prev) => (prev - 1 + matchCount) % matchCount)
+      } else {
+        setCurrentIndex((prev) => (prev + 1) % matchCount)
       }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [matchCount, onClose])
 
   // Scroll to current match
@@ -86,6 +83,7 @@ export const ConversationSearch = React.memo(function ConversationSearch({ onClo
         ref={inputRef}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleInputKeyDown}
         placeholder={t('chat.search.placeholder')}
         className="h-7 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-0"
       />
