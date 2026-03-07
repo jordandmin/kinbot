@@ -159,6 +159,38 @@ export async function disconnectAll() {
   }
 }
 
+// ─── Connection status ───────────────────────────────────────────────────────
+
+export interface MCPConnectionStatus {
+  connected: boolean
+  toolCount: number
+  error?: string
+}
+
+/**
+ * Check connection status for an MCP server. Uses cached connection if available.
+ */
+export async function getConnectionStatus(serverId: string): Promise<MCPConnectionStatus> {
+  try {
+    const conn = await getConnection(serverId)
+    if (!conn) {
+      return { connected: false, toolCount: 0, error: 'Failed to connect' }
+    }
+    return { connected: true, toolCount: conn.tools.length }
+  } catch (err) {
+    return { connected: false, toolCount: 0, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
+/**
+ * Force a fresh connection attempt (evicts cached connection first).
+ */
+export async function testConnection(serverId: string): Promise<MCPConnectionStatus> {
+  // Evict existing connection
+  await disconnectServer(serverId)
+  return getConnectionStatus(serverId)
+}
+
 // ─── MCP tool summary for system prompt ──────────────────────────────────────
 
 export interface MCPToolSummary {

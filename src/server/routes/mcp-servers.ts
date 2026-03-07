@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { db } from '@/server/db/index'
 import { mcpServers } from '@/server/db/schema'
-import { disconnectServer } from '@/server/services/mcp'
+import { disconnectServer, getConnectionStatus, testConnection } from '@/server/services/mcp'
 import { sseManager } from '@/server/sse/index'
 import type { AppVariables } from '@/server/app'
 import { createLogger } from '@/server/logger'
@@ -183,6 +183,32 @@ mcpServerRoutes.post('/:id/approve', async (c) => {
   })
 
   return c.json({ server: serializedApproved })
+})
+
+// GET /api/mcp-servers/:id/status — check connection status
+mcpServerRoutes.get('/:id/status', async (c) => {
+  const id = c.req.param('id')
+  const existing = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).get()
+
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'MCP server not found' } }, 404)
+  }
+
+  const status = await getConnectionStatus(id)
+  return c.json(status)
+})
+
+// POST /api/mcp-servers/:id/test — force a fresh connection test
+mcpServerRoutes.post('/:id/test', async (c) => {
+  const id = c.req.param('id')
+  const existing = await db.select().from(mcpServers).where(eq(mcpServers.id, id)).get()
+
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'MCP server not found' } }, 404)
+  }
+
+  const status = await testConnection(id)
+  return c.json(status)
 })
 
 // DELETE /api/mcp-servers/:id — delete an MCP server
