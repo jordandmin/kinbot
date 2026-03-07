@@ -1,9 +1,12 @@
 import { useState, useCallback } from 'react'
+import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/client/lib/api'
 import type { QuickSessionSummary } from '@/shared/types'
 import type { ChatMessage } from '@/client/hooks/useChat'
 
 export function useQuickSessionHistory(kinId: string | null) {
+  const { t } = useTranslation()
   const [sessions, setSessions] = useState<QuickSessionSummary[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedMessages, setSelectedMessages] = useState<ChatMessage[]>([])
@@ -19,7 +22,7 @@ export function useQuickSessionHistory(kinId: string | null) {
       )
       setSessions(data.sessions)
     } catch {
-      // Ignore
+      toast.error(t('quickSession.errors.fetchHistoryFailed', 'Failed to load session history'))
     } finally {
       setIsLoading(false)
     }
@@ -35,6 +38,7 @@ export function useQuickSessionHistory(kinId: string | null) {
       setSelectedMessages(data.messages)
     } catch {
       setSelectedMessages([])
+      toast.error(t('quickSession.errors.viewSessionFailed', 'Failed to load session messages'))
     } finally {
       setIsLoadingMessages(false)
     }

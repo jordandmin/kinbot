@@ -30,7 +30,13 @@ kinScopedRoutes.post('/', async (c) => {
 
   const user = c.get('user') as { id: string; name: string }
   const body = await c.req.json().catch(() => ({}))
-  const { title } = body as { title?: string }
+  const { title: rawTitle } = body as { title?: string }
+
+  // Validate title
+  const title = rawTitle?.trim() || null
+  if (title && title.length > 200) {
+    return c.json({ error: { code: 'TITLE_TOO_LONG', message: 'Title must be 200 characters or less' } }, 400)
+  }
 
   // Check max active sessions per user per kin
   const activeCount = await db
@@ -226,6 +232,9 @@ sessionRoutes.post('/:id/messages', async (c) => {
   if (session!.status !== 'active') {
     return c.json({ error: { code: 'SESSION_CLOSED', message: 'This quick session is closed' } }, 409)
   }
+  if (session!.expiresAt && (session!.expiresAt as Date) < new Date()) {
+    return c.json({ error: { code: 'SESSION_EXPIRED', message: 'This quick session has expired' } }, 409)
+  }
 
   const body = await c.req.json()
   const { content, fileIds } = body as { content: string; fileIds?: string[] }
@@ -289,7 +298,13 @@ sessionRoutes.post('/:id/close', async (c) => {
   abortQuickSessionStream(session!.id)
 
   const body = await c.req.json().catch(() => ({}))
-  const { saveMemory, memorySummary } = body as { saveMemory?: boolean; memorySummary?: string }
+  const { saveMemory, memorySummary: rawSummary } = body as { saveMemory?: boolean; memorySummary?: string }
+
+  // Validate memory summary length
+  const memorySummary = rawSummary?.trim() || undefined
+  if (memorySummary && memorySummary.length > 5000) {
+    return c.json({ error: { code: 'SUMMARY_TOO_LONG', message: 'Memory summary must be 5000 characters or less' } }, 400)
+  }
 
   // Save memory if requested (uses createMemory to generate embedding + vector index)
   if (saveMemory && memorySummary?.trim()) {

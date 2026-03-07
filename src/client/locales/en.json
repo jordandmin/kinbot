@@ -1663,5 +1663,17 @@
     "paletteToggle": "Change color palette",
     "notifications": "Notifications",
     "kinSettings": "Kin settings"
+  },
+  "quickSession": {
+    "errors": {
+      "fetchFailed": "Failed to load quick sessions",
+      "createFailed": "Failed to create quick session",
+      "closeFailed": "Failed to close session. Please try again.",
+      "fetchMessagesFailed": "Failed to load messages",
+      "sendFailed": "Failed to send message",
+      "stopFailed": "Failed to stop generation",
+      "fetchHistoryFailed": "Failed to load session history",
+      "viewSessionFailed": "Failed to load session messages"
+    }
   }
 }

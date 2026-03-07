@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import type { ChatMessage } from '@/client/hooks/useChat'
@@ -7,6 +9,7 @@ import type { MessageFile } from '@/shared/types'
 const STREAMING_BATCH_MS = 50
 
 export function useQuickChat(sessionId: string | null, kinId: string | null) {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -29,7 +32,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
       )
       setMessages(data.messages)
     } catch {
-      // Ignore
+      toast.error(t('quickSession.errors.fetchMessagesFailed', 'Failed to load messages'))
     } finally {
       setIsLoading(false)
     }
@@ -197,6 +200,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
       } catch {
         setMessages((prev) => prev.filter((m) => m.id !== tempId))
         setIsProcessing(false)
+        toast.error(t('quickSession.errors.sendFailed', 'Failed to send message'))
       }
     },
     [sessionId],
@@ -208,7 +212,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
     try {
       await api.post(`/quick-sessions/${sessionId}/messages/stop`, {})
     } catch {
-      // Ignore
+      toast.error(t('quickSession.errors.stopFailed', 'Failed to stop generation'))
     }
   }, [sessionId])
 

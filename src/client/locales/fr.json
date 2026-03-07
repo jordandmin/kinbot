@@ -1663,5 +1663,17 @@
     "paletteToggle": "Changer la palette de couleurs",
     "notifications": "Notifications",
     "kinSettings": "Paramètres du Kin"
+  },
+  "quickSession": {
+    "errors": {
+      "fetchFailed": "Impossible de charger les sessions rapides",
+      "createFailed": "Impossible de créer la session rapide",
+      "closeFailed": "Impossible de fermer la session. Veuillez réessayer.",
+      "fetchMessagesFailed": "Impossible de charger les messages",
+      "sendFailed": "Impossible d'envoyer le message",
+      "stopFailed": "Impossible d'arrêter la génération",
+      "fetchHistoryFailed": "Impossible de charger l'historique des sessions",
+      "viewSessionFailed": "Impossible de charger les messages de la session"
+    }
   }
 }

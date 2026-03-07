@@ -226,7 +226,7 @@ export const customTools = sqliteTable('custom_tools', {
 export const quickSessions = sqliteTable('quick_sessions', {
   id: text('id').primaryKey(),
   kinId: text('kin_id').notNull().references(() => kins.id, { onDelete: 'cascade' }),
-  createdBy: text('created_by').notNull().references(() => user.id),
+  createdBy: text('created_by').notNull().references(() => user.id, { onDelete: 'cascade' }),
   title: text('title'),
   status: text('status').notNull().default('active'), // 'active' | 'closed'
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),

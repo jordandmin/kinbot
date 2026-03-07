@@ -1,9 +1,12 @@
 import { useState, useCallback, useEffect } from 'react'
+import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import type { QuickSessionSummary } from '@/shared/types'
 
 export function useQuickSession(kinId: string | null) {
+  const { t } = useTranslation()
   const [activeSession, setActiveSession] = useState<QuickSessionSummary | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -22,9 +25,9 @@ export function useQuickSession(kinId: string | null) {
       const first = data.sessions[0]
       setActiveSession(first ?? null)
     } catch {
-      // Ignore
+      toast.error(t('quickSession.errors.fetchFailed', 'Failed to load quick sessions'))
     }
-  }, [kinId])
+  }, [kinId, t])
 
   useEffect(() => {
     fetchSessions()
@@ -44,11 +47,12 @@ export function useQuickSession(kinId: string | null) {
       setIsOpen(true)
       return session
     } catch {
+      toast.error(t('quickSession.errors.createFailed', 'Failed to create quick session'))
       return null
     } finally {
       setIsCreating(false)
     }
-  }, [kinId, isCreating])
+  }, [kinId, isCreating, t])
 
   // Close a session (with optional save-as-memory)
   const closeSession = useCallback(async (
@@ -61,12 +65,12 @@ export function useQuickSession(kinId: string | null) {
         saveMemory,
         memorySummary,
       })
+      setActiveSession(null)
+      setIsOpen(false)
     } catch {
-      // Ignore
+      toast.error(t('quickSession.errors.closeFailed', 'Failed to close session. Please try again.'))
     }
-    setActiveSession(null)
-    setIsOpen(false)
-  }, [])
+  }, [t])
 
   // SSE listener for session events
   useSSE({
