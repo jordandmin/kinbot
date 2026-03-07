@@ -100,14 +100,12 @@ function formatRelativeTime(date: Date | null | undefined): string | null {
 }
 
 /**
- * Convert a retrieval score into a qualitative relevance tag.
- * RRF scores are typically small (0.01–0.07); thresholds are calibrated
- * for the hybrid search pipeline (vector + FTS with RRF fusion).
+ * Convert a retrieval score ratio (0–1, relative to top score) into a relevance tag.
  */
-function formatRelevanceTag(score: number): string {
-  if (score >= 0.04) return '⬤'   // highly relevant
-  if (score >= 0.02) return '◉'   // relevant
-  return '○'                       // loosely related
+function formatRelevanceTag(ratio: number): string {
+  if (ratio >= 0.7) return '⬤'   // highly relevant
+  if (ratio >= 0.4) return '◉'   // relevant
+  return '○'                      // loosely related
 }
 
 /**
@@ -275,6 +273,14 @@ function formatMemoryLineCompact(m: Memory): string {
  */
 function buildMemoriesBlock(memories: Memory[]): string {
   const header = `## Memories\n\nRelevant information from your past interactions (★ = high importance, ⬤ = highly relevant, ◉ = relevant, ○ = loosely related):`
+
+  // Normalize scores relative to top score so relevance tags are scale-independent
+  const topScore = memories.reduce((max, m) => Math.max(max, m.score ?? 0), 0)
+  if (topScore > 0) {
+    for (const m of memories) {
+      if (m.score != null) m.score = m.score / topScore
+    }
+  }
 
   if (memories.length <= 3) {
     const memoryLines = memories.map(formatMemoryLine).join('\n')
