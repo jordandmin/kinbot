@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/client/components/ui/button'
-import { Plus , Users} from 'lucide-react'
+import { Plus, Users, Search } from 'lucide-react'
+import { Input } from '@/client/components/ui/input'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
@@ -20,6 +21,15 @@ export function ContactsSettings() {
   const kinInfo = new Map<string, KinInfo>(kinList.map((k) => [k.id, { name: k.name, avatarUrl: k.avatarUrl }]))
   const [modalOpen, setModalOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<ContactData | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredContacts = contacts.filter((contact) => {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    if (contact.name.toLowerCase().includes(q)) return true
+    if (contact.identifiers?.some((id) => id.value.toLowerCase().includes(q) || id.label.toLowerCase().includes(q))) return true
+    return false
+  })
 
   const fetchContacts = useCallback(async () => {
     try {
@@ -94,6 +104,18 @@ export function ContactsSettings() {
         storageKey="help.contacts.open"
       />
 
+      {contacts.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={t('settings.contacts.search', 'Search contacts...')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+
       {contacts.length === 0 && (
         <EmptyState
           icon={Users}
@@ -104,7 +126,7 @@ export function ContactsSettings() {
         />
       )}
 
-      {contacts.map((contact) => (
+      {filteredContacts.map((contact) => (
         <ContactCard
           key={contact.id}
           contact={contact}

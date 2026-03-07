@@ -23,7 +23,7 @@ import {
 } from '@/client/components/ui/dialog'
 import { Input } from '@/client/components/ui/input'
 import { Label } from '@/client/components/ui/label'
-import { Plus, Copy, Eye, EyeOff , Webhook} from 'lucide-react'
+import { Plus, Copy, Eye, EyeOff, Webhook, Search } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
@@ -54,6 +54,18 @@ export function WebhooksSettings() {
   // Token reveal state (after create or regenerate)
   const [revealedToken, setRevealedToken] = useState<{ url: string; token: string; name: string } | null>(null)
   const [showToken, setShowToken] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterKinId, setFilterKinId] = useState<string>('')
+
+  const filteredWebhooks = webhooks.filter((webhook) => {
+    if (filterKinId && webhook.kinId !== filterKinId) return false
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    if (webhook.name.toLowerCase().includes(q)) return true
+    if (webhook.description?.toLowerCase().includes(q)) return true
+    if (webhook.kinName?.toLowerCase().includes(q)) return true
+    return false
+  })
 
   const fetchWebhooks = useCallback(async () => {
     try {
@@ -168,6 +180,32 @@ export function WebhooksSettings() {
         storageKey="help.webhooks.open"
       />
 
+      {webhooks.length > 0 && (
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={t('settings.webhooks.search', 'Search webhooks...')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          {kins.length > 1 && (
+            <select
+              value={filterKinId}
+              onChange={(e) => setFilterKinId(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">{t('settings.webhooks.allKins', 'All Kins')}</option>
+              {kins.map((kin) => (
+                <option key={kin.id} value={kin.id}>{kin.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
       {webhooks.length === 0 && (
         <EmptyState
           icon={Webhook}
@@ -178,7 +216,7 @@ export function WebhooksSettings() {
         />
       )}
 
-      {webhooks.map((webhook) => (
+      {filteredWebhooks.map((webhook) => (
         <WebhookCard
           key={webhook.id}
           webhook={webhook}
