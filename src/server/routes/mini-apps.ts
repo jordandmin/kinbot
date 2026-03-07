@@ -8,7 +8,6 @@ import {
   getMiniAppBySlug,
   listMiniApps,
   listAllMiniApps,
-  cloneMiniApp,
   updateMiniApp,
   deleteMiniApp,
   writeAppFile,
@@ -50,23 +49,6 @@ miniAppRoutes.get('/by-slug/:kinId/:slug', async (c) => {
 miniAppRoutes.get('/gallery/browse', async (c) => {
   const apps = await listAllMiniApps()
   return c.json({ apps })
-})
-
-// Clone an app to a target Kin
-miniAppRoutes.post('/:id/clone', async (c) => {
-  const body = await c.req.json<{ targetKinId: string; newSlug?: string }>()
-  if (!body.targetKinId) {
-    return c.json({ error: { code: 'MISSING_KIN_ID', message: 'targetKinId is required' } }, 400)
-  }
-
-  try {
-    const cloned = await cloneMiniApp(c.req.param('id'), body.targetKinId, body.newSlug)
-    sseManager.broadcast({ type: 'miniapp:created', kinId: body.targetKinId, data: { app: cloned } })
-    return c.json({ app: cloned }, 201)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to clone app'
-    return c.json({ error: { code: 'CLONE_FAILED', message } }, 400)
-  }
 })
 
 // ─── CRUD ────────────────────────────────────────────────────────────────────
@@ -720,11 +702,14 @@ const THEME_SYNC_SCRIPT = `<script>
       var pl=p.getAttribute('data-palette');
       if(pl)document.documentElement.setAttribute('data-palette',pl);
       else document.documentElement.removeAttribute('data-palette');
+      var ct=p.getAttribute('data-contrast');
+      if(ct)document.documentElement.setAttribute('data-contrast',ct);
+      else document.documentElement.removeAttribute('data-contrast');
     }catch(e){}
   }
   t();
   try{
-    new MutationObserver(t).observe(parent.document.documentElement,{attributes:true,attributeFilter:['class','data-palette']});
+    new MutationObserver(t).observe(parent.document.documentElement,{attributes:true,attributeFilter:['class','data-palette','data-contrast']});
   }catch(e){}
 })();
 </script>`
