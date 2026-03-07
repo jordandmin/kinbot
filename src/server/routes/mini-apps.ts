@@ -7,7 +7,6 @@ import {
   getMiniApp,
   getMiniAppBySlug,
   listMiniApps,
-  listAllMiniApps,
   updateMiniApp,
   deleteMiniApp,
   writeAppFile,
@@ -45,12 +44,29 @@ miniAppRoutes.get('/by-slug/:kinId/:slug', async (c) => {
   return c.json({ app: found })
 })
 
-// ─── Gallery ────────────────────────────────────────────────────────────────
-
-// List all active apps across all Kins (for gallery/marketplace browsing)
-miniAppRoutes.get('/gallery/browse', async (c) => {
-  const apps = await listAllMiniApps()
-  return c.json({ apps })
+// Generate icon for a mini-app using AI image generation
+miniAppRoutes.post('/:id/generate-icon', async (c) => {
+  const body = await c.req.json<{ providerId?: string; modelId?: string }>().catch(() => ({} as { providerId?: string; modelId?: string }))
+  try {
+    const app = await generateMiniAppIcon(c.req.param('id'), {
+      providerId: body.providerId,
+      modelId: body.modelId,
+    })
+    sseManager.broadcast({ type: 'miniapp:updated', kinId: app.kinId, data: { app } })
+    return c.json({ app })
+  } catch (err) {
+    if (err instanceof ImageGenerationError) {
+      if (err.code === 'NO_IMAGE_PROVIDER') {
+        return c.json({ error: { code: 'NO_IMAGE_PROVIDER', message: err.message } }, 422)
+      }
+      return c.json({ error: { code: 'IMAGE_GENERATION_FAILED', message: err.message } }, 502)
+    }
+    const message = err instanceof Error ? err.message : 'Failed to generate icon'
+    if (message === 'Mini-app not found') {
+      return c.json({ error: { code: 'NOT_FOUND', message } }, 404)
+    }
+    return c.json({ error: { code: 'IMAGE_GENERATION_FAILED', message } }, 502)
+  }
 })
 
 // Generate icon for a mini-app using AI image generation
@@ -83,10 +99,13 @@ miniAppRoutes.post('/:id/generate-icon', async (c) => {
 // List apps for a kin
 miniAppRoutes.get('/', async (c) => {
   const kinId = c.req.query('kinId')
-  if (!kinId) {
-    return c.json({ error: { code: 'MISSING_KIN_ID', message: 'kinId query parameter is required' } }, 400)
+  if (kinId) {
+    const apps = await listMiniApps(kinId)
+    return c.json({ apps })
   }
-  const apps = await listMiniApps(kinId)
+  // No kinId → return all apps across all Kins
+  const { listAllMiniApps } = await import('@/server/services/mini-apps')
+  const apps = await listAllMiniApps()
   return c.json({ apps })
 })
 

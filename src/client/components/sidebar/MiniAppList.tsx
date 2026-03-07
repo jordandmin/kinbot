@@ -8,13 +8,22 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avat
 import { useMiniApps } from '@/client/hooks/useMiniApps'
 import { useMiniAppPanel } from '@/client/contexts/MiniAppContext'
 import { cn } from '@/client/lib/utils'
-import { AppWindow, LayoutGrid, List, Loader2, Search, Store, Trash2 } from 'lucide-react'
+import { AppWindow, LayoutGrid, List, Loader2, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
-import { MiniAppGallery, MiniAppIcon } from '@/client/components/mini-app/MiniAppGallery'
-import { Button } from '@/client/components/ui/button'
-import { useKins } from '@/client/hooks/useKins'
 import type { MiniAppSummary } from '@/shared/types'
+
+function MiniAppIcon({ app, size = 'md' }: { app: MiniAppSummary; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClass = size === 'lg' ? 'size-14 text-3xl rounded-xl' : size === 'md' ? 'size-10 text-xl rounded-lg' : 'size-8 text-lg rounded-md'
+  if (app.iconUrl) {
+    return <img src={app.iconUrl} alt={app.name} className={cn(sizeClass, 'object-cover shrink-0')} />
+  }
+  return (
+    <div className={cn('flex shrink-0 items-center justify-center bg-secondary', sizeClass)}>
+      {app.icon || '\u{1F4E6}'}
+    </div>
+  )
+}
 
 function MiniAppCard({
   app,
@@ -30,7 +39,6 @@ function MiniAppCard({
   onDelete: () => void
 }) {
   const { t } = useTranslation()
-  const initials = app.kinName.slice(0, 2).toUpperCase()
 
   return (
     <div
@@ -39,29 +47,35 @@ function MiniAppCard({
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
       className={cn(
-        'group flex items-center gap-3 rounded-lg bg-sidebar-accent/30 px-3 py-2.5 text-xs hover:bg-sidebar-accent/50 transition-colors cursor-pointer',
+        'group flex items-center gap-2.5 rounded-lg bg-sidebar-accent/30 px-2.5 py-2 text-xs hover:bg-sidebar-accent/50 transition-colors cursor-pointer',
         isActive && 'ring-1 ring-primary/40 bg-sidebar-accent/50',
         !app.isActive && 'opacity-60',
       )}
     >
-      {app.iconUrl ? (
-        <img src={app.iconUrl} alt={app.name} className="size-7 shrink-0 rounded-md object-cover" />
-      ) : (
-        <Avatar className="size-7 shrink-0">
-          {app.kinAvatarUrl && <AvatarImage src={app.kinAvatarUrl} alt={app.kinName} />}
-          <AvatarFallback className="text-[10px] bg-secondary">{initials}</AvatarFallback>
-        </Avatar>
-      )}
+      <MiniAppIcon app={app} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          {!app.iconUrl && app.icon && <span className="text-sm">{app.icon}</span>}
           <p className="truncate font-medium text-foreground">{app.name}</p>
+          {app.hasBackend && (
+            <span className="shrink-0 rounded bg-primary/15 px-1 py-0 text-[9px] font-medium text-primary leading-tight">
+              API
+            </span>
+          )}
         </div>
         {app.description && (
           <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
             {app.description}
           </p>
         )}
+        <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground/70">
+          <Avatar className="size-3">
+            {app.kinAvatarUrl && <AvatarImage src={app.kinAvatarUrl} alt={app.kinName} />}
+            <AvatarFallback className="text-[6px]">{app.kinName.slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <span className="truncate">{app.kinName}</span>
+          <span className="opacity-50">·</span>
+          <span>v{app.version}</span>
+        </div>
       </div>
       {badge && !isActive && (
         <span className="shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
@@ -117,14 +131,28 @@ function MiniAppTile({
         !app.isActive && 'opacity-60',
       )}
     >
+      {app.hasBackend && (
+        <span className="absolute right-1.5 top-1.5 shrink-0 rounded bg-primary/15 px-1 py-0 text-[8px] font-medium text-primary leading-tight">
+          API
+        </span>
+      )}
       <MiniAppIcon app={app} size="md" />
       <p className="w-full truncate text-center text-[11px] font-medium text-foreground">{app.name}</p>
+      <div className="flex items-center gap-1 text-[9px] text-muted-foreground/70">
+        <Avatar className="size-3">
+          {app.kinAvatarUrl && <AvatarImage src={app.kinAvatarUrl} alt={app.kinName} />}
+          <AvatarFallback className="text-[5px]">{app.kinName.slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <span className="max-w-[4rem] truncate">{app.kinName}</span>
+        <span className="opacity-50">·</span>
+        <span>v{app.version}</span>
+      </div>
       {badge && !isActive && (
         <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-semibold leading-none text-primary-foreground">
           {badge}
         </span>
       )}
-      {isActive && (
+      {isActive && !badge && (
         <div className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary" />
       )}
       <ConfirmDeleteButton
@@ -150,8 +178,6 @@ export const MiniAppList = memo(function MiniAppList() {
   const { t } = useTranslation()
   const { apps, isLoading, deleteApp } = useMiniApps(null, 'all')
   const { activeAppId, badges, openApp, closePanel } = useMiniAppPanel()
-  const { kins } = useKins()
-  const [galleryOpen, setGalleryOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() =>
     (localStorage.getItem('kinbot:sidebar-miniapps-view-mode') as 'grid' | 'list') || 'list',
@@ -182,7 +208,7 @@ export const MiniAppList = memo(function MiniAppList() {
 
   return (
     <>
-      {/* Gallery button + View toggle + Search — fixed above scroll */}
+      {/* View toggle + Search — fixed above scroll */}
       <div className="shrink-0">
         <div className="flex items-center justify-end gap-0.5 px-1 pb-1">
           <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
@@ -193,7 +219,7 @@ export const MiniAppList = memo(function MiniAppList() {
                 'rounded p-0.5 transition-colors',
                 viewMode === 'grid' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
               )}
-              title={t('miniApps.gallery.viewGrid')}
+              title={t('sidebar.miniApps.viewGrid')}
             >
               <LayoutGrid className="size-3" />
             </button>
@@ -204,20 +230,11 @@ export const MiniAppList = memo(function MiniAppList() {
                 'rounded p-0.5 transition-colors',
                 viewMode === 'list' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
               )}
-              title={t('miniApps.gallery.viewList')}
+              title={t('sidebar.miniApps.viewList')}
             >
               <List className="size-3" />
             </button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 shrink-0"
-            onClick={() => setGalleryOpen(true)}
-            title={t('miniApps.gallery.title')}
-          >
-            <Store className="size-4" />
-          </Button>
         </div>
         {apps.length > 0 && (
           <div className="px-1 pb-2">
@@ -280,11 +297,6 @@ export const MiniAppList = memo(function MiniAppList() {
           </div>
         )}
       </SidebarGroupContent>
-
-      <MiniAppGallery
-        open={galleryOpen}
-        onOpenChange={setGalleryOpen}
-      />
     </>
   )
 })

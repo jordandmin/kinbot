@@ -168,9 +168,9 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="group relative z-10"
+            className="group relative z-10 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Avatar className="size-24 ring-4 ring-background shadow-lg transition-all group-hover:ring-primary/50">
+            <Avatar className="size-24 shadow-lg transition-shadow group-hover:shadow-[0_0_0_4px_hsl(var(--color-primary)/0.5)]">
               {avatarPreview ? (
                 <AvatarImage src={avatarPreview} alt="Avatar" />
               ) : (
