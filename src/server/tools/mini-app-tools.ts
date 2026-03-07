@@ -617,7 +617,9 @@ export const generateMiniAppIconTool: ToolRegistration = {
         'Generate an AI-created icon/logo for one of your mini-apps. ' +
         'Uses the app name, description, and emoji to create a flat-design app icon. ' +
         'Requires an image generation provider to be configured. ' +
-        'Falls back gracefully with an error message if no image provider is available.',
+        'Falls back gracefully with an error message if no image provider is available. ' +
+        'IMPORTANT: This tool calls an image generation API which may incur costs. ' +
+        'Always ask the user for confirmation (via prompt_human) before calling this tool.',
       inputSchema: z.object({
         app_id: z.string().describe('ID of the mini-app to generate an icon for'),
       }),

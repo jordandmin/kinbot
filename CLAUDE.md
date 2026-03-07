@@ -105,6 +105,11 @@ All API routes return JSON. Errors follow this format:
 - **Event bus + hooks**: foundation for observability and future plugin system.
 - **Providers are pluggable**: one config per provider, multiple capabilities auto-detected (`llm`, `embedding`, `image`).
 
+## Git conventions
+
+- **Never** include `Co-Authored-By` lines in commit messages
+- Commit messages follow conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
+
 ## Development workflow
 
 1. Follow `DEVELOPMENT_PLAN.md` phase by phase — **do not skip ahead**
