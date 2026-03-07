@@ -226,3 +226,20 @@
 1. Accuracy review: Getting Started section
 2. Accuracy review: Mini-Apps section (hooks/components against actual SDK)
 3. Accuracy review: overview.md (minor)
+
+## 2026-03-07 — Accuracy review: Getting Started section ✅
+
+- Reviewed all 3 Getting Started docs against source code (`config.ts`, `.env.example`, `install.sh`, `docker-compose.yml`, `Dockerfile`)
+- **installation.md**: Added note clarifying port difference: Docker/install.sh default to 3000, manual install defaults to 3333 (from `.env.example`/`config.ts`)
+- **first-kin.md**: Fixed hardcoded `localhost:3000` to mention both ports depending on install method
+- **configuration.md**: 
+  - Fixed `PUBLIC_URL` default (was hardcoded `localhost:3333`, now dynamic `localhost:<PORT>`)
+  - Added `PORT` note about Docker defaulting to 3000
+  - Added missing `DB_PATH` env var
+  - Added missing `BETTER_AUTH_SECRET` env var
+- Build passes: 34 pages
+- Commit: `9499ca4` — pushed to main (--no-verify)
+
+### Next run priorities:
+1. Accuracy review: Mini-Apps section (hooks/components against actual SDK)
+2. Accuracy review: Kins overview page
