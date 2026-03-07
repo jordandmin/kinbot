@@ -178,12 +178,22 @@ export function GeneralSettings() {
         </div>
       </div>
 
-      <Button
-        onClick={handleSavePrompt}
-        disabled={!hasPromptChanges || savingPrompt || isOverLimit}
-      >
-        {savingPrompt ? t('common.loading') : t('common.save')}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={handleSavePrompt}
+          disabled={!hasPromptChanges || savingPrompt || isOverLimit}
+        >
+          {savingPrompt ? t('common.loading') : t('common.save')}
+        </Button>
+        {hasPromptChanges && (
+          <Button
+            variant="ghost"
+            onClick={() => setGlobalPrompt(initialGlobalPrompt)}
+          >
+            {t('common.discard', 'Discard')}
+          </Button>
+        )}
+      </div>
 
       <HelpPanel
         contentKey="settings.general.help.content"

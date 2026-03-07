@@ -131,6 +131,9 @@ pluginRoutes.get('/store', async (c) => {
 // GET /api/plugins/store/:name — get store plugin details + README
 pluginRoutes.get('/store/:name', async (c) => {
   const { name } = c.req.param()
+  if (name.includes('..') || name.includes('/') || name.includes('\\')) {
+    return c.json({ error: { code: 'INVALID_NAME', message: 'Invalid plugin name' } }, 400)
+  }
   try {
     const pluginDir = resolve(process.cwd(), 'store', name)
     const manifestPath = join(pluginDir, 'plugin.json')
@@ -156,6 +159,9 @@ pluginRoutes.get('/store/:name', async (c) => {
 // POST /api/plugins/store/:name/install — install a store plugin (admin only)
 pluginRoutes.post('/store/:name/install', requireAdmin, async (c) => {
   const { name } = c.req.param()
+  if (name.includes('..') || name.includes('/') || name.includes('\\')) {
+    return c.json({ error: { code: 'INVALID_NAME', message: 'Invalid plugin name' } }, 400)
+  }
   try {
     const result = await pluginManager.installFromStore(name)
     return c.json({ success: true, name: result.name })

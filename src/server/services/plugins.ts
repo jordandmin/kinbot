@@ -900,6 +900,9 @@ class PluginManager {
 
   /** Install a plugin from the in-repo store/ directory */
   async installFromStore(storeName: string): Promise<{ name: string }> {
+    if (storeName.includes('..') || storeName.includes('/') || storeName.includes('\\')) {
+      throw new Error('Invalid store plugin name')
+    }
     const storeDir = resolve(process.cwd(), 'store', storeName)
 
     // Verify the store plugin exists
