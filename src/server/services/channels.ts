@@ -513,7 +513,7 @@ export function findContactByPlatformId(platform: string, platformId: string) {
 }
 
 interface ResolvedChannelUser {
-  contact: Awaited<ReturnType<typeof createContact>> | null
+  contact: typeof contacts.$inferSelect | null
   /** Non-null only when the user is pending approval */
   pendingMappingId: string | null
 }
