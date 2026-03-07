@@ -1348,7 +1348,18 @@
       "admin": "Admin",
       "member": "Member"
     },
-    "memberSince": "Member since {{date}}"
+    "memberSince": "Member since {{date}}",
+    "password": {
+      "change": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "update": "Update password",
+      "success": "Password updated successfully",
+      "error": "Failed to change password",
+      "mismatch": "New passwords do not match",
+      "tooShort": "Password must be at least 8 characters"
+    }
   },
   "tools": {
     "viewer": {

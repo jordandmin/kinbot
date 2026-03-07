@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/client/components/ui/dialog'
-import { Calendar, Camera, Loader2 } from 'lucide-react'
+import { Calendar, Camera, ChevronDown, ChevronUp, KeyRound, Loader2 } from 'lucide-react'
 import { useAuth } from '@/client/hooks/useAuth'
 import { api, getErrorMessage } from '@/client/lib/api'
 import { toast } from 'sonner'
@@ -36,6 +36,11 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatarUrl ?? null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   // Reset form state when dialog opens
   useEffect(() => {
@@ -46,8 +51,45 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
       setLanguage(user.language ?? 'en')
       setAvatarPreview(user.avatarUrl)
       setAvatarFile(null)
+      setShowPassword(false)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
     }
   }, [open, user])
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error(t('account.password.mismatch'))
+      return
+    }
+    if (newPassword.length < 8) {
+      toast.error(t('account.password.tooShort'))
+      return
+    }
+    setIsChangingPassword(true)
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.message ?? t('account.password.error'))
+      }
+      toast.success(t('account.password.success'))
+      setShowPassword(false)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('account.password.error'))
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -187,6 +229,68 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
             <div className="space-y-1.5">
               <Label>{t('account.language')}</Label>
               <LanguageSelector value={language} onValueChange={setLanguage} />
+            </div>
+
+            {/* Password change section */}
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="flex w-full items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <KeyRound className="size-4" />
+                {t('account.password.change')}
+                {showPassword ? <ChevronUp className="size-4 ml-auto" /> : <ChevronDown className="size-4 ml-auto" />}
+              </button>
+
+              {showPassword && (
+                <div className="space-y-3 rounded-lg border p-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="currentPassword">{t('account.password.current')}</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="newPassword">{t('account.password.new')}</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirmPassword">{t('account.password.confirm')}</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleChangePassword}
+                    disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                    className="w-full"
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        {t('common.loading')}
+                      </>
+                    ) : (
+                      t('account.password.update')
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
