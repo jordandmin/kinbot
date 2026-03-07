@@ -9,18 +9,21 @@ import type { ContactPlatformId } from '@/shared/types'
 
 interface ContactPlatformIdsProps {
   contactId: string
+  initialPlatformIds?: ContactPlatformId[]
 }
 
-export function ContactPlatformIds({ contactId }: ContactPlatformIdsProps) {
+export function ContactPlatformIds({ contactId, initialPlatformIds }: ContactPlatformIdsProps) {
   const { t } = useTranslation()
-  const [platformIds, setPlatformIds] = useState<ContactPlatformId[]>([])
+  const [platformIds, setPlatformIds] = useState<ContactPlatformId[]>(initialPlatformIds ?? [])
 
   useEffect(() => {
+    // Skip fetch if initial data was provided
+    if (initialPlatformIds) return
     api
       .get<{ platformIds: ContactPlatformId[] }>(`/contacts/${contactId}/platform-ids`)
       .then((data) => setPlatformIds(data.platformIds))
       .catch(() => {})
-  }, [contactId])
+  }, [contactId, initialPlatformIds])
 
   const revokePlatformId = async (pidId: string) => {
     try {

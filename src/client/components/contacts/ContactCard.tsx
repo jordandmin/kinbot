@@ -22,6 +22,14 @@ export interface ContactNoteData {
   updatedAt: string | number
 }
 
+export interface ContactPlatformIdData {
+  id: string
+  contactId: string
+  platform: string
+  platformId: string
+  createdAt: number
+}
+
 export interface ContactData {
   id: string
   name: string
@@ -31,6 +39,7 @@ export interface ContactData {
   linkedUserName: string | null
   identifiers: ContactIdentifierData[]
   notes: ContactNoteData[]
+  platformIds?: ContactPlatformIdData[]
   createdAt: number
   updatedAt: number
 }
@@ -99,7 +108,7 @@ export function ContactCard({ contact, kinInfo, onEdit, onDelete, onRefresh }: C
           </div>
         </div>
 
-        <ContactPlatformIds contactId={contact.id} />
+        <ContactPlatformIds contactId={contact.id} initialPlatformIds={contact.platformIds} />
 
         <ContactNotes
           contactId={contact.id}

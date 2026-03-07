@@ -1,7 +1,7 @@
 import { eq, and, like, or, sql } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { db } from '@/server/db/index'
-import { contacts, contactIdentifiers, contactNotes, kins, user, userProfiles } from '@/server/db/schema'
+import { contacts, contactIdentifiers, contactNotes, contactPlatformIds, kins, user, userProfiles } from '@/server/db/schema'
 import { sseManager } from '@/server/sse/index'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -35,6 +35,7 @@ interface ContactWithDetails {
   updatedAt: Date
   identifiers: Array<{ id: string; label: string; value: string }>
   notes: Array<{ id: string; kinId: string; scope: string; content: string; createdAt: Date; updatedAt: Date }>
+  platformIds: Array<{ id: string; contactId: string; platform: string; platformId: string; createdAt: number }>
 }
 
 interface ContactSummary {
@@ -87,6 +88,19 @@ export async function getContactWithDetails(
     notes = db.select().from(contactNotes).where(eq(contactNotes.contactId, contactId)).all()
   }
 
+  // Fetch platform IDs
+  const pids = db
+    .select({
+      id: contactPlatformIds.id,
+      contactId: contactPlatformIds.contactId,
+      platform: contactPlatformIds.platform,
+      platformId: contactPlatformIds.platformId,
+      createdAt: contactPlatformIds.createdAt,
+    })
+    .from(contactPlatformIds)
+    .where(eq(contactPlatformIds.contactId, contactId))
+    .all()
+
   // Resolve linked user name
   let linkedUserName: string | null = null
   if (contact.linkedUserId) {
@@ -98,6 +112,13 @@ export async function getContactWithDetails(
     ...contact,
     linkedUserName,
     identifiers,
+    platformIds: pids.map((p) => ({
+      id: p.id,
+      contactId: p.contactId,
+      platform: p.platform,
+      platformId: p.platformId,
+      createdAt: new Date(p.createdAt).getTime(),
+    })),
     notes: notes.map((n) => ({
       id: n.id,
       kinId: n.kinId,
