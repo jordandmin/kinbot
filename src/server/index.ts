@@ -81,6 +81,10 @@ new Cron(`*/${config.fileStorage.cleanupIntervalMin} * * * *`, async () => {
 import { startChannelFileCleanup } from '@/server/services/files'
 startChannelFileCleanup()
 
+// Webhook log cleanup (prune old/excess logs)
+import { startWebhookLogCleanup } from '@/server/services/webhooks'
+startWebhookLogCleanup()
+
 // Notification cleanup cron (daily)
 import { cleanupOldNotifications } from '@/server/services/notifications'
 new Cron('0 3 * * *', async () => {

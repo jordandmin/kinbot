@@ -148,6 +148,8 @@ export const config = {
   webhooks: {
     maxPerKin: Number(process.env.WEBHOOKS_MAX_PER_KIN ?? 20),
     maxPayloadBytes: Number(process.env.WEBHOOKS_MAX_PAYLOAD_BYTES ?? 1_048_576), // 1MB
+    logRetentionDays: Number(process.env.WEBHOOKS_LOG_RETENTION_DAYS ?? 30),
+    maxLogsPerWebhook: Number(process.env.WEBHOOKS_MAX_LOGS_PER_WEBHOOK ?? 500),
   },
 
   channels: {

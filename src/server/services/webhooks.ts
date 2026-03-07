@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, lt, and } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { randomBytes, timingSafeEqual } from 'crypto'
 import { db } from '@/server/db/index'
@@ -218,4 +218,69 @@ export async function getWebhookLogs(webhookId: string, limit = 50) {
     .orderBy(desc(webhookLogs.createdAt))
     .limit(limit)
     .all()
+}
+
+// ─── Log cleanup ─────────────────────────────────────────────────────────────
+
+/**
+ * Prune webhook logs older than the configured retention period
+ * and enforce a per-webhook max log count.
+ */
+export async function pruneWebhookLogs(): Promise<void> {
+  const { logRetentionDays, maxLogsPerWebhook } = config.webhooks
+
+  // 1. Delete logs older than retention period
+  const cutoff = new Date(Date.now() - logRetentionDays * 24 * 60 * 60 * 1000)
+  db.delete(webhookLogs).where(lt(webhookLogs.createdAt, cutoff)).run()
+
+  // 2. Per-webhook cap: keep only the most recent N logs
+  const allWebhooks = await db.select({ id: webhooks.id }).from(webhooks).all()
+  for (const wh of allWebhooks) {
+    const boundary = db
+      .select({ createdAt: webhookLogs.createdAt })
+      .from(webhookLogs)
+      .where(eq(webhookLogs.webhookId, wh.id))
+      .orderBy(desc(webhookLogs.createdAt))
+      .limit(1)
+      .offset(maxLogsPerWebhook)
+      .get()
+
+    if (boundary) {
+      db.delete(webhookLogs)
+        .where(
+          and(
+            eq(webhookLogs.webhookId, wh.id),
+            lt(webhookLogs.createdAt, boundary.createdAt),
+          ),
+        )
+        .run()
+    }
+  }
+
+  log.info({ retentionDays: logRetentionDays, maxPerWebhook: maxLogsPerWebhook }, 'Webhook logs pruned')
+}
+
+let pruneInterval: ReturnType<typeof setInterval> | null = null
+
+/** Start periodic webhook log cleanup (runs every 6 hours). */
+export function startWebhookLogCleanup() {
+  if (pruneInterval) return
+  const intervalMs = 6 * 60 * 60 * 1000 // 6 hours
+
+  // Run once after 60s startup delay, then periodically
+  setTimeout(() => pruneWebhookLogs().catch((e) => log.error(e, 'Webhook log cleanup failed')), 60_000)
+
+  pruneInterval = setInterval(
+    () => pruneWebhookLogs().catch((e) => log.error(e, 'Webhook log cleanup failed')),
+    intervalMs,
+  )
+
+  log.info({ intervalHours: 6 }, 'Webhook log cleanup scheduled')
+}
+
+export function stopWebhookLogCleanup() {
+  if (pruneInterval) {
+    clearInterval(pruneInterval)
+    pruneInterval = null
+  }
 }
