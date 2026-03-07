@@ -16,24 +16,22 @@ Plugins can register new AI providers that appear alongside built-in ones in the
 
 ## Implementation
 
-A plugin registers a provider by implementing the provider interface and registering it during plugin initialization. The provider must declare its capabilities (LLM, embedding, image, search) so KinBot knows where to use it.
+A plugin exposes providers through its `providers` export. Each provider entry declares a `definition` (the implementation), display metadata, and its capabilities so KinBot knows where to use it.
 
 ```typescript
-// Example plugin provider registration
-export default {
-  name: 'my-custom-provider',
-  register(ctx) {
-    ctx.registerProvider({
-      id: 'my-provider',
-      displayName: 'My Provider',
-      capabilities: ['llm', 'embedding'],
-      // ... implementation
-    })
-  }
+// In your plugin's main file
+export const providers = {
+  'my-llm': {
+    definition: myProviderImplementation,
+    displayName: 'My Custom LLM',
+    capabilities: ['llm', 'embedding'],
+    noApiKey: false,
+    apiKeyUrl: 'https://my-service.com/keys',
+  },
 }
 ```
 
-Once registered, the provider appears in **Settings > Providers** and can be configured with an API key and base URL like any built-in provider.
+KinBot automatically registers plugin providers with a `plugin_<name>_` prefix (e.g., `plugin_my-plugin_my-llm`). Once registered, the provider appears in **Settings > Providers** alongside built-in ones and can be configured with an API key and base URL.
 
 ## OpenAI-Compatible Endpoints
 

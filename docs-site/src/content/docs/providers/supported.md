@@ -49,6 +49,26 @@ Providers are configured in **Settings > Providers** in the KinBot UI. Each prov
 
 For Ollama, ensure the base URL points to your Ollama instance (e.g., `http://localhost:11434` or `http://host.docker.internal:11434` from Docker).
 
+## API Endpoints
+
+KinBot exposes several provider management endpoints:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/providers` | List all configured providers |
+| `POST` | `/api/providers` | Add a new provider (auto-tests connection) |
+| `PATCH` | `/api/providers/:id` | Update provider config (re-tests connection) |
+| `DELETE` | `/api/providers/:id` | Delete a provider (blocked if it's the last with a required capability) |
+| `GET` | `/api/providers/types` | List all available provider types (built-in + plugin) |
+| `GET` | `/api/providers/capabilities` | Check which capabilities are currently available |
+| `GET` | `/api/providers/models` | List all available models across valid providers |
+| `POST` | `/api/providers/test` | Test a connection without saving |
+| `POST` | `/api/providers/:id/test` | Re-test an existing provider's connection |
+
+:::note
+You cannot delete the last provider covering `llm` or `embedding` capabilities. KinBot will return a `409` error to prevent breaking core functionality.
+:::
+
 ## Minimum Setup
 
 To use KinBot, you need at minimum:
