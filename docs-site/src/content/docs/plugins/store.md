@@ -32,6 +32,7 @@ Configure and enable the plugin via **Settings → Plugins**.
 | `github-notifications` | 🔔 | Monitor GitHub notifications and activity |
 | `home-automation` | 🏠 | Control your smart home via Home Assistant |
 | `calendar` | 📅 | Manage events, reminders, and scheduling |
+| `dictionary` | 📖 | Look up word definitions, synonyms, antonyms, and pronunciation |
 
 More plugins are added by the community regularly.
 
