@@ -759,6 +759,7 @@
       "commandTip": "The executable to run. Usually npx for npm packages, or an absolute path to a binary.",
       "argsTip": "Command-line arguments passed to the server. Put each argument on its own line.",
       "envTip": "Environment variables passed to the server process. Use these for API keys and secrets.",
+      "envPreserveHint": "Leave values empty to keep existing secrets",
       "help": {
         "content": "MCP (Model Context Protocol) servers are external programs that give your Kins additional capabilities beyond their built-in tools. They run as separate processes and communicate via a standard protocol.",
         "bullet1": "Each MCP server provides one or more tools (e.g. file search, database queries, API integrations)",
@@ -1361,6 +1362,7 @@
     "firstName": "First name",
     "lastName": "Last name",
     "pseudonym": "Pseudonym",
+    "pseudonymHint": "Letters, numbers, underscores, hyphens",
     "language": "Language",
     "save": "Save changes",
     "saved": "Profile updated",

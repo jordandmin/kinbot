@@ -759,6 +759,7 @@
       "commandTip": "L'exécutable à lancer. Généralement npx pour les packages npm, ou un chemin absolu vers un binaire.",
       "argsTip": "Arguments passés au serveur. Mettez chaque argument sur sa propre ligne.",
       "envTip": "Variables d'environnement passées au processus serveur. Utilisez-les pour les clés API et les secrets.",
+      "envPreserveHint": "Laissez les valeurs vides pour conserver les secrets existants",
       "help": {
         "content": "Les serveurs MCP (Model Context Protocol) sont des programmes externes qui donnent à vos Kins des capacités supplémentaires au-delà de leurs outils intégrés. Ils tournent comme des processus séparés et communiquent via un protocole standard.",
         "bullet1": "Chaque serveur MCP fournit un ou plusieurs outils (ex : recherche de fichiers, requêtes base de données, intégrations API)",
@@ -1361,6 +1362,7 @@
     "firstName": "Prénom",
     "lastName": "Nom",
     "pseudonym": "Pseudonyme",
+    "pseudonymHint": "Lettres, chiffres, underscores, tirets",
     "language": "Langue",
     "save": "Enregistrer",
     "saved": "Profil mis à jour",

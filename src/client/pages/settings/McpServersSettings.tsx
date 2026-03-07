@@ -7,6 +7,7 @@ import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
 import { api, getErrorMessage } from '@/client/lib/api'
+import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { useSSE } from '@/client/hooks/useSSE'
 import { useKinList } from '@/client/hooks/useKinList'
 import { McpServerCard, type McpServerData } from '@/client/components/mcp/McpServerCard'
@@ -16,6 +17,7 @@ export function McpServersSettings() {
   const { t } = useTranslation()
   const [servers, setServers] = useState<McpServerData[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const { kinNames, kinAvatars } = useKinList()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingServer, setEditingServer] = useState<McpServerData | null>(null)
@@ -34,11 +36,12 @@ export function McpServersSettings() {
   })
 
   const fetchServers = async () => {
+    setFetchError(null)
     try {
       const data = await api.get<{ servers: McpServerData[] }>('/mcp-servers')
       setServers(data.servers)
-    } catch {
-      // Ignore
+    } catch (err: unknown) {
+      setFetchError(getErrorMessage(err))
     } finally {
       setIsLoading(false)
     }
@@ -81,6 +84,17 @@ export function McpServersSettings() {
 
   if (isLoading) {
     return <SettingsListSkeleton count={2} />
+  }
+
+  if (fetchError) {
+    return (
+      <div className="space-y-4">
+        <FormErrorAlert error={fetchError} />
+        <Button variant="outline" onClick={fetchServers}>
+          {t('common.retry', 'Retry')}
+        </Button>
+      </div>
+    )
   }
 
   return (

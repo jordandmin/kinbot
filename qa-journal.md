@@ -886,3 +886,42 @@
 ### Next run
 - Area 13: MCP servers (add, configure, remove MCP servers)
 - Area 14: Account (profile, password, language settings)
+
+## 2026-03-07 20:40 UTC
+### Area tested: MCP Servers (Area 13) + Account (Area 14)
+- **Pages visited:** Code review of McpServersSettings.tsx, McpServerFormDialog.tsx, McpServerCard.tsx, mcp-servers.ts (routes), mcp.ts (service), AccountPage.tsx (AccountDialog), me.ts (routes), auth/index.ts
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 3 (issues created: #139, #140, #141)
+  - #139: McpServerCard uses double /api prefix for status/test endpoints (connection status and test button completely broken)
+  - #140: fetchServers silently swallows errors (same pattern as #115, #127, #134)
+  - #141: MCP server name and command have no server-side length limits
+
+- **UX suggestions:** 2 (issues created: #142, #143)
+  - #142: MCP env var editing gives no visual feedback that existing secrets are preserved when left empty
+  - #143: Account page name/pseudonym fields have no client-side character counters or format hints
+
+#### All clear:
+- MCP server CRUD with proper SSE real-time updates
+- MCP server form: clean layout with name, command, args (textarea, one per line), and env vars (key/value pairs with password input)
+- MCP env var masking: backend never exposes env values to frontend (only keys with empty strings)
+- MCP env var merge logic on update: empty values preserve existing secrets
+- MCP server card: clean layout with connection status dot, tool count badge, error tooltip, Kin badge
+- MCP server approval flow for Kin-created servers (pending_approval status)
+- MCP server delete: confirmation dialog, disconnects running server
+- MCP connection pool with auto-reconnect on tool call failure
+- MCP connection timeout (30s) to avoid hanging on unresponsive servers
+- MCP PATH augmentation for child processes (detects NVM, common system paths)
+- MCP tool resolution with per-Kin access control (mcpAccess allowlist or auto-enable for Kin-created servers)
+- MCP JSON Schema to Zod conversion for tool input validation
+- MCP tool name sanitization with Unicode/accent handling and hash fallback
+- Account dialog: polished hero header with gradient, avatar crop (react-easy-crop), member since date
+- Account profile: proper server-side validation (name length, pseudonym format, language allowlist)
+- Account avatar: size limit (2MB), type validation, crop before upload
+- Account password change: collapsible section, min length 8, confirm match, Better Auth handles backend
+- Account profile upsert: handles missing profile row gracefully (onConflictDoUpdate)
+- Account language change: updates i18n on save
+
+### Next run
+- Area 15: Quick chat / Ephemeral sessions
+- Area 1 (revisit): Onboarding / First run (rotate back to start)

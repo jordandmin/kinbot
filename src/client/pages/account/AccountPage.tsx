@@ -310,7 +310,11 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
                   id="acctFirstName"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  maxLength={100}
                 />
+                <p className={`text-xs text-right ${firstName.length > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {firstName.length}/100
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="acctLastName">{t('account.lastName')}</Label>
@@ -318,7 +322,11 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
                   id="acctLastName"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
+                  maxLength={100}
                 />
+                <p className={`text-xs text-right ${lastName.length > 100 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {lastName.length}/100
+                </p>
               </div>
             </div>
 
@@ -328,7 +336,16 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
                 id="acctPseudonym"
                 value={pseudonym}
                 onChange={(e) => setPseudonym(e.target.value)}
+                maxLength={30}
               />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {t('account.pseudonymHint', 'Letters, numbers, underscores, hyphens')}
+                </p>
+                <p className={`text-xs ${pseudonym.length > 30 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {pseudonym.length}/30
+                </p>
+              </div>
             </div>
 
             <div className="space-y-1.5">

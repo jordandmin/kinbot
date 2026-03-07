@@ -60,6 +60,29 @@ mcpServerRoutes.post('/', async (c) => {
     )
   }
 
+  if (trimmedName.length > 200) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'name must be 200 characters or fewer' } }, 400)
+  }
+  if (trimmedCommand.length > 500) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'command must be 500 characters or fewer' } }, 400)
+  }
+  if (body.args && body.args.length > 50) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'maximum 50 arguments allowed' } }, 400)
+  }
+  if (body.args?.some((a: string) => a.length > 1000)) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'each argument must be 1000 characters or fewer' } }, 400)
+  }
+  if (body.env) {
+    const entries = Object.entries(body.env)
+    if (entries.length > 50) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'maximum 50 environment variables allowed' } }, 400)
+    }
+    for (const [k, v] of entries) {
+      if (k.length > 100) return c.json({ error: { code: 'VALIDATION_ERROR', message: `env key "${k.slice(0, 20)}..." must be 100 characters or fewer` } }, 400)
+      if (typeof v === 'string' && v.length > 10000) return c.json({ error: { code: 'VALIDATION_ERROR', message: `env value for "${k}" must be 10000 characters or fewer` } }, 400)
+    }
+  }
+
   const id = uuid()
   const now = new Date()
 
@@ -111,6 +134,9 @@ mcpServerRoutes.patch('/:id', async (c) => {
     if (!trimmed) {
       return c.json({ error: { code: 'VALIDATION_ERROR', message: 'name cannot be empty' } }, 400)
     }
+    if (trimmed.length > 200) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'name must be 200 characters or fewer' } }, 400)
+    }
     updates.name = trimmed
   }
 
@@ -119,15 +145,37 @@ mcpServerRoutes.patch('/:id', async (c) => {
     if (!trimmed) {
       return c.json({ error: { code: 'VALIDATION_ERROR', message: 'command cannot be empty' } }, 400)
     }
+    if (trimmed.length > 500) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'command must be 500 characters or fewer' } }, 400)
+    }
     updates.command = trimmed
   }
 
-  if (body.args !== undefined) updates.args = JSON.stringify(body.args)
+  if (body.args !== undefined) {
+    if (Array.isArray(body.args) && body.args.length > 50) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'maximum 50 arguments allowed' } }, 400)
+    }
+    if (Array.isArray(body.args) && body.args.some((a: string) => a.length > 1000)) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'each argument must be 1000 characters or fewer' } }, 400)
+    }
+    updates.args = JSON.stringify(body.args)
+  }
 
   if (body.env !== undefined) {
     if (!body.env) {
       updates.env = null
-    } else {
+    } else if (typeof body.env === 'object') {
+      const envEntries = Object.entries(body.env)
+      if (envEntries.length > 50) {
+        return c.json({ error: { code: 'VALIDATION_ERROR', message: 'maximum 50 environment variables allowed' } }, 400)
+      }
+      for (const [k, v] of envEntries) {
+        if (k.length > 100) return c.json({ error: { code: 'VALIDATION_ERROR', message: `env key "${k.slice(0, 20)}..." must be 100 characters or fewer` } }, 400)
+        if (typeof v === 'string' && v.length > 10000) return c.json({ error: { code: 'VALIDATION_ERROR', message: `env value for "${k}" must be 10000 characters or fewer` } }, 400)
+      }
+    }
+
+    if (body.env && typeof body.env === 'object') {
       // Merge: empty string values preserve existing secrets (since we don't send values to frontend)
       const existingEnv = existing.env ? JSON.parse(existing.env) as Record<string, string> : {}
       const merged: Record<string, string> = {}

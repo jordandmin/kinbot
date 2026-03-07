@@ -196,6 +196,11 @@ export function McpServerFormDialog({
                 ({t('common.optional')})
               </span>
             </Label>
+            {isEditing && envVars.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {t('settings.mcp.envPreserveHint', 'Leave values empty to keep existing secrets')}
+              </p>
+            )}
             <div className="space-y-2">
               {envVars.map((v, i) => (
                 <div key={i} className="flex items-center gap-2">

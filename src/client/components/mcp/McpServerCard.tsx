@@ -48,7 +48,7 @@ export function McpServerCard({ server, kinName, kinAvatarUrl, onApprove, onEdit
   // Fetch connection status on mount for active servers
   useEffect(() => {
     if (isPending) return
-    api.get<ConnectionStatus>(`/api/mcp-servers/${server.id}/status`)
+    api.get<ConnectionStatus>(`/mcp-servers/${server.id}/status`)
       .then((s) => { if (s) setConnStatus(s) })
       .catch(() => {})
   }, [server.id, isPending])
@@ -56,7 +56,7 @@ export function McpServerCard({ server, kinName, kinAvatarUrl, onApprove, onEdit
   const handleTest = useCallback(async () => {
     setTesting(true)
     try {
-      const s = await api.post<ConnectionStatus>(`/api/mcp-servers/${server.id}/test`)
+      const s = await api.post<ConnectionStatus>(`/mcp-servers/${server.id}/test`)
       if (s) setConnStatus(s)
     } catch {
       setConnStatus({ connected: false, toolCount: 0, error: 'Test request failed' })
