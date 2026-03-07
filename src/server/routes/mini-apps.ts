@@ -55,7 +55,7 @@ miniAppRoutes.get('/gallery/browse', async (c) => {
 
 // Generate icon for a mini-app using AI image generation
 miniAppRoutes.post('/:id/generate-icon', async (c) => {
-  const body = await c.req.json<{ providerId?: string; modelId?: string }>().catch(() => ({}))
+  const body = await c.req.json<{ providerId?: string; modelId?: string }>().catch(() => ({} as { providerId?: string; modelId?: string }))
   try {
     const app = await generateMiniAppIcon(c.req.param('id'), {
       providerId: body.providerId,

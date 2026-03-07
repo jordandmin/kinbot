@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Dialog,
@@ -7,27 +7,17 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/client/components/ui/dialog'
-import { Button } from '@/client/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { Input } from '@/client/components/ui/input'
-import { KinSelector } from '@/client/components/common/KinSelector'
 import { api } from '@/client/lib/api'
 import { toast } from 'sonner'
-import { Copy, Check, Search, AppWindow, Loader2, LayoutGrid, List } from 'lucide-react'
+import { Search, AppWindow, Loader2, LayoutGrid, List } from 'lucide-react'
 import { cn } from '@/client/lib/utils'
 import type { MiniAppSummary } from '@/shared/types'
-
-interface KinSummary {
-  id: string
-  name: string
-  avatarPath: string | null
-}
 
 interface MiniAppGalleryProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentKinId: string | null
-  kins: KinSummary[]
 }
 
 function MiniAppIcon({ app, size = 'md' }: { app: MiniAppSummary; size?: 'sm' | 'md' | 'lg' }) {
@@ -44,14 +34,11 @@ function MiniAppIcon({ app, size = 'md' }: { app: MiniAppSummary; size?: 'sm' | 
 
 export { MiniAppIcon }
 
-export function MiniAppGallery({ open, onOpenChange, currentKinId, kins }: MiniAppGalleryProps) {
+export function MiniAppGallery({ open, onOpenChange }: MiniAppGalleryProps) {
   const { t } = useTranslation()
   const [apps, setApps] = useState<MiniAppSummary[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
-  const [cloning, setCloning] = useState<string | null>(null)
-  const [clonedIds, setClonedIds] = useState<Set<string>>(new Set())
-  const [targetKinId, setTargetKinId] = useState<string>(currentKinId ?? '')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() =>
     (localStorage.getItem('kinbot:gallery-view-mode') as 'grid' | 'list') || 'grid',
   )
@@ -60,16 +47,6 @@ export function MiniAppGallery({ open, onOpenChange, currentKinId, kins }: MiniA
     setViewMode(mode)
     localStorage.setItem('kinbot:gallery-view-mode', mode)
   }
-
-  // Update target kin when current kin changes
-  useEffect(() => {
-    if (currentKinId) setTargetKinId(currentKinId)
-  }, [currentKinId])
-
-  // Reset cloned state when target kin changes
-  useEffect(() => {
-    setClonedIds(new Set())
-  }, [targetKinId])
 
   // Fetch gallery apps when dialog opens
   useEffect(() => {
@@ -90,45 +67,6 @@ export function MiniAppGallery({ open, onOpenChange, currentKinId, kins }: MiniA
       (app.description?.toLowerCase().includes(q) ?? false)
     )
   })
-
-  const handleClone = useCallback(async (appId: string) => {
-    if (!targetKinId) {
-      toast.error(t('miniApps.gallery.selectKin'))
-      return
-    }
-    setCloning(appId)
-    try {
-      await api.post<{ app: MiniAppSummary }>(`/mini-apps/${appId}/clone`, { targetKinId })
-      setClonedIds((prev) => new Set(prev).add(appId))
-      toast.success(t('miniApps.gallery.cloneSuccess'))
-    } catch {
-      toast.error(t('miniApps.gallery.cloneError'))
-    } finally {
-      setCloning(null)
-    }
-  }, [targetKinId, t])
-
-  const renderCloneButton = (app: MiniAppSummary, compact = false) => {
-    const isOwn = app.kinId === targetKinId
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        className={cn('shrink-0 gap-1.5 text-xs h-7', compact && 'w-full')}
-        disabled={isOwn || clonedIds.has(app.id) || cloning === app.id || !targetKinId}
-        onClick={() => handleClone(app.id)}
-      >
-        {cloning === app.id ? (
-          <Loader2 className="size-3 animate-spin" />
-        ) : clonedIds.has(app.id) ? (
-          <Check className="size-3" />
-        ) : (
-          <Copy className="size-3" />
-        )}
-        {isOwn ? t('miniApps.gallery.owned') : clonedIds.has(app.id) ? t('miniApps.gallery.cloned') : t('miniApps.gallery.clone')}
-      </Button>
-    )
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,14 +116,6 @@ export function MiniAppGallery({ open, onOpenChange, currentKinId, kins }: MiniA
               <List className="size-3.5" />
             </button>
           </div>
-          <KinSelector
-            value={targetKinId}
-            onValueChange={setTargetKinId}
-            kins={kins.map((k) => ({ id: k.id, name: k.name, avatarUrl: k.avatarPath }))}
-            placeholder={t('miniApps.gallery.cloneTo')}
-            triggerClassName="w-48 h-8 text-sm"
-            autoHeight={false}
-          />
         </div>
 
         {/* App list / grid */}
@@ -227,9 +157,6 @@ export function MiniAppGallery({ open, onOpenChange, currentKinId, kins }: MiniA
                     <span className="opacity-40">·</span>
                     <span>v{app.version}</span>
                   </div>
-                  <div className="mt-2">
-                    {renderCloneButton(app, true)}
-                  </div>
                 </div>
               ))}
             </div>
@@ -263,7 +190,6 @@ export function MiniAppGallery({ open, onOpenChange, currentKinId, kins }: MiniA
                       <span>v{app.version}</span>
                     </div>
                   </div>
-                  {renderCloneButton(app)}
                 </div>
               ))}
             </div>
