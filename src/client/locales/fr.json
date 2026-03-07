@@ -1658,7 +1658,6 @@
       "fetchError": "Impossible de charger la galerie",
       "noResults": "Aucune app ne correspond",
       "empty": "Aucune app disponible",
-      "cloned": "Cloné",
       "viewGrid": "Vue grille",
       "viewList": "Vue liste"
     },
