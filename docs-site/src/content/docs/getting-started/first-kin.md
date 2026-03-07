@@ -7,7 +7,7 @@ A **Kin** is a persistent AI agent with its own identity, memory, and tools. Unl
 
 ## Creating a Kin
 
-1. Open KinBot at `http://localhost:3000`
+1. Open KinBot in your browser (default: `http://localhost:3000`, or port `3333` for manual installs)
 2. Complete the onboarding wizard (set up your admin account and first AI provider)
 3. Click **New Kin** in the sidebar
 4. Give it a **name**, **description**, and optionally a **system prompt**

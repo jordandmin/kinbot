@@ -9,12 +9,14 @@ KinBot uses environment variables for configuration. Copy `.env.example` to `.en
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `3333` | HTTP server port |
+| `PORT` | `3333` (`3000` in Docker) | HTTP server port |
 | `HOST` | `127.0.0.1` | Bind address (`0.0.0.0` to expose on all interfaces) |
 | `KINBOT_DATA_DIR` | `./data` | Persistent data directory (DB, uploads, workspaces) |
+| `DB_PATH` | `$KINBOT_DATA_DIR/kinbot.db` | SQLite database file path |
 | `ENCRYPTION_KEY` | *(auto-generated)* | 64-char hex key for AES-256-GCM vault encryption. Auto-generated and persisted to `data/.encryption-key` on first run. |
+| `BETTER_AUTH_SECRET` | *(uses ENCRYPTION_KEY)* | Secret for session signing. Falls back to `ENCRYPTION_KEY` if not set. |
 | `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
-| `PUBLIC_URL` | `http://localhost:3333` | Public-facing URL (used in webhooks, invitation links) |
+| `PUBLIC_URL` | `http://localhost:<PORT>` | Public-facing URL (used in webhooks, invitation links) |
 
 ## Data directory
 
