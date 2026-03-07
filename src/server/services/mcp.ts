@@ -70,16 +70,12 @@ interface MCPToolDef {
 
 const connections = new Map<string, MCPConnection>()
 
-async function getConnection(serverId: string): Promise<MCPConnection | null> {
-  // Return existing connection if alive
-  if (connections.has(serverId)) {
-    return connections.get(serverId)!
-  }
+const MCP_CONNECT_TIMEOUT_MS = 30_000
 
+async function connectToServer(serverId: string): Promise<MCPConnection | null> {
   const server = await db.select().from(mcpServers).where(eq(mcpServers.id, serverId)).get()
   if (!server) return null
 
-  // Don't connect to pending servers
   if (server.status !== 'active') {
     log.debug({ serverId, status: server.status }, 'Skipping non-active MCP server')
     return null
@@ -100,7 +96,12 @@ async function getConnection(serverId: string): Promise<MCPConnection | null> {
       version: '1.0.0',
     })
 
-    await client.connect(transport)
+    // Connect with timeout to avoid hanging on unresponsive servers
+    const connectPromise = client.connect(transport)
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`MCP connection timeout after ${MCP_CONNECT_TIMEOUT_MS}ms`)), MCP_CONNECT_TIMEOUT_MS),
+    )
+    await Promise.race([connectPromise, timeoutPromise])
 
     // Discover tools
     const toolsResult = await client.listTools()
@@ -127,6 +128,18 @@ async function getConnection(serverId: string): Promise<MCPConnection | null> {
     return null
   }
 }
+
+async function getConnection(serverId: string): Promise<MCPConnection | null> {
+  // Return existing connection if alive
+  if (connections.has(serverId)) {
+    return connections.get(serverId)!
+  }
+
+  return connectToServer(serverId)
+}
+
+// Register graceful shutdown hook
+process.on('beforeExit', () => { disconnectAll() })
 
 // ─── Disconnect ──────────────────────────────────────────────────────────────
 
@@ -339,7 +352,31 @@ async function callMCPTool(
 
     return result
   } catch (err) {
-    log.error({ toolName, serverName: conn.serverName, err }, 'MCP tool call failed')
+    // Connection may be dead, try to reconnect once
+    log.warn({ toolName, serverName: conn.serverName, err }, 'MCP tool call failed, attempting reconnection')
+    connections.delete(conn.serverId)
+
+    try {
+      const newConn = await connectToServer(conn.serverId)
+      if (newConn) {
+        const retryResult = await newConn.client.callTool({
+          name: toolName,
+          arguments: args,
+        })
+
+        if (retryResult.content && Array.isArray(retryResult.content)) {
+          const texts = retryResult.content
+            .filter((c: any) => c.type === 'text')
+            .map((c: any) => c.text)
+          return texts.length === 1 ? texts[0] : texts.join('\n')
+        }
+
+        return retryResult
+      }
+    } catch (retryErr) {
+      log.error({ toolName, serverName: conn.serverName, retryErr }, 'MCP tool call retry also failed')
+    }
+
     return { error: err instanceof Error ? err.message : 'MCP tool call failed' }
   }
 }
@@ -397,5 +434,24 @@ function jsonSchemaPropertyToZod(prop: Record<string, unknown>): z.ZodType {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function sanitizeName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+  // First try: transliterate common accented chars, then strip non-ascii
+  const transliterated = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip combining diacritical marks
+  const result = transliterated
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+
+  // Fallback: if result is empty (all non-Latin chars), use a hash of the original name
+  if (result === '') {
+    let hash = 0
+    for (let i = 0; i < name.length; i++) {
+      hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0
+    }
+    return `u${Math.abs(hash).toString(36)}`
+  }
+
+  return result
 }
