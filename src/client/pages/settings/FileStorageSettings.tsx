@@ -6,7 +6,7 @@ import { Plus , FileUp} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, getErrorMessage, toastError } from '@/client/lib/api'
 import { useKinList } from '@/client/hooks/useKinList'
 import { FileStorageCard, type StoredFileData } from '@/client/components/file-storage/FileStorageCard'
 import { FileStorageFormDialog } from '@/client/components/file-storage/FileStorageFormDialog'
@@ -43,7 +43,7 @@ export function FileStorageSettings() {
       await fetchFiles()
       toast.success(t('settings.files.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

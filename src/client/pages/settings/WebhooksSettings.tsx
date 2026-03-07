@@ -27,7 +27,7 @@ import { Plus, Copy, Eye, EyeOff, Webhook, Search } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import { useKinList } from '@/client/hooks/useKinList'
 import { WebhookCard } from '@/client/components/webhook/WebhookCard'
@@ -121,7 +121,7 @@ export function WebhooksSettings() {
       await fetchWebhooks()
       toast.success(t('settings.webhooks.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -139,7 +139,7 @@ export function WebhooksSettings() {
       setShowToken(false)
       toast.success(t('settings.webhooks.regenerated'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setRegeneratingWebhook(null)
     }

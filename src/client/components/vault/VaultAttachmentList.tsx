@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { Upload, Download, File, Loader2 } from 'lucide-react'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import type { VaultAttachmentSummary } from '@/shared/types'
@@ -78,7 +78,7 @@ export function VaultAttachmentList({ entryId }: VaultAttachmentListProps) {
       setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
       toast.success(t('settings.vault.attachmentDeleted'))
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

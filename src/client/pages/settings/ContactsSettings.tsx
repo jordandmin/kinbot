@@ -7,7 +7,7 @@ import { Input } from '@/client/components/ui/input'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { useKinList } from '@/client/hooks/useKinList'
 import { useSSE } from '@/client/hooks/useSSE'
 import { ContactCard, type ContactData, type KinInfo } from '@/client/components/contacts/ContactCard'
@@ -62,7 +62,7 @@ export function ContactsSettings() {
       await fetchContacts()
       toast.success(t('settings.contacts.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

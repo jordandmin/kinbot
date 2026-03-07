@@ -19,7 +19,7 @@ import {
 } from '@/client/components/ui/dialog'
 import { Calendar, Camera, ChevronDown, ChevronUp, Crop, KeyRound, Loader2, ZoomIn } from 'lucide-react'
 import { useAuth } from '@/client/hooks/useAuth'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { cropImage, type CropArea } from '@/client/lib/crop-image'
 import { toast } from 'sonner'
 
@@ -185,7 +185,7 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
       onOpenChange(false)
       toast.success(t('account.saved'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setIsLoading(false)
     }

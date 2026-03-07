@@ -7,7 +7,7 @@ import { Plus , MessageCircle} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import { useKinList } from '@/client/hooks/useKinList'
 import { ChannelCard } from '@/client/components/channel/ChannelCard'
@@ -92,7 +92,7 @@ export function ChannelsSettings() {
       await fetchChannels()
       toast.success(t('settings.channels.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -107,7 +107,7 @@ export function ChannelsSettings() {
         : t('settings.channels.activate'),
       )
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setTogglingId(null)
     }
@@ -124,7 +124,7 @@ export function ChannelsSettings() {
         toast.error(`${t('settings.channels.testFailed')}: ${result.error}`)
       }
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setTestingId(null)
     }

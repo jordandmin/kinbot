@@ -6,7 +6,7 @@ import { Plus , Plug} from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, getErrorMessage, toastError } from '@/client/lib/api'
 import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { useSSE } from '@/client/hooks/useSSE'
 import { useKinList } from '@/client/hooks/useKinList'
@@ -53,7 +53,7 @@ export function McpServersSettings() {
       await fetchServers()
       toast.success(t('settings.mcp.approved'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -63,7 +63,7 @@ export function McpServersSettings() {
       await fetchServers()
       toast.success(t('settings.mcp.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

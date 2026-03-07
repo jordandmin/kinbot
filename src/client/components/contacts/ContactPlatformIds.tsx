@@ -6,7 +6,7 @@ import { Button } from '@/client/components/ui/button'
 import { Input } from '@/client/components/ui/input'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
 import { X, Plus, Check } from 'lucide-react'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import type { ContactPlatformId } from '@/shared/types'
 
 const PLATFORMS = ['discord', 'telegram', 'whatsapp', 'signal', 'slack', 'irc', 'matrix', 'webchat'] as const
@@ -35,7 +35,7 @@ export function ContactPlatformIds({ contactId, initialPlatformIds }: ContactPla
       setPlatformIds((prev) => prev.filter((p) => p.id !== pidId))
       toast.success(t('settings.contacts.platformIdRevoked'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -58,7 +58,7 @@ export function ContactPlatformIds({ contactId, initialPlatformIds }: ContactPla
       setNewPlatformId('')
       toast.success(t('settings.contacts.platformIdAdded', 'Platform ID added'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setSaving(false)
     }

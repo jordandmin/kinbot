@@ -28,7 +28,7 @@ import { Label } from '@/client/components/ui/label'
 import { UserPlus, Copy, Trash2, Link2, Clock, CheckCircle2, XCircle, Users } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { useAuth } from '@/client/hooks/useAuth'
 import type { UserSummary, InvitationSummary } from '@/shared/types'
 
@@ -75,7 +75,7 @@ export function UsersSettings() {
       await fetchUsers()
       toast.success(t('settings.users.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setDeletingUser(null)
     }
@@ -95,7 +95,7 @@ export function UsersSettings() {
       setRevealedLink(data.invitation.url)
       toast.success(t('settings.users.invitations.created'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setInviteCreating(false)
     }
@@ -108,7 +108,7 @@ export function UsersSettings() {
       await fetchInvitations()
       toast.success(t('settings.users.invitations.revoked'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setRevokingInvitation(null)
     }

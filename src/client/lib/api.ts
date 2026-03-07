@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+
 const BASE_URL = '/api'
 
 // ─── Custom error class ───────────────────────────────────────────────────────
@@ -32,6 +34,14 @@ export function getErrorMessage(err: unknown): string {
     if (typeof inner.message === 'string' && inner.message) return inner.message
   }
   return 'An unexpected error occurred'
+}
+
+/**
+ * Shorthand for `toast.error(getErrorMessage(err))`.
+ * Use in catch blocks to show a toast with the extracted error message.
+ */
+export function toastError(err: unknown): void {
+  toast.error(getErrorMessage(err))
 }
 
 // ─── Core fetch wrapper ───────────────────────────────────────────────────────

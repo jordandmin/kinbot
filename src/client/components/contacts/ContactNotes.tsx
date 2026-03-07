@@ -13,7 +13,7 @@ import {
 import { KinSelector } from '@/client/components/common/KinSelector'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { Pencil, Bot, Globe, Lock, Plus, Check, X } from 'lucide-react'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import type { ContactNoteData, KinInfo } from './ContactCard'
 
 interface ContactNotesProps {
@@ -54,7 +54,7 @@ export function ContactNotes({ contactId, notes, kinInfo, onRefresh }: ContactNo
       cancelEdit()
       onRefresh?.()
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -64,7 +64,7 @@ export function ContactNotes({ contactId, notes, kinInfo, onRefresh }: ContactNo
       toast.success(t('settings.contacts.noteDeleted'))
       onRefresh?.()
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -92,7 +92,7 @@ export function ContactNotes({ contactId, notes, kinInfo, onRefresh }: ContactNo
       cancelAddNote()
       onRefresh?.()
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

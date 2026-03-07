@@ -6,7 +6,7 @@ import { Plus, Lock, Settings2 } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, getErrorMessage, toastError } from '@/client/lib/api'
 import { useKinList } from '@/client/hooks/useKinList'
 import { VaultSecretCard, type VaultSecretData } from '@/client/components/vault/VaultSecretCard'
 import { VaultEntryFormDialog } from '@/client/components/vault/VaultEntryFormDialog'
@@ -52,7 +52,7 @@ export function VaultSettings() {
       const data = await api.get<{ types: VaultTypeSummary[] }>('/vault/types')
       setCustomTypes(data.types)
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -62,7 +62,7 @@ export function VaultSettings() {
       await fetchEntries()
       toast.success(t('settings.vault.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -73,7 +73,7 @@ export function VaultSettings() {
         prev.map((e) => (e.id === entry.id ? { ...e, isFavorite: !e.isFavorite } : e)),
       )
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

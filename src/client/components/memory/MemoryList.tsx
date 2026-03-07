@@ -22,7 +22,7 @@ import {
 } from '@/client/components/ui/alert-dialog'
 import { Brain, Plus, Search } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { useMemories } from '@/client/hooks/useMemories'
 import { MemoryCard } from '@/client/components/memory/MemoryCard'
 import { MemoryFormDialog } from '@/client/components/memory/MemoryFormDialog'
@@ -113,7 +113,7 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
       await deleteMemory(target.id, target.kinId)
       toast.success(t('settings.memories.deleted'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

@@ -16,7 +16,7 @@ import {
 } from '@/client/components/ui/dialog'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import {
   Search,
   Download,
@@ -90,7 +90,7 @@ export function PluginMarketplace() {
       toast.success(t('settings.marketplace.installSuccess', { name: result.name }))
       await loadData()
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setInstallingPlugin(null)
     }
@@ -104,7 +104,7 @@ export function PluginMarketplace() {
       toast.success(t('settings.marketplace.uninstallSuccess'))
       await loadData()
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setUninstalling(false)
       setUninstallTarget(null)

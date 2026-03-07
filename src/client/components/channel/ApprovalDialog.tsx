@@ -23,7 +23,7 @@ import {
 } from '@/client/components/ui/command'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
 import { Loader2, CheckCircle2 } from 'lucide-react'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import type { ChannelPendingUser, ChannelPlatform } from '@/shared/types'
 
 interface ContactOption {
@@ -98,7 +98,7 @@ export function ApprovalDialog({
       onOpenChange(false)
       onApproved()
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setSubmitting(false)
     }

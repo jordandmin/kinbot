@@ -30,7 +30,7 @@ import {
 } from '@/client/components/ui/collapsible'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import {
   Plug,
   RefreshCw,
@@ -102,7 +102,7 @@ export function PluginsSettings() {
       }
       await fetchPlugins()
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -113,7 +113,7 @@ export function PluginsSettings() {
       await fetchPlugins()
       toast.success(t('settings.plugins.reloaded'))
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setReloading(false)
     }
@@ -133,7 +133,7 @@ export function PluginsSettings() {
       setInstallPackage('')
       await fetchPlugins()
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setInstalling(false)
     }
@@ -148,7 +148,7 @@ export function PluginsSettings() {
       setUninstallPlugin(null)
       await fetchPlugins()
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setUninstalling(false)
     }
@@ -161,7 +161,7 @@ export function PluginsSettings() {
       toast.success(t('settings.plugins.updateSuccess'))
       await fetchPlugins()
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setUpdatingPlugin(null)
     }
@@ -173,7 +173,7 @@ export function PluginsSettings() {
       setConfigValues(config)
       setConfigPlugin(plugin)
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 
@@ -186,7 +186,7 @@ export function PluginsSettings() {
       setConfigPlugin(null)
       await fetchPlugins()
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setSaving(false)
     }

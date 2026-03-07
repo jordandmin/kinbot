@@ -5,7 +5,7 @@ import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/client/components/ui/select'
 import { MarkdownEditor } from '@/client/components/ui/markdown-editor'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, getErrorMessage, toastError } from '@/client/lib/api'
 import { Skeleton } from '@/client/components/ui/skeleton'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { HelpPanel } from '@/client/components/common/HelpPanel'
@@ -53,7 +53,7 @@ export function GeneralSettings() {
       setHubKinId(actualKinId)
       toast.success(t('settings.general.hubSaved'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setSavingHub(false)
     }
@@ -79,7 +79,7 @@ export function GeneralSettings() {
       setInitialGlobalPrompt(globalPrompt)
       toast.success(t('settings.general.saved'))
     } catch (err: unknown) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     } finally {
       setSavingPrompt(false)
     }

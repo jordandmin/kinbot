@@ -6,7 +6,7 @@ import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
 import { ModelPicker } from '@/client/components/common/ModelPicker'
 import { InfoTip } from '@/client/components/common/InfoTip'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, toastError } from '@/client/lib/api'
 import { useModels, type ProviderModel } from '@/client/hooks/useModels'
 
 export interface MemoryModelConfigRef {
@@ -93,7 +93,7 @@ export const MemoryModelConfig = forwardRef<MemoryModelConfigRef, MemoryModelCon
         setInitialExtractionModel(extractionModel)
         toast.success(t('settings.memories.modelSaved'))
       } catch (err: unknown) {
-        toast.error(getErrorMessage(err))
+        toastError(err)
       } finally {
         setSavingExtraction(false)
       }
@@ -106,7 +106,7 @@ export const MemoryModelConfig = forwardRef<MemoryModelConfigRef, MemoryModelCon
         setInitialEmbeddingModel(embeddingModel)
         toast.success(t('settings.memories.modelSaved'))
       } catch (err: unknown) {
-        toast.error(getErrorMessage(err))
+        toastError(err)
       } finally {
         setSavingEmbedding(false)
       }
@@ -126,7 +126,7 @@ export const MemoryModelConfig = forwardRef<MemoryModelConfigRef, MemoryModelCon
           toast.success(t('settings.memories.reembedSuccess', result))
         }
       } catch (err: unknown) {
-        toast.error(getErrorMessage(err))
+        toastError(err)
       } finally {
         setReembedding(false)
       }

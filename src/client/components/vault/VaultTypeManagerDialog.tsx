@@ -22,7 +22,7 @@ import {
 } from '@/client/components/ui/select'
 import { Loader2, Plus, Trash2, GripVertical } from 'lucide-react'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
-import { api, getErrorMessage } from '@/client/lib/api'
+import { api, getErrorMessage, toastError } from '@/client/lib/api'
 import type { VaultTypeSummary, VaultTypeField, VaultFieldType } from '@/shared/types'
 
 interface VaultTypeManagerDialogProps {
@@ -136,7 +136,7 @@ export function VaultTypeManagerDialog({
       onTypesChanged()
       toast.success(t('settings.vault.typeDeleted'))
     } catch (err) {
-      toast.error(getErrorMessage(err))
+      toastError(err)
     }
   }
 

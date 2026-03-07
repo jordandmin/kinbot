@@ -52,6 +52,7 @@ interface KinDetail {
   model: string
   providerId?: string | null
   toolConfig?: KinToolConfig | null
+  isHub?: boolean
 }
 
 interface KinFormModalProps {
