@@ -1,5 +1,6 @@
 import { embed } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { db } from '@/server/db/index'
 import { createLogger } from '@/server/logger'
 import { providers } from '@/server/db/schema'
@@ -36,6 +37,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       baseURL: providerConfig.baseUrl ?? 'https://api.voyageai.com/v1',
     })
     model = voyage.embedding(embeddingModelId)
+  } else if (provider.type === 'gemini') {
+    const google = createGoogleGenerativeAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
+    model = google.embedding(embeddingModelId)
   } else {
     throw new Error(`Provider type ${provider.type} does not support embeddings`)
   }
