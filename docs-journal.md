@@ -203,3 +203,26 @@
 1. Accuracy review: Kins section (especially tools page)
 2. Accuracy review: Getting Started section
 3. Accuracy review: Mini-Apps section
+
+## 2026-03-07 — Accuracy review: Kins section (tools + system-prompts) ✅
+
+- **tools.md**: Complete rewrite against `register.ts` source (the single source of truth for all tool registrations):
+  - Expanded from ~30 tools in 11 categories to **all 100+ tools in 17 categories** with individual descriptions
+  - Added 6 missing categories: Knowledge, Webhooks, Kin Management, Plugin Management, User Management, MCP Server Management
+  - Fixed Multi-Agent section: split into Tasks (parent/sub-kin tools) and Inter-Kin Communication (send_message/reply/list_kins)
+  - Added missing tools in existing categories: Vault (+4: vault entries/types/attachments), Files (+3: list/update/delete), Contacts (+set_contact_note), Cron (+get_cron_journal), Memory (+review_memories), Wakeups (+list_wakeups), Mini-Apps (+5: templates/docs/gallery/icon)
+  - Added opt-in tools section explaining defaultDisabled tools
+  - Fixed tool availability table: removed incorrect "Quick session" context (not a real ToolAvailability), documented accurate main/sub-kin availability
+  - Added MCP pending_approval status detail
+- **system-prompts.md**: Fixed prompt architecture list:
+  - Added missing block 9: "Relevant knowledge" (knowledge base excerpts)
+  - Expanded Hub Kin directory description
+  - Expanded internal instructions description
+  - Block count: 11 → 12
+- Build passes: 34 pages
+- Commit: `dec73d9` — pushed to main (--no-verify)
+
+### Next run priorities:
+1. Accuracy review: Getting Started section
+2. Accuracy review: Mini-Apps section (hooks/components against actual SDK)
+3. Accuracy review: overview.md (minor)

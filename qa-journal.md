@@ -838,3 +838,51 @@
 ### Next run
 - Area 11: Contacts (add, approve, edit, delete contacts)
 - Area 12: Webhooks (create, edit, test, delete webhooks)
+
+## 2026-03-07 16:40 UTC
+### Area tested: Contacts (Area 11) + Webhooks (Area 12)
+- **Pages visited:** Code review of ContactsSettings.tsx, ContactFormDialog.tsx, ContactCard.tsx, ContactNotes.tsx, ContactPlatformIds.tsx, contacts.ts (routes), contacts.ts (service), WebhooksSettings.tsx, WebhookFormDialog.tsx, WebhookCard.tsx, WebhookLogDialog.tsx, webhooks.ts (routes), webhooks.ts (service), webhooks-incoming.ts
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 4 (issues created: #131, #132, #133, #134)
+  - #131: Contact identifier label/value have no length limit or whitespace-only validation
+  - #132: Webhook name and description have no server-side length limits
+  - #133: Contact note content has no max length validation (risk: injected into Kin prompts)
+  - #134: fetchContacts/fetchWebhooks silently swallow errors (same pattern as #115, #127)
+
+- **UX suggestions:** 3 (issues created: #135, #136, #137)
+  - #135: No UI to manually add platform IDs to a contact (API exists but no form)
+  - #136: No search/filter on contacts list (backend search exists but no UI)
+  - #137: No search/filter on webhooks list, no Kin filter dropdown
+
+#### All clear:
+- Contact CRUD with proper SSE real-time updates
+- Contact form dialog: clean layout, type selector (human/kin), linked user/kin selector, identifier management with LabelCombo
+- Contact name validation: trim + empty check + 200 char max (server-side)
+- Contact type validation: only "human" or "kin" accepted
+- Duplicate user-contact link prevention (409 with helpful message)
+- Contact card: nice layout with icon, badges for type/linked user, identifier badges
+- Contact delete: confirmation dialog with cascade warning for platform IDs
+- Contact notes: inline editing with cancel/save, scope selector (global/private), Kin selector
+- Contact notes: proper visibility rules (admin sees all, Kin sees global + own private)
+- Platform IDs: display with platform icons, hover-to-reveal revoke button
+- Webhook CRUD with SSE real-time updates
+- Webhook creation: token reveal dialog with show/hide toggle and copy buttons
+- Webhook token regeneration: confirmation dialog before regenerating
+- Webhook card: clean layout with Kin badge, trigger count, last triggered date, active/inactive state
+- Webhook active/inactive toggle with visual dimming
+- Webhook URL copy button
+- Webhook trigger logs dialog with expandable payloads, source IP badges, empty state
+- Webhook incoming route: proper rate limiting (sliding window per webhook), token validation (timing-safe), payload size limit, inactive check
+- Webhook log pruning: retention period + per-webhook cap, runs every 6 hours
+- Max webhooks per Kin limit enforced
+- Contact identifiers: batch creation during contact create
+- Contact identifier update: proper diff logic (detect added/changed/removed identifiers)
+- searchContacts: searches across names, identifiers, and notes with deduplication
+- ensureUserContactsExist: auto-creates contacts for all users (backfill)
+- deleteNotesByKin: cleanup when a Kin is deleted
+- listContactsForPrompt: efficient summary with linked kin slug and identifier summary
+
+### Next run
+- Area 13: MCP servers (add, configure, remove MCP servers)
+- Area 14: Account (profile, password, language settings)

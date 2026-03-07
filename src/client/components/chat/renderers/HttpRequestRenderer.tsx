@@ -40,7 +40,7 @@ export function HttpRequestRenderer({ args, result, status }: ToolResultRenderer
   const url = typeof args.url === 'string' ? args.url : null
 
   const res = result as Record<string, unknown> | null | undefined
-  const statusCode = typeof res?.status === 'number' ? res.status : typeof res?.statusCode === 'number' ? res.statusCode : null
+  const statusCode: number | null = typeof res?.status === 'number' ? res.status : typeof res?.statusCode === 'number' ? res.statusCode : null
   const responseBody = res?.body ?? res?.data
   const headers = res?.headers as Record<string, string> | null | undefined
   const requestBody = args.body
