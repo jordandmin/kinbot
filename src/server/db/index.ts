@@ -141,6 +141,49 @@ export function initVirtualTables() {
     log.warn('sqlite-vec: virtual table creation failed — vector search disabled')
   }
 
+  // FTS5: full-text search on knowledge chunks
+  sqlite.run(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_chunks_fts USING fts5(
+      content,
+      content_rowid='rowid',
+      tokenize='unicode61'
+    )
+  `)
+
+  // Triggers to sync knowledge_chunks_fts with knowledge_chunks
+  sqlite.run(`
+    CREATE TRIGGER IF NOT EXISTS knowledge_chunks_fts_insert AFTER INSERT ON knowledge_chunks
+    WHEN new.content IS NOT NULL
+    BEGIN
+      INSERT INTO knowledge_chunks_fts(rowid, content) VALUES (new.rowid, new.content);
+    END
+  `)
+  sqlite.run(`
+    CREATE TRIGGER IF NOT EXISTS knowledge_chunks_fts_update AFTER UPDATE OF content ON knowledge_chunks
+    WHEN new.content IS NOT NULL
+    BEGIN
+      UPDATE knowledge_chunks_fts SET content = new.content WHERE rowid = old.rowid;
+    END
+  `)
+  sqlite.run(`
+    CREATE TRIGGER IF NOT EXISTS knowledge_chunks_fts_delete AFTER DELETE ON knowledge_chunks
+    BEGIN
+      DELETE FROM knowledge_chunks_fts WHERE rowid = old.rowid;
+    END
+  `)
+
+  // sqlite-vec: vector search on knowledge chunk embeddings
+  try {
+    sqlite.run(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_chunks_vec USING vec0(
+        chunk_id text PRIMARY KEY,
+        embedding float[${config.memory.embeddingDimension}]
+      )
+    `)
+  } catch {
+    log.warn('sqlite-vec: knowledge_chunks_vec creation failed - vector search disabled for knowledge')
+  }
+
   // Backfill slugs for existing kins that don't have one
   backfillSlugs()
 }
