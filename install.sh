@@ -1582,6 +1582,66 @@ case "${1:-}" in
     fi
     exec bash "$_install_sh" --cron "${2:-status}"
     ;;
+  health)
+    # Lightweight health check for monitoring tools (Uptime Kuma, cron, Prometheus, etc.)
+    # Exit 0 = healthy, 1 = unhealthy. Minimal output, suitable for scripting.
+    _port=""
+    if [ -f "$ENV_FILE" ]; then
+      _port="$(grep '^PORT=' "$ENV_FILE" 2>/dev/null | cut -d= -f2)" || _port=""
+    fi
+    _port="${_port:-3000}"
+    _json=false
+    [ "${2:-}" = "--json" ] && _json=true
+
+    _healthy=true
+    _reason=""
+
+    # Check process
+    if ! is_running; then
+      _healthy=false
+      _reason="process not running"
+    fi
+
+    # Check HTTP
+    _http_code="000"
+    if [ "$_healthy" = true ] && command -v curl &>/dev/null; then
+      _http_code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${_port}/" --max-time 5 2>/dev/null || echo "000")"
+      if [ "$_http_code" = "000" ]; then
+        _healthy=false
+        _reason="http not responding"
+      fi
+    fi
+
+    # Check disk space (warn under 200MB)
+    _disk_low=false
+    _avail_mb=""
+    _avail_kb="$(df -k "$DATA_DIR" 2>/dev/null | awk 'NR==2 {print $4}')" || _avail_kb=""
+    if [ -n "$_avail_kb" ] && [ "$_avail_kb" -gt 0 ] 2>/dev/null; then
+      _avail_mb=$((_avail_kb / 1024))
+      if [ "$_avail_mb" -lt 200 ] 2>/dev/null; then
+        _disk_low=true
+      fi
+    fi
+
+    if [ "$_json" = true ]; then
+      _pid_val="$(get_pid)"
+      [ -z "$_pid_val" ] && _pid_val="null" || _pid_val="$_pid_val"
+      [ -z "$_avail_mb" ] && _avail_mb="null"
+      echo "{\"healthy\":$_healthy,\"pid\":$_pid_val,\"port\":$_port,\"http\":$_http_code,\"disk_mb\":$_avail_mb,\"disk_low\":$_disk_low}"
+    else
+      if [ "$_healthy" = true ]; then
+        if [ "$_disk_low" = true ]; then
+          echo "healthy (disk low: ${_avail_mb}MB)"
+        else
+          echo "healthy"
+        fi
+      else
+        echo "unhealthy: $_reason"
+      fi
+    fi
+
+    [ "$_healthy" = true ] && exit 0 || exit 1
+    ;;
   *)
     echo "KinBot service manager"
     echo ""
@@ -1592,6 +1652,7 @@ case "${1:-}" in
     echo "  stop          Stop KinBot (graceful, then force after 10s)"
     echo "  restart       Stop and start KinBot"
     echo "  status        Show KinBot status, uptime, and resource usage"
+    echo "  health        Quick health check for monitoring (exit 0/1, use --json)"
     echo "  logs          Tail the log file (use 'logs -n 50' for recent lines)"
     echo "  log-rotate    Rotate the log file now (archives to .1/.2/.3)"
     echo ""
@@ -2395,6 +2456,8 @@ show_help() {
 
   echo -e "${BOLD}DIAGNOSTICS${NC}"
   echo "  --status        Check current installation health"
+  echo "  --health        Quick health check for monitoring (exit 0=ok, 1=fail)"
+  echo "                  --json: machine-readable JSON output"
   echo "  --test          Run self-tests (validates DB, build, HTTP, etc.)"
   echo "  --doctor        Generate a diagnostic report (for bug reports / support)"
   echo "  --version       Show installed version and check for updates"
@@ -2461,6 +2524,10 @@ show_help() {
   echo -e "  ${DIM}# Back up and restore${NC}"
   echo "  bash install.sh --backup ~/kinbot-backup.db"
   echo "  bash install.sh --restore ~/kinbot-backup.db"
+  echo ""
+  echo -e "  ${DIM}# Monitoring / health checks${NC}"
+  echo "  bash install.sh --health              ${DIM}# exit 0=ok, 1=fail${NC}"
+  echo "  bash install.sh --health --json       ${DIM}# JSON for dashboards${NC}"
   echo ""
   echo -e "  ${DIM}# Troubleshoot${NC}"
   echo "  bash install.sh --status"
@@ -4758,6 +4825,142 @@ do_reset() {
 }
 
 # ─── Self-test ────────────────────────────────────────────────────────────────
+# ─── Health check (lightweight, for monitoring) ──────────────────────────────
+# Designed for: Uptime Kuma, cron watchdogs, Prometheus node_exporter textfile,
+# Healthchecks.io, or any tool that checks exit codes.
+#
+# Usage:
+#   bash install.sh --health            # "healthy" / "unhealthy: reason", exit 0/1
+#   bash install.sh --health --json     # JSON output for dashboards
+#
+# Exit codes: 0 = healthy, 1 = unhealthy
+do_health() {
+  # Minimal env setup (no banners, no detect_os overhead)
+  local is_root=false
+  [ "$(id -u)" -eq 0 ] && is_root=true
+  local kinbot_data_dir
+  if [ "$is_root" = true ]; then
+    kinbot_data_dir="${KINBOT_DATA_DIR:-/var/lib/kinbot}"
+  else
+    kinbot_data_dir="${KINBOT_DATA_DIR:-$HOME/.local/share/kinbot}"
+  fi
+
+  local env_file="$kinbot_data_dir/kinbot.env"
+  local pid_file="$kinbot_data_dir/kinbot.pid"
+  local db_file="$kinbot_data_dir/kinbot.db"
+
+  # Parse --json flag
+  local json_output=false
+  for a in "$@"; do
+    [ "$a" = "--json" ] && json_output=true
+  done
+
+  # Read port from config
+  local port="3000"
+  if [ -f "$env_file" ]; then
+    local cfg_port
+    cfg_port="$(grep '^PORT=' "$env_file" 2>/dev/null | cut -d= -f2)" || cfg_port=""
+    [ -n "$cfg_port" ] && port="$cfg_port"
+  fi
+
+  local healthy=true
+  local reason=""
+  local pid=""
+  local http_code="000"
+
+  # Check process is running
+  # Detect init system quickly
+  local os_name init_sys
+  os_name="$(uname -s)"
+  if [ "$os_name" = "Darwin" ]; then
+    init_sys="launchd"
+  elif command -v systemctl &>/dev/null && systemctl --version &>/dev/null 2>&1; then
+    init_sys="systemd"
+  else
+    init_sys="script"
+  fi
+
+  if [ "$init_sys" = "launchd" ]; then
+    if ! launchctl list 2>/dev/null | grep -q io.kinbot.server; then
+      healthy=false
+      reason="service not loaded"
+    fi
+  elif [ "$init_sys" = "script" ]; then
+    if [ -f "$pid_file" ]; then
+      pid="$(cat "$pid_file" 2>/dev/null || echo "")"
+      if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+        healthy=false
+        reason="process not running"
+        pid=""
+      fi
+    else
+      healthy=false
+      reason="no pid file"
+    fi
+  elif [ "$is_root" = true ]; then
+    if ! systemctl is-active --quiet kinbot 2>/dev/null; then
+      healthy=false
+      reason="service not active"
+    else
+      pid="$(systemctl show kinbot -p MainPID --value 2>/dev/null || echo "")"
+      [ "$pid" = "0" ] && pid=""
+    fi
+  else
+    if ! systemctl --user is-active --quiet kinbot 2>/dev/null; then
+      healthy=false
+      reason="service not active"
+    else
+      pid="$(systemctl --user show kinbot -p MainPID --value 2>/dev/null || echo "")"
+      [ "$pid" = "0" ] && pid=""
+    fi
+  fi
+
+  # Check HTTP response
+  if [ "$healthy" = true ] && command -v curl &>/dev/null; then
+    http_code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/" --max-time 5 2>/dev/null || echo "000")"
+    if [ "$http_code" = "000" ]; then
+      healthy=false
+      reason="http not responding on port $port"
+    fi
+  fi
+
+  # Check disk space
+  local disk_mb=""
+  local disk_low=false
+  local avail_kb
+  avail_kb="$(df -k "$kinbot_data_dir" 2>/dev/null | awk 'NR==2 {print $4}')" || avail_kb=""
+  if [ -n "$avail_kb" ] && [ "$avail_kb" -gt 0 ] 2>/dev/null; then
+    disk_mb=$((avail_kb / 1024))
+    [ "$disk_mb" -lt 200 ] 2>/dev/null && disk_low=true
+  fi
+
+  # Check database exists
+  local db_ok=true
+  [ ! -f "$db_file" ] && db_ok=false
+
+  # Output
+  if [ "$json_output" = true ]; then
+    local pid_json="${pid:-null}"
+    [ -n "$pid" ] && pid_json="$pid"
+    local disk_json="${disk_mb:-null}"
+    local reason_json="null"
+    [ -n "$reason" ] && reason_json="\"$reason\""
+    echo "{\"healthy\":$healthy,\"pid\":$pid_json,\"port\":$port,\"http\":$http_code,\"disk_mb\":$disk_json,\"disk_low\":$disk_low,\"db_exists\":$db_ok,\"reason\":$reason_json}"
+  else
+    if [ "$healthy" = true ]; then
+      local extra=""
+      [ "$disk_low" = true ] && extra=" (disk low: ${disk_mb}MB)"
+      [ "$db_ok" = false ] && extra="${extra} (no database)"
+      echo "healthy${extra}"
+    else
+      echo "unhealthy: $reason"
+    fi
+  fi
+
+  [ "$healthy" = true ] && exit 0 || exit 1
+}
+
+# ─── Self-test ────────────────────────────────────────────────────────────────
 do_test() {
   echo ""
   echo -e "${BOLD}KinBot Self-Test${NC}"
@@ -5401,7 +5604,7 @@ _kinbot_completions() {
   local prev="${COMP_WORDS[COMP_CWORD-1]}"
 
   local commands="--help --update --docker --dry-run --reset --uninstall
-    --start --stop --restart --logs --status --test --doctor
+    --start --stop --restart --logs --status --health --test --doctor
     --config --env --backup --restore --version --changelog
     --cron --completions --yes --quiet --no-color"
 
@@ -5460,6 +5663,7 @@ _kinbot() {
     '--restart:Restart the service'
     '--logs:Show logs (follow or last N lines)'
     '--status:Check installation health'
+    '--health:Quick health check for monitoring (exit 0/1)'
     '--test:Run self-tests'
     '--doctor:Generate diagnostic report'
     '--config:Re-run configuration wizard'
@@ -5502,6 +5706,7 @@ complete -c kinbot -l stop -d 'Stop the service'
 complete -c kinbot -l restart -d 'Restart the service'
 complete -c kinbot -l logs -d 'Show logs'
 complete -c kinbot -l status -d 'Check installation health'
+complete -c kinbot -l health -d 'Quick health check for monitoring'
 complete -c kinbot -l test -d 'Run self-tests'
 complete -c kinbot -l doctor -d 'Generate diagnostic report'
 complete -c kinbot -l config -d 'Re-run configuration wizard'
@@ -5561,6 +5766,11 @@ main() {
       --status|status)
         trap - INT TERM
         check_status
+        exit 0
+        ;;
+      --health|health)
+        trap - INT TERM
+        do_health "$@"
         exit 0
         ;;
       --test|test)
