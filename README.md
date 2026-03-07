@@ -96,31 +96,37 @@ AES-256-GCM vault · Auth with roles · Invitation system · 100% self-hosted ·
 - **Responsive UI** — mobile-friendly settings, contextual info tips, suggestion chips in empty chat states
 - **System info** — version, uptime, and stats visible in settings
 
-#### Built-in Tools (100+)
+#### Built-in Tools (120+)
 
 Kins have access to a rich set of native tools out of the box, no configuration needed:
 
-**Memory & Knowledge** — `recall`, `memorize`, `update_memory`, `forget`, `list_memories`, `search_history`
+**Memory & Knowledge** — `recall`, `memorize`, `update_memory`, `forget`, `list_memories`, `review_memories`, `search_history`, `search_knowledge`, `list_knowledge_sources`
 
 **Web & Browsing** — `web_search`, `browse_url`, `extract_links`, `screenshot_url`
 
-**Contacts** — `get_contact`, `search_contacts`, `create_contact`, `update_contact`, `delete_contact`, `find_contact_by_identifier`
+**Contacts** — `get_contact`, `search_contacts`, `create_contact`, `update_contact`, `delete_contact`, `find_contact_by_identifier`, `set_contact_note`
 
 **Vault & Secrets** — `get_secret`, `create_secret`, `update_secret`, `delete_secret`, `search_secrets`, `redact_message`, vault entries & attachments
 
-**Multi-Agent** — `spawn_self`, `spawn_kin`, `send_message`, `reply`, `list_kins`, `report_to_parent`, `request_input`, task management
+**Multi-Agent** — `spawn_self`, `spawn_kin`, `send_message`, `reply`, `list_kins`, `report_to_parent`, `request_input`, task management, `create_kin`, `update_kin`, `delete_kin`, `get_kin_details`
 
-**Automation** — `create_cron`, `update_cron`, `delete_cron`, `list_crons`, `trigger_cron`, `wake_me_in`, `cancel_wakeup`, webhooks (CRUD)
+**Automation** — `create_cron`, `update_cron`, `delete_cron`, `list_crons`, `trigger_cron`, `get_cron_journal`, `wake_me_in`, `cancel_wakeup`, `list_wakeups`, webhooks (CRUD)
 
-**Mini Apps** — create, update, delete, read/write files, snapshots, rollback, persistent key-value storage, browse & clone from the App Gallery
+**Mini Apps** — create, update, delete, read/write files, snapshots, rollback, persistent key-value storage, browse & clone from the App Gallery, templates, docs, icon generation
 
 **Channels** — `list_channels`, `list_channel_conversations`, `send_channel_message`
 
+**Plugins** — `list_installed_plugins`, `browse_plugin_store`, `install_plugin`, `uninstall_plugin`, `enable_plugin`, `disable_plugin`, `configure_plugin`, `get_plugin_details`
+
 **Custom Tools** — `register_tool`, `run_custom_tool`, `list_custom_tools` (Kins write and run their own scripts)
 
-**Files & Images** — `store_file`, `get_stored_file`, `search_stored_files`, `generate_image`, `list_image_models`
+**Filesystem** — `read_file`, `write_file`, `edit_file`, `list_directory` (read, create, edit, and browse files in the workspace)
 
-**System** — `run_shell`, `execute_sql`, `get_platform_logs`, `get_system_info`, `prompt_human`, `notify`, user management, MCP server management
+**Files & Images** — `store_file`, `get_stored_file`, `list_stored_files`, `search_stored_files`, `update_stored_file`, `delete_stored_file`, `attach_file`, `generate_image`, `list_image_models`
+
+**System** — `run_shell`, `execute_sql`, `get_platform_logs`, `get_system_info`, user management
+
+**MCP** — `add_mcp_server`, `update_mcp_server`, `remove_mcp_server`, `list_mcp_servers`
 
 **HTTP** — `http_request` (make HTTP requests to external APIs with full method/header/body control)
 
