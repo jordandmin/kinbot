@@ -4,7 +4,9 @@ import { Card, CardContent } from '@/client/components/ui/card'
 import { Switch } from '@/client/components/ui/switch'
 import { KinBadge } from '@/client/components/common/KinBadge'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
+import { Badge } from '@/client/components/ui/badge'
 import { Pencil, Trash2, Webhook, Copy, RefreshCw, History } from 'lucide-react'
+import { cn } from '@/client/lib/utils'
 import { useCopyToClipboard } from '@/client/hooks/useCopyToClipboard'
 import type { WebhookSummary } from '@/shared/types'
 
@@ -26,16 +28,17 @@ export function WebhookCard({ webhook, onEdit, onDelete, onToggle, onRegenerateT
     : t('settings.webhooks.never')
 
   return (
-    <Card className="surface-card">
+    <Card className={cn("surface-card transition-opacity", !webhook.isActive && "opacity-60")}>
       <CardContent className="flex items-center justify-between py-3 px-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="shrink-0">
-            <Webhook className="size-5 text-info" />
+            <Webhook className={cn("size-5", webhook.isActive ? "text-info" : "text-muted-foreground")} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-medium truncate">{webhook.name}</p>
               <KinBadge name={webhook.kinName} avatarUrl={webhook.kinAvatarUrl} />
+              {!webhook.isActive && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t('settings.webhooks.inactive')}</Badge>}
             </div>
             {webhook.description && (
               <p className="text-xs text-muted-foreground truncate mt-0.5">{webhook.description}</p>
