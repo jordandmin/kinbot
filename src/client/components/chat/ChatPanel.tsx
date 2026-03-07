@@ -116,19 +116,6 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     })
   }, [])
 
-  const handleSearchChange = useCallback((query: string, matchIndex: number, matchCount: number) => {
-    setSearchQuery(query)
-    if (query.trim().length < 2 || matchCount === 0) {
-      setSearchHighlightId(null)
-      return
-    }
-    // Find the matching message id
-    const lowerQuery = query.toLowerCase()
-    const matchingMessages = messages.filter((m) => m.content.toLowerCase().includes(lowerQuery))
-    if (matchingMessages[matchIndex]) {
-      setSearchHighlightId(matchingMessages[matchIndex].id)
-    }
-  }, [messages])
   const isCompacting = liveCompacting?.status === 'running'
 
   const handleQuickSession = useCallback(() => {
@@ -423,6 +410,20 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     return [...messages, streamingMessage]
   }, [messages, streamingMessage])
 
+  const handleSearchChange = useCallback((query: string, matchIndex: number, matchCount: number) => {
+    setSearchQuery(query)
+    if (query.trim().length < 2 || matchCount === 0) {
+      setSearchHighlightId(null)
+      return
+    }
+    // Find the matching message id
+    const lowerQuery = query.toLowerCase()
+    const matchingMessages = displayMessages.filter((m) => m.content.toLowerCase().includes(lowerQuery))
+    if (matchingMessages[matchIndex]) {
+      setSearchHighlightId(matchingMessages[matchIndex].id)
+    }
+  }, [displayMessages])
+
   // Pre-compute date separators, grouping, search matches — only recalculates
   // when displayMessages/search change, NOT when scroll button visibility changes.
   const processedMessages = useMemo(() => {
@@ -518,7 +519,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
           <ConversationSearch
             onClose={toggleSearch}
             onSearchChange={handleSearchChange}
-            messages={messages}
+            messages={displayMessages}
           />
         </Suspense>
       )}
