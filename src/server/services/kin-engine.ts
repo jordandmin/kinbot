@@ -517,11 +517,23 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
         switch (part.type) {
           case 'text-delta': {
+            const isFirstToken = fullContent.length === 0
             fullContent += part.text
             sseManager.sendToKin(kinId, {
               type: 'chat:token',
               kinId,
-              data: { messageId: assistantMessageId, token: part.text },
+              data: {
+                messageId: assistantMessageId,
+                token: part.text,
+                // Include source metadata on first token so the client can
+                // render correct attribution from the start
+                ...(isFirstToken && {
+                  sourceType: 'kin',
+                  sourceId: kinId,
+                  sourceName: kin.name,
+                  sourceAvatarUrl: kin.avatarUrl,
+                }),
+              },
             })
             break
           }
@@ -608,13 +620,18 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       })
     }
 
-    // Emit chat:done SSE event
+    // Emit chat:done SSE event (include source metadata so the client can
+    // attribute the message correctly without waiting for fetchMessages)
     sseManager.sendToKin(kinId, {
       type: 'chat:done',
       kinId,
       data: {
         messageId: assistantMessageId,
         content: fullContent,
+        sourceType: 'kin',
+        sourceId: kinId,
+        sourceName: kin.name,
+        sourceAvatarUrl: kin.avatarUrl,
       },
     })
 
