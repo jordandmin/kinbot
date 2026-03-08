@@ -39,6 +39,50 @@ interface MemorySearchResult {
   updatedAt: Date | null
 }
 
+// ─── Dedup (lightweight, raw vector distance) ───────────────────────────────
+
+/**
+ * Check if a memory content is a near-duplicate of an existing memory for a Kin.
+ * Uses raw cosine distance (no boosts, no HyDE, no multi-query) for speed and accuracy.
+ * Returns true if a duplicate is found (distance < threshold).
+ */
+export async function isDuplicateMemory(
+  kinId: string,
+  content: string,
+  distanceThreshold = 0.15, // cosine distance; 0.15 ≈ similarity > 0.85
+): Promise<boolean> {
+  try {
+    const embedding = await generateEmbedding(content)
+    const queryBuf = Buffer.from(new Float32Array(embedding).buffer)
+
+    const rows = sqlite
+      .query<{ memory_id: string; distance: number }, [Buffer, number]>(
+        `SELECT memory_id, distance
+         FROM memories_vec
+         WHERE embedding MATCH ? AND k = ?
+         ORDER BY distance`,
+      )
+      .all(queryBuf, 3)
+
+    if (rows.length === 0) return false
+
+    // Filter to only this Kin's memories
+    const ids = rows.map((r) => r.memory_id)
+    const placeholders = ids.map(() => '?').join(', ')
+    const kinMemories = sqlite
+      .query<{ id: string }, string[]>(
+        `SELECT id FROM memories WHERE id IN (${placeholders}) AND kin_id = ?`,
+      )
+      .all(...ids, kinId)
+    const kinIds = new Set(kinMemories.map((m) => m.id))
+
+    return rows.some((r) => kinIds.has(r.memory_id) && r.distance < distanceThreshold)
+  } catch {
+    // If embeddings unavailable, fall back to allowing the memory
+    return false
+  }
+}
+
 // ─── CRUD ────────────────────────────────────────────────────────────────────
 
 export async function getMemory(memoryId: string, kinId: string) {
