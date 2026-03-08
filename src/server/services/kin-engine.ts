@@ -57,6 +57,19 @@ const activeAbortControllers = new Map<string, AbortController>()
 // AbortController registry for quick sessions — keyed by sessionId
 const quickAbortControllers = new Map<string, AbortController>()
 
+// Cache of last computed context usage per Kin (populated after each LLM call)
+const lastContextUsage = new Map<string, { contextTokens: number; contextWindow: number; updatedAt: number }>()
+
+/** Store the latest context usage for a Kin (called after LLM estimation). */
+export function setLastContextUsage(kinId: string, contextTokens: number, contextWindow: number) {
+  lastContextUsage.set(kinId, { contextTokens, contextWindow, updatedAt: Date.now() })
+}
+
+/** Get the cached context usage for a Kin, if available. */
+export function getLastContextUsage(kinId: string) {
+  return lastContextUsage.get(kinId) ?? null
+}
+
 /**
  * Extract a human-readable message from a raw API error object.
  * Handles nested structures like { error: { message: "..." } } from Anthropic/OpenAI.
@@ -453,6 +466,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     // Estimate total context tokens and resolve model context window
     const contextTokens = estimateContextTokens(systemPrompt, messageHistory, hasTools ? tools : undefined)
     const contextWindow = getModelContextWindow(kin.model)
+    setLastContextUsage(kinId, contextTokens, contextWindow)
     log.debug({ kinId, toolCount: Object.keys(tools).length, modelId: kin.model, contextTokens, contextWindow }, 'Starting LLM stream')
 
     // Update the queue event with real context usage (the initial queue:update

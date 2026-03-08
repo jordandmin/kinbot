@@ -40,6 +40,7 @@ const OPENAI_COMPATIBLE_PROVIDERS = new Set([
   'mistral', 'perplexity', 'xai', 'ollama', 'cohere',
 ])
 import { createLogger } from '@/server/logger'
+import { getLastContextUsage } from '@/server/services/kin-engine'
 import { getModelContextWindow } from '@/shared/model-context-windows'
 
 const log = createLogger('routes:kins')
@@ -319,25 +320,29 @@ kinRoutes.post('/avatar/preview', async (c) => {
   }
 })
 
-// GET /api/kins/:id/context-usage — lightweight context token estimation
+// GET /api/kins/:id/context-usage — context token estimation
+// Returns cached values from the last LLM call when available (accurate),
+// falls back to a rough estimation for kins that haven't processed a message yet.
 kinRoutes.get('/:id/context-usage', async (c) => {
   const kin = resolveKinByIdOrSlug(c.req.param('id'))
   if (!kin) {
     return c.json({ error: { code: 'KIN_NOT_FOUND', message: 'Kin not found' } }, 404)
   }
 
-  const contextWindow = getModelContextWindow(kin.model)
+  // Use cached context usage from the last LLM call if available
+  const cached = getLastContextUsage(kin.id)
+  if (cached) {
+    return c.json({ contextTokens: cached.contextTokens, contextWindow: cached.contextWindow })
+  }
 
-  // Rough token estimation: ~4 chars per token
+  // Fallback: rough estimation for kins that haven't processed a message yet
+  const contextWindow = getModelContextWindow(kin.model)
   const estimateTokens = (text: string) => Math.ceil(text.length / 4)
 
   let contextTokens = 0
-
-  // System prompt baseline: kin fields + overhead for tools/memories/formatting
   contextTokens += estimateTokens([kin.name, kin.role, kin.character, kin.expertise].join(' '))
-  contextTokens += 1500 // baseline overhead for prompt template, tools, memories, etc.
+  contextTokens += 1500
 
-  // Compacted summary (if any)
   const snapshot = await db
     .select({ summary: compactingSnapshots.summary, createdAt: compactingSnapshots.createdAt })
     .from(compactingSnapshots)
@@ -348,7 +353,6 @@ kinRoutes.get('/:id/context-usage', async (c) => {
     contextTokens += estimateTokens(snapshot.summary)
   }
 
-  // Recent messages (same logic as buildMessageHistory in kin-engine)
   const recentMsgs = await db
     .select({ content: messages.content, createdAt: messages.createdAt })
     .from(messages)
