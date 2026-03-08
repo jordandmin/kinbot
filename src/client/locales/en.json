@@ -639,7 +639,8 @@
       "open": "History",
       "empty": "No past sessions yet. Closed quick sessions will appear here.",
       "untitled": "Untitled session",
-      "noMessages": "No messages in this session"
+      "noMessages": "No messages in this session",
+      "loadMore": "Load more"
     }
   },
   "taskDetail": {

@@ -66,10 +66,13 @@ export function QuickSessionHistory({ kinId, kinName, kinAvatarUrl, onBack }: Qu
   const {
     sessions,
     isLoading,
+    isLoadingMore,
+    hasMore,
     selectedSession,
     selectedMessages,
     isLoadingMessages,
     fetchHistory,
+    loadMore,
     viewSession,
     clearSelection,
   } = useQuickSessionHistory(kinId)
@@ -160,13 +163,29 @@ export function QuickSessionHistory({ kinId, kinName, kinAvatarUrl, onBack }: Qu
               </p>
             </div>
           ) : (
-            sessions.map((session) => (
-              <SessionCard
-                key={session.id}
-                session={session}
-                onClick={() => viewSession(session)}
-              />
-            ))
+            <>
+              {sessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  onClick={() => viewSession(session)}
+                />
+              ))}
+              {hasMore && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground"
+                  onClick={loadMore}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? (
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                  ) : null}
+                  {t('quickChat.history.loadMore', 'Load more')}
+                </Button>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>

@@ -95,6 +95,7 @@ kinScopedRoutes.get('/', async (c) => {
   const user = c.get('user') as { id: string; name: string }
   const statusFilter = (c.req.query('status') ?? 'active') as string
   const limitParam = Math.min(Math.max(parseInt(c.req.query('limit') ?? '20', 10) || 20, 1), 50)
+  const offsetParam = Math.max(parseInt(c.req.query('offset') ?? '0', 10) || 0, 0)
 
   const conditions = [
     eq(quickSessions.kinId, kinId),
@@ -111,8 +112,12 @@ kinScopedRoutes.get('/', async (c) => {
     .from(quickSessions)
     .where(and(...conditions))
     .orderBy(desc(quickSessions.createdAt))
-    .limit(limitParam)
+    .limit(limitParam + 1)
+    .offset(offsetParam)
     .all()
+
+  const hasMore = sessions.length > limitParam
+  if (hasMore) sessions.pop()
 
   // For closed sessions, include message count
   const sessionIds = sessions.filter(s => s.status === 'closed').map(s => s.id)
@@ -140,6 +145,7 @@ kinScopedRoutes.get('/', async (c) => {
       closedAt: s.closedAt ? (s.closedAt as Date).getTime() : null,
       messageCount: messageCounts.get(s.id) ?? undefined,
     })),
+    hasMore,
   })
 })
 
