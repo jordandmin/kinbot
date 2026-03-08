@@ -252,9 +252,12 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       const newHeight = viewport.clientHeight
       const delta = prevHeight - newHeight // positive when viewport shrinks
       prevHeight = newHeight
-      if (delta > 0 && isNearBottomRef.current) {
-        // Viewport shrunk while user was near bottom — compensate so they stay pinned
-        viewport.scrollTop += delta
+      if (isNearBottomRef.current) {
+        // Viewport resized while user was near bottom — snap to bottom to stay pinned.
+        // Using scrollHeight (not += delta) is more robust: it handles both shrink
+        // (QueuePreview appearing) and grow (QueuePreview disappearing) correctly,
+        // and avoids drift from multiple rapid resizes.
+        viewport.scrollTop = viewport.scrollHeight
       }
       checkNearBottom()
     })
@@ -318,6 +321,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   }, [messages.length])
 
   // Auto-scroll to bottom on new messages / streaming tokens / processing start / live tasks
+  // Uses direct scrollTop assignment instead of scrollIntoView to avoid race conditions
+  // with the ResizeObserver that compensates for QueuePreview height changes.
   const isProcessing = queueState?.isProcessing ?? false
   useEffect(() => {
     // Skip if the layout effect already handled the scroll for this render
@@ -325,10 +330,18 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       justDidInstantScrollRef.current = false
       return
     }
-    // Suppress smooth scroll while waiting for instant scroll (kin switch in progress)
+    // Suppress while waiting for instant scroll (kin switch in progress)
     if (needsInstantScrollRef.current) return
     if (autoScroll && isNearBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+      // Use rAF to ensure layout (including QueuePreview resize) has settled
+      requestAnimationFrame(() => {
+        const scrollArea = scrollAreaRef.current
+        if (!scrollArea) return
+        const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
+        if (viewport) {
+          viewport.scrollTop = viewport.scrollHeight
+        }
+      })
     }
   }, [messages.length, streamingMessage, isStreaming, isProcessing, liveTasks, liveCompacting, pendingPrompts, autoScroll, queueItems.length])
 
