@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Moon, Sun, Github, Menu, X, Star, BookOpen } from 'lucide-react'
 import { useGitHubData } from './GitHubDataProvider'
@@ -22,6 +22,119 @@ function formatStarCount(count: number): string {
     return k % 1 === 0 ? `${k}k` : `${k.toFixed(1)}k`
   }
   return count.toString()
+}
+
+function MobileMenu({ open, location, starCount }: { open: boolean; location: ReturnType<typeof useLocation>; starCount: number | null }) {
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState(0)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setVisible(true)
+      // Measure content height on next frame
+      requestAnimationFrame(() => {
+        if (contentRef.current) {
+          setHeight(contentRef.current.scrollHeight)
+        }
+      })
+    } else {
+      setHeight(0)
+      // Wait for collapse animation to finish before unmounting
+      const timer = setTimeout(() => setVisible(false), 300)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
+
+  if (!visible && !open) return null
+
+  return (
+    <div
+      className="md:hidden overflow-hidden transition-[height,opacity] duration-300 ease-out"
+      style={{
+        height: height,
+        opacity: open ? 1 : 0,
+        background: 'var(--color-glass-strong-bg)',
+        backdropFilter: 'blur(20px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(200%)',
+        borderTop: '1px solid var(--color-border)',
+      }}
+    >
+      <div
+        ref={contentRef}
+        id="mobile-nav-menu"
+        role="navigation"
+        aria-label="Mobile navigation"
+        className="px-6 pb-6 pt-2"
+      >
+        <div className="flex flex-col gap-1">
+          {NAV_LINKS.map(({ label, to }, i) => {
+            const isActive = location.pathname === to
+            return (
+              <Link
+                key={label}
+                to={to}
+                aria-current={isActive ? 'page' : undefined}
+                className="text-base font-medium px-3 py-2.5 rounded-lg transition-all duration-200"
+                style={{
+                  color: isActive ? 'var(--color-primary)' : 'var(--color-foreground)',
+                  background: isActive ? 'color-mix(in oklch, var(--color-glow-1) 8%, transparent)' : 'transparent',
+                  opacity: open ? 1 : 0,
+                  transform: open ? 'translateY(0)' : 'translateY(-8px)',
+                  transition: `color 0.2s, background 0.2s, opacity 0.3s ease ${0.05 * i}s, transform 0.3s ease ${0.05 * i}s`,
+                }}
+              >
+                {label}
+              </Link>
+            )
+          })}
+        </div>
+        <a
+          href="/kinbot/docs/"
+          className="flex items-center justify-center gap-2 mt-4 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+          style={{
+            background: 'color-mix(in oklch, var(--color-glow-1) 15%, transparent)',
+            color: 'var(--color-foreground)',
+            border: '1px solid color-mix(in oklch, var(--color-glow-1) 25%, transparent)',
+            opacity: open ? 1 : 0,
+            transform: open ? 'translateY(0)' : 'translateY(-8px)',
+            transition: `opacity 0.3s ease ${0.05 * NAV_LINKS.length}s, transform 0.3s ease ${0.05 * NAV_LINKS.length}s`,
+          }}
+        >
+          <BookOpen size={15} />
+          Documentation
+        </a>
+        <a
+          href="https://github.com/MarlBurroW/kinbot"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 mt-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+          style={{
+            background: 'var(--color-primary)',
+            color: 'var(--color-primary-foreground)',
+            opacity: open ? 1 : 0,
+            transform: open ? 'translateY(0)' : 'translateY(-8px)',
+            transition: `opacity 0.3s ease ${0.05 * (NAV_LINKS.length + 1)}s, transform 0.3s ease ${0.05 * (NAV_LINKS.length + 1)}s`,
+          }}
+        >
+          <Github size={15} />
+          View on GitHub
+          {starCount !== null && starCount > 0 && (
+            <span
+              className="flex items-center gap-1 ml-0.5 px-2 py-0.5 rounded-full text-xs font-semibold"
+              style={{
+                background: 'color-mix(in oklch, var(--color-primary-foreground) 20%, transparent)',
+                color: 'var(--color-primary-foreground)',
+              }}
+            >
+              <Star size={11} fill="currentColor" />
+              {formatStarCount(starCount)}
+            </span>
+          )}
+        </a>
+      </div>
+    </div>
+  )
 }
 
 export function Navbar({ dark, onToggleDark }: NavbarProps) {
@@ -169,77 +282,11 @@ export function Navbar({ dark, onToggleDark }: NavbarProps) {
       />
 
       {/* Mobile menu */}
-      {mobileOpen && (
-        <div
-          id="mobile-nav-menu"
-          role="navigation"
-          aria-label="Mobile navigation"
-          className="md:hidden border-t px-6 pb-6 pt-2"
-          style={{
-            borderColor: 'var(--color-border)',
-            background: 'var(--color-glass-strong-bg)',
-            backdropFilter: 'blur(20px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(200%)',
-          }}
-        >
-          <div className="flex flex-col gap-1">
-            {NAV_LINKS.map(({ label, to }) => {
-              const isActive = location.pathname === to
-              return (
-                <Link
-                  key={label}
-                  to={to}
-                  aria-current={isActive ? 'page' : undefined}
-                  className="text-base font-medium px-3 py-2.5 rounded-lg transition-all duration-200"
-                  style={{
-                    color: isActive ? 'var(--color-primary)' : 'var(--color-foreground)',
-                    background: isActive ? 'color-mix(in oklch, var(--color-glow-1) 8%, transparent)' : 'transparent',
-                  }}
-                >
-                  {label}
-                </Link>
-              )
-            })}
-          </div>
-          <a
-            href="/kinbot/docs/"
-            className="flex items-center justify-center gap-2 mt-4 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
-            style={{
-              background: 'color-mix(in oklch, var(--color-glow-1) 15%, transparent)',
-              color: 'var(--color-foreground)',
-              border: '1px solid color-mix(in oklch, var(--color-glow-1) 25%, transparent)',
-            }}
-          >
-            <BookOpen size={15} />
-            Documentation
-          </a>
-          <a
-            href="https://github.com/MarlBurroW/kinbot"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 mt-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
-            style={{
-              background: 'var(--color-primary)',
-              color: 'var(--color-primary-foreground)',
-            }}
-          >
-            <Github size={15} />
-            View on GitHub
-            {starCount !== null && starCount > 0 && (
-              <span
-                className="flex items-center gap-1 ml-0.5 px-2 py-0.5 rounded-full text-xs font-semibold"
-                style={{
-                  background: 'color-mix(in oklch, var(--color-primary-foreground) 20%, transparent)',
-                  color: 'var(--color-primary-foreground)',
-                }}
-              >
-                <Star size={11} fill="currentColor" />
-                {formatStarCount(starCount)}
-              </span>
-            )}
-          </a>
-        </div>
-      )}
+      <MobileMenu
+        open={mobileOpen}
+        location={location}
+        starCount={starCount}
+      />
     </header>
   )
 }
