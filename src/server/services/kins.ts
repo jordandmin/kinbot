@@ -34,6 +34,7 @@ import {
   buildAvatarPrompt,
 } from '@/server/services/image-generation'
 import { getHubKinId, setHubKinId } from '@/server/services/app-settings'
+import { teams, teamMembers, teamMemories } from '@/server/db/schema'
 import { createLogger } from '@/server/logger'
 import { deleteChannel } from '@/server/services/channels'
 import { stopJob } from '@/server/services/crons'
@@ -378,6 +379,25 @@ export async function deleteKin(kinId: string): Promise<boolean> {
   await db.delete(scheduledWakeups).where(
     or(eq(scheduledWakeups.callerKinId, kinId), eq(scheduledWakeups.targetKinId, kinId)),
   )
+
+  // Clean up teams: delete teams where this kin is the hub (cannot exist without a hub)
+  const hubTeams = db.select({ id: teams.id, name: teams.name }).from(teams).where(eq(teams.hubKinId, kinId)).all()
+  for (const team of hubTeams) {
+    // Cascade deletes team_members, team_memories, team_knowledge_sources, team_knowledge_chunks via FK
+    await db.delete(teams).where(eq(teams.id, team.id))
+    sseManager.broadcast({ type: 'team:deleted', data: { teamId: team.id } })
+    log.info({ teamId: team.id, teamName: team.name, kinId }, 'Team deleted because its Hub Kin was deleted')
+  }
+
+  // Remove team_members rows (non-hub, cascade handles it but be explicit for SSE)
+  const kinTeamMemberships = db.select({ teamId: teamMembers.teamId }).from(teamMembers).where(eq(teamMembers.kinId, kinId)).all()
+  // team_members will cascade-delete via FK, but broadcast SSE for remaining teams
+  for (const membership of kinTeamMemberships) {
+    sseManager.broadcast({ type: 'team:member_removed', data: { teamId: membership.teamId, kinId } })
+  }
+
+  // Delete team memories authored by this kin (FK is NOT NULL, cannot nullify)
+  await db.delete(teamMemories).where(eq(teamMemories.authorKinId, kinId))
 
   // Delete the kin
   await db.delete(kins).where(eq(kins.id, kinId))

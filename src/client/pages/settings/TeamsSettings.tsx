@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/client/components/ui/alert-dialog'
-import { Plus, Users, Trash2, Settings2, Network, Crown } from 'lucide-react'
+import { Plus, Users, Trash2, Settings2, Network, Crown, Brain, BookOpen, ChevronDown } from 'lucide-react'
 import { EmptyState } from '@/client/components/common/EmptyState'
 import { SettingsListSkeleton } from '@/client/components/common/SettingsListSkeleton'
 import { toastError } from '@/client/lib/api'
@@ -21,6 +21,9 @@ import { useTeams, type Team } from '@/client/hooks/useTeams'
 import { useKinList } from '@/client/hooks/useKinList'
 import { TeamFormDialog } from '@/client/components/team/TeamFormDialog'
 import type { KinOption } from '@/client/components/common/KinSelectItem'
+import { TeamMemoriesPanel } from '@/client/components/team/TeamMemoriesPanel'
+import { TeamKnowledgePanel } from '@/client/components/team/TeamKnowledgePanel'
+import { cn } from '@/client/lib/utils'
 
 export function TeamsSettings() {
   const { t } = useTranslation()
@@ -31,6 +34,8 @@ export function TeamsSettings() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [deletingTeam, setDeletingTeam] = useState<Team | null>(null)
+  const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
+  const [expandedTab, setExpandedTab] = useState<'memories' | 'knowledge'>('memories')
 
   const handleCreate = useCallback(() => {
     setEditingTeam(null)
@@ -187,6 +192,52 @@ export function TeamsSettings() {
                     )}
                   </Badge>
                 ))}
+              </div>
+
+              {/* Expandable memories/knowledge section */}
+              <div className="border-t pt-2">
+                <button
+                  type="button"
+                  onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronDown className={cn('size-3 transition-transform', expandedTeam !== team.id && '-rotate-90')} />
+                  <Brain className="size-3" />
+                  {t('teams.memories')}
+                  <span className="mx-1">·</span>
+                  <BookOpen className="size-3" />
+                  {t('teams.knowledge')}
+                </button>
+
+                {expandedTeam === team.id && (
+                  <div className="mt-3 space-y-3">
+                    <div className="flex gap-1">
+                      <Button
+                        variant={expandedTab === 'memories' ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setExpandedTab('memories')}
+                      >
+                        <Brain className="size-3 mr-1" />
+                        {t('teams.memories')}
+                      </Button>
+                      <Button
+                        variant={expandedTab === 'knowledge' ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setExpandedTab('knowledge')}
+                      >
+                        <BookOpen className="size-3 mr-1" />
+                        {t('teams.knowledge')}
+                      </Button>
+                    </div>
+                    {expandedTab === 'memories' ? (
+                      <TeamMemoriesPanel teamId={team.id} />
+                    ) : (
+                      <TeamKnowledgePanel teamId={team.id} />
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

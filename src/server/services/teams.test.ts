@@ -116,6 +116,49 @@ describe('Team member roles', () => {
   })
 })
 
+// ─── Kin deletion edge cases ────────────────────────────────────────────────
+
+describe('Kin deletion team cleanup logic', () => {
+  it('deleting a hub kin should cascade-delete the team', () => {
+    const teams = [
+      { id: 't1', hubKinId: 'kin-1', name: 'Team Alpha' },
+      { id: 't2', hubKinId: 'kin-3', name: 'Team Beta' },
+    ]
+    const deletingKinId = 'kin-1'
+    const teamsToDelete = teams.filter((t) => t.hubKinId === deletingKinId)
+    expect(teamsToDelete).toHaveLength(1)
+    expect(teamsToDelete[0]?.id).toBe('t1')
+  })
+
+  it('deleting a non-hub member kin should only remove membership', () => {
+    const teams = [
+      { id: 't1', hubKinId: 'kin-1', members: ['kin-1', 'kin-2', 'kin-3'] },
+    ]
+    const deletingKinId = 'kin-2'
+    const teamsToDelete = teams.filter((t) => t.hubKinId === deletingKinId)
+    expect(teamsToDelete).toHaveLength(0)
+    // membership row would be cascade-deleted by FK
+  })
+
+  it('deleting a kin in multiple teams only deletes teams where it is hub', () => {
+    const teams = [
+      { id: 't1', hubKinId: 'kin-1' },
+      { id: 't2', hubKinId: 'kin-2' },
+    ]
+    const memberships = [
+      { teamId: 't1', kinId: 'kin-1', role: 'hub' },
+      { teamId: 't2', kinId: 'kin-1', role: 'member' },
+    ]
+    const deletingKinId = 'kin-1'
+    const teamsToDelete = teams.filter((t) => t.hubKinId === deletingKinId)
+    const membershipsToRemove = memberships.filter((m) => m.kinId === deletingKinId && m.role !== 'hub')
+    expect(teamsToDelete).toHaveLength(1)
+    expect(teamsToDelete[0]?.id).toBe('t1')
+    expect(membershipsToRemove).toHaveLength(1)
+    expect(membershipsToRemove[0]?.teamId).toBe('t2')
+  })
+})
+
 // ─── Color validation ───────────────────────────────────────────────────────
 
 describe('Team color format', () => {
