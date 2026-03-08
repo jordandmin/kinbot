@@ -448,7 +448,9 @@ class PluginManager {
         throw new Error(`Plugin "${name}" main file must default-export a function`)
       }
 
-      const exports: PluginExports = initFn(ctx)
+      const result = initFn(ctx)
+      // Support both sync and async init functions
+      const exports: PluginExports = result instanceof Promise ? await result : result
       plugin.exports = exports
 
       // Register tools
