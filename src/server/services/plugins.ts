@@ -84,6 +84,50 @@ interface LoadedPlugin {
   health: PluginHealthStats
 }
 
+// ─── Topological sort ────────────────────────────────────────────────────────
+
+/**
+ * Topological sort of plugin names by their dependency graph.
+ * Returns names in activation order (dependencies first).
+ * Detects cycles and returns them separately.
+ */
+export function topologicalSortPlugins(
+  names: string[],
+  getDeps: (name: string) => string[],
+): { sorted: string[]; cycles: string[] } {
+  const nameSet = new Set(names)
+  const visited = new Set<string>()
+  const visiting = new Set<string>() // in current DFS path — for cycle detection
+  const sorted: string[] = []
+  const cycles: string[] = []
+
+  const visit = (name: string) => {
+    if (visited.has(name)) return
+    if (visiting.has(name)) {
+      cycles.push(name)
+      return
+    }
+
+    visiting.add(name)
+
+    for (const depName of getDeps(name)) {
+      if (nameSet.has(depName)) {
+        visit(depName)
+      }
+    }
+
+    visiting.delete(name)
+    visited.add(name)
+    sorted.push(name)
+  }
+
+  for (const name of names) {
+    visit(name)
+  }
+
+  return { sorted, cycles }
+}
+
 // ─── Manifest validation ─────────────────────────────────────────────────────
 
 const NAME_PATTERN = /^[a-z0-9-]+$/
@@ -473,6 +517,9 @@ class PluginManager {
       return
     }
 
+    // Phase 1: Discover all plugins (without activating)
+    const enabledPluginNames: string[] = []
+
     for (const entry of entries.sort()) {
       const pluginDir = join(this.pluginsDir, entry)
       const manifestPath = join(pluginDir, 'plugin.json')
@@ -506,12 +553,10 @@ class PluginManager {
 
         const manifest = data as PluginManifest
 
-        // Check for name collision with core tools
         if (manifest.name !== entry) {
           log.warn({ folder: entry, name: manifest.name }, 'Plugin folder name does not match manifest name')
         }
 
-        // Get stored state
         const state = await this.getState(manifest.name)
 
         this.plugins.set(manifest.name, {
@@ -522,16 +567,15 @@ class PluginManager {
           registeredHooks: [],
           registeredProviders: [],
           registeredChannels: [],
-            health: { totalErrors: 0, consecutiveErrors: 0, autoDisabled: false },
+          health: { totalErrors: 0, consecutiveErrors: 0, autoDisabled: false },
           installSource: (state?.installSource as PluginInstallSource) ?? 'local',
           installMeta: state?.installMeta ? JSON.parse(state.installMeta) : undefined,
         })
 
         log.info({ plugin: manifest.name, version: manifest.version, enabled: state?.enabled ?? false }, 'Plugin discovered')
 
-        // If enabled, activate it
         if (state?.enabled) {
-          await this.activatePlugin(manifest.name)
+          enabledPluginNames.push(manifest.name)
         }
       } catch (err) {
         log.error({ plugin: entry, err }, 'Failed to load plugin')
@@ -542,11 +586,32 @@ class PluginManager {
           enabled: false,
           registeredTools: [],
           registeredHooks: [],
-            registeredProviders: [],
-            registeredChannels: [],
-            health: { totalErrors: 0, consecutiveErrors: 0, autoDisabled: false },
+          registeredProviders: [],
+          registeredChannels: [],
+          health: { totalErrors: 0, consecutiveErrors: 0, autoDisabled: false },
         })
       }
+    }
+
+    // Phase 2: Activate enabled plugins in dependency order (topological sort)
+    const { sorted, cycles } = topologicalSortPlugins(enabledPluginNames, (name) => {
+      const plugin = this.plugins.get(name)
+      const deps = plugin?.manifest.dependencies
+      return deps ? Object.keys(deps) : []
+    })
+
+    for (const cycleName of cycles) {
+      const plugin = this.plugins.get(cycleName)
+      if (plugin) {
+        plugin.error = 'Circular dependency detected'
+        plugin.enabled = false
+        log.error({ plugin: cycleName }, 'Plugin has circular dependencies, skipping activation')
+      }
+    }
+
+    for (const name of sorted) {
+      if (cycles.includes(name)) continue
+      await this.activatePlugin(name)
     }
 
     log.info({ total: this.plugins.size, enabled: Array.from(this.plugins.values()).filter(p => p.enabled).length }, 'Plugin scan complete')
