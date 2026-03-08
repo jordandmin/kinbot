@@ -261,6 +261,12 @@ export function PluginsSettings() {
                         {t('settings.plugins.error')}
                       </Badge>
                     )}
+                    {plugin.compatible === false && (
+                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-400">
+                        <AlertTriangle className="size-3 mr-1" />
+                        {plugin.compatibilityError ?? t('settings.plugins.incompatible', 'Incompatible')}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {plugin.description}

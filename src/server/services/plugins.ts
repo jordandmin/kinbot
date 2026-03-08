@@ -12,6 +12,7 @@ import { sseManager } from '@/server/sse/index'
 import type { ToolRegistration } from '@/server/tools/types'
 import type { HookName, HookHandler } from '@/server/hooks/types'
 import type { PluginManifest, PluginConfigField, PluginSummary, PluginProviderMeta, PluginChannelMeta, PluginInstallSource, PluginInstallMeta } from '@/shared/types/plugin'
+import { satisfiesSemver } from '@/shared/semver'
 import type { ProviderDefinition } from '@/server/providers/types'
 import type { ChannelAdapter } from '@/server/channels/adapter'
 import { registerPluginProvider, unregisterPluginProvider } from '@/server/providers/index'
@@ -105,6 +106,13 @@ export function validateManifest(data: unknown): { valid: boolean; errors: strin
   }
   if (typeof m.main !== 'string' || !m.main) {
     errors.push('main entry point is required')
+  }
+
+  // Validate kinbot version constraint syntax if present
+  if (m.kinbot !== undefined) {
+    if (typeof m.kinbot !== 'string') {
+      errors.push('kinbot must be a semver range string (e.g. ">=0.15.0")')
+    }
   }
 
   // Validate config schema if present
@@ -229,8 +237,36 @@ class PluginManager {
   private watcher: FSWatcher | null = null
   private reloadTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
+  private kinbotVersion: string | null = null
+
   constructor() {
     this.pluginsDir = resolve(process.cwd(), 'plugins')
+  }
+
+  /** Get the current KinBot version from package.json (cached) */
+  private async getKinBotVersion(): Promise<string> {
+    if (this.kinbotVersion) return this.kinbotVersion
+    try {
+      const raw = await readFile(resolve(process.cwd(), 'package.json'), 'utf-8')
+      this.kinbotVersion = JSON.parse(raw).version ?? '0.0.0'
+    } catch {
+      this.kinbotVersion = '0.0.0'
+    }
+    return this.kinbotVersion!
+  }
+
+  /** Check if a plugin's kinbot version requirement is satisfied */
+  private async checkCompatibility(manifest: PluginManifest): Promise<{ compatible: boolean; error?: string }> {
+    if (!manifest.kinbot) return { compatible: true }
+    const version = await this.getKinBotVersion()
+    const compatible = satisfiesSemver(version, manifest.kinbot)
+    if (!compatible) {
+      return {
+        compatible: false,
+        error: `Requires KinBot ${manifest.kinbot} (current: ${version})`,
+      }
+    }
+    return { compatible: true }
   }
 
   /** Scan plugins/ directory and load all valid plugins */
@@ -330,6 +366,15 @@ class PluginManager {
     const entryPath = join(pluginDir, plugin.manifest.main)
 
     try {
+      // Check version compatibility
+      const compat = await this.checkCompatibility(plugin.manifest)
+      if (!compat.compatible) {
+        plugin.error = compat.error
+        plugin.enabled = false
+        log.warn({ plugin: name, error: compat.error }, 'Plugin incompatible with current KinBot version')
+        return
+      }
+
       // Build context
       const config = await this.getResolvedConfig(name)
       const ctx = this.createContext(plugin.manifest, config)
@@ -709,6 +754,7 @@ class PluginManager {
 
   /** List all discovered plugins as summaries */
   listPlugins(): PluginSummary[] {
+    const version = this.kinbotVersion ?? '0.0.0'
     return Array.from(this.plugins.values()).map(p => ({
       name: p.manifest.name,
       version: p.manifest.version,
@@ -729,6 +775,10 @@ class PluginManager {
       configSchema: p.manifest.config ?? {},
       installSource: p.installSource,
       installMeta: p.installMeta,
+      compatible: p.manifest.kinbot ? satisfiesSemver(version, p.manifest.kinbot) : true,
+      compatibilityError: p.manifest.kinbot && !satisfiesSemver(version, p.manifest.kinbot)
+        ? `Requires KinBot ${p.manifest.kinbot} (current: ${version})`
+        : undefined,
     }))
   }
 
@@ -809,6 +859,12 @@ class PluginManager {
 
       const manifest = data as PluginManifest
       const targetDir = join(this.pluginsDir, manifest.name)
+
+      // Check version compatibility
+      const compat = await this.checkCompatibility(manifest)
+      if (!compat.compatible) {
+        throw new Error(compat.error!)
+      }
 
       // Check if already installed
       if (this.plugins.has(manifest.name)) {
@@ -934,6 +990,12 @@ class PluginManager {
 
       const manifest = data as PluginManifest
 
+      // Check version compatibility
+      const compat = await this.checkCompatibility(manifest)
+      if (!compat.compatible) {
+        throw new Error(compat.error!)
+      }
+
       if (this.plugins.has(manifest.name)) {
         throw new Error(`Plugin "${manifest.name}" is already installed`)
       }
@@ -1015,6 +1077,12 @@ class PluginManager {
     }
 
     const manifest = data as PluginManifest
+
+    // Check version compatibility
+    const compat = await this.checkCompatibility(manifest)
+    if (!compat.compatible) {
+      throw new Error(compat.error!)
+    }
 
     // Check if already installed
     if (this.plugins.has(manifest.name)) {

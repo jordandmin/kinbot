@@ -87,4 +87,6 @@ export interface PluginSummary {
   configSchema: Record<string, PluginConfigField>
   installSource?: PluginInstallSource
   installMeta?: PluginInstallMeta
+  compatible?: boolean
+  compatibilityError?: string
 }
