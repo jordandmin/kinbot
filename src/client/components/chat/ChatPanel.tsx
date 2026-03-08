@@ -320,33 +320,62 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     prevMessageCountRef.current = messages.length
   }, [messages.length])
 
-  // Auto-scroll to bottom on new messages / streaming tokens / processing start / live tasks
-  // Uses direct scrollTop assignment instead of scrollIntoView to avoid race conditions
-  // with the ResizeObserver that compensates for QueuePreview height changes.
+  // Auto-scroll to bottom whenever the scroll container's content grows.
+  // A MutationObserver on the viewport catches every DOM change (new messages,
+  // streaming token batches, tool-call expansions, queue preview resize, etc.)
+  // so we no longer depend on a React dependency list that can miss updates.
   const isProcessing = queueState?.isProcessing ?? false
   useEffect(() => {
-    // Skip if the layout effect already handled the scroll for this render
+    const scrollArea = scrollAreaRef.current
+    if (!scrollArea) return
+    const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
+    if (!viewport) return
+
+    let rafId: number | null = null
+    const scrollToEnd = () => {
+      if (rafId !== null) return // coalesce multiple mutations into one rAF
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        if (!autoScrollRef.current || !isNearBottomRef.current) return
+        if (needsInstantScrollRef.current) return
+        viewport.scrollTop = viewport.scrollHeight
+        isNearBottomRef.current = true
+      })
+    }
+
+    const observer = new MutationObserver(scrollToEnd)
+    observer.observe(viewport, { childList: true, subtree: true, characterData: true })
+
+    return () => {
+      observer.disconnect()
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, []) // stable — reads refs only
+
+  // Keep a ref for autoScroll so the MutationObserver callback can read it
+  const autoScrollRef = useRef(autoScroll)
+  useEffect(() => { autoScrollRef.current = autoScroll }, [autoScroll])
+
+  // Still trigger a scroll on dependency changes that may not mutate DOM
+  // (e.g. isProcessing flipping, queueItems count)
+  useEffect(() => {
     if (justDidInstantScrollRef.current) {
       justDidInstantScrollRef.current = false
       return
     }
-    // Suppress while waiting for instant scroll (kin switch in progress)
     if (needsInstantScrollRef.current) return
     if (autoScroll && isNearBottomRef.current) {
-      // Use rAF to ensure layout (including QueuePreview resize) has settled
       requestAnimationFrame(() => {
         const scrollArea = scrollAreaRef.current
         if (!scrollArea) return
         const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
         if (viewport) {
           viewport.scrollTop = viewport.scrollHeight
-          // Re-affirm near-bottom so the scroll listener doesn't race and
-          // flip isNearBottomRef to false between batched streaming updates.
           isNearBottomRef.current = true
         }
       })
     }
-  }, [messages.length, streamingMessage, isStreaming, isProcessing, liveTasks, liveCompacting, pendingPrompts, autoScroll, queueItems.length])
+  }, [messages.length, isProcessing, autoScroll, queueItems.length])
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
