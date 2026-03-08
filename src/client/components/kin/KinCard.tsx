@@ -76,19 +76,19 @@ export const KinCard = forwardRef<HTMLDivElement, KinCardProps>(function KinCard
       style={style}
       onClick={onClick}
       className={cn(
-        'group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full text-left cursor-pointer transition-colors',
+        'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 w-full text-left cursor-pointer transition-all duration-150',
         isSelected
-          ? 'bg-primary/10'
-          : 'hover:bg-accent/40',
+          ? 'bg-primary/10 shadow-sm'
+          : 'hover:bg-accent/50',
         modelUnavailable && !isSelected && 'opacity-60',
-        isDragging && 'z-50 shadow-lg opacity-90',
+        isDragging && 'z-50 shadow-lg opacity-90 scale-[1.02]',
         extraClassName,
       )}
       {...rest}
     >
       {/* Selected accent bar */}
       {isSelected && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-full gradient-primary" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-[3px] rounded-full gradient-primary" />
       )}
 
       {/* Drag handle */}
@@ -98,17 +98,17 @@ export const KinCard = forwardRef<HTMLDivElement, KinCardProps>(function KinCard
           className="absolute left-0 top-0 z-10 flex h-full w-5 cursor-grab items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
           onClick={(e) => e.stopPropagation()}
         >
-          <GripVertical className="size-3 text-muted-foreground" />
+          <GripVertical className="size-3.5 text-muted-foreground" />
         </div>
       )}
 
       {/* Avatar */}
-      <div className="relative size-8 shrink-0">
+      <div className="relative size-10 shrink-0">
         <div
           className={cn(
-            'size-8 rounded-full flex items-center justify-center overflow-hidden',
+            'size-10 rounded-xl flex items-center justify-center overflow-hidden transition-shadow',
             isSelected
-              ? 'gradient-primary shadow-sm'
+              ? 'gradient-primary shadow-md'
               : 'bg-secondary',
           )}
         >
@@ -117,14 +117,14 @@ export const KinCard = forwardRef<HTMLDivElement, KinCardProps>(function KinCard
           ) : isHub ? (
             <Network
               className={cn(
-                'size-4',
+                'size-5',
                 isSelected ? 'text-white' : 'text-secondary-foreground/70',
               )}
             />
           ) : (
             <Bot
               className={cn(
-                'size-4',
+                'size-5',
                 isSelected ? 'text-white' : 'text-secondary-foreground/70',
               )}
             />
@@ -132,56 +132,56 @@ export const KinCard = forwardRef<HTMLDivElement, KinCardProps>(function KinCard
         </div>
         {/* Status dot */}
         {isProcessing && (
-          <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-warning animate-pulse" />
+          <span className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-sidebar bg-warning animate-pulse" />
         )}
         {modelUnavailable && !isProcessing && (
-          <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-sidebar bg-muted-foreground" />
+          <span className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-sidebar bg-muted-foreground" />
         )}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={cn('truncate text-sm flex items-center gap-1.5', isSelected ? 'font-semibold' : 'font-medium')}>
+        <div className={cn('truncate text-[13px] leading-tight flex items-center gap-1.5', isSelected ? 'font-semibold' : 'font-medium')}>
           <span className="truncate">{name}</span>
           {isHub && (
-            <Badge variant="secondary" className="shrink-0 px-1 py-0 text-[9px] leading-tight font-medium">
+            <Badge variant="secondary" className="shrink-0 px-1.5 py-0 text-[9px] leading-tight font-medium">
               Hub
             </Badge>
           )}
-        </p>
-        <div className="flex items-center gap-1.5">
+        </div>
+        <div className="flex items-center gap-1.5 mt-0.5">
           {isProcessing ? (
             <>
               <Loader2 className="size-3 shrink-0 text-primary animate-spin" />
-              <p className="truncate text-[11px] text-primary font-medium">
+              <p className="truncate text-xs text-primary font-medium">
                 {t('kin.processing')}
               </p>
             </>
           ) : modelUnavailable ? (
             <>
               <AlertTriangle className="size-3 shrink-0 text-warning" />
-              <p className="truncate text-[11px] text-warning">
+              <p className="truncate text-xs text-warning">
                 {t('kin.modelUnavailable')}
               </p>
             </>
           ) : (
-            <p className="truncate text-[11px] text-muted-foreground">{role}</p>
-          )}
-          {modelDisplayName && (
-            <span className="shrink-0 text-[9px] text-muted-foreground/60">· {modelDisplayName}</span>
+            <p className="truncate text-xs text-muted-foreground">{role}</p>
           )}
         </div>
+        {modelDisplayName && (
+          <p className="truncate text-[10px] text-muted-foreground/50 mt-0.5">{modelDisplayName}</p>
+        )}
       </div>
 
       {/* Right actions */}
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1.5">
         {unreadCount > 0 && !isSelected && (
-          <Badge variant="default" className="size-4.5 p-0 text-[9px] flex items-center justify-center rounded-full animate-in fade-in zoom-in-50 duration-200">
+          <Badge variant="default" className="size-5 p-0 text-[10px] flex items-center justify-center rounded-full animate-in fade-in zoom-in-50 duration-200">
             {unreadCount > 99 ? '99+' : unreadCount}
           </Badge>
         )}
         {isProcessing && (
-          <Loader2 className="size-3.5 text-primary animate-spin" />
+          <Loader2 className="size-4 text-primary animate-spin" />
         )}
         {!isProcessing && queueSize > 0 && (
  <Badge variant="secondary" size="xs">
@@ -191,7 +191,7 @@ export const KinCard = forwardRef<HTMLDivElement, KinCardProps>(function KinCard
         {modelUnavailable && !isProcessing && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <AlertTriangle className="size-3.5 text-warning" />
+              <AlertTriangle className="size-4 text-warning" />
             </TooltipTrigger>
             <TooltipContent side="right">
               {t('kin.modelUnavailableHint')}
@@ -209,9 +209,9 @@ export const KinCard = forwardRef<HTMLDivElement, KinCardProps>(function KinCard
             tabIndex={0}
             onClick={(e) => { e.stopPropagation(); onEdit() }}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onEdit() } }}
-            className="rounded-md p-0.5 opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
+            className="rounded-md p-1 opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
           >
-            <Settings2 className="size-3.5 text-muted-foreground" />
+            <Settings2 className="size-4 text-muted-foreground" />
           </span>
         )}
       </div>

@@ -179,7 +179,7 @@ export const KinList = memo(function KinList({ kins, llmModels, selectedKinSlug,
             )}
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={regularKinIds} strategy={verticalListSortingStrategy}>
-              <div className="space-y-1 px-1">
+              <div className="space-y-0.5 px-1">
                 {filteredKins.map((kin, index) => {
                   const queueState = kinQueueState.get(kin.id)
                   const modelName = llmModels.find((m) => m.id === kin.model)?.name
