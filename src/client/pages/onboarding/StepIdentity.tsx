@@ -16,7 +16,7 @@ interface StepIdentityProps {
 
 export function StepIdentity({ onComplete }: StepIdentityProps) {
   const { t } = useTranslation()
-  const { register } = useAuth()
+  const { register, login } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -51,20 +51,40 @@ export function StepIdentity({ onComplete }: StepIdentityProps) {
     setIsLoading(true)
 
     try {
-      // 1. Register via Better Auth
-      await register({
-        name: `${firstName} ${lastName}`,
-        email,
-        password,
-      })
+      // 1. Register via Better Auth (or login if already registered)
+      try {
+        await register({
+          name: `${firstName} ${lastName}`,
+          email,
+          password,
+        })
+      } catch (regErr: unknown) {
+        // If registration fails because email already exists, try logging in instead.
+        // This handles the case where registration succeeded but profile creation
+        // failed on a previous attempt, leaving the user stuck.
+        const regMsg = getErrorMessage(regErr) || ''
+        if (regMsg.toLowerCase().includes('already') || regMsg.toLowerCase().includes('exists')) {
+          await login(email, password)
+        } else {
+          throw regErr
+        }
+      }
 
-      // 2. Create user profile
-      await api.post('/onboarding/profile', {
-        firstName,
-        lastName,
-        pseudonym,
-        language: 'en',
-      })
+      // 2. Create user profile (will 409 if it already exists, which is fine)
+      try {
+        await api.post('/onboarding/profile', {
+          firstName,
+          lastName,
+          pseudonym,
+          language: 'en',
+        })
+      } catch (profileErr: unknown) {
+        const profileMsg = getErrorMessage(profileErr) || ''
+        // If profile already exists (409), skip gracefully
+        if (!profileMsg.includes('PROFILE_EXISTS') && !profileMsg.includes('already exists')) {
+          throw profileErr
+        }
+      }
 
       // 3. Upload avatar if provided
       if (avatarFile) {

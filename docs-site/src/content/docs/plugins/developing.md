@@ -100,6 +100,7 @@ The `plugin.json` manifest declares metadata, permissions, and configuration:
   "permissions": [
     "http:api.openweathermap.org"
   ],
+  "dependencies": {},
   "config": {
     "apiKey": {
       "type": "string",
@@ -132,6 +133,7 @@ The `plugin.json` manifest declares metadata, permissions, and configuration:
 | `kinbot` | `string` | | Semver range of compatible KinBot versions |
 | `icon` | `string` | | Path to icon (PNG/SVG, 128x128 recommended) |
 | `permissions` | `string[]` | | Declared permissions (see [Security](#security)) |
+| `dependencies` | `object` | | Plugin dependencies (see [Dependencies](#dependencies)) |
 | `config` | `object` | | Configuration schema (see [Configuration](#configuration)) |
 
 ## Entry Point Contract
@@ -296,6 +298,30 @@ Fields with `secret: true` are:
 - Never exposed in API responses (replaced with `"••••••••"`)
 - Available to the plugin at runtime via `ctx.config`
 - Shown as password fields in the UI
+
+## Dependencies
+
+Plugins can declare dependencies on other plugins using the `dependencies` field in `plugin.json`. Values are semver ranges.
+
+```json
+{
+  "dependencies": {
+    "core-utils": ">=1.0.0",
+    "data-provider": "^2.0.0"
+  }
+}
+```
+
+### How It Works
+
+- **On activation**, KinBot checks that all declared dependencies are installed, enabled, and version-compatible.
+- If any dependency is missing, disabled, or the wrong version, the plugin **will not activate** and shows an error.
+- **Disabling or uninstalling** a plugin that other enabled plugins depend on is **blocked** with a clear error message.
+- Dependencies are shown in the plugin settings UI, along with a list of dependents (plugins that require this one).
+
+### Dependency Order
+
+During initial scan, plugins are activated in filesystem order. If plugin A depends on plugin B, ensure B's name sorts before A, or rely on the system's retry: plugins that fail dependency checks on first scan will show an error but can be manually re-enabled once dependencies are satisfied.
 
 ## Security
 

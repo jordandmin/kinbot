@@ -378,6 +378,62 @@ function applyAdaptiveK<T extends { score: number }>(results: T[]): T[] {
   return results.slice(0, Math.max(1, cutoff))
 }
 
+// ─── Query Intent Detection (category boosting) ─────────────────────────────
+
+/**
+ * Detect which memory categories a query is likely asking about,
+ * using lightweight bilingual (EN/FR) regex patterns.
+ * Returns a Set of matching categories. Empty set = no strong signal.
+ *
+ * This is zero-cost (no LLM calls) and helps boost relevant categories
+ * when the query has a clear intent, e.g. "what does X like?" → preference.
+ */
+function detectQueryIntentCategories(query: string): Set<string> {
+  const q = query.toLowerCase()
+  const matched = new Set<string>()
+
+  // Preference patterns (EN + FR)
+  const preferencePatterns = [
+    /\b(prefer|like|love|enjoy|favorite|favourite|fond of|rather|taste)\b/,
+    /\b(préfère|préféré|aime|adore|favori|goût|plutôt)\b/,
+    /\b(what does .+ like|how does .+ take|how does .+ prefer)\b/,
+    /\b(qu'est-ce qu.+ aime|comment .+ prend|comment .+ préfère)\b/,
+  ]
+
+  // Decision patterns (EN + FR)
+  const decisionPatterns = [
+    /\b(decide|decided|decision|chose|chosen|choice|plan|planned|commit|agreed)\b/,
+    /\b(décidé|décision|choix|choisi|planifié|convenu|engagé)\b/,
+    /\b(did (we|i|you|they) (agree|decide)|what was decided)\b/,
+    /\b(on a (décidé|convenu|choisi)|qu'est-ce qu'on a décidé)\b/,
+  ]
+
+  // Knowledge patterns (EN + FR)
+  const knowledgePatterns = [
+    /\b(how (to|do|does|can)|explain|tutorial|guide|method|technique|process)\b/,
+    /\b(comment (faire|on fait)|expliqu|tutoriel|méthode|technique|procédé)\b/,
+  ]
+
+  for (const pat of preferencePatterns) {
+    if (pat.test(q)) { matched.add('preference'); break }
+  }
+  for (const pat of decisionPatterns) {
+    if (pat.test(q)) { matched.add('decision'); break }
+  }
+  for (const pat of knowledgePatterns) {
+    if (pat.test(q)) { matched.add('knowledge'); break }
+  }
+
+  // Note: 'fact' is the default/fallback category — we don't boost it
+  // because most queries implicitly seek factual information.
+
+  if (matched.size > 0) {
+    log.debug({ query: query.slice(0, 80), categories: Array.from(matched) }, 'Query intent detected')
+  }
+
+  return matched
+}
+
 // ─── Hybrid Search (FTS5 + sqlite-vec rank fusion) ───────────────────────────
 
 type ScoreMapEntry = { score: number; content: string; category: string; subject: string | null; importance: number | null; retrievalCount: number; updatedAt: Date | null }
@@ -468,7 +524,11 @@ export async function searchMemories(
   )
   const subjectBoostFactor = config.memory.subjectBoost ?? 1.3
 
-  // Apply temporal decay, importance weighting, retrieval frequency boost, and subject boost to fused scores
+  // Detect query intent to boost matching memory categories (zero-cost regex-based)
+  const intentCategories = detectQueryIntentCategories(query)
+  const categoryBoostFactor = config.memory.categoryBoost ?? 1.25
+
+  // Apply temporal decay, importance weighting, retrieval frequency boost, subject boost, and category intent boost to fused scores
   for (const [, data] of scoreMap) {
     const decay = temporalDecayWeight(data.updatedAt, data.category, data.importance)
     const imp = data.importance ?? 5
@@ -478,7 +538,9 @@ export async function searchMemories(
     const retrievalBoost = 1 + Math.log2(1 + data.retrievalCount) * 0.05
     // Subject boost: if the memory's subject matches an entity mentioned in the query, boost its score
     const subjectBoost = data.subject && matchedSubjects.has(data.subject) ? subjectBoostFactor : 1.0
-    data.score *= decay * importanceWeight * retrievalBoost * subjectBoost
+    // Category intent boost: if query intent matches this memory's category, boost its score
+    const categoryBoost = intentCategories.has(data.category) ? categoryBoostFactor : 1.0
+    data.score *= decay * importanceWeight * retrievalBoost * subjectBoost * categoryBoost
   }
 
   // Sort by weighted score descending

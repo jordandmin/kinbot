@@ -18,7 +18,7 @@ export function OnboardingPage({ onComplete, initialStep = 1 }: OnboardingPagePr
   const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState(initialStep)
 
-  const progressValue = ((currentStep - 1) / TOTAL_STEPS) * 100
+  const progressValue = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100
 
   return (
     <div className="surface-base flex min-h-screen flex-col items-center justify-center px-4 py-12">

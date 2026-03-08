@@ -273,3 +273,48 @@ describe('validateConfig', () => {
     ])
   })
 })
+
+describe('validateManifest — dependencies', () => {
+  const base = { name: 'test-plugin', version: '1.0.0', description: 'Test', main: 'index.js' }
+
+  test('accepts valid dependencies', () => {
+    const { valid, errors } = validateManifest({
+      ...base,
+      dependencies: { 'core-plugin': '>=1.0.0', 'other-plugin': '^2.0.0' },
+    })
+    expect(valid).toBe(true)
+    expect(errors).toHaveLength(0)
+  })
+
+  test('accepts manifest without dependencies', () => {
+    const { valid } = validateManifest(base)
+    expect(valid).toBe(true)
+  })
+
+  test('rejects non-object dependencies', () => {
+    const { valid, errors } = validateManifest({ ...base, dependencies: 'foo' })
+    expect(valid).toBe(false)
+    expect(errors).toContain('dependencies must be an object mapping plugin names to semver ranges')
+  })
+
+  test('rejects array dependencies', () => {
+    const { valid, errors } = validateManifest({ ...base, dependencies: ['foo'] })
+    expect(valid).toBe(false)
+    expect(errors).toContain('dependencies must be an object mapping plugin names to semver ranges')
+  })
+
+  test('rejects invalid dependency name', () => {
+    const { errors } = validateManifest({ ...base, dependencies: { 'Invalid_Name': '>=1.0.0' } })
+    expect(errors.some(e => e.includes('Invalid_Name'))).toBe(true)
+  })
+
+  test('rejects empty dependency range', () => {
+    const { errors } = validateManifest({ ...base, dependencies: { 'foo': '' } })
+    expect(errors.some(e => e.includes('non-empty semver range'))).toBe(true)
+  })
+
+  test('rejects non-string dependency range', () => {
+    const { errors } = validateManifest({ ...base, dependencies: { 'foo': 123 } })
+    expect(errors.some(e => e.includes('non-empty semver range'))).toBe(true)
+  })
+})

@@ -25,6 +25,7 @@ plugins/my-plugin/
   "description": "A brief description of what this plugin does",
   "author": "Your Name",
   "license": "MIT",
+  "kinbot": ">=0.14.0",
   "main": "index.ts",
   "permissions": [
     "http:api.example.com"
@@ -53,7 +54,27 @@ plugins/my-plugin/
 | `main` | ✅ | Entry file (relative to plugin folder) |
 | `icon` | | Icon URL or emoji |
 | `permissions` | | List of allowed HTTP domains (see [Permissions](#permissions)) |
+| `kinbot` | | Semver range for KinBot version compatibility (e.g. `">=0.15.0"`, `"^0.14.0"`) |
 | `config` | | Configuration schema (see [Configuration](#configuration)) |
+
+### Version Compatibility
+
+Use the `kinbot` field in your manifest to declare which versions of KinBot your plugin supports:
+
+```json
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "kinbot": ">=0.15.0",
+  "description": "..."
+}
+```
+
+KinBot checks this constraint at activation time. If the running version doesn't satisfy the range, the plugin won't activate and the UI will show a compatibility error. This prevents cryptic failures when plugins rely on APIs introduced in newer versions.
+
+**Supported range formats:** `>=0.15.0`, `^0.14.0`, `~0.14.2`, `0.15.x`, `>=0.14.0 <0.16.0`, etc. (standard semver ranges).
+
+If `kinbot` is omitted, the plugin is assumed compatible with any version.
 
 ### Entry Point (`index.ts`)
 

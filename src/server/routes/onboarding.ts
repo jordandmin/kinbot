@@ -6,6 +6,7 @@ import { auth } from '@/server/auth/index'
 import { createLogger } from '@/server/logger'
 import { createContact, findContactByLinkedUserId } from '@/server/services/contacts'
 import { validateInvitation, markInvitationUsed } from '@/server/services/invitations'
+import { SUPPORTED_LANGUAGES } from '@/shared/constants'
 
 const log = createLogger('routes:onboarding')
 const onboardingRoutes = new Hono()
@@ -88,6 +89,33 @@ onboardingRoutes.post('/profile', async (c) => {
     )
   }
 
+  // Validate and sanitize fields (same rules as PATCH /api/me)
+  const MAX_NAME_LENGTH = 100
+  const MAX_PSEUDONYM_LENGTH = 30
+  const PSEUDONYM_REGEX = /^[a-zA-Z0-9_-]+$/
+
+  const trimmedFirstName = String(firstName).trim()
+  const trimmedLastName = String(lastName).trim()
+  const trimmedPseudonym = String(pseudonym).trim()
+
+  const validationErrors: string[] = []
+
+  if (!trimmedFirstName) validationErrors.push('firstName cannot be empty')
+  if (trimmedFirstName.length > MAX_NAME_LENGTH) validationErrors.push(`firstName must be under ${MAX_NAME_LENGTH} characters`)
+  if (!trimmedLastName) validationErrors.push('lastName cannot be empty')
+  if (trimmedLastName.length > MAX_NAME_LENGTH) validationErrors.push(`lastName must be under ${MAX_NAME_LENGTH} characters`)
+  if (!trimmedPseudonym || trimmedPseudonym.length < 2) validationErrors.push('pseudonym must be at least 2 characters')
+  if (trimmedPseudonym.length > MAX_PSEUDONYM_LENGTH) validationErrors.push(`pseudonym must be under ${MAX_PSEUDONYM_LENGTH} characters`)
+  if (trimmedPseudonym.length > 0 && !PSEUDONYM_REGEX.test(trimmedPseudonym)) validationErrors.push('pseudonym can only contain letters, numbers, underscores, and hyphens')
+  if (language && !SUPPORTED_LANGUAGES.includes(language as typeof SUPPORTED_LANGUAGES[number])) validationErrors.push(`language must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`)
+
+  if (validationErrors.length > 0) {
+    return c.json(
+      { error: { code: 'VALIDATION_ERROR', message: validationErrors.join('; ') } },
+      400,
+    )
+  }
+
   // Check if this is the first user or an invited user
   const adminExists = await db
     .select()
@@ -116,9 +144,9 @@ onboardingRoutes.post('/profile', async (c) => {
 
   await db.insert(userProfiles).values({
     userId,
-    firstName,
-    lastName,
-    pseudonym,
+    firstName: trimmedFirstName,
+    lastName: trimmedLastName,
+    pseudonym: trimmedPseudonym,
     language: language || 'en',
     role,
   })
@@ -126,7 +154,7 @@ onboardingRoutes.post('/profile', async (c) => {
   // Update name in Better Auth user table
   await db
     .update(user)
-    .set({ name: `${firstName} ${lastName}`, updatedAt: new Date() })
+    .set({ name: `${trimmedFirstName} ${trimmedLastName}`, updatedAt: new Date() })
     .where(eq(user.id, userId))
 
   // Auto-create a contact for this user
@@ -134,7 +162,7 @@ onboardingRoutes.post('/profile', async (c) => {
   if (!existingContact) {
     const userEmail = session.user.email
     const result = await createContact({
-      name: `${firstName} ${lastName}`,
+      name: `${trimmedFirstName} ${trimmedLastName}`,
       type: 'human',
       linkedUserId: userId,
       identifiers: userEmail ? [{ label: 'email', value: userEmail }] : undefined,
@@ -149,13 +177,13 @@ onboardingRoutes.post('/profile', async (c) => {
     markInvitationUsed(invitationToken, userId)
   }
 
-  log.info({ userId, role, pseudonym }, 'Onboarding completed')
+  log.info({ userId, role, pseudonym: trimmedPseudonym }, 'Onboarding completed')
 
   return c.json({
     userId,
-    firstName,
-    lastName,
-    pseudonym,
+    firstName: trimmedFirstName,
+    lastName: trimmedLastName,
+    pseudonym: trimmedPseudonym,
     language: language || 'en',
     role,
   }, 201)
