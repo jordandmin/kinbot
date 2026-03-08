@@ -1727,5 +1727,32 @@
       "fetchHistoryFailed": "Impossible de charger l'historique des sessions",
       "viewSessionFailed": "Impossible de charger les messages de la session"
     }
+  },
+  "teams": {
+    "title": "Equipes",
+    "createTeam": "Creer une equipe",
+    "editTeam": "Modifier l equipe",
+    "deleteTeam": "Supprimer l equipe",
+    "teamName": "Nom de l equipe",
+    "teamDescription": "Description",
+    "teamIcon": "Icone",
+    "teamColor": "Couleur",
+    "hubKin": "Kin Hub",
+    "members": "Membres",
+    "addMember": "Ajouter un membre",
+    "removeMember": "Retirer un membre",
+    "noTeams": "Aucune equipe",
+    "confirmDelete": "Etes-vous sur de vouloir supprimer cette equipe ?",
+    "deleteWarning": "Cela supprimera l equipe et toutes les associations de membres. Les Kins ne seront pas supprimes.",
+    "hubRole": "Hub",
+    "memberRole": "Membre",
+    "selectHubKin": "Selectionnez le Kin Hub de cette equipe",
+    "selectMembers": "Selectionnez les Kins a ajouter a cette equipe",
+    "created": "Equipe creee",
+    "updated": "Equipe mise a jour",
+    "deleted": "Equipe supprimee",
+    "memberAdded": "Membre ajoute a l equipe",
+    "memberRemoved": "Membre retire de l equipe",
+    "cannotRemoveHub": "Impossible de retirer le Kin Hub. Changez le Hub d abord."
   }
 }

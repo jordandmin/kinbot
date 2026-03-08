@@ -679,3 +679,28 @@ export const pluginStorage = sqliteTable('plugin_storage', {
   uniqueIndex('idx_plugin_storage_name_key').on(table.pluginName, table.key),
   index('idx_plugin_storage_plugin').on(table.pluginName),
 ])
+
+// ─── Teams ───────────────────────────────────────────────────────────────────
+
+export const teams = sqliteTable('teams', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').unique(),
+  description: text('description'),
+  icon: text('icon'),           // emoji or Lucide icon name
+  color: text('color'),         // hex color for sidebar
+  hubKinId: text('hub_kin_id').notNull().references(() => kins.id),
+  createdBy: text('created_by').references(() => user.id),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+})
+
+export const teamMembers = sqliteTable('team_members', {
+  teamId: text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
+  kinId: text('kin_id').notNull().references(() => kins.id, { onDelete: 'cascade' }),
+  role: text('role').notNull().default('member'), // 'hub' | 'member'
+  joinedAt: integer('joined_at', { mode: 'timestamp_ms' }).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.teamId, table.kinId] }),
+  index('idx_team_members_kin').on(table.kinId),
+])

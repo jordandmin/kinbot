@@ -1727,5 +1727,32 @@
       "fetchHistoryFailed": "Failed to load session history",
       "viewSessionFailed": "Failed to load session messages"
     }
+  },
+  "teams": {
+    "title": "Teams",
+    "createTeam": "Create Team",
+    "editTeam": "Edit Team",
+    "deleteTeam": "Delete Team",
+    "teamName": "Team Name",
+    "teamDescription": "Description",
+    "teamIcon": "Icon",
+    "teamColor": "Color",
+    "hubKin": "Hub Kin",
+    "members": "Members",
+    "addMember": "Add Member",
+    "removeMember": "Remove Member",
+    "noTeams": "No teams yet",
+    "confirmDelete": "Are you sure you want to delete this team?",
+    "deleteWarning": "This will remove the team and all member associations. Kins will not be deleted.",
+    "hubRole": "Hub",
+    "memberRole": "Member",
+    "selectHubKin": "Select the Hub Kin for this team",
+    "selectMembers": "Select Kins to add to this team",
+    "created": "Team created",
+    "updated": "Team updated",
+    "deleted": "Team deleted",
+    "memberAdded": "Member added to team",
+    "memberRemoved": "Member removed from team",
+    "cannotRemoveHub": "Cannot remove the Hub Kin. Change the Hub first."
   }
 }
