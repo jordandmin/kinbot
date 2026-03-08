@@ -4,7 +4,7 @@ import { ScrollArea } from '@/client/components/ui/scroll-area'
 import { Button } from '@/client/components/ui/button'
 import { Textarea } from '@/client/components/ui/textarea'
 import { Checkbox } from '@/client/components/ui/checkbox'
-import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
+import { ChatAvatar } from '@/client/components/chat/ChatAvatar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,12 +102,13 @@ export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, sessionId, onHide
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <Avatar className="size-8">
-            {kinAvatarUrl && <AvatarImage src={kinAvatarUrl} />}
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
-              <Zap className="size-3.5" />
-            </AvatarFallback>
-          </Avatar>
+          <ChatAvatar
+            avatarUrl={kinAvatarUrl}
+            name={kinName}
+            className="size-8"
+            fallbackClassName="bg-primary/10 text-primary text-xs"
+            fallbackIcon={<Zap className="size-3.5" />}
+          />
           <div className="min-w-0">
             <p className="text-sm font-semibold leading-tight">{t('quickChat.title')}</p>
             <p className="text-xs text-muted-foreground truncate">{kinName}</p>

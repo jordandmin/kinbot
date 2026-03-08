@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
-import { Bot } from 'lucide-react'
+import { ChatAvatar } from '@/client/components/chat/ChatAvatar'
 
 interface TypingIndicatorProps {
   kinName?: string
@@ -29,19 +28,9 @@ export function TypingIndicator({ kinName, kinAvatarUrl }: TypingIndicatorProps)
     return `${m}m ${rem.toString().padStart(2, '0')}s`
   }
 
-  const initials = kinName?.slice(0, 2).toUpperCase() ?? 'K'
-
   return (
     <div className="flex gap-3 px-4 py-2 animate-fade-in-up">
-      <Avatar className="size-8 shrink-0">
-        {kinAvatarUrl ? (
-          <AvatarImage src={kinAvatarUrl} alt={kinName ?? ''} />
-        ) : (
-          <AvatarFallback className="text-xs">
-            {kinName ? initials : <Bot className="size-4" />}
-          </AvatarFallback>
-        )}
-      </Avatar>
+      <ChatAvatar avatarUrl={kinAvatarUrl} name={kinName} fallbackClassName="text-xs" />
 
       <div className="space-y-1">
         {kinName && (

@@ -1,6 +1,6 @@
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
+import { ChatAvatar } from '@/client/components/chat/ChatAvatar'
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -201,13 +201,7 @@ export const TaskResultCard = memo(function TaskResultCard(props: TaskResultCard
           isActive ? 'border-primary/30' : 'border-border',
         )}>
           <div className="flex items-center gap-3">
-            <Avatar className="size-8 shrink-0">
-              {avatarUrl ? (
-                <AvatarImage src={avatarUrl} alt={senderName ?? ''} />
-              ) : (
-                <AvatarFallback className="text-[10px] bg-secondary">{initials}</AvatarFallback>
-              )}
-            </Avatar>
+            <ChatAvatar avatarUrl={avatarUrl} name={senderName} fallbackClassName="text-[10px] bg-secondary" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{task.taskName}</p>
               <div className="flex items-center gap-1.5 mt-0.5">

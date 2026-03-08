@@ -1,6 +1,6 @@
 import { useState, memo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Avatar, AvatarImage, AvatarFallback } from '@/client/components/ui/avatar'
+import { ChatAvatar } from '@/client/components/chat/ChatAvatar'
 import { Button } from '@/client/components/ui/button'
 import { Badge } from '@/client/components/ui/badge'
 import { Progress } from '@/client/components/ui/progress'
@@ -114,14 +114,13 @@ export const ConversationHeader = memo(function ConversationHeader({
   return (
     <div className="flex items-center gap-3 border-b px-4 py-2.5">
       {/* Avatar */}
-      <Avatar className="size-10 shrink-0 border border-border/50">
-        {avatarUrl ? (
-          <AvatarImage src={avatarUrl} alt={name} />
-        ) : null}
-        <AvatarFallback className="bg-primary/10">
-          <Bot className="size-5 text-primary" />
-        </AvatarFallback>
-      </Avatar>
+      <ChatAvatar
+        avatarUrl={avatarUrl}
+        name={name}
+        className="border border-border/50"
+        fallbackClassName="bg-primary/10"
+        fallbackIcon={<Bot className="size-5 text-primary" />}
+      />
 
       {/* Name + role — desktop: static, mobile: tappable to show model & context */}
       <div className="min-w-0 flex-1">

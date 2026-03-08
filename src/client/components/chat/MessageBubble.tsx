@@ -1,13 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCopyToClipboard } from '@/client/hooks/useCopyToClipboard'
-import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { Badge } from '@/client/components/ui/badge'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/client/components/ui/collapsible'
 import { MarkdownContent } from '@/client/components/chat/MarkdownContent'
 import { InlineToolCall } from '@/client/components/chat/InlineToolCall'
 import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { ImageLightbox } from '@/client/components/chat/ImageLightbox'
+import { ChatAvatar } from '@/client/components/chat/ChatAvatar'
 import { cn } from '@/client/lib/utils'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
 import {
@@ -711,15 +711,9 @@ export const MessageBubble = memo(function MessageBubble({
       <MessageContextMenu content={content} isUser={false} onRegenerate={onRegenerate} onQuoteReply={onQuoteReply} onEditResend={onEditResend}>
       <div className={cn('flex gap-3 px-4 animate-fade-in-up', isGrouped ? 'py-0.5' : 'py-2')}>
         {isGrouped ? (
-          <div className="size-8 shrink-0" />
+          <div className="size-10 shrink-0" />
         ) : (
-          <Avatar className="size-8 shrink-0">
-            {avatarUrl ? (
-              <AvatarImage src={avatarUrl} alt={senderName ?? ''} />
-            ) : (
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            )}
-          </Avatar>
+          <ChatAvatar avatarUrl={avatarUrl} name={senderName} />
         )}
 
         <div className="group/msg relative max-w-[80%] space-y-1.5">
@@ -786,15 +780,9 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {isGrouped ? (
         /* Invisible spacer preserving alignment with the avatar column */
-        <div className="size-8 shrink-0" />
+        <div className="size-10 shrink-0" />
       ) : (
-        <Avatar className="size-8 shrink-0">
-          {avatarUrl ? (
-            <AvatarImage src={avatarUrl} alt={senderName ?? ''} />
-          ) : (
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-          )}
-        </Avatar>
+        <ChatAvatar avatarUrl={avatarUrl} name={senderName} />
       )}
 
       <div
