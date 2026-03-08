@@ -15,6 +15,15 @@ import {
   deleteTeamMemory,
   searchTeamMemories,
 } from '@/server/services/team-memory'
+import {
+  listTeamSources,
+  getTeamSource,
+  getTeamSourceChunks,
+  createTeamSource,
+  deleteTeamSource,
+  processTeamSource,
+  searchTeamKnowledge,
+} from '@/server/services/team-knowledge'
 import { createLogger } from '@/server/logger'
 import type { MemoryCategory } from '@/shared/types'
 
@@ -231,4 +240,110 @@ teamRoutes.delete('/:id/memories/:memoryId', async (c) => {
     return c.json({ error: { code: 'NOT_FOUND', message: 'Team memory not found' } }, 404)
   }
   return c.json({ success: true })
+})
+
+// ─── Team Knowledge ──────────────────────────────────────────────────────────
+
+// GET /api/teams/:id/knowledge - list team knowledge sources
+teamRoutes.get('/:id/knowledge', async (c) => {
+  const teamId = c.req.param('id')
+  const sources = await listTeamSources(teamId)
+  return c.json({ sources })
+})
+
+// POST /api/teams/:id/knowledge - create team knowledge source
+teamRoutes.post('/:id/knowledge', async (c) => {
+  const teamId = c.req.param('id')
+  const body = await c.req.json() as {
+    name: string
+    type: 'file' | 'text' | 'url'
+    content?: string
+    sourceUrl?: string
+    originalFilename?: string
+    mimeType?: string
+  }
+
+  if (!body.name || !body.type) {
+    return c.json({ error: { code: 'INVALID_INPUT', message: 'name and type are required' } }, 400)
+  }
+
+  try {
+    const source = await createTeamSource(teamId, {
+      name: body.name,
+      type: body.type,
+      content: body.content ?? null,
+      sourceUrl: body.sourceUrl ?? null,
+      originalFilename: body.originalFilename ?? null,
+      mimeType: body.mimeType ?? null,
+    })
+
+    // Start processing in the background
+    processTeamSource(source.id).catch(() => {
+      // Error is already handled inside processTeamSource
+    })
+
+    return c.json({ source }, 201)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to create team knowledge source'
+    log.error({ err }, 'Failed to create team knowledge source')
+    return c.json({ error: { code: 'CREATE_FAILED', message } }, 400)
+  }
+})
+
+// GET /api/teams/:id/knowledge/search - search team knowledge
+teamRoutes.get('/:id/knowledge/search', async (c) => {
+  const teamId = c.req.param('id')
+  const query = c.req.query('q')
+  const limit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined
+
+  if (!query) {
+    return c.json({ error: { code: 'INVALID_INPUT', message: 'q query parameter is required' } }, 400)
+  }
+
+  const results = await searchTeamKnowledge(teamId, query, limit)
+  return c.json({ results })
+})
+
+// GET /api/teams/:id/knowledge/:sourceId - get source with chunks
+teamRoutes.get('/:id/knowledge/:sourceId', async (c) => {
+  const teamId = c.req.param('id')
+  const sourceId = c.req.param('sourceId')
+
+  const source = await getTeamSource(sourceId, teamId)
+  if (!source) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Team knowledge source not found' } }, 404)
+  }
+
+  const chunks = await getTeamSourceChunks(sourceId)
+  return c.json({ source, chunks })
+})
+
+// DELETE /api/teams/:id/knowledge/:sourceId - delete source
+teamRoutes.delete('/:id/knowledge/:sourceId', async (c) => {
+  const teamId = c.req.param('id')
+  const sourceId = c.req.param('sourceId')
+
+  const deleted = await deleteTeamSource(sourceId, teamId)
+  if (!deleted) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Team knowledge source not found' } }, 404)
+  }
+
+  return c.json({ success: true })
+})
+
+// POST /api/teams/:id/knowledge/:sourceId/reprocess - reprocess source
+teamRoutes.post('/:id/knowledge/:sourceId/reprocess', async (c) => {
+  const teamId = c.req.param('id')
+  const sourceId = c.req.param('sourceId')
+
+  const source = await getTeamSource(sourceId, teamId)
+  if (!source) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Team knowledge source not found' } }, 404)
+  }
+
+  processTeamSource(sourceId).catch(() => {
+    // Error handled inside processTeamSource
+  })
+
+  return c.json({ success: true, message: 'Reprocessing started' })
 })

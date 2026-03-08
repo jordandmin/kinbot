@@ -1781,7 +1781,13 @@
     "noMemories": "Aucun souvenir d'equipe",
     "memoryCreated": "Souvenir d'equipe cree",
     "memoryUpdated": "Souvenir d'equipe mis a jour",
-    "memoryDeleted": "Souvenir d'equipe supprime"
+    "memoryDeleted": "Souvenir d'equipe supprime",
+    "knowledge": "Connaissances d'equipe",
+    "knowledgeDescription": "Base de connaissances partagee accessible a tous les membres de l'equipe.",
+    "noKnowledge": "Aucune source de connaissances d'equipe",
+    "addKnowledgeSource": "Ajouter une source",
+    "knowledgeSourceCreated": "Source de connaissances d'equipe creee",
+    "knowledgeSourceDeleted": "Source de connaissances d'equipe supprimee"
   },
   "knowledge": {
     "title": "Base de connaissances",

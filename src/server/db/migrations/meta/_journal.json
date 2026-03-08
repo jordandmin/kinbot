@@ -288,6 +288,13 @@
       "when": 1772981062621,
       "tag": "0040_little_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1772995496805,
+      "tag": "0041_classy_solo",
+      "breakpoints": true
     }
   ]
 }

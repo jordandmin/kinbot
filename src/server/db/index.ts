@@ -232,6 +232,49 @@ export function initVirtualTables() {
     log.warn('sqlite-vec: team_memories_vec creation failed - vector search disabled for team memories')
   }
 
+  // ── Team knowledge chunks FTS5 ──
+  try {
+    sqlite.run(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS team_knowledge_chunks_fts USING fts5(
+        content,
+        content='team_knowledge_chunks',
+        content_rowid='rowid'
+      )
+    `)
+    sqlite.run(`
+      CREATE TRIGGER IF NOT EXISTS team_knowledge_chunks_fts_insert AFTER INSERT ON team_knowledge_chunks
+      BEGIN
+        INSERT INTO team_knowledge_chunks_fts(rowid, content) VALUES (new.rowid, new.content);
+      END
+    `)
+    sqlite.run(`
+      CREATE TRIGGER IF NOT EXISTS team_knowledge_chunks_fts_update AFTER UPDATE OF content ON team_knowledge_chunks
+      BEGIN
+        UPDATE team_knowledge_chunks_fts SET content = new.content WHERE rowid = old.rowid;
+      END
+    `)
+    sqlite.run(`
+      CREATE TRIGGER IF NOT EXISTS team_knowledge_chunks_fts_delete AFTER DELETE ON team_knowledge_chunks
+      BEGIN
+        DELETE FROM team_knowledge_chunks_fts WHERE rowid = old.rowid;
+      END
+    `)
+  } catch (e) {
+    log.warn('team_knowledge_chunks FTS5 setup failed: %s', e)
+  }
+
+  // ── Team knowledge chunks vec ──
+  try {
+    sqlite.run(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS team_knowledge_chunks_vec USING vec0(
+        chunk_id text PRIMARY KEY,
+        embedding float[${config.memory.embeddingDimension}]
+      )
+    `)
+  } catch {
+    log.warn('sqlite-vec: team_knowledge_chunks_vec creation failed - vector search disabled for team knowledge')
+  }
+
   // Backfill slugs for existing kins that don't have one
   backfillSlugs()
 }

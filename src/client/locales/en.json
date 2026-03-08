@@ -1781,7 +1781,13 @@
     "noMemories": "No team memories yet",
     "memoryCreated": "Team memory created",
     "memoryUpdated": "Team memory updated",
-    "memoryDeleted": "Team memory deleted"
+    "memoryDeleted": "Team memory deleted",
+    "knowledge": "Team Knowledge",
+    "knowledgeDescription": "Shared knowledge base accessible to all team members.",
+    "noKnowledge": "No team knowledge sources yet",
+    "addKnowledgeSource": "Add Knowledge Source",
+    "knowledgeSourceCreated": "Team knowledge source created",
+    "knowledgeSourceDeleted": "Team knowledge source deleted"
   },
   "knowledge": {
     "title": "Knowledge Base",

@@ -416,6 +416,27 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       }
     }
 
+    // Fetch relevant team knowledge for all teams this Kin belongs to
+    let relevantTeamKnowledge: Array<{
+      teamId: string
+      teamName: string
+      chunks: Array<{ content: string; sourceId: string; score: number }>
+    }> = []
+    if (teamContext.length > 0) {
+      try {
+        const { searchTeamKnowledge } = await import('@/server/services/team-knowledge')
+        const teamKnowledgeResults = await Promise.all(
+          teamContext.map(async (t) => {
+            const chunks = await searchTeamKnowledge(t.teamId, queueItem.content, 5)
+            return { teamId: t.teamId, teamName: t.teamName, chunks }
+          }),
+        )
+        relevantTeamKnowledge = teamKnowledgeResults.filter((t) => t.chunks.length > 0)
+      } catch (err) {
+        log.warn({ kinId, err }, 'Failed to fetch team knowledge')
+      }
+    }
+
     const systemPrompt = buildSystemPrompt({
       kin: { name: kin.name, slug: kin.slug, role: kin.role, character: kin.character, expertise: kin.expertise },
       contacts: contactsWithSlug,
@@ -431,6 +452,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       hubKinDirectory,
       teamContext: teamContext.length > 0 ? teamContext : undefined,
       relevantTeamMemories: relevantTeamMemories.length > 0 ? relevantTeamMemories : undefined,
+      relevantTeamKnowledge: relevantTeamKnowledge.length > 0 ? relevantTeamKnowledge : undefined,
       compactingSummary,
       compactedUpTo,
       participants: participants.length > 0 ? participants : undefined,

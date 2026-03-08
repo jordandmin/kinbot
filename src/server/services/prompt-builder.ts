@@ -87,6 +87,11 @@ interface PromptParams {
     teamName: string
     memories: Array<{ id: string; content: string; category: string; subject: string | null; importance: number | null; authorKinId: string; score: number; updatedAt: Date | null }>
   }>
+  relevantTeamKnowledge?: Array<{
+    teamId: string
+    teamName: string
+    chunks: Array<{ content: string; sourceId: string; score: number }>
+  }>
   compactingSummary?: string | null
   compactedUpTo?: Date | null
   participants?: Array<{ name: string; platform: string | null; messageCount: number; lastSeenAt: Date }>
@@ -685,6 +690,21 @@ export function buildSystemPrompt(params: PromptParams): string {
       `Use this information to inform your responses when applicable.\n\n` +
       knowledgeLines,
     )
+  }
+
+  // [5.6] Relevant team knowledge base chunks
+  if (params.relevantTeamKnowledge && params.relevantTeamKnowledge.length > 0) {
+    for (const team of params.relevantTeamKnowledge) {
+      const chunkLines = team.chunks
+        .map((k, i) => `[${i + 1}] ${k.content}`)
+        .join('\n\n')
+      blocks.push(
+        `## Team knowledge: ${team.teamName}\n\n` +
+        `The following excerpts from the shared knowledge base of team "${team.teamName}" may be relevant. ` +
+        `Use this information to inform your responses when applicable.\n\n` +
+        chunkLines,
+      )
+    }
   }
 
   // [6] Hidden system instructions (main agent only)
