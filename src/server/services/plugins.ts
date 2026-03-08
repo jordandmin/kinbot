@@ -682,9 +682,31 @@ class PluginManager {
             continue
           }
 
+          // Wrap the tool factory to track errors in the plugin health system
+          const originalCreate = toolReg.create
+          const wrappedCreate: typeof originalCreate = (ctx) => {
+            const aiTool = originalCreate(ctx)
+            if (aiTool.execute) {
+              const originalExecute = aiTool.execute
+              aiTool.execute = async (...args: any[]) => {
+                try {
+                  const result = await (originalExecute as any)(...args)
+                  // Successful execution resets consecutive error count
+                  plugin.health.consecutiveErrors = 0
+                  return result
+                } catch (err) {
+                  this.recordPluginError(name, err instanceof Error ? err.message : 'Tool execution error', `tool:${toolName}`)
+                  throw err // Re-throw so the AI SDK reports the error normally
+                }
+              }
+            }
+            return aiTool
+          }
+
           // Plugin tools are always opt-in (defaultDisabled)
           toolRegistry.register(prefixedName, {
             ...toolReg,
+            create: wrappedCreate,
             defaultDisabled: true,
           })
           plugin.registeredTools.push(prefixedName)
@@ -1006,6 +1028,7 @@ class PluginManager {
     // Merge with existing config (preserve secrets that are masked)
     const existing = await this.getResolvedConfig(name)
     const merged = { ...existing }
+    const schemaKeys = plugin.manifest.config ? new Set(Object.keys(plugin.manifest.config)) : new Set<string>()
 
     for (const [key, value] of Object.entries(config)) {
       // Don't overwrite secrets with the mask value
@@ -1015,8 +1038,15 @@ class PluginManager {
       merged[key] = value
     }
 
-    // Validate merged config against schema
+    // Strip keys not in the config schema to prevent stale data accumulation
     if (plugin.manifest.config) {
+      for (const key of Object.keys(merged)) {
+        if (!schemaKeys.has(key)) {
+          log.debug({ plugin: name, key }, 'Stripping unknown config key')
+          delete merged[key]
+        }
+      }
+
       const errors = validateConfig(merged, plugin.manifest.config)
       if (errors.length > 0) {
         throw new Error(`Invalid config: ${errors.join('; ')}`)
