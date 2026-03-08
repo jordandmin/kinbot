@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react'
+import { usePageMeta } from '../hooks/usePageMeta'
 import { ScrollReveal } from '../components/ScrollReveal'
 import { SectionDivider } from '../components/SectionDivider'
 
@@ -16,6 +17,11 @@ function SectionFallback() {
 }
 
 export function FeaturesPage() {
+  usePageMeta({
+    title: 'Features',
+    description: 'Memory, tools, mini-apps, plugins, providers, and messaging channels. Everything KinBot agents can do.',
+  })
+
   return (
     <div className="pt-24">
       <Suspense fallback={<SectionFallback />}>

@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react'
+import { usePageMeta } from '../hooks/usePageMeta'
 import { Hero } from '../components/Hero'
 import { ScrollReveal } from '../components/ScrollReveal'
 import { SectionDivider } from '../components/SectionDivider'
@@ -16,6 +17,11 @@ function SectionFallback() {
 }
 
 export function HomePage() {
+  usePageMeta({
+    title: 'KinBot',
+    description: 'Self-hosted AI agents with persistent memory, multi-agent collaboration, and zero cloud dependency.',
+  })
+
   return (
     <>
       <Hero />
