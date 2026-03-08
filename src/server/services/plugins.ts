@@ -141,6 +141,23 @@ export function validateManifest(data: unknown): { valid: boolean; errors: strin
     }
   }
 
+  // Validate dependencies
+  if (m.dependencies !== undefined) {
+    if (typeof m.dependencies !== 'object' || m.dependencies === null || Array.isArray(m.dependencies)) {
+      errors.push('dependencies must be an object mapping plugin names to semver ranges')
+    } else {
+      const deps = m.dependencies as Record<string, unknown>
+      for (const [depName, depRange] of Object.entries(deps)) {
+        if (!NAME_PATTERN.test(depName)) {
+          errors.push(`dependencies key "${depName}" must match [a-z0-9-]+`)
+        }
+        if (typeof depRange !== 'string' || !depRange) {
+          errors.push(`dependencies["${depName}"] must be a non-empty semver range string`)
+        }
+      }
+    }
+  }
+
   // Validate permissions
   if (m.permissions !== undefined) {
     if (!Array.isArray(m.permissions)) {
@@ -269,6 +286,42 @@ class PluginManager {
     return { compatible: true }
   }
 
+  /** Check that all declared plugin dependencies are met */
+  private checkDependencies(manifest: PluginManifest): string[] {
+    const deps = manifest.dependencies
+    if (!deps || Object.keys(deps).length === 0) return []
+
+    const errors: string[] = []
+    for (const [depName, depRange] of Object.entries(deps)) {
+      const dep = this.plugins.get(depName)
+      if (!dep) {
+        errors.push(`"${depName}" is not installed`)
+        continue
+      }
+      if (!dep.enabled) {
+        errors.push(`"${depName}" is installed but not enabled`)
+        continue
+      }
+      if (!satisfiesSemver(dep.manifest.version, depRange)) {
+        errors.push(`"${depName}" version ${dep.manifest.version} does not satisfy ${depRange}`)
+      }
+    }
+    return errors
+  }
+
+  /** Get list of enabled plugins that depend on the given plugin */
+  private getDependents(pluginName: string): string[] {
+    const dependents: string[] = []
+    for (const [name, plugin] of this.plugins) {
+      if (!plugin.enabled) continue
+      const deps = plugin.manifest.dependencies
+      if (deps && pluginName in deps) {
+        dependents.push(name)
+      }
+    }
+    return dependents
+  }
+
   /** Scan plugins/ directory and load all valid plugins */
   async scan(): Promise<void> {
     log.info({ dir: this.pluginsDir }, 'Scanning for plugins')
@@ -372,6 +425,15 @@ class PluginManager {
         plugin.error = compat.error
         plugin.enabled = false
         log.warn({ plugin: name, error: compat.error }, 'Plugin incompatible with current KinBot version')
+        return
+      }
+
+      // Check plugin dependencies
+      const depErrors = this.checkDependencies(plugin.manifest)
+      if (depErrors.length > 0) {
+        plugin.error = `Missing dependencies: ${depErrors.join('; ')}`
+        plugin.enabled = false
+        log.warn({ plugin: name, errors: depErrors }, 'Plugin dependency check failed')
         return
       }
 
@@ -743,6 +805,12 @@ class PluginManager {
     const plugin = this.plugins.get(name)
     if (!plugin) throw new Error(`Plugin "${name}" not found`)
 
+    // Prevent disabling if other enabled plugins depend on this one
+    const dependents = this.getDependents(name)
+    if (dependents.length > 0) {
+      throw new Error(`Cannot disable "${name}": required by ${dependents.join(', ')}`)
+    }
+
     await this.setState(name, false)
     await this.deactivatePlugin(name)
 
@@ -773,6 +841,8 @@ class PluginManager {
       providers: p.registeredProviders,
       channels: p.registeredChannels,
       configSchema: p.manifest.config ?? {},
+      dependencies: p.manifest.dependencies ?? {},
+      dependents: this.getDependents(p.manifest.name),
       installSource: p.installSource,
       installMeta: p.installMeta,
       compatible: p.manifest.kinbot ? satisfiesSemver(version, p.manifest.kinbot) : true,
@@ -1157,6 +1227,12 @@ class PluginManager {
   async uninstallPlugin(name: string): Promise<void> {
     const plugin = this.plugins.get(name)
     if (!plugin) throw new Error(`Plugin "${name}" not found`)
+
+    // Prevent uninstall if other plugins depend on this one
+    const dependents = this.getDependents(name)
+    if (dependents.length > 0) {
+      throw new Error(`Cannot uninstall "${name}": required by ${dependents.join(', ')}`)
+    }
 
     const source = plugin.installSource ?? 'local'
     if (source === 'local') {

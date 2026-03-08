@@ -303,6 +303,12 @@ export function PluginsSettings() {
                         {plugin.channelCount} {t('settings.plugins.channels')}
                       </span>
                     )}
+                    {Object.keys(plugin.dependencies ?? {}).length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Plug className="size-3" />
+                        {Object.keys(plugin.dependencies).length} dep{Object.keys(plugin.dependencies).length > 1 ? 's' : ''}
+                      </span>
+                    )}
                     {(plugin.permissions?.length ?? 0) > 0 && (
                       <span className="flex items-center gap-1">
                         <Shield className="size-3" />
@@ -328,6 +334,32 @@ export function PluginsSettings() {
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
+                  )}
+
+                  {/* Dependencies detail */}
+                  {Object.keys(plugin.dependencies ?? {}).length > 0 && (
+                    <Collapsible>
+                      <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1">
+                        <ChevronDown className="size-3" />
+                        {t('settings.plugins.viewDependencies', 'View dependencies')}
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-1">
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(plugin.dependencies).map(([dep, range]) => (
+                            <Badge key={dep} variant="secondary" className="text-xs font-mono">
+                              {dep} {range}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+
+                  {/* Dependents warning */}
+                  {(plugin.dependents?.length ?? 0) > 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      {t('settings.plugins.requiredBy', 'Required by')}: {plugin.dependents.join(', ')}
+                    </p>
                   )}
 
                   {plugin.error && (

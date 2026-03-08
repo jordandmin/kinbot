@@ -28,6 +28,7 @@ export interface PluginManifest {
   main: string
   icon?: string
   permissions?: string[]
+  dependencies?: Record<string, string>  // plugin-name → semver range (e.g. ">=1.0.0")
   config?: Record<string, PluginConfigField>
 }
 
@@ -87,6 +88,8 @@ export interface PluginSummary {
   configSchema: Record<string, PluginConfigField>
   installSource?: PluginInstallSource
   installMeta?: PluginInstallMeta
+  dependencies: Record<string, string>
+  dependents: string[]  // plugins that depend on this one
   compatible?: boolean
   compatibilityError?: string
 }
