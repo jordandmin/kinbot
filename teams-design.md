@@ -407,3 +407,16 @@ Le MVP (phases 1-3) apporte déjà 80% de la valeur : l'utilisateur peut créer 
 - Build passes, all 2360 tests pass
 - Commit: `6346e5f` on `feat/teams`
 - **Next: Phase 2 (Frontend sidebar + navigation)**
+
+### Phase 2 - DONE (2026-03-08, cron run #2)
+- Created `src/client/hooks/useTeams.ts`: fetches teams, listens to SSE events, provides CRUD methods
+- Created `src/client/components/team/TeamFormDialog.tsx`: create/edit dialog with name, description, icon picker, color picker, hub kin selector, member checkboxes
+- Created `src/client/components/sidebar/TeamSection.tsx`: collapsible team section in sidebar with hub pinned at top
+- Modified `src/client/components/sidebar/KinList.tsx`: groups kins by team, ungrouped kins shown separately with drag-and-drop preserved
+- Modified `src/client/components/sidebar/AppSidebar.tsx`: passes teams data to KinList
+- Created `src/client/pages/settings/TeamsSettings.tsx`: full CRUD settings page with team cards, member badges, create/edit/delete
+- Added Teams section to SettingsPage.tsx (under new "Kins" group)
+- i18n keys added for both en and fr
+- Build passes, all 2413 tests pass
+- Commit: `06356f7` on `feat/teams`
+- **Next: Phase 3 (Hub Kin prompt enrichment)**
