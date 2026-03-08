@@ -257,6 +257,17 @@ pluginRoutes.put('/:name/config', requireAdmin, async (c) => {
   }
 })
 
+// POST /api/plugins/:name/health/reset — reset a plugin's health stats (admin only)
+pluginRoutes.post('/:name/health/reset', requireAdmin, async (c) => {
+  const { name } = c.req.param()
+  try {
+    pluginManager.resetPluginHealth(name)
+    return c.json({ success: true })
+  } catch (err) {
+    return c.json({ error: { code: 'HEALTH_RESET_FAILED', message: err instanceof Error ? err.message : 'Failed to reset health' } }, 400)
+  }
+})
+
 // POST /api/plugins/reload
 pluginRoutes.post('/reload', requireAdmin, async (c) => {
   try {

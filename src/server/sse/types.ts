@@ -65,6 +65,7 @@ export type SSEEventType =
   | 'plugin:enabled'
   | 'plugin:disabled'
   | 'plugin:configUpdated'
+  | 'plugin:autoDisabled'
   | 'settings:hub-changed'
   | 'version:update-available'
   | 'connected'
