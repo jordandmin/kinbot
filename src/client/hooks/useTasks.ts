@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api } from '@/client/lib/api'
@@ -178,6 +178,15 @@ export function useTasks() {
     },
   })
 
+  // Derive set of cron IDs that have active tasks
+  const activeCronIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const task of activeTasks) {
+      if (task.cronId) ids.add(task.cronId)
+    }
+    return ids
+  }, [activeTasks])
+
   return {
     activeTasks,
     historyTasks,
@@ -187,5 +196,6 @@ export function useTasks() {
     searchQuery,
     setSearchQuery,
     loadMore,
+    activeCronIds,
   }
 }

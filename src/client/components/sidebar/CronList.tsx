@@ -54,6 +54,7 @@ interface LLMModel {
 interface CronListProps {
   kins: KinOption[]
   llmModels: LLMModel[]
+  activeCronIds?: Set<string>
 }
 
 function CronCard({
@@ -61,11 +62,13 @@ function CronCard({
   onClick,
   onApprove,
   onToggleActive,
+  isRunning,
 }: {
   cron: CronSummary
   onClick: () => void
   onApprove?: () => void
   onToggleActive?: (isActive: boolean) => void
+  isRunning?: boolean
 }) {
   const { t, i18n } = useTranslation()
   const initials = cron.kinName.slice(0, 2).toUpperCase()
@@ -89,7 +92,10 @@ function CronCard({
         <AvatarFallback className="text-[10px] bg-secondary">{initials}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-foreground">{cron.name}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="truncate font-medium text-foreground">{cron.name}</p>
+          {isRunning && <Loader2 className="size-3 shrink-0 animate-spin text-primary" />}
+        </div>
         <div className="flex items-center gap-1.5 mt-0.5">
           <Clock className="size-3 shrink-0 text-muted-foreground" />
           <span className="text-[10px] text-muted-foreground truncate" title={cron.schedule}>
@@ -143,10 +149,12 @@ function SortableCronCard({
   cron,
   onClick,
   onToggleActive,
+  isRunning,
 }: {
   cron: CronSummary
   onClick: () => void
   onToggleActive?: (isActive: boolean) => void
+  isRunning?: boolean
 }) {
   const {
     attributes,
@@ -177,12 +185,13 @@ function SortableCronCard({
         cron={cron}
         onClick={onClick}
         onToggleActive={onToggleActive}
+        isRunning={isRunning}
       />
     </div>
   )
 }
 
-export const CronList = memo(function CronList({ kins, llmModels }: CronListProps) {
+export const CronList = memo(function CronList({ kins, llmModels, activeCronIds }: CronListProps) {
   const { t } = useTranslation()
   const {
     crons,
@@ -307,6 +316,7 @@ export const CronList = memo(function CronList({ kins, llmModels }: CronListProp
                   cron={cron}
                   onClick={() => setDetailCron(cron)}
                   onApprove={() => approveCron(cron.id)}
+                  isRunning={activeCronIds?.has(cron.id)}
                 />
               ))}
               {pendingCrons.length > 0 && regularCrons.length > 0 && (
@@ -322,6 +332,7 @@ export const CronList = memo(function CronList({ kins, llmModels }: CronListProp
                         cron={cron}
                         onClick={() => setDetailCron(cron)}
                         onToggleActive={(isActive) => updateCron(cron.id, { isActive })}
+                        isRunning={activeCronIds?.has(cron.id)}
                       />
                     ))}
                   </SortableContext>
@@ -333,6 +344,7 @@ export const CronList = memo(function CronList({ kins, llmModels }: CronListProp
                     cron={cron}
                     onClick={() => setDetailCron(cron)}
                     onToggleActive={(isActive) => updateCron(cron.id, { isActive })}
+                    isRunning={activeCronIds?.has(cron.id)}
                   />
                 ))
               )}

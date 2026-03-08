@@ -142,6 +142,7 @@ export interface TaskSummary {
   status: TaskStatus
   mode: string
   model: string | null
+  cronId: string | null
   depth: number
   createdAt: string
   updatedAt: string

@@ -55,6 +55,7 @@ taskRoutes.get('/', async (c) => {
         status: t.status,
         mode: t.mode,
         model: t.model ?? parentKin?.model ?? null,
+        cronId: t.cronId ?? null,
         depth: t.depth,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,

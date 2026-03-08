@@ -149,6 +149,9 @@ export function AppSidebar({
               <TabsTrigger value="jobs" className="gap-1.5 text-xs">
                 <CalendarClock className="size-3.5" />
                 {t('sidebar.tabs.jobs')}
+                {taskData.activeCronIds.size > 0 && (
+                  <span className="ml-0.5 inline-block size-2 rounded-full bg-primary animate-pulse" />
+                )}
               </TabsTrigger>
               <TabsTrigger value="apps" className="gap-1.5 text-xs">
                 <Blocks className="size-3.5" />
@@ -161,7 +164,7 @@ export function AppSidebar({
             </TabsContent>
 
             <TabsContent value="jobs" className="flex-1 min-h-0 flex flex-col">
-              <CronList kins={cronKins} llmModels={llmModels} />
+              <CronList kins={cronKins} llmModels={llmModels} activeCronIds={taskData.activeCronIds} />
             </TabsContent>
 
             <TabsContent value="apps" className="flex-1 min-h-0 flex flex-col">
