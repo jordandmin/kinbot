@@ -204,7 +204,13 @@ export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, sessionId, onHide
       />
 
       {/* Close confirmation dialog */}
-      <AlertDialog open={showCloseDialog} onOpenChange={setShowCloseDialog}>
+      <AlertDialog open={showCloseDialog} onOpenChange={(open) => {
+          setShowCloseDialog(open)
+          if (!open) {
+            setSaveAsMemory(false)
+            setMemorySummary('')
+          }
+        }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('quickChat.closing.title')}</AlertDialogTitle>

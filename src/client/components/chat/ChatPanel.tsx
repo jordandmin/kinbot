@@ -759,7 +759,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
 
       {/* Quick session side panel */}
       <Sheet open={isQuickOpen} onOpenChange={(open) => { setQuickOpen(open); if (!open) setShowQuickHistory(false) }}>
-        <SheetContent side="right" className="w-[500px] sm:max-w-lg p-0" showCloseButton={false}>
+        <SheetContent side="right" className="w-full sm:w-[400px] md:w-[500px] p-0" showCloseButton={false}>
           <SheetTitle className="sr-only">{t('chat.quickChat')}</SheetTitle>
           {showQuickHistory ? (
             <Suspense fallback={null}>
