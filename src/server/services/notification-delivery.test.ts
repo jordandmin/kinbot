@@ -1,46 +1,89 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 
-// We test the pure/utility functions by extracting their logic.
-// Since isRateLimited, formatNotification, and escapeTelegramMarkdown are not exported,
-// we re-implement the same logic here and verify behavior matches the module's contract.
-
-// ─── escapeTelegramMarkdown ─────────────────────────────────────────────────
+// ─── escapeTelegramMarkdown ──────────────────────────────────────────────────
+// Re-implemented from module internals to test the contract
 
 function escapeTelegramMarkdown(text: string): string {
   return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1')
 }
 
 describe('escapeTelegramMarkdown', () => {
-  it('escapes all MarkdownV2 special characters', () => {
+  it('escapes underscores', () => {
     expect(escapeTelegramMarkdown('hello_world')).toBe('hello\\_world')
-    expect(escapeTelegramMarkdown('*bold*')).toBe('\\*bold\\*')
-    expect(escapeTelegramMarkdown('[link](url)')).toBe('\\[link\\]\\(url\\)')
-    expect(escapeTelegramMarkdown('~strikethrough~')).toBe('\\~strikethrough\\~')
-    expect(escapeTelegramMarkdown('`code`')).toBe('\\`code\\`')
-    expect(escapeTelegramMarkdown('>quote')).toBe('\\>quote')
-    expect(escapeTelegramMarkdown('#tag')).toBe('\\#tag')
-    expect(escapeTelegramMarkdown('a+b')).toBe('a\\+b')
-    expect(escapeTelegramMarkdown('a-b')).toBe('a\\-b')
-    expect(escapeTelegramMarkdown('a=b')).toBe('a\\=b')
-    expect(escapeTelegramMarkdown('a|b')).toBe('a\\|b')
-    expect(escapeTelegramMarkdown('a{b}')).toBe('a\\{b\\}')
-    expect(escapeTelegramMarkdown('a.b')).toBe('a\\.b')
-    expect(escapeTelegramMarkdown('a!b')).toBe('a\\!b')
   })
 
-  it('returns plain text unchanged', () => {
-    expect(escapeTelegramMarkdown('hello world')).toBe('hello world')
+  it('escapes asterisks', () => {
+    expect(escapeTelegramMarkdown('**bold**')).toBe('\\*\\*bold\\*\\*')
+  })
+
+  it('escapes square brackets', () => {
+    expect(escapeTelegramMarkdown('[link](url)')).toBe('\\[link\\]\\(url\\)')
+  })
+
+  it('escapes backticks', () => {
+    expect(escapeTelegramMarkdown('`code`')).toBe('\\`code\\`')
+  })
+
+  it('escapes tildes', () => {
+    expect(escapeTelegramMarkdown('~strikethrough~')).toBe('\\~strikethrough\\~')
+  })
+
+  it('escapes greater-than', () => {
+    expect(escapeTelegramMarkdown('> quote')).toBe('\\> quote')
+  })
+
+  it('escapes hash marks', () => {
+    expect(escapeTelegramMarkdown('# heading')).toBe('\\# heading')
+  })
+
+  it('escapes plus signs', () => {
+    expect(escapeTelegramMarkdown('a+b')).toBe('a\\+b')
+  })
+
+  it('escapes hyphens', () => {
+    expect(escapeTelegramMarkdown('a-b')).toBe('a\\-b')
+  })
+
+  it('escapes equals signs', () => {
+    expect(escapeTelegramMarkdown('a=b')).toBe('a\\=b')
+  })
+
+  it('escapes pipes', () => {
+    expect(escapeTelegramMarkdown('a|b')).toBe('a\\|b')
+  })
+
+  it('escapes curly braces', () => {
+    expect(escapeTelegramMarkdown('{a}')).toBe('\\{a\\}')
+  })
+
+  it('escapes dots', () => {
+    expect(escapeTelegramMarkdown('1.2.3')).toBe('1\\.2\\.3')
+  })
+
+  it('escapes exclamation marks', () => {
+    expect(escapeTelegramMarkdown('Hello!')).toBe('Hello\\!')
+  })
+
+  it('returns empty string for empty input', () => {
     expect(escapeTelegramMarkdown('')).toBe('')
-    expect(escapeTelegramMarkdown('abc123')).toBe('abc123')
+  })
+
+  it('does not escape regular alphanumeric characters', () => {
+    expect(escapeTelegramMarkdown('Hello World 123')).toBe('Hello World 123')
   })
 
   it('handles multiple special characters in sequence', () => {
-    expect(escapeTelegramMarkdown('**bold**')).toBe('\\*\\*bold\\*\\*')
-    expect(escapeTelegramMarkdown('_*mixed*_')).toBe('\\_\\*mixed\\*\\_')
+    expect(escapeTelegramMarkdown('*_~')).toBe('\\*\\_\\~')
+  })
+
+  it('handles real-world notification text', () => {
+    const input = 'Error in kin "my-kin": connection failed (timeout=30s)'
+    const expected = 'Error in kin "my\\-kin": connection failed \\(timeout\\=30s\\)'
+    expect(escapeTelegramMarkdown(input)).toBe(expected)
   })
 })
 
-// ─── formatNotification ─────────────────────────────────────────────────────
+// ─── NOTIFICATION_EMOJI mapping ──────────────────────────────────────────────
 
 const NOTIFICATION_EMOJI: Record<string, string> = {
   'prompt:pending': '\u2753',
@@ -50,6 +93,34 @@ const NOTIFICATION_EMOJI: Record<string, string> = {
   'kin:error': '\u26A0\uFE0F',
 }
 
+describe('NOTIFICATION_EMOJI', () => {
+  it('maps prompt:pending to question mark', () => {
+    expect(NOTIFICATION_EMOJI['prompt:pending']).toBe('❓')
+  })
+
+  it('maps channel:user-pending to bust silhouette', () => {
+    expect(NOTIFICATION_EMOJI['channel:user-pending']).toBe('👤')
+  })
+
+  it('maps cron:pending-approval to alarm clock', () => {
+    expect(NOTIFICATION_EMOJI['cron:pending-approval']).toBe('⏰')
+  })
+
+  it('maps mcp:pending-approval to puzzle piece', () => {
+    expect(NOTIFICATION_EMOJI['mcp:pending-approval']).toBe('🧩')
+  })
+
+  it('maps kin:error to warning sign', () => {
+    expect(NOTIFICATION_EMOJI['kin:error']).toBe('⚠️')
+  })
+
+  it('returns undefined for unknown types', () => {
+    expect(NOTIFICATION_EMOJI['unknown:type']).toBeUndefined()
+  })
+})
+
+// ─── formatNotification ──────────────────────────────────────────────────────
+
 interface NotificationPayload {
   type: string
   title: string
@@ -58,8 +129,8 @@ interface NotificationPayload {
 }
 
 function formatNotification(payload: NotificationPayload, platform: string): string {
-  const emoji = NOTIFICATION_EMOJI[payload.type] ?? '\uD83D\uDD14'
-  const kinSuffix = payload.kinName ? `\n\u2014 ${payload.kinName}` : ''
+  const emoji = NOTIFICATION_EMOJI[payload.type] ?? '🔔'
+  const kinSuffix = payload.kinName ? `\n— ${payload.kinName}` : ''
 
   switch (platform) {
     case 'telegram':
@@ -79,194 +150,267 @@ function formatNotification(payload: NotificationPayload, platform: string): str
 }
 
 describe('formatNotification', () => {
-  it('uses known emoji for recognized notification types', () => {
-    const result = formatNotification({ type: 'prompt:pending', title: 'Test' }, 'discord')
-    expect(result).toStartWith('\u2753')
+  describe('default platform', () => {
+    it('formats title-only notification', () => {
+      const result = formatNotification({ type: 'prompt:pending', title: 'New prompt' }, 'discord')
+      expect(result).toBe('❓ New prompt')
+    })
+
+    it('includes body when present', () => {
+      const result = formatNotification({ type: 'kin:error', title: 'Error', body: 'Something broke' }, 'discord')
+      expect(result).toBe('⚠️ Error\nSomething broke')
+    })
+
+    it('includes kin name suffix', () => {
+      const result = formatNotification({ type: 'kin:error', title: 'Error', kinName: 'my-kin' }, 'discord')
+      // kinSuffix = "\n— my-kin", joined with \n → double newline before dash
+      expect(result).toBe('⚠️ Error\n\n— my-kin')
+    })
+
+    it('includes both body and kin name', () => {
+      const result = formatNotification({
+        type: 'prompt:pending',
+        title: 'Question',
+        body: 'Please confirm',
+        kinName: 'assistant',
+      }, 'slack')
+      expect(result).toBe('❓ Question\nPlease confirm\n\n— assistant')
+    })
+
+    it('uses bell emoji for unknown notification type', () => {
+      const result = formatNotification({ type: 'mention', title: 'You were mentioned' }, 'discord')
+      expect(result).toBe('🔔 You were mentioned')
+    })
+
+    it('excludes null body', () => {
+      const result = formatNotification({ type: 'kin:error', title: 'Fail', body: null }, 'discord')
+      expect(result).toBe('⚠️ Fail')
+    })
+
+    it('excludes null kinName', () => {
+      const result = formatNotification({ type: 'kin:error', title: 'Fail', kinName: null }, 'discord')
+      expect(result).toBe('⚠️ Fail')
+    })
   })
 
-  it('falls back to bell emoji for unknown types', () => {
-    const result = formatNotification({ type: 'unknown:type', title: 'Test' }, 'discord')
-    expect(result).toStartWith('\uD83D\uDD14')
-  })
+  describe('telegram platform', () => {
+    it('wraps title in bold markdown', () => {
+      const result = formatNotification({ type: 'prompt:pending', title: 'New prompt' }, 'telegram')
+      expect(result).toBe('❓ *New prompt*')
+    })
 
-  it('includes title in output', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Something broke' }, 'discord')
-    expect(result).toContain('Something broke')
-  })
+    it('escapes special chars in title', () => {
+      const result = formatNotification({ type: 'kin:error', title: 'Error in my-kin' }, 'telegram')
+      expect(result).toContain('\\-')
+    })
 
-  it('includes body when provided', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Error', body: 'Details here' }, 'discord')
-    expect(result).toContain('Details here')
-  })
+    it('escapes body text', () => {
+      const result = formatNotification({
+        type: 'kin:error',
+        title: 'Error',
+        body: 'Failed (timeout=30s)',
+      }, 'telegram')
+      expect(result).toContain('\\(timeout\\=30s\\)')
+    })
 
-  it('excludes body when null', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Error', body: null }, 'discord')
-    expect(result).not.toContain('null')
-  })
+    it('escapes kin name suffix', () => {
+      const result = formatNotification({
+        type: 'kin:error',
+        title: 'Error',
+        kinName: 'my_kin',
+      }, 'telegram')
+      // The kin suffix "— my_kin" has both — and _ which get escaped
+      expect(result).toContain('my\\_kin')
+    })
 
-  it('includes kin name suffix when provided', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Error', kinName: 'MyKin' }, 'discord')
-    expect(result).toContain('MyKin')
-    expect(result).toContain('\u2014')
-  })
+    it('excludes null body', () => {
+      const result = formatNotification({ type: 'prompt:pending', title: 'Test', body: null }, 'telegram')
+      expect(result).toBe('❓ *Test*')
+    })
 
-  it('excludes kin name suffix when null', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Error', kinName: null }, 'discord')
-    expect(result).not.toContain('\u2014')
-  })
-
-  // Telegram-specific formatting
-  it('wraps title in bold markdown for telegram', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Alert' }, 'telegram')
-    expect(result).toContain('*Alert*')
-  })
-
-  it('escapes special characters in telegram title', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Error_in_module' }, 'telegram')
-    expect(result).toContain('Error\\_in\\_module')
-  })
-
-  it('escapes special characters in telegram body', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Error', body: 'File: test.ts' }, 'telegram')
-    // Colon is not a Telegram MarkdownV2 special char, but dot is
-    expect(result).toContain('File: test\\.ts')
-  })
-
-  it('does not escape for non-telegram platforms', () => {
-    const result = formatNotification({ type: 'kin:error', title: 'Error_in_module', body: 'File: test.ts' }, 'discord')
-    expect(result).toContain('Error_in_module')
-    expect(result).toContain('File: test.ts')
-  })
-
-  it('handles all fields together for default platform', () => {
-    const result = formatNotification({
-      type: 'channel:user-pending',
-      title: 'New user',
-      body: 'Please approve',
-      kinName: 'Assistant',
-    }, 'discord')
-    // kinSuffix already contains a leading \n, plus join adds another \n
-    expect(result).toBe('\uD83D\uDC64 New user\nPlease approve\n\n\u2014 Assistant')
-  })
-
-  it('handles all fields together for telegram', () => {
-    const result = formatNotification({
-      type: 'channel:user-pending',
-      title: 'New user',
-      body: 'Please approve',
-      kinName: 'Assistant',
-    }, 'telegram')
-    // kinSuffix has leading \n, plus join adds \n → double newline before kin name
-    expect(result).toBe('\uD83D\uDC64 *New user*\nPlease approve\n\n\u2014 Assistant')
+    it('includes all parts when present', () => {
+      const result = formatNotification({
+        type: 'cron:pending-approval',
+        title: 'Approve cron',
+        body: 'Run daily backup',
+        kinName: 'backup-kin',
+      }, 'telegram')
+      expect(result).toContain('⏰')
+      expect(result).toContain('*Approve cron*')
+      expect(result).toContain('Run daily backup')
+      expect(result).toContain('backup\\-kin')
+    })
   })
 })
 
-// ─── Rate limiter logic ─────────────────────────────────────────────────────
+// ─── Rate limiting logic ─────────────────────────────────────────────────────
 
-describe('rate limiter logic', () => {
-  // Re-implement the sliding window rate limiter to verify its algorithm
-  let deliveryTimestamps: Map<string, number[]>
+// Re-implement the in-memory sliding window rate limiter from the module
 
-  function isRateLimited(notifChannelId: string, maxPerMinute: number): boolean {
-    const now = Date.now()
-    const windowMs = 60_000
-    const timestamps = deliveryTimestamps.get(notifChannelId) ?? []
-    const recent = timestamps.filter((t) => now - t < windowMs)
-    deliveryTimestamps.set(notifChannelId, recent)
-    return recent.length >= maxPerMinute
+class RateLimiter {
+  private timestamps = new Map<string, number[]>()
+  private windowMs: number
+  private max: number
+
+  constructor(windowMs: number, max: number) {
+    this.windowMs = windowMs
+    this.max = max
   }
 
-  function recordDelivery(notifChannelId: string) {
-    const timestamps = deliveryTimestamps.get(notifChannelId) ?? []
-    timestamps.push(Date.now())
-    deliveryTimestamps.set(notifChannelId, timestamps)
+  isLimited(id: string, now: number = Date.now()): boolean {
+    const timestamps = this.timestamps.get(id) ?? []
+    const recent = timestamps.filter((t) => now - t < this.windowMs)
+    this.timestamps.set(id, recent)
+    return recent.length >= this.max
   }
+
+  record(id: string, now: number = Date.now()): void {
+    const timestamps = this.timestamps.get(id) ?? []
+    timestamps.push(now)
+    this.timestamps.set(id, timestamps)
+  }
+}
+
+describe('Rate limiting (sliding window)', () => {
+  let limiter: RateLimiter
 
   beforeEach(() => {
-    deliveryTimestamps = new Map()
+    limiter = new RateLimiter(60_000, 5) // 5 per minute
   })
 
-  it('allows first delivery when map is empty', () => {
-    expect(isRateLimited('ch1', 5)).toBe(false)
+  it('allows first request', () => {
+    expect(limiter.isLimited('ch1', 1000)).toBe(false)
   })
 
-  it('allows deliveries under the limit', () => {
-    recordDelivery('ch1')
-    recordDelivery('ch1')
-    recordDelivery('ch1')
-    expect(isRateLimited('ch1', 5)).toBe(false)
+  it('allows requests under the limit', () => {
+    for (let i = 0; i < 4; i++) {
+      limiter.record('ch1', 1000 + i * 100)
+    }
+    expect(limiter.isLimited('ch1', 1500)).toBe(false)
   })
 
-  it('blocks deliveries at the limit', () => {
-    for (let i = 0; i < 5; i++) recordDelivery('ch1')
-    expect(isRateLimited('ch1', 5)).toBe(true)
+  it('blocks at the limit', () => {
+    for (let i = 0; i < 5; i++) {
+      limiter.record('ch1', 1000 + i * 100)
+    }
+    expect(limiter.isLimited('ch1', 1500)).toBe(true)
+  })
+
+  it('allows again after window expires', () => {
+    for (let i = 0; i < 5; i++) {
+      limiter.record('ch1', 1000)
+    }
+    expect(limiter.isLimited('ch1', 1000)).toBe(true)
+    // After 60 seconds, the window slides past
+    expect(limiter.isLimited('ch1', 62_000)).toBe(false)
   })
 
   it('tracks channels independently', () => {
-    for (let i = 0; i < 5; i++) recordDelivery('ch1')
-    expect(isRateLimited('ch1', 5)).toBe(true)
-    expect(isRateLimited('ch2', 5)).toBe(false)
+    for (let i = 0; i < 5; i++) {
+      limiter.record('ch1', 1000)
+    }
+    expect(limiter.isLimited('ch1', 1000)).toBe(true)
+    expect(limiter.isLimited('ch2', 1000)).toBe(false)
   })
 
-  it('evicts old timestamps outside the window', () => {
-    const now = Date.now()
-    // Inject old timestamps manually (> 60s ago)
-    deliveryTimestamps.set('ch1', [
-      now - 120_000,
-      now - 90_000,
-      now - 61_000,
-    ])
-    // These are all expired, so should not count
-    expect(isRateLimited('ch1', 3)).toBe(false)
-    // After cleanup, the map should have 0 recent entries
-    expect(deliveryTimestamps.get('ch1')!.length).toBe(0)
+  it('sliding window removes old entries', () => {
+    // Record 3 at t=0, 2 at t=30s
+    for (let i = 0; i < 3; i++) limiter.record('ch1', 0)
+    for (let i = 0; i < 2; i++) limiter.record('ch1', 30_000)
+
+    // At t=0, all 5 are in window
+    expect(limiter.isLimited('ch1', 30_000)).toBe(true)
+
+    // At t=61s, the first 3 have expired, only 2 remain
+    expect(limiter.isLimited('ch1', 61_000)).toBe(false)
   })
 
-  it('keeps recent timestamps after eviction', () => {
-    const now = Date.now()
-    deliveryTimestamps.set('ch1', [
-      now - 120_000, // expired
-      now - 30_000,  // recent
-      now - 10_000,  // recent
-    ])
-    expect(isRateLimited('ch1', 3)).toBe(false)
-    expect(deliveryTimestamps.get('ch1')!.length).toBe(2)
+  it('works with max=1', () => {
+    const strict = new RateLimiter(60_000, 1)
+    expect(strict.isLimited('ch1', 1000)).toBe(false)
+    strict.record('ch1', 1000)
+    expect(strict.isLimited('ch1', 1000)).toBe(true)
+    expect(strict.isLimited('ch1', 62_000)).toBe(false)
   })
 
-  it('rate limit of 1 blocks after single delivery', () => {
-    recordDelivery('ch1')
-    expect(isRateLimited('ch1', 1)).toBe(true)
+  it('works with max=0 (always limited)', () => {
+    const blocked = new RateLimiter(60_000, 0)
+    expect(blocked.isLimited('ch1', 1000)).toBe(true)
   })
 
-  it('rate limit of 0 always blocks', () => {
-    expect(isRateLimited('ch1', 0)).toBe(true)
+  it('handles empty id', () => {
+    expect(limiter.isLimited('', 1000)).toBe(false)
+    limiter.record('', 1000)
+    expect(limiter.isLimited('', 1000)).toBe(false) // 1 < 5
   })
 })
 
-// ─── NOTIFICATION_EMOJI coverage ────────────────────────────────────────────
+// ─── Type filter logic ───────────────────────────────────────────────────────
 
-describe('NOTIFICATION_EMOJI mapping', () => {
-  it('has exactly 5 known notification types', () => {
-    expect(Object.keys(NOTIFICATION_EMOJI)).toHaveLength(5)
+// The module checks: if (nc.typeFilter) { const allowed = JSON.parse(nc.typeFilter); if (!allowed.includes(payload.type)) continue }
+
+function shouldDeliver(typeFilter: string | null, notificationType: string): boolean {
+  if (!typeFilter) return true
+  const allowed = JSON.parse(typeFilter) as string[]
+  return allowed.includes(notificationType)
+}
+
+describe('Type filter logic', () => {
+  it('delivers when typeFilter is null', () => {
+    expect(shouldDeliver(null, 'kin:error')).toBe(true)
   })
 
-  it('maps prompt:pending to question mark', () => {
-    expect(NOTIFICATION_EMOJI['prompt:pending']).toBe('\u2753')
+  it('delivers when type is in the filter', () => {
+    expect(shouldDeliver('["kin:error","prompt:pending"]', 'kin:error')).toBe(true)
   })
 
-  it('maps channel:user-pending to bust silhouette', () => {
-    expect(NOTIFICATION_EMOJI['channel:user-pending']).toBe('\uD83D\uDC64')
+  it('blocks when type is not in the filter', () => {
+    expect(shouldDeliver('["prompt:pending"]', 'kin:error')).toBe(false)
   })
 
-  it('maps cron:pending-approval to alarm clock', () => {
-    expect(NOTIFICATION_EMOJI['cron:pending-approval']).toBe('\u23F0')
+  it('delivers when filter includes all types', () => {
+    const all = '["prompt:pending","channel:user-pending","cron:pending-approval","mcp:pending-approval","kin:error","mention"]'
+    expect(shouldDeliver(all, 'mention')).toBe(true)
   })
 
-  it('maps mcp:pending-approval to puzzle piece', () => {
-    expect(NOTIFICATION_EMOJI['mcp:pending-approval']).toBe('\uD83E\uDDE9')
+  it('blocks with empty array filter', () => {
+    expect(shouldDeliver('[]', 'kin:error')).toBe(false)
   })
 
-  it('maps kin:error to warning sign', () => {
-    expect(NOTIFICATION_EMOJI['kin:error']).toBe('\u26A0\uFE0F')
+  it('is case-sensitive', () => {
+    expect(shouldDeliver('["kin:error"]', 'Kin:Error')).toBe(false)
+  })
+})
+
+// ─── Consecutive error auto-disable logic ────────────────────────────────────
+
+function shouldAutoDisable(consecutiveErrors: number, maxErrors: number): boolean {
+  return consecutiveErrors >= maxErrors
+}
+
+describe('Consecutive error auto-disable', () => {
+  it('does not disable with zero errors', () => {
+    expect(shouldAutoDisable(0, 5)).toBe(false)
+  })
+
+  it('does not disable below threshold', () => {
+    expect(shouldAutoDisable(4, 5)).toBe(false)
+  })
+
+  it('disables at threshold', () => {
+    expect(shouldAutoDisable(5, 5)).toBe(true)
+  })
+
+  it('disables above threshold', () => {
+    expect(shouldAutoDisable(10, 5)).toBe(true)
+  })
+
+  it('works with threshold of 1', () => {
+    expect(shouldAutoDisable(0, 1)).toBe(false)
+    expect(shouldAutoDisable(1, 1)).toBe(true)
+  })
+
+  it('works with threshold of 0 (always disable)', () => {
+    expect(shouldAutoDisable(0, 0)).toBe(true)
   })
 })
