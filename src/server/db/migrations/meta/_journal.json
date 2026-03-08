@@ -267,6 +267,13 @@
       "when": 1772881315453,
       "tag": "0037_overjoyed_selene",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1772929760011,
+      "tag": "0038_empty_quasimodo",
+      "breakpoints": true
     }
   ]
 }

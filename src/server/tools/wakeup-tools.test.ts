@@ -6,11 +6,15 @@ import type { ToolRegistration } from '@/server/tools/types'
 const mockScheduleWakeup = mock(() =>
   Promise.resolve({ id: 'wk-1', fireAt: new Date('2026-03-05T04:00:00Z') }),
 )
+const mockScheduleRecurringWakeup = mock(() =>
+  Promise.resolve({ id: 'wk-r1', fireAt: new Date('2026-03-05T04:00:00Z'), expiresAt: new Date('2026-03-06T04:00:00Z') }),
+)
 const mockCancelWakeup = mock(() => Promise.resolve(true))
 const mockListPendingWakeups = mock(() => Promise.resolve([] as any[]))
 
 mock.module('@/server/services/wakeup-scheduler', () => ({
   scheduleWakeup: mockScheduleWakeup,
+  scheduleRecurringWakeup: mockScheduleRecurringWakeup,
   cancelWakeup: mockCancelWakeup,
   listPendingWakeups: mockListPendingWakeups,
 }))
@@ -49,7 +53,7 @@ mock.module('@/server/logger', () => ({
 }))
 
 // Import after mocks
-const { wakeMeInTool, cancelWakeupTool, listWakeupsTool } = await import(
+const { wakeMeInTool, wakeMeEveryTool, cancelWakeupTool, listWakeupsTool } = await import(
   '@/server/tools/wakeup-tools'
 )
 
@@ -68,6 +72,7 @@ function getExecute(registration: ToolRegistration) {
 describe('wakeup-tools', () => {
   beforeEach(() => {
     mockScheduleWakeup.mockClear()
+    mockScheduleRecurringWakeup.mockClear()
     mockCancelWakeup.mockClear()
     mockListPendingWakeups.mockClear()
     mockResolveKinId.mockClear()
@@ -158,6 +163,74 @@ describe('wakeup-tools', () => {
     })
   })
 
+  // ── wake_me_every ──────────────────────────────────────────────────────
+
+  describe('wakeMeEveryTool', () => {
+    it('is main-only', () => {
+      expect(wakeMeEveryTool.availability).toEqual(['main'])
+    })
+
+    it('schedules a recurring self wake-up with expiry', async () => {
+      const execute = getExecute(wakeMeEveryTool)
+      const result = await execute({ interval_seconds: 300, expires_in_seconds: 3600 })
+
+      expect(mockScheduleRecurringWakeup).toHaveBeenCalledWith({
+        callerKinId: 'kin-abc',
+        targetKinId: 'kin-abc',
+        intervalSeconds: 300,
+        reason: undefined,
+        expiresInSeconds: 3600,
+      })
+      expect(result.wakeup_id).toBe('wk-r1')
+      expect(result.type).toBe('recurring')
+      expect(result.interval_seconds).toBe(300)
+      expect(result.first_fire_at).toBe('2026-03-05T04:00:00.000Z')
+      expect(result.expires_at).toBe('2026-03-06T04:00:00.000Z')
+      expect(result.target).toBe('self')
+    })
+
+    it('schedules without expiry', async () => {
+      mockScheduleRecurringWakeup.mockImplementation(() =>
+        Promise.resolve({ id: 'wk-r2', fireAt: new Date('2026-03-05T04:00:00Z'), expiresAt: null }),
+      )
+      const execute = getExecute(wakeMeEveryTool)
+      const result = await execute({ interval_seconds: 60 })
+
+      expect(result.expires_at).toBeNull()
+      expect(result.message).toContain('No expiry')
+    })
+
+    it('resolves target_kin_slug', async () => {
+      mockResolveKinId.mockImplementation(() => 'kin-xyz')
+      const execute = getExecute(wakeMeEveryTool)
+      const result = await execute({ interval_seconds: 120, target_kin_slug: 'other-kin' })
+
+      expect(mockScheduleRecurringWakeup).toHaveBeenCalledWith(
+        expect.objectContaining({ targetKinId: 'kin-xyz' }),
+      )
+      expect(result.target).toBe('other-kin')
+    })
+
+    it('returns error for unknown target kin', async () => {
+      mockResolveKinId.mockImplementation(() => null)
+      const execute = getExecute(wakeMeEveryTool)
+      const result = await execute({ interval_seconds: 60, target_kin_slug: 'nope' })
+
+      expect(result.error).toContain('Kin not found')
+      expect(mockScheduleRecurringWakeup).not.toHaveBeenCalled()
+    })
+
+    it('returns error when scheduler throws', async () => {
+      mockScheduleRecurringWakeup.mockImplementation(() =>
+        Promise.reject(new Error('Max wakeups exceeded')),
+      )
+      const execute = getExecute(wakeMeEveryTool)
+      const result = await execute({ interval_seconds: 60 })
+
+      expect(result.error).toBe('Max wakeups exceeded')
+    })
+  })
+
   // ── cancel_wakeup ───────────────────────────────────────────────────────
 
   describe('cancelWakeupTool', () => {
@@ -196,19 +269,24 @@ describe('wakeup-tools', () => {
     it('formats wakeup entries correctly', async () => {
       const now = new Date('2026-03-05T03:00:00Z')
       const fireAt = new Date('2026-03-05T04:00:00Z')
+      const expiresAt = new Date('2026-03-06T04:00:00Z')
       mockListPendingWakeups.mockImplementation(() =>
         Promise.resolve([
           {
             id: 'wk-1',
             targetKinId: 'kin-abc',
             reason: 'Check inbox',
+            intervalSeconds: null,
+            expiresAt: null,
             fireAt: fireAt.getTime(),
             createdAt: now,
           },
           {
-            id: 'wk-2',
+            id: 'wk-r1',
             targetKinId: 'kin-xyz',
-            reason: null,
+            reason: 'Monitor deploy',
+            intervalSeconds: 300,
+            expiresAt: expiresAt.getTime(),
             fireAt: fireAt.getTime(),
             createdAt: now,
           },
@@ -223,10 +301,15 @@ describe('wakeup-tools', () => {
         id: 'wk-1',
         target_kin_id: 'kin-abc',
         reason: 'Check inbox',
+        type: 'one-shot',
+        interval_seconds: undefined,
+        expires_at: undefined,
         fire_at: '2026-03-05T04:00:00.000Z',
         created_at: '2026-03-05T03:00:00.000Z',
       })
-      expect(result.wakeups[1].reason).toBeNull()
+      expect(result.wakeups[1].type).toBe('recurring')
+      expect(result.wakeups[1].interval_seconds).toBe(300)
+      expect(result.wakeups[1].expires_at).toBe('2026-03-06T04:00:00.000Z')
     })
   })
 })

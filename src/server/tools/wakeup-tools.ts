@@ -2,6 +2,7 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import {
   scheduleWakeup,
+  scheduleRecurringWakeup,
   cancelWakeup,
   listPendingWakeups,
 } from '@/server/services/wakeup-scheduler'
@@ -80,6 +81,90 @@ export const wakeMeInTool: ToolRegistration = {
 }
 
 /**
+ * wake_me_each — schedule a recurring wake-up for yourself or another Kin.
+ * Fires repeatedly at a fixed interval until expiry or cancellation.
+ * Useful for active monitoring over an undetermined period.
+ * Available to main agents only.
+ */
+export const wakeMeEveryTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Schedule a recurring wake-up that fires repeatedly at a fixed interval. ' +
+        'Useful for active monitoring over a limited but undetermined period ' +
+        '(e.g. watching a deploy, polling a service, tracking a process). ' +
+        'The alarm re-fires automatically until it expires or you cancel it. ' +
+        `Min interval: ${config.wakeups.minDelaySeconds}s. ` +
+        'Use cancel_wakeup with the returned ID to stop it.',
+      inputSchema: z.object({
+        interval_seconds: z
+          .number()
+          .int()
+          .min(config.wakeups.minDelaySeconds)
+          .max(86400) // max 24h interval
+          .describe('Number of seconds between each wake-up'),
+        reason: z
+          .string()
+          .optional()
+          .describe('Reminder message shown each time the wake-up triggers'),
+        expires_in_seconds: z
+          .number()
+          .int()
+          .min(60)
+          .max(config.wakeups.maxDelaySeconds)
+          .optional()
+          .describe(
+            'Total duration in seconds after which the recurring wake-up automatically stops. ' +
+            'Omit for no automatic expiry (must be cancelled manually).',
+          ),
+        target_kin_slug: z
+          .string()
+          .optional()
+          .describe(
+            'Slug (or UUID) of another Kin to wake up instead of yourself. Omit to wake yourself.',
+          ),
+      }),
+      execute: async ({ interval_seconds, reason, expires_in_seconds, target_kin_slug }) => {
+        let targetKinId = ctx.kinId
+
+        if (target_kin_slug) {
+          const resolved = resolveKinId(target_kin_slug)
+          if (!resolved) {
+            return { error: `Kin not found for slug "${target_kin_slug}"` }
+          }
+          targetKinId = resolved
+        }
+
+        log.debug({ kinId: ctx.kinId, targetKinId, interval_seconds, expires_in_seconds }, 'Recurring wake-up requested')
+
+        try {
+          const { id, fireAt, expiresAt } = await scheduleRecurringWakeup({
+            callerKinId: ctx.kinId,
+            targetKinId,
+            intervalSeconds: interval_seconds,
+            reason,
+            expiresInSeconds: expires_in_seconds,
+          })
+
+          const isSelf = targetKinId === ctx.kinId
+          return {
+            wakeup_id: id,
+            type: 'recurring',
+            interval_seconds,
+            first_fire_at: fireAt.toISOString(),
+            expires_at: expiresAt?.toISOString() ?? null,
+            target: isSelf ? 'self' : target_kin_slug,
+            message: `Recurring wake-up scheduled every ${interval_seconds}s. First fire at ${fireAt.toISOString()}.${expiresAt ? ` Expires at ${expiresAt.toISOString()}.` : ' No expiry — cancel manually when done.'}`,
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
  * cancel_wakeup — cancel a pending wake-up by ID.
  * Only the Kin that created the wake-up can cancel it.
  * Available to main agents only.
@@ -124,6 +209,9 @@ export const listWakeupsTool: ToolRegistration = {
             id: r.id,
             target_kin_id: r.targetKinId,
             reason: r.reason,
+            type: r.intervalSeconds ? 'recurring' : 'one-shot',
+            interval_seconds: r.intervalSeconds ?? undefined,
+            expires_at: r.expiresAt ? new Date(r.expiresAt).toISOString() : undefined,
             fire_at: new Date(r.fireAt).toISOString(),
             created_at: r.createdAt.toISOString(),
           })),

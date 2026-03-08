@@ -117,6 +117,7 @@ import {
 } from '@/server/tools/user-tools'
 import {
   wakeMeInTool,
+  wakeMeEveryTool,
   cancelWakeupTool,
   listWakeupsTool,
 } from '@/server/tools/wakeup-tools'
@@ -298,6 +299,7 @@ export function registerAllTools(): void {
 
   // Wake-up scheduler tools (main only)
   toolRegistry.register('wake_me_in', wakeMeInTool)
+  toolRegistry.register('wake_me_every', wakeMeEveryTool)
   toolRegistry.register('cancel_wakeup', cancelWakeupTool)
   toolRegistry.register('list_wakeups', listWakeupsTool)
 

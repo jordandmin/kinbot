@@ -514,6 +514,8 @@ export const scheduledWakeups = sqliteTable('scheduled_wakeups', {
   targetKinId: text('target_kin_id').notNull().references(() => kins.id, { onDelete: 'cascade' }),
   reason: text('reason'),
   fireAt: integer('fire_at').notNull(), // Unix ms
+  intervalSeconds: integer('interval_seconds'), // null = one-shot, >0 = recurring
+  expiresAt: integer('expires_at'), // Unix ms — null = no expiry (for one-shot) or until cancelled
   status: text('status').notNull().default('pending'), // 'pending' | 'fired' | 'cancelled'
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 }, (table) => [

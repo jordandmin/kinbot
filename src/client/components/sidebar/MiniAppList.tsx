@@ -270,7 +270,7 @@ export const MiniAppList = memo(function MiniAppList() {
             />
           )
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-2 gap-1.5 p-1">
+          <div className="grid grid-cols-2 gap-1.5 px-1 pt-1 pb-1">
             {filteredApps.map((app) => (
               <MiniAppTile
                 key={app.id}
@@ -283,7 +283,7 @@ export const MiniAppList = memo(function MiniAppList() {
             ))}
           </div>
         ) : (
-          <div className="space-y-1 px-1">
+          <div className="space-y-1 px-1 pt-1">
             {filteredApps.map((app) => (
               <MiniAppCard
                 key={app.id}

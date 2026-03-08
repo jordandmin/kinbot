@@ -23,18 +23,7 @@ export async function scheduleWakeup(params: {
 }): Promise<{ id: string; fireAt: Date }> {
   const { callerKinId, targetKinId, seconds, reason } = params
 
-  // Enforce max pending limit for the caller Kin
-  const pendingCount = await db
-    .select()
-    .from(scheduledWakeups)
-    .where(and(eq(scheduledWakeups.callerKinId, callerKinId), eq(scheduledWakeups.status, 'pending')))
-    .all()
-
-  if (pendingCount.length >= config.wakeups.maxPendingPerKin) {
-    throw new Error(
-      `Maximum pending wake-ups reached (${config.wakeups.maxPendingPerKin}). Cancel one before scheduling more.`,
-    )
-  }
+  await _enforceMaxPending(callerKinId)
 
   const id = uuid()
   const fireAt = new Date(Date.now() + seconds * 1000)
@@ -45,6 +34,8 @@ export async function scheduleWakeup(params: {
     targetKinId,
     reason: reason ?? null,
     fireAt: fireAt.getTime(),
+    intervalSeconds: null,
+    expiresAt: null,
     status: 'pending',
     createdAt: new Date(),
   })
@@ -54,6 +45,44 @@ export async function scheduleWakeup(params: {
   log.info({ id, callerKinId, targetKinId, seconds, fireAt }, 'Wake-up scheduled')
 
   return { id, fireAt }
+}
+
+/**
+ * Schedule a recurring wake-up for a Kin.
+ * Fires every `intervalSeconds` until `expiresAt` or cancelled.
+ */
+export async function scheduleRecurringWakeup(params: {
+  callerKinId: string
+  targetKinId: string
+  intervalSeconds: number
+  reason?: string
+  expiresInSeconds?: number
+}): Promise<{ id: string; fireAt: Date; expiresAt: Date | null }> {
+  const { callerKinId, targetKinId, intervalSeconds, reason, expiresInSeconds } = params
+
+  await _enforceMaxPending(callerKinId)
+
+  const id = uuid()
+  const fireAt = new Date(Date.now() + intervalSeconds * 1000)
+  const expiresAt = expiresInSeconds ? new Date(Date.now() + expiresInSeconds * 1000) : null
+
+  await db.insert(scheduledWakeups).values({
+    id,
+    callerKinId,
+    targetKinId,
+    reason: reason ?? null,
+    fireAt: fireAt.getTime(),
+    intervalSeconds,
+    expiresAt: expiresAt?.getTime() ?? null,
+    status: 'pending',
+    createdAt: new Date(),
+  })
+
+  _armTimer(id, targetKinId, reason, intervalSeconds * 1000)
+
+  log.info({ id, callerKinId, targetKinId, intervalSeconds, fireAt, expiresAt }, 'Recurring wake-up scheduled')
+
+  return { id, fireAt, expiresAt }
 }
 
 /**
@@ -125,6 +154,20 @@ export async function recoverPendingWakeups(): Promise<void> {
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
+async function _enforceMaxPending(callerKinId: string): Promise<void> {
+  const pendingCount = await db
+    .select()
+    .from(scheduledWakeups)
+    .where(and(eq(scheduledWakeups.callerKinId, callerKinId), eq(scheduledWakeups.status, 'pending')))
+    .all()
+
+  if (pendingCount.length >= config.wakeups.maxPendingPerKin) {
+    throw new Error(
+      `Maximum pending wake-ups reached (${config.wakeups.maxPendingPerKin}). Cancel one before scheduling more.`,
+    )
+  }
+}
+
 function _armTimer(
   wakeupId: string,
   targetKinId: string,
@@ -159,17 +202,49 @@ async function _fireWakeup(
 
   pendingTimers.delete(wakeupId)
 
+  const isRecurring = row.intervalSeconds != null && row.intervalSeconds > 0
+
   // Build message
-  const lines: string[] = ['⏰ [Scheduled wake-up] Your scheduled alarm has triggered.']
+  const lines: string[] = [
+    isRecurring
+      ? '🔁 [Recurring wake-up] Your recurring alarm has triggered.'
+      : '⏰ [Scheduled wake-up] Your scheduled alarm has triggered.',
+  ]
   if (reason) {
     lines.push(`Reason: ${reason}`)
   }
   lines.push('Please proceed with what you planned.')
 
-  await db
-    .update(scheduledWakeups)
-    .set({ status: 'fired' })
-    .where(eq(scheduledWakeups.id, wakeupId))
+  // For recurring wakeups: check expiry, then re-arm or mark as fired
+  if (isRecurring) {
+    const nextFireAt = Date.now() + row.intervalSeconds! * 1000
+    const expired = row.expiresAt != null && nextFireAt > row.expiresAt
+
+    if (expired) {
+      // Expired — mark as fired (final) and notify
+      lines.push('This was the last occurrence — the recurring wake-up has expired.')
+      await db
+        .update(scheduledWakeups)
+        .set({ status: 'fired', fireAt: Date.now() })
+        .where(eq(scheduledWakeups.id, wakeupId))
+      log.info({ wakeupId, targetKinId }, 'Recurring wake-up expired after final fire')
+    } else {
+      // Re-arm: update fireAt for next occurrence, keep status pending
+      await db
+        .update(scheduledWakeups)
+        .set({ fireAt: nextFireAt })
+        .where(eq(scheduledWakeups.id, wakeupId))
+      _armTimer(wakeupId, targetKinId, reason, row.intervalSeconds! * 1000)
+      log.info({ wakeupId, targetKinId, nextFireAt: new Date(nextFireAt) }, 'Recurring wake-up re-armed')
+    }
+  } else {
+    // One-shot: mark as fired
+    await db
+      .update(scheduledWakeups)
+      .set({ status: 'fired' })
+      .where(eq(scheduledWakeups.id, wakeupId))
+    log.info({ wakeupId, targetKinId }, 'Wake-up fired')
+  }
 
   await enqueueMessage({
     kinId: targetKinId,
@@ -178,6 +253,4 @@ async function _fireWakeup(
     sourceType: 'system',
     priority: config.queue.kinPriority,
   })
-
-  log.info({ wakeupId, targetKinId }, 'Wake-up fired')
 }
