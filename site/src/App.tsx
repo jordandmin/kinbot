@@ -98,6 +98,20 @@ export default function App() {
 
   useStructuredData()
 
+  // Dismiss splash loader once React has mounted
+  useEffect(() => {
+    const splash = document.getElementById('splash-loader')
+    if (splash) {
+      // Small delay to let the first paint settle
+      const timer = setTimeout(() => {
+        splash.style.opacity = '0'
+        splash.style.visibility = 'hidden'
+        setTimeout(() => splash.remove(), 400)
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [])
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
     localStorage.setItem('kinbot-site-theme', dark ? 'dark' : 'light')
