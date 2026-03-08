@@ -451,3 +451,19 @@ Le MVP (phases 1-3) apporte déjà 80% de la valeur : l'utilisateur peut créer 
 - Build passes, all 2478 tests pass
 - Commit: `eb99892` on `feat/teams`
 - **Next: Phase 5 (Shared knowledge base)**
+
+### Phase 5 - DONE (2026-03-08, cron run #5)
+- Added `team_knowledge_sources` and `team_knowledge_chunks` tables to Drizzle schema
+- Generated migration `0041_classy_solo.sql`
+- Added FTS5 virtual table (`team_knowledge_chunks_fts`) and sqlite-vec table (`team_knowledge_chunks_vec`) with sync triggers in `db/index.ts`
+- Created `src/server/services/team-knowledge.ts`: full CRUD + hybrid search (semantic + FTS5 with RRF fusion), reuses `chunkText` from knowledge.ts
+- Processing pipeline: text extraction, chunking (512 tokens, 50 overlap), embedding generation, vec indexing
+- SSE events: `team:knowledge_source_created`, `team:knowledge_source_updated`, `team:knowledge_source_deleted`
+- Added API routes in `teams.ts`: GET/POST/DELETE for `/api/teams/:id/knowledge`, GET search (`/search?q=...`), GET source detail, POST reprocess
+- Modified `kin-engine.ts`: fetches relevant team knowledge chunks for all teams (parallel search), passes to prompt builder
+- Modified `prompt-builder.ts`: new `relevantTeamKnowledge` param, renders `[5.6] Team knowledge` block per team
+- Added i18n keys (en + fr) for team knowledge UI strings
+- 7 unit tests passing (chunking, FTS query building, token estimation, RRF scoring)
+- Build passes, all 2496 tests pass (2489 existing + 7 new)
+- Commit: `d5506de` on `feat/teams`
+- **Next: Phase 6 (Frontend polish + sidebar grouping)**
