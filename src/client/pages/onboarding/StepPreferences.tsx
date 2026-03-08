@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
 import { Label } from '@/client/components/ui/label'
 import { LanguageSelector } from '@/client/components/common/LanguageSelector'
-import { Sun, Moon, Monitor } from 'lucide-react'
+import { Sun, Moon, Monitor, Loader2 } from 'lucide-react'
 import { usePalette, useTheme, PALETTES } from '@/client/components/theme-provider'
+import { api } from '@/client/lib/api'
 
 interface StepPreferencesProps {
   onComplete: () => void
@@ -16,6 +17,19 @@ export function StepPreferences({ onComplete, onBack }: StepPreferencesProps) {
   const { palette, setPalette } = usePalette()
   const { theme, setTheme } = useTheme()
   const [language, setLanguage] = useState(i18n.language || 'en')
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleComplete = async () => {
+    setIsSaving(true)
+    try {
+      await api.patch('/me', { language })
+    } catch {
+      // Non-blocking: language will default to 'en' but onboarding can continue
+    } finally {
+      setIsSaving(false)
+    }
+    onComplete()
+  }
 
   return (
     <div className="space-y-6">
@@ -100,8 +114,15 @@ export function StepPreferences({ onComplete, onBack }: StepPreferencesProps) {
         <Button variant="outline" onClick={onBack} size="lg">
           {t('common.back')}
         </Button>
-        <Button onClick={onComplete} className="btn-shine flex-1" size="lg">
-          {t('common.next')}
+        <Button onClick={handleComplete} disabled={isSaving} className="btn-shine flex-1" size="lg">
+          {isSaving ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              {t('common.loading')}
+            </>
+          ) : (
+            t('common.next')
+          )}
         </Button>
       </div>
     </div>
