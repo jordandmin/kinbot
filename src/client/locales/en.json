@@ -1293,7 +1293,9 @@
       "uninstallSuccess": "Plugin uninstalled",
       "update": "Update",
       "updateSuccess": "Plugin updated successfully",
-      "sourceLocal": "Local"
+      "sourceLocal": "Local",
+      "resetHealth": "Reset health stats",
+      "healthReset": "Health stats reset"
     },
     "marketplace": {
       "title": "Browse Plugins",

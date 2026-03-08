@@ -1293,7 +1293,9 @@
       "uninstallSuccess": "Plugin désinstallé",
       "update": "Mettre à jour",
       "updateSuccess": "Plugin mis à jour avec succès",
-      "sourceLocal": "Local"
+      "sourceLocal": "Local",
+      "resetHealth": "Réinitialiser les stats de santé",
+      "healthReset": "Stats de santé réinitialisées"
     },
     "marketplace": {
       "title": "Explorer les plugins",
