@@ -8,7 +8,15 @@ import {
   addTeamMember,
   removeTeamMember,
 } from '@/server/services/teams'
+import {
+  listTeamMemories,
+  createTeamMemory,
+  updateTeamMemory,
+  deleteTeamMemory,
+  searchTeamMemories,
+} from '@/server/services/team-memory'
 import { createLogger } from '@/server/logger'
+import type { MemoryCategory } from '@/shared/types'
 
 const log = createLogger('routes:teams')
 export const teamRoutes = new Hono()
@@ -143,4 +151,84 @@ teamRoutes.delete('/:id/members/:kinId', async (c) => {
     log.error({ err }, 'Failed to remove team member')
     return c.json({ error: { code: 'REMOVE_MEMBER_FAILED', message } }, 400)
   }
+})
+
+// ─── Team Memories ───────────────────────────────────────────────────────────
+
+// GET /api/teams/:id/memories - list team memories
+teamRoutes.get('/:id/memories', async (c) => {
+  const teamId = c.req.param('id')
+  const category = c.req.query('category') as MemoryCategory | undefined
+  const subject = c.req.query('subject')
+  const query = c.req.query('q')
+
+  if (query) {
+    const results = await searchTeamMemories(teamId, query, 20)
+    return c.json({ memories: results })
+  }
+
+  const memories = await listTeamMemories(teamId, { category, subject })
+  return c.json({ memories })
+})
+
+// POST /api/teams/:id/memories - create team memory
+teamRoutes.post('/:id/memories', async (c) => {
+  const teamId = c.req.param('id')
+  const body = await c.req.json() as {
+    content: string
+    category: MemoryCategory
+    authorKinId: string
+    subject?: string
+    importance?: number
+  }
+
+  if (!body.content?.trim()) {
+    return c.json({ error: { code: 'INVALID_INPUT', message: 'Content is required' } }, 400)
+  }
+  if (!body.authorKinId) {
+    return c.json({ error: { code: 'INVALID_INPUT', message: 'authorKinId is required' } }, 400)
+  }
+
+  try {
+    const memory = await createTeamMemory(teamId, body.authorKinId, {
+      content: body.content.trim(),
+      category: body.category || 'fact',
+      subject: body.subject,
+      importance: body.importance,
+    })
+    return c.json({ memory }, 201)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to create team memory'
+    log.error({ err }, 'Failed to create team memory')
+    return c.json({ error: { code: 'CREATE_FAILED', message } }, 400)
+  }
+})
+
+// PATCH /api/teams/:id/memories/:memoryId - update team memory
+teamRoutes.patch('/:id/memories/:memoryId', async (c) => {
+  const teamId = c.req.param('id')
+  const memoryId = c.req.param('memoryId')
+  const body = await c.req.json() as {
+    content?: string
+    category?: MemoryCategory
+    subject?: string | null
+    importance?: number | null
+  }
+
+  const updated = await updateTeamMemory(memoryId, teamId, body)
+  if (!updated) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Team memory not found' } }, 404)
+  }
+  return c.json({ memory: updated })
+})
+
+// DELETE /api/teams/:id/memories/:memoryId - delete team memory
+teamRoutes.delete('/:id/memories/:memoryId', async (c) => {
+  const teamId = c.req.param('id')
+  const memoryId = c.req.param('memoryId')
+  const deleted = await deleteTeamMemory(memoryId, teamId)
+  if (!deleted) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Team memory not found' } }, 404)
+  }
+  return c.json({ success: true })
 })

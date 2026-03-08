@@ -82,6 +82,11 @@ interface PromptParams {
   isHub?: boolean
   hubKinDirectory?: HubKinDirectoryEntry[]
   teamContext?: TeamContextEntry[]
+  relevantTeamMemories?: Array<{
+    teamId: string
+    teamName: string
+    memories: Array<{ id: string; content: string; category: string; subject: string | null; importance: number | null; authorKinId: string; score: number; updatedAt: Date | null }>
+  }>
   compactingSummary?: string | null
   compactedUpTo?: Date | null
   participants?: Array<{ name: string; platform: string | null; messageCount: number; lastSeenAt: Date }>
@@ -652,6 +657,21 @@ export function buildSystemPrompt(params: PromptParams): string {
   // [5] Relevant memories
   if (params.relevantMemories.length > 0) {
     blocks.push(buildMemoriesBlock(params.relevantMemories))
+  }
+
+  // [5.1] Relevant team memories
+  if (params.relevantTeamMemories && params.relevantTeamMemories.length > 0) {
+    for (const team of params.relevantTeamMemories) {
+      const lines = team.memories.map((m) => {
+        const subj = m.subject ? ` (${m.subject})` : ''
+        return `- [${m.category}]${subj} ${m.content}`
+      }).join('\n')
+      blocks.push(
+        `## Team memories: ${team.teamName}\n\n` +
+        `Shared memories from your team. These were stored by team members and are available to all.\n\n` +
+        lines,
+      )
+    }
   }
 
   // [5.5] Relevant knowledge base chunks

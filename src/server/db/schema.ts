@@ -704,3 +704,23 @@ export const teamMembers = sqliteTable('team_members', {
   primaryKey({ columns: [table.teamId, table.kinId] }),
   index('idx_team_members_kin').on(table.kinId),
 ])
+
+// ─── Team Memories ───────────────────────────────────────────────────────────
+
+export const teamMemories = sqliteTable('team_memories', {
+  id: text('id').primaryKey(),
+  teamId: text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
+  authorKinId: text('author_kin_id').notNull().references(() => kins.id),
+  content: text('content').notNull(),
+  embedding: blob('embedding'),
+  category: text('category').notNull(), // fact | preference | decision | knowledge
+  subject: text('subject'),
+  importance: real('importance'),
+  retrievalCount: integer('retrieval_count').notNull().default(0),
+  lastRetrievedAt: integer('last_retrieved_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+}, (table) => [
+  index('idx_team_memories_team').on(table.teamId),
+  index('idx_team_memories_team_cat').on(table.teamId, table.category),
+])

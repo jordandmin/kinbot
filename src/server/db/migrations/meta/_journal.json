@@ -281,6 +281,13 @@
       "when": 1772937837251,
       "tag": "0039_absurd_madame_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1772981062621,
+      "tag": "0040_little_silverclaw",
+      "breakpoints": true
     }
   ]
 }

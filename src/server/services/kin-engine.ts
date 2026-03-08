@@ -382,6 +382,27 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       log.warn({ kinId, err }, 'Failed to fetch team context')
     }
 
+    // Fetch relevant team memories for all teams this Kin belongs to
+    let relevantTeamMemories: Array<{
+      teamId: string
+      teamName: string
+      memories: Array<{ id: string; content: string; category: string; subject: string | null; importance: number | null; authorKinId: string; score: number; updatedAt: Date | null }>
+    }> = []
+    if (teamContext.length > 0) {
+      try {
+        const { getRelevantTeamMemories } = await import('@/server/services/team-memory')
+        const teamMemResults = await Promise.all(
+          teamContext.map(async (t) => {
+            const memories = await getRelevantTeamMemories(t.teamId, queueItem.content, 5)
+            return { teamId: t.teamId, teamName: t.teamName, memories }
+          }),
+        )
+        relevantTeamMemories = teamMemResults.filter((t) => t.memories.length > 0)
+      } catch (err) {
+        log.warn({ kinId, err }, 'Failed to fetch team memories')
+      }
+    }
+
     const systemPrompt = buildSystemPrompt({
       kin: { name: kin.name, slug: kin.slug, role: kin.role, character: kin.character, expertise: kin.expertise },
       contacts: contactsWithSlug,
@@ -396,6 +417,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       isHub,
       hubKinDirectory,
       teamContext: teamContext.length > 0 ? teamContext : undefined,
+      relevantTeamMemories: relevantTeamMemories.length > 0 ? relevantTeamMemories : undefined,
       compactingSummary,
       compactedUpTo,
       participants: participants.length > 0 ? participants : undefined,

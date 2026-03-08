@@ -1763,7 +1763,13 @@
     "settingsDescription": "Groupez vos Kins en teams avec un Hub coordinateur.",
     "emptyDescription": "Creez une team pour regrouper vos Kins avec un Hub coordinateur.",
     "noOtherKins": "Aucun autre Kin disponible",
-    "selectHubFirst": "Selectionnez d abord un Kin Hub"
+    "selectHubFirst": "Selectionnez d abord un Kin Hub",
+    "memories": "Souvenirs d'equipe",
+    "memoriesDescription": "Souvenirs partages accessibles a tous les membres de l'equipe.",
+    "noMemories": "Aucun souvenir d'equipe",
+    "memoryCreated": "Souvenir d'equipe cree",
+    "memoryUpdated": "Souvenir d'equipe mis a jour",
+    "memoryDeleted": "Souvenir d'equipe supprime"
   },
   "knowledge": {
     "title": "Base de connaissances",

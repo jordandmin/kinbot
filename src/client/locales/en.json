@@ -1763,7 +1763,13 @@
     "settingsDescription": "Group your Kins into teams with a Hub coordinator.",
     "emptyDescription": "Create a team to group Kins together with a Hub coordinator.",
     "noOtherKins": "No other Kins available",
-    "selectHubFirst": "Select a Hub Kin first"
+    "selectHubFirst": "Select a Hub Kin first",
+    "memories": "Team Memories",
+    "memoriesDescription": "Shared memories accessible to all team members.",
+    "noMemories": "No team memories yet",
+    "memoryCreated": "Team memory created",
+    "memoryUpdated": "Team memory updated",
+    "memoryDeleted": "Team memory deleted"
   },
   "knowledge": {
     "title": "Knowledge Base",

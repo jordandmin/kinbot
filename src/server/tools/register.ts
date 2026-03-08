@@ -23,6 +23,13 @@ import {
   listMemoriesTool,
   reviewMemoriesTool,
 } from '@/server/tools/memory-tools'
+import {
+  teamRecallTool,
+  teamMemorizeTool,
+  updateTeamMemoryTool,
+  forgetTeamMemoryTool,
+  listTeamMemoriesTool,
+} from '@/server/tools/team-memory-tools'
 import { searchHistoryTool } from '@/server/tools/history-tools'
 import {
   getSecretTool,
@@ -195,6 +202,13 @@ export function registerAllTools(): void {
   toolRegistry.register('forget', forgetTool)
   toolRegistry.register('list_memories', listMemoriesTool)
   toolRegistry.register('review_memories', reviewMemoriesTool)
+
+  // Team memory tools (opt-in, enabled when Kin joins a team)
+  toolRegistry.register('team_recall', teamRecallTool)
+  toolRegistry.register('team_memorize', teamMemorizeTool)
+  toolRegistry.register('update_team_memory', updateTeamMemoryTool)
+  toolRegistry.register('forget_team_memory', forgetTeamMemoryTool)
+  toolRegistry.register('list_team_memories', listTeamMemoriesTool)
 
   // Phase 12: History tools
   toolRegistry.register('search_history', searchHistoryTool)
