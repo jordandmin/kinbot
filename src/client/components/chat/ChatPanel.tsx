@@ -336,7 +336,10 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       if (rafId !== null) return // coalesce multiple mutations into one rAF
       rafId = requestAnimationFrame(() => {
         rafId = null
-        if (!autoScrollRef.current || !isNearBottomRef.current) return
+        if (!autoScrollRef.current) return
+        // During active streaming, always scroll (don't rely on isNearBottom
+        // which can flip to false between batched token updates)
+        if (!isNearBottomRef.current && !isStreamingRef.current) return
         if (needsInstantScrollRef.current) return
         viewport.scrollTop = viewport.scrollHeight
         isNearBottomRef.current = true
@@ -352,9 +355,11 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     }
   }, []) // stable — reads refs only
 
-  // Keep a ref for autoScroll so the MutationObserver callback can read it
+  // Keep refs for autoScroll and isStreaming so the MutationObserver callback can read them
   const autoScrollRef = useRef(autoScroll)
   useEffect(() => { autoScrollRef.current = autoScroll }, [autoScroll])
+  const isStreamingRef = useRef(isStreaming)
+  useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
 
   // Still trigger a scroll on dependency changes that may not mutate DOM
   // (e.g. isProcessing flipping, queueItems count)
