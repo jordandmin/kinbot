@@ -34,34 +34,8 @@ mock.module('@/server/logger', () => ({
   }),
 }))
 
-// Mock DB layer as fallback — in Bun's coverage mode, mock.module for
-// inter-kin may not apply, causing the real module to load and hit the DB.
-mock.module('@/server/db/index', () => ({
-  db: {
-    select: () => ({
-      from: () => ({
-        where: () => Promise.resolve([]),
-      }),
-    }),
-    insert: () => ({
-      values: () => ({
-        returning: () => Promise.resolve([{ id: 'mock-id' }]),
-      }),
-    }),
-  },
-}))
-
-mock.module('@/server/services/queue', () => ({
-  enqueueMessage: mock(() => Promise.resolve()),
-}))
-
-mock.module('@/server/sse/index', () => ({
-  sseManager: { broadcast: () => {} },
-}))
-
-mock.module('@/server/config', () => ({
-  config: { interKin: { enabled: true, rateLimitPerMinute: 20 } },
-}))
+// Note: In Bun's coverage mode, mock.module may not intercept cached modules,
+// causing inter-kin and kin-resolver mocks to fail. CI accounts for this.
 
 // Import after mocks
 const { sendMessageTool, replyTool, listKinsTool } = await import(
