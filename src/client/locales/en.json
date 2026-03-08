@@ -312,6 +312,7 @@
     "tabs": {
       "general": "General",
       "tools": "Tools",
+      "knowledge": "Knowledge",
       "memory": "Memory"
     },
     "tools": {
@@ -1754,5 +1755,38 @@
     "memberAdded": "Member added to team",
     "memberRemoved": "Member removed from team",
     "cannotRemoveHub": "Cannot remove the Hub Kin. Change the Hub first."
+  },
+  "knowledge": {
+    "title": "Knowledge Base",
+    "empty": "No knowledge sources yet",
+    "emptyDescription": "Add documents, URLs, or text to give this Kin specialized knowledge.",
+    "addSource": "Add Source",
+    "sourceType": {
+      "text": "Paste Text",
+      "url": "URL",
+      "file": "File"
+    },
+    "sourceName": "Source Name",
+    "sourceNamePlaceholder": "e.g. Product documentation",
+    "url": "URL",
+    "urlPlaceholder": "https://...",
+    "content": "Content",
+    "contentPlaceholder": "Paste your text here...",
+    "status": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "ready": "Ready",
+      "error": "Error"
+    },
+    "delete": "Delete Source",
+    "deleteConfirm": "Delete this knowledge source? This will remove all its chunks.",
+    "reprocess": "Reprocess",
+    "chunks": "{{count}} chunks",
+    "tokens": "{{count}} tokens",
+    "createFirst": "Knowledge is configured after creation",
+    "createFirstDescription": "Once your Kin is created, you can add knowledge sources to give it specialized expertise.",
+    "showChunks": "Show chunks",
+    "hideChunks": "Hide chunks",
+    "chunkPosition": "Chunk {{position}}"
   }
 }

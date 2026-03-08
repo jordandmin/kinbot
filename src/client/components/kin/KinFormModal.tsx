@@ -20,9 +20,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avat
 import { FormErrorAlert } from '@/client/components/common/FormErrorAlert'
 import { AvatarPickerModal, type AvatarPickerResult } from '@/client/components/kin/AvatarPickerModal'
 import { KinToolsTab } from '@/client/components/kin/KinToolsTab'
+import { KinKnowledgeTab } from '@/client/components/kin/KinKnowledgeTab'
 import { MemoryList } from '@/client/components/memory/MemoryList'
 import { Switch } from '@/client/components/ui/switch'
-import { ArrowLeft, Bot, Brain, Camera, Loader2, Network, Settings, ShieldCheck, Sparkles, Trash2, Upload, User, Wrench } from 'lucide-react'
+import { ArrowLeft, BookOpen, Bot, Brain, Camera, Loader2, Network, Settings, ShieldCheck, Sparkles, Trash2, Upload, User, Wrench } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { UnsavedChangesDialog } from '@/client/components/common/UnsavedChangesDialog'
 import { useUnsavedChanges } from '@/client/hooks/useUnsavedChanges'
@@ -99,12 +100,13 @@ interface KinFormModalProps {
   hubMode?: boolean
 }
 
-type TabId = 'general' | 'tools' | 'memory'
+type TabId = 'general' | 'tools' | 'knowledge' | 'memory'
 type WizardStep = 'describe' | 'form'
 
 const TABS: Array<{ id: TabId; icon: typeof Settings; labelKey: string }> = [
   { id: 'general', icon: Settings, labelKey: 'kin.tabs.general' },
   { id: 'tools', icon: Wrench, labelKey: 'kin.tabs.tools' },
+  { id: 'knowledge', icon: BookOpen, labelKey: 'kin.tabs.knowledge' },
   { id: 'memory', icon: Brain, labelKey: 'kin.tabs.memory' },
 ]
 
@@ -849,6 +851,10 @@ export function KinFormModal({
                           onToolConfigChange={setToolConfig}
                           isHub={isEdit && kin?.isHub}
                         />
+                      )}
+
+                      {activeTab === 'knowledge' && (
+                        <KinKnowledgeTab kinId={isEdit ? kin.id : null} />
                       )}
 
                       {activeTab === 'memory' && isEdit && (

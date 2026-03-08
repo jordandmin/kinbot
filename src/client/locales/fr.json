@@ -312,6 +312,7 @@
     "tabs": {
       "general": "Général",
       "tools": "Outils",
+      "knowledge": "Connaissances",
       "memory": "Mémoire"
     },
     "tools": {
@@ -1754,5 +1755,38 @@
     "memberAdded": "Membre ajoute a l equipe",
     "memberRemoved": "Membre retire de l equipe",
     "cannotRemoveHub": "Impossible de retirer le Kin Hub. Changez le Hub d abord."
+  },
+  "knowledge": {
+    "title": "Base de connaissances",
+    "empty": "Aucune source de connaissances",
+    "emptyDescription": "Ajoutez des documents, URLs ou textes pour donner à ce Kin des connaissances spécialisées.",
+    "addSource": "Ajouter une source",
+    "sourceType": {
+      "text": "Coller du texte",
+      "url": "URL",
+      "file": "Fichier"
+    },
+    "sourceName": "Nom de la source",
+    "sourceNamePlaceholder": "ex. Documentation produit",
+    "url": "URL",
+    "urlPlaceholder": "https://...",
+    "content": "Contenu",
+    "contentPlaceholder": "Collez votre texte ici...",
+    "status": {
+      "pending": "En attente",
+      "processing": "Traitement",
+      "ready": "Prêt",
+      "error": "Erreur"
+    },
+    "delete": "Supprimer la source",
+    "deleteConfirm": "Supprimer cette source de connaissances ? Tous ses fragments seront supprimés.",
+    "reprocess": "Retraiter",
+    "chunks": "{{count}} fragments",
+    "tokens": "{{count}} tokens",
+    "createFirst": "Les connaissances se configurent après la création",
+    "createFirstDescription": "Une fois votre Kin créé, vous pourrez ajouter des sources de connaissances pour lui donner une expertise spécialisée.",
+    "showChunks": "Afficher les fragments",
+    "hideChunks": "Masquer les fragments",
+    "chunkPosition": "Fragment {{position}}"
   }
 }
