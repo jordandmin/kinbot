@@ -1692,26 +1692,71 @@ class PluginManager {
             // Store plugin removed or unreadable, skip
           }
         } else if (source === 'git') {
-          // Check remote for newer commits via git fetch --dry-run
+          // Fetch remote refs and compare local HEAD with remote HEAD
           const pluginDir = join(this.pluginsDir, name)
-          const proc = Bun.spawn(['git', 'fetch', '--dry-run'], {
+          const fetchProc = Bun.spawn(['git', 'fetch'], {
             cwd: pluginDir,
             stdout: 'pipe',
             stderr: 'pipe',
           })
-          const exitCode = await proc.exited
-          const stderr = await new Response(proc.stderr).text()
-          // If fetch --dry-run outputs anything to stderr, there are remote changes
-          if (exitCode === 0 && stderr.trim().length > 0) {
+          await fetchProc.exited
+
+          // Compare local and remote HEAD
+          const localProc = Bun.spawn(['git', 'rev-parse', 'HEAD'], { cwd: pluginDir, stdout: 'pipe', stderr: 'pipe' })
+          await localProc.exited
+          const localHead = (await new Response(localProc.stdout).text()).trim()
+
+          const remoteProc = Bun.spawn(['git', 'rev-parse', '@{u}'], { cwd: pluginDir, stdout: 'pipe', stderr: 'pipe' })
+          const remoteExit = await remoteProc.exited
+          const remoteHead = (await new Response(remoteProc.stdout).text()).trim()
+
+          if (remoteExit === 0 && localHead !== remoteHead) {
+            // Try to read remote manifest version
+            let availableVersion = 'newer commit available'
+            try {
+              const showProc = Bun.spawn(['git', 'show', '@{u}:plugin.json'], { cwd: pluginDir, stdout: 'pipe', stderr: 'pipe' })
+              const showExit = await showProc.exited
+              if (showExit === 0) {
+                const remoteManifest = JSON.parse(await new Response(showProc.stdout).text())
+                if (remoteManifest.version && remoteManifest.version !== plugin.manifest.version) {
+                  availableVersion = remoteManifest.version
+                }
+              }
+            } catch {
+              // Keep generic message
+            }
+
             updates.push({
               name,
               currentVersion: plugin.manifest.version,
-              availableVersion: 'newer commit available',
+              availableVersion,
               source,
             })
           }
+        } else if (source === 'npm') {
+          // Check npm registry for newer version
+          const packageName = plugin.installMeta?.package
+          if (!packageName) continue
+
+          try {
+            const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(packageName)}/latest`, {
+              signal: AbortSignal.timeout(5000),
+            })
+            if (res.ok) {
+              const data = await res.json() as { version?: string }
+              if (data.version && data.version !== plugin.manifest.version) {
+                updates.push({
+                  name,
+                  currentVersion: plugin.manifest.version,
+                  availableVersion: data.version,
+                  source,
+                })
+              }
+            }
+          } catch {
+            // Registry unreachable, skip
+          }
         }
-        // npm: would need registry check, skip for now
       } catch {
         // Skip plugins that fail update check
       }
