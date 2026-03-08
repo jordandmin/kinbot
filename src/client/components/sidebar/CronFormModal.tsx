@@ -22,7 +22,7 @@ import { UnsavedChangesDialog } from '@/client/components/common/UnsavedChangesD
 import { useUnsavedChanges } from '@/client/hooks/useUnsavedChanges'
 import { cn } from '@/client/lib/utils'
 import { getErrorMessage } from '@/client/lib/api'
-import { cronToHuman } from '@/client/lib/cron-human'
+import { cronToHuman, isISODatetime } from '@/client/lib/cron-human'
 import { cronNextRuns } from '@/client/lib/cron-next'
 import type { CronSummary } from '@/shared/types'
 
@@ -49,6 +49,7 @@ interface CronFormModalProps {
     taskDescription: string
     targetKinId?: string
     model?: string
+    runOnce?: boolean
   }) => Promise<CronSummary>
   onUpdate?: (id: string, updates: Record<string, unknown>) => Promise<CronSummary>
   onDelete?: (id: string) => Promise<void>
@@ -88,6 +89,8 @@ export function CronFormModal({
   const [name, setName] = useState('')
   const [kinId, setKinId] = useState('')
   const [schedule, setSchedule] = useState('')
+  const [runOnce, setRunOnce] = useState(false)
+  const [scheduleDatetime, setScheduleDatetime] = useState('')
   const [taskDescription, setTaskDescription] = useState('')
   const [targetKinId, setTargetKinId] = useState<string>('')
   const [model, setModel] = useState('')
@@ -100,21 +103,33 @@ export function CronFormModal({
       if (cron) {
         setName(cron.name)
         setKinId(cron.kinId)
-        setSchedule(cron.schedule)
+        const isOneShot = cron.runOnce && isISODatetime(cron.schedule)
+        setRunOnce(cron.runOnce ?? false)
+        if (isOneShot) {
+          setScheduleDatetime(cron.schedule.slice(0, 16)) // trim to datetime-local format
+          setSchedule('')
+        } else {
+          setSchedule(cron.schedule)
+          setScheduleDatetime('')
+        }
         setTaskDescription(cron.taskDescription)
         setTargetKinId(cron.targetKinId ?? '')
         setModel(cron.model ?? '')
       } else if (defaults) {
         setName(defaults.name ?? '')
         setKinId(defaults.kinId ?? (kins.length === 1 ? kins[0]!.id : ''))
+        setRunOnce(defaults.runOnce ?? false)
         setSchedule(defaults.schedule ?? '')
+        setScheduleDatetime('')
         setTaskDescription(defaults.taskDescription ?? '')
         setTargetKinId(defaults.targetKinId ?? '')
         setModel(defaults.model ?? '')
       } else {
         setName('')
         setKinId(kins.length === 1 ? kins[0]!.id : '')
+        setRunOnce(false)
         setSchedule('')
+        setScheduleDatetime('')
         setTaskDescription('')
         setTargetKinId('')
         setModel('')
@@ -129,23 +144,27 @@ export function CronFormModal({
     setError(null)
     setIsSubmitting(true)
 
+    const effectiveSchedule = runOnce && scheduleDatetime ? scheduleDatetime : schedule
+
     try {
       if (isEdit && onUpdate && cron) {
         await onUpdate(cron.id, {
           name,
-          schedule,
+          schedule: effectiveSchedule,
           taskDescription,
           targetKinId: targetKinId || null,
           model: model || null,
+          runOnce,
         })
       } else if (onCreate) {
         await onCreate({
           kinId,
           name,
-          schedule,
+          schedule: effectiveSchedule,
           taskDescription,
           targetKinId: targetKinId || undefined,
           model: model || undefined,
+          runOnce: runOnce || undefined,
         })
       }
       resetDirty()
@@ -172,9 +191,19 @@ export function CronFormModal({
   }
 
   const selectedKin = kins.find((k) => k.id === kinId)
-  const scheduleHuman = useMemo(() => cronToHuman(schedule, i18n.language), [schedule, i18n.language])
-  const scheduleInvalid = useMemo(() => schedule.trim().length > 0 && !scheduleHuman, [schedule, scheduleHuman])
-  const nextRuns = useMemo(() => scheduleHuman ? cronNextRuns(schedule, 3) : [], [schedule, scheduleHuman])
+  const effectiveScheduleForDisplay = runOnce && scheduleDatetime ? scheduleDatetime : schedule
+  const scheduleHuman = useMemo(() => cronToHuman(effectiveScheduleForDisplay, i18n.language), [effectiveScheduleForDisplay, i18n.language])
+  const scheduleInvalid = useMemo(() => {
+    if (runOnce && scheduleDatetime) {
+      const d = new Date(scheduleDatetime)
+      return isNaN(d.getTime()) || d <= new Date()
+    }
+    return schedule.trim().length > 0 && !scheduleHuman
+  }, [runOnce, scheduleDatetime, schedule, scheduleHuman])
+  const nextRuns = useMemo(() => {
+    if (runOnce && scheduleDatetime) return [] // one-shot: no recurring runs to preview
+    return scheduleHuman ? cronNextRuns(schedule, 3) : []
+  }, [runOnce, scheduleDatetime, schedule, scheduleHuman])
 
   return (
     <>
@@ -229,53 +258,110 @@ export function CronFormModal({
               )}
             </div>
 
+            {/* Schedule type toggle */}
+            <div className="space-y-2">
+              <Label className="inline-flex items-center gap-1.5">{t('cron.create.scheduleType', 'Schedule type')}</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setRunOnce(false); markDirty() }}
+                  className={cn(
+                    'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                    !runOnce
+                      ? 'border-primary/50 bg-primary/10 text-primary'
+                      : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                  )}
+                >
+                  {t('cron.create.recurring', 'Recurring')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setRunOnce(true); markDirty() }}
+                  className={cn(
+                    'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                    runOnce
+                      ? 'border-primary/50 bg-primary/10 text-primary'
+                      : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                  )}
+                >
+                  {t('cron.create.oneTime', 'One-time')}
+                </button>
+              </div>
+            </div>
+
             {/* Schedule */}
             <div className="space-y-2">
               <Label htmlFor="cronFormSchedule" className="inline-flex items-center gap-1.5">{t('cron.create.schedule')} <InfoTip content={t('cron.create.scheduleTip')} /></Label>
-              <Input
-                id="cronFormSchedule"
-                value={schedule}
-                onChange={(e) => { setSchedule(e.target.value); markDirty() }}
-                placeholder={t('cron.create.schedulePlaceholder')}
-                className={cn('font-mono', scheduleInvalid && 'border-destructive focus-visible:ring-destructive/30')}
-                required
-              />
-              <p className="text-[11px] text-muted-foreground">{t('cron.create.scheduleHelp')}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {CRON_PRESETS.map((preset) => (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    onClick={() => { setSchedule(preset.value); markDirty() }}
-                    className={cn(
-                      'rounded-md border px-2 py-0.5 text-[11px] transition-colors',
-                      schedule === preset.value
-                        ? 'border-primary/50 bg-primary/10 text-primary'
-                        : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-                    )}
-                  >
-                    {t(`cron.create.${preset.key}`)}
-                  </button>
-                ))}
-              </div>
-              {scheduleInvalid && (
-                <p className="text-[11px] text-destructive">
-                  {t('cron.create.scheduleInvalid')}
-                </p>
-              )}
-              {scheduleHuman && (
-                <div className="space-y-0.5">
-                  <p className="text-[11px] text-primary/80 italic">
-                    {scheduleHuman} ({t('cron.create.serverTime')})
-                  </p>
-                  {nextRuns.length > 0 && (
-                    <p className="text-[11px] text-muted-foreground">
-                      {t('cron.create.nextRuns')}: {nextRuns.map((d) =>
-                        d.toLocaleString(i18n.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
-                      ).join(', ')}
+              {runOnce ? (
+                <>
+                  <Input
+                    id="cronFormSchedule"
+                    type="datetime-local"
+                    value={scheduleDatetime}
+                    onChange={(e) => { setScheduleDatetime(e.target.value); markDirty() }}
+                    className={cn(scheduleInvalid && 'border-destructive focus-visible:ring-destructive/30')}
+                    required
+                  />
+                  <p className="text-[11px] text-muted-foreground">{t('cron.create.oneTimeHelp', 'Pick a date and time. The cron will fire once and then deactivate.')}</p>
+                  {scheduleInvalid && scheduleDatetime && (
+                    <p className="text-[11px] text-destructive">
+                      {t('cron.create.datetimePast', 'Datetime must be in the future')}
                     </p>
                   )}
-                </div>
+                  {scheduleDatetime && !scheduleInvalid && scheduleHuman && (
+                    <p className="text-[11px] text-primary/80 italic">
+                      {scheduleHuman} ({t('cron.create.serverTime')})
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Input
+                    id="cronFormSchedule"
+                    value={schedule}
+                    onChange={(e) => { setSchedule(e.target.value); markDirty() }}
+                    placeholder={t('cron.create.schedulePlaceholder')}
+                    className={cn('font-mono', scheduleInvalid && 'border-destructive focus-visible:ring-destructive/30')}
+                    required
+                  />
+                  <p className="text-[11px] text-muted-foreground">{t('cron.create.scheduleHelp')}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CRON_PRESETS.map((preset) => (
+                      <button
+                        key={preset.key}
+                        type="button"
+                        onClick={() => { setSchedule(preset.value); markDirty() }}
+                        className={cn(
+                          'rounded-md border px-2 py-0.5 text-[11px] transition-colors',
+                          schedule === preset.value
+                            ? 'border-primary/50 bg-primary/10 text-primary'
+                            : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                        )}
+                      >
+                        {t(`cron.create.${preset.key}`)}
+                      </button>
+                    ))}
+                  </div>
+                  {scheduleInvalid && (
+                    <p className="text-[11px] text-destructive">
+                      {t('cron.create.scheduleInvalid')}
+                    </p>
+                  )}
+                  {scheduleHuman && (
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] text-primary/80 italic">
+                        {scheduleHuman} ({t('cron.create.serverTime')})
+                      </p>
+                      {nextRuns.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground">
+                          {t('cron.create.nextRuns')}: {nextRuns.map((d) =>
+                            d.toLocaleString(i18n.language, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+                          ).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -334,7 +420,7 @@ export function CronFormModal({
 
             <Button
               type="submit"
-              disabled={isSubmitting || !name || !schedule || scheduleInvalid || !taskDescription || (!isEdit && !kinId)}
+              disabled={isSubmitting || !name || (runOnce ? !scheduleDatetime : !schedule) || scheduleInvalid || !taskDescription || (!isEdit && !kinId)}
               className="ml-auto btn-shine"
               size="sm"
             >

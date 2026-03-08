@@ -413,7 +413,12 @@
       "modelTip": "Override the Kin's default model for this job. Useful for running cheaper models on routine tasks.",
       "scheduleInvalid": "Invalid cron expression. Use format: minute hour day month weekday",
       "serverTime": "server time",
-      "nextRuns": "Next runs"
+      "nextRuns": "Next runs",
+      "scheduleType": "Schedule type",
+      "recurring": "Recurring",
+      "oneTime": "One-time",
+      "oneTimeHelp": "Pick a date and time. The job will fire once and then deactivate.",
+      "datetimePast": "Datetime must be in the future"
     },
     "edit": {
       "title": "Edit scheduled job",
@@ -440,7 +445,8 @@
       "runNow": "Run Now",
       "triggerSuccess": "Job triggered successfully",
       "triggerError": "Failed to trigger job",
-      "targetKin": "Target Kin"
+      "targetKin": "Target Kin",
+      "oneTime": "One-time"
     }
   },
   "chat": {

@@ -413,7 +413,12 @@
       "modelTip": "Remplace le modèle par défaut du Kin pour cette tâche. Utile pour des modèles moins chers sur les tâches routinières.",
       "scheduleInvalid": "Expression cron invalide. Format : minute heure jour mois jour_semaine",
       "serverTime": "heure serveur",
-      "nextRuns": "Prochaines exécutions"
+      "nextRuns": "Prochaines exécutions",
+      "scheduleType": "Type de planification",
+      "recurring": "Récurrent",
+      "oneTime": "Ponctuel",
+      "oneTimeHelp": "Choisissez une date et une heure. Le job s'exécutera une fois puis se désactivera.",
+      "datetimePast": "La date doit être dans le futur"
     },
     "edit": {
       "title": "Modifier la tâche planifiée",
@@ -440,7 +445,8 @@
       "runNow": "Exécuter",
       "triggerSuccess": "Tâche déclenchée avec succès",
       "triggerError": "Impossible de déclencher la tâche",
-      "targetKin": "Kin cible"
+      "targetKin": "Kin cible",
+      "oneTime": "Ponctuel"
     }
   },
   "chat": {

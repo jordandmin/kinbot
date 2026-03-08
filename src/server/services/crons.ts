@@ -116,6 +116,7 @@ export async function updateCron(
     targetKinId: string | null
     model: string | null
     isActive: boolean
+    runOnce: boolean
   }>,
 ) {
   // Validate new schedule if provided
