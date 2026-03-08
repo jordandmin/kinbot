@@ -420,3 +420,18 @@ Le MVP (phases 1-3) apporte déjà 80% de la valeur : l'utilisateur peut créer 
 - Build passes, all 2413 tests pass
 - Commit: `06356f7` on `feat/teams`
 - **Next: Phase 3 (Hub Kin prompt enrichment)**
+
+### Phase 3 - DONE (2026-03-08, cron run #3)
+- Modified `src/server/services/prompt-builder.ts`: added `TeamContextEntry` interface and `teamContext` to `PromptParams`
+- New prompt block `[4.7] Team context` renders differently for Hub vs member Kins:
+  - Hub: full routing instructions, member expertise summaries, delegation guidance
+  - Member: team awareness, Hub identification, teammate listing
+- Modified `src/server/services/kin-engine.ts`: fetches team memberships via `getTeamsForKin()`, builds team context with member expertise, passes to prompt builder
+- Modified `src/server/services/inter-kin.ts`:
+  - `listAvailableKins()` now enriched with team membership info (teamId, teamName, teamRole)
+  - `checkRateLimit()` accepts `isIntraTeam` flag, giving 2x rate limit for intra-team messages
+  - `sendInterKinMessage()` detects shared team membership and applies relaxed rate limits
+- Added 4 new tests in prompt-builder.test.ts (hub context, member context, empty context, self-exclusion)
+- Build passes, all 2438 tests pass
+- Commit: `88abc83` on `feat/teams`
+- **MVP complete (Phases 1-3)! Next: Phase 4 (Shared team memory)**
