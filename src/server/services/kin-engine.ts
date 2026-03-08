@@ -58,6 +58,19 @@ const activeAbortControllers = new Map<string, AbortController>()
 // AbortController registry for quick sessions — keyed by sessionId
 const quickAbortControllers = new Map<string, AbortController>()
 
+// Cache of last computed context usage per Kin (populated after each LLM call)
+const lastContextUsage = new Map<string, { contextTokens: number; contextWindow: number; updatedAt: number }>()
+
+/** Store the latest context usage for a Kin (called after LLM estimation). */
+export function setLastContextUsage(kinId: string, contextTokens: number, contextWindow: number) {
+  lastContextUsage.set(kinId, { contextTokens, contextWindow, updatedAt: Date.now() })
+}
+
+/** Get the cached context usage for a Kin, if available. */
+export function getLastContextUsage(kinId: string) {
+  return lastContextUsage.get(kinId) ?? null
+}
+
 /**
  * Extract a human-readable message from a raw API error object.
  * Handles nested structures like { error: { message: "..." } } from Anthropic/OpenAI.
@@ -525,6 +538,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     // Estimate total context tokens and resolve model context window
     const contextTokens = estimateContextTokens(systemPrompt, messageHistory, hasTools ? tools : undefined)
     const contextWindow = getModelContextWindow(kin.model)
+    setLastContextUsage(kinId, contextTokens, contextWindow)
     log.debug({ kinId, toolCount: Object.keys(tools).length, modelId: kin.model, contextTokens, contextWindow }, 'Starting LLM stream')
 
     // Update the queue event with real context usage (the initial queue:update
@@ -1441,6 +1455,9 @@ function getProviderTypeForModel(modelId: string): string | null {
     modelId.startsWith('o4')
   ) return 'openai'
   if (modelId.startsWith('gemini-')) return 'gemini'
+  if (modelId.startsWith('deepseek')) return 'deepseek'
+  // Models with a slash (e.g. "openai/gpt-4o") are typically OpenRouter-style
+  if (modelId.includes('/')) return 'openrouter'
   return null
 }
 
@@ -1460,7 +1477,8 @@ async function tryCreateModel(
     if (!capabilities.includes('llm')) return null
 
     const providerFamily = provider.type === 'anthropic-oauth' ? 'anthropic' : provider.type
-    if (expectedType && providerFamily !== expectedType) return null
+    // OpenRouter can proxy any model, so skip the type check for it
+    if (expectedType && providerFamily !== expectedType && providerFamily !== 'openrouter') return null
 
     const providerConfig = JSON.parse(await decrypt(provider.configEncrypted)) as {
       apiKey: string
@@ -1516,6 +1534,36 @@ async function tryCreateModel(
     } else if (provider.type === 'gemini') {
       const google = createGoogleGenerativeAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
       return google(modelId)
+    } else if (provider.type === 'openrouter') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://openrouter.ai/api/v1' })
+      return openai(modelId)
+    } else if (provider.type === 'deepseek') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.deepseek.com/v1' })
+      return openai(modelId)
+    } else if (provider.type === 'groq') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.groq.com/openai/v1' })
+      return openai(modelId)
+    } else if (provider.type === 'together') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.together.xyz/v1' })
+      return openai(modelId)
+    } else if (provider.type === 'fireworks') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.fireworks.ai/inference/v1' })
+      return openai(modelId)
+    } else if (provider.type === 'mistral') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.mistral.ai/v1' })
+      return openai(modelId)
+    } else if (provider.type === 'xai') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.x.ai/v1' })
+      return openai(modelId)
+    } else if (provider.type === 'perplexity') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.perplexity.ai' })
+      return openai(modelId)
+    } else if (provider.type === 'cohere') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl ?? 'https://api.cohere.com/v2' })
+      return openai(modelId)
+    } else if (provider.type === 'ollama') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey || 'ollama', baseURL: providerConfig.baseUrl ?? 'http://localhost:11434/v1' })
+      return openai(modelId)
     }
   } catch {
     return null

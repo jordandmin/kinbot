@@ -22,9 +22,11 @@ import { useQuickSession } from '@/client/hooks/useQuickSession'
 import { useAuth } from '@/client/hooks/useAuth'
 import { useReactions } from '@/client/hooks/useReactions'
 import { useDraftMessage } from '@/client/hooks/useDraftMessage'
+import { useQueueItems } from '@/client/hooks/useQueueItems'
 import { useFileUpload } from '@/client/hooks/useFileUpload'
 import { useExportConversation } from '@/client/hooks/useExportConversation'
 const ConversationSearch = lazy(() => import('@/client/components/chat/ConversationSearch').then(m => ({ default: m.ConversationSearch })))
+import { QueuePreview } from '@/client/components/chat/QueuePreview'
 import { ChatEmptyState } from '@/client/components/chat/ChatEmptyState'
 import { DateSeparator } from '@/client/components/chat/DateSeparator'
 import { TimeGapIndicator } from '@/client/components/chat/TimeGapIndicator'
@@ -68,6 +70,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   const { toolCalls, toolCallCount, toolCallsByMessage } = useToolCalls(kin.id, messages)
   const { prompts: pendingPrompts, respond: respondToPrompt, isResponding } = useHumanPrompts(kin.id)
   const { content: draftContent, setContent: setDraftContent, clearDraft } = useDraftMessage(kin.id)
+  const { items: queueItems, removeItem: removeQueueItem, isRemoving: isRemovingQueueItem } = useQueueItems(kin.id)
   const { pendingFiles, addFiles, removeFile, clearFiles, isUploading } = useFileUpload(kin.id)
   const { activeSession, isOpen: isQuickOpen, setIsOpen: setQuickOpen, createSession, closeSession } = useQuickSession(kin.id)
   const [showQuickHistory, setShowQuickHistory] = useState(false)
@@ -211,24 +214,60 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     }
   }, [messages])
 
+  const checkNearBottom = useCallback(() => {
+    const scrollArea = scrollAreaRef.current
+    if (!scrollArea) return
+    const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
+    if (!viewport) return
+    const { scrollTop, scrollHeight, clientHeight } = viewport
+    const nearBottom = scrollHeight - scrollTop - clientHeight < 100
+    isNearBottomRef.current = nearBottom
+    startTransition(() => {
+      setShowScrollBottom(!nearBottom)
+      setShowScrollTop(scrollTop > 300)
+    })
+    if (nearBottom) setNewMessageCount(0)
+  }, [])
+
   useEffect(() => {
     const scrollArea = scrollAreaRef.current
     if (!scrollArea) return
     const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
     if (!viewport) return
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = viewport
-      const nearBottom = scrollHeight - scrollTop - clientHeight < 100
-      isNearBottomRef.current = nearBottom
-      startTransition(() => {
-        setShowScrollBottom(!nearBottom)
-        setShowScrollTop(scrollTop > 300)
-      })
-      if (nearBottom) setNewMessageCount(0)
-    }
-    viewport.addEventListener('scroll', handleScroll)
-    return () => viewport.removeEventListener('scroll', handleScroll)
-  }, [])
+    viewport.addEventListener('scroll', checkNearBottom)
+    return () => viewport.removeEventListener('scroll', checkNearBottom)
+  }, [checkNearBottom])
+
+  // Compensate scroll position when the viewport height changes (e.g. queue preview
+  // appearing/disappearing). Without this, a viewport shrink pushes the user away from
+  // the bottom and breaks auto-scroll. We adjust scrollTop by the exact delta so the
+  // user stays at the same visual position — no jumps, no race conditions.
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current
+    if (!scrollArea) return
+    const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
+    if (!viewport) return
+    let prevHeight = viewport.clientHeight
+    const observer = new ResizeObserver(() => {
+      const newHeight = viewport.clientHeight
+      const delta = prevHeight - newHeight // positive when viewport shrinks
+      prevHeight = newHeight
+      // Check if user was near bottom BEFORE the resize using the old viewport height.
+      // The scroll event listener may have already flipped isNearBottomRef to false
+      // (because the viewport shrank, increasing distance-from-bottom), so we can't
+      // rely on it alone. Compute the pre-resize distance instead.
+      const { scrollTop, scrollHeight } = viewport
+      const wasNearBottom = scrollHeight - scrollTop - (newHeight + delta) < 100
+      if (wasNearBottom || isNearBottomRef.current) {
+        // Viewport resized while user was near bottom — snap to bottom to stay pinned.
+        viewport.scrollTop = viewport.scrollHeight
+        isNearBottomRef.current = true
+      }
+      checkNearBottom()
+    })
+    observer.observe(viewport)
+    return () => observer.disconnect()
+  }, [checkNearBottom])
 
   // IntersectionObserver — trigger loading older messages when top sentinel is visible
   useEffect(() => {
@@ -285,20 +324,80 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     prevMessageCountRef.current = messages.length
   }, [messages.length])
 
-  // Auto-scroll to bottom on new messages / streaming tokens / processing start / live tasks
+  // Auto-scroll to bottom whenever the scroll container's content grows.
+  // A MutationObserver on the viewport catches every DOM change (new messages,
+  // streaming token batches, tool-call expansions, queue preview resize, etc.)
+  // so we no longer depend on a React dependency list that can miss updates.
   const isProcessing = queueState?.isProcessing ?? false
   useEffect(() => {
-    // Skip if the layout effect already handled the scroll for this render
+    const scrollArea = scrollAreaRef.current
+    if (!scrollArea) return
+    const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
+    if (!viewport) return
+
+    let rafId: number | null = null
+    let pendingNearBottom = false
+    let pendingStreaming = false
+    const scrollToEnd = () => {
+      // Capture scroll state synchronously at mutation time, before a scroll
+      // event can flip isNearBottomRef to false due to increased scrollHeight.
+      const nearNow = isNearBottomRef.current
+      const streamNow = isStreamingRef.current
+      if (rafId !== null) {
+        // Already coalescing — keep the most permissive state
+        pendingNearBottom = pendingNearBottom || nearNow
+        pendingStreaming = pendingStreaming || streamNow
+        return
+      }
+      pendingNearBottom = nearNow
+      pendingStreaming = streamNow
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        if (!autoScrollRef.current) return
+        // During active streaming, always scroll (don't rely on isNearBottom
+        // which can flip to false between batched token updates)
+        if (!pendingNearBottom && !pendingStreaming) return
+        if (needsInstantScrollRef.current) return
+        viewport.scrollTop = viewport.scrollHeight
+        isNearBottomRef.current = true
+      })
+    }
+
+    const observer = new MutationObserver(scrollToEnd)
+    observer.observe(viewport, { childList: true, subtree: true, characterData: true })
+
+    return () => {
+      observer.disconnect()
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, []) // stable — reads refs only
+
+  // Keep refs for autoScroll and isStreaming so the MutationObserver callback can read them
+  const autoScrollRef = useRef(autoScroll)
+  useEffect(() => { autoScrollRef.current = autoScroll }, [autoScroll])
+  const isStreamingRef = useRef(isStreaming)
+  useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
+
+  // Still trigger a scroll on dependency changes that may not mutate DOM
+  // (e.g. isProcessing flipping, queueItems count)
+  useEffect(() => {
     if (justDidInstantScrollRef.current) {
       justDidInstantScrollRef.current = false
       return
     }
-    // Suppress smooth scroll while waiting for instant scroll (kin switch in progress)
     if (needsInstantScrollRef.current) return
     if (autoScroll && isNearBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+      requestAnimationFrame(() => {
+        const scrollArea = scrollAreaRef.current
+        if (!scrollArea) return
+        const viewport = scrollArea.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
+        if (viewport) {
+          viewport.scrollTop = viewport.scrollHeight
+          isNearBottomRef.current = true
+        }
+      })
     }
-  }, [messages.length, streamingMessage, isStreaming, isProcessing, liveTasks, liveCompacting, pendingPrompts, autoScroll])
+  }, [messages.length, isProcessing, autoScroll, queueItems.length])
 
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
@@ -724,6 +823,13 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
           <MiniAppViewer />
         </Suspense>
       </div>
+
+      {/* Queue preview */}
+      <QueuePreview
+        items={queueItems}
+        isRemoving={isRemovingQueueItem}
+        onRemove={removeQueueItem}
+      />
 
       {/* Input */}
       <MessageInput

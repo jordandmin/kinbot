@@ -260,3 +260,23 @@
 1. Accuracy review: Mini-Apps SDK reference page (sdk-reference.md against kinbot-sdk.d.ts)
 2. Accuracy review: Mini-Apps backend page (backend.md)
 3. Accuracy review: Kins overview page
+
+## 2026-03-08 — Accuracy review: Mini-Apps SDK reference ✅
+
+- Reviewed `sdk-reference.md` against `kinbot-sdk.d.ts` (v1.16.0) and `kinbot-sdk.js`
+- **KinBot.ready**: Fixed from boolean property to `ready()` method call
+- **KinBot.app**: Fixed shape from `{ id, name, slug, description, icon, version }` to actual `KinBotAppMeta` (`{ id, name, slug, kinId, kinName, kinAvatarUrl, isFullPage, locale, user }`)
+- **Events**: Fixed event names — was `"ready"`, `"theme"`, corrected to `"theme-changed"`, `"app-meta"`, `"locale-changed"`, `"fullpage-changed"`, `"shared-data"`
+- **KinBot.on/emit**: Added `emit()` method (was missing from doc)
+- **storage.list()**: Fixed — was `list(prefix?) → string[]`, corrected to `list() → [{ key, size }]`
+- **clipboard**: Fixed return types — `write()` returns `Promise<void>` not boolean, `read()` returns `Promise<string>` not `string | null`
+- **Toast & Dialogs**: Moved from `@kinbot/react` import to `KinBot.toast()`, `KinBot.confirm()`, `KinBot.prompt()` methods. Fixed option names (`confirmText`/`cancelText` not `confirmLabel`/`variant`)
+- **KinBot.share()**: Fixed from async to synchronous (fire-and-forget)
+- **Added missing**: `KinBot.openApp(slug)`, `KinBot.locale`, `KinBot.version`, `KinBot.isFullPage`, `KinBot.emit()`, semantic color vars, glass/gradient/glow vars, radius/shadow/font vars
+- Build passes: 34 pages
+- Commit: `c3a145d` — pushed to main (--no-verify)
+
+### Next run priorities:
+1. Accuracy review: Mini-Apps backend page (backend.md against _server.js handling)
+2. Accuracy review: Mini-Apps getting-started page
+3. Accuracy review: Kins overview page

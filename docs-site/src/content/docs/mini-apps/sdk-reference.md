@@ -7,56 +7,56 @@ The KinBot SDK (`kinbot-sdk.js`) is the low-level API that powers the React hook
 
 ## KinBot Global Object
 
-After the SDK loads, the `KinBot` global is available on `window`.
-
-### Top-Level Properties
-
-```javascript
-KinBot.version    // string — SDK version (e.g. "1.16.0")
-KinBot.locale     // string — current UI language code ("en", "fr", etc.)
-KinBot.isFullPage // boolean — whether app is in full-page mode
-KinBot.theme      // { mode: "light"|"dark", palette: string }
-KinBot.app        // KinBotAppMeta | null (see below)
-KinBot.kin        // { id, name, avatarUrl } (all nullable)
-KinBot.user       // { id, name, pseudonym, locale, timezone, avatarUrl } (all nullable)
-```
-
-#### `KinBot.app` (AppMeta)
-
-```typescript
-{
-  id: string;
-  name: string;
-  slug: string;
-  kinId: string;
-  kinName: string;
-  kinAvatarUrl: string | null;
-  isFullPage: boolean;
-  locale: string;
-  user: KinBotUser;
-}
-```
+After the SDK loads, the `KinBot` global is available.
 
 ### Lifecycle
 
 ```javascript
-KinBot.ready()                    // Signal that the app has finished loading
-KinBot.fullpage(true)             // Request full-page mode (or false for side-panel)
-KinBot.resize(width?, height?)    // Request panel resize (320-1200px width, 200-2000px height)
+KinBot.ready()  // Signal that the app has finished loading
 ```
 
-:::caution
-`ready()` is a **function**, not a boolean property. Call it once your app has finished initializing.
+:::note
+`ready()` is a method you call once your app is initialized, not a boolean property. The parent waits for this signal before showing the app.
 :::
+
+### App Info
+
+```javascript
+KinBot.app
+// { id, name, slug, kinId, kinName, kinAvatarUrl, isFullPage, locale, user }
+
+KinBot.kin       // { id, name, avatarUrl }
+KinBot.user      // { id, name, pseudonym, locale, timezone, avatarUrl }
+KinBot.locale    // string — current UI language code (e.g. 'en', 'fr')
+KinBot.version   // string — SDK version
+KinBot.isFullPage // boolean — whether the app is in full-page mode
+```
+
+### Theme
+
+```javascript
+KinBot.theme       // { mode: "light"|"dark", palette: string }
+KinBot.on("theme-changed", ({ mode, palette }) => { ... })
+```
 
 ### Events
 
+Listen for parent events or emit your own:
+
 ```javascript
-KinBot.on(event, callback)    // Listen for events from the parent
-KinBot.emit(event, data?)     // Send events to the parent
+KinBot.on(eventName, callback)   // Listen for events from the parent
+KinBot.emit(eventName, data?)    // Send events to the parent
 ```
 
-Built-in event names: `theme-changed`, `app-meta`, `locale-changed`, `fullpage-changed`, `shared-data`.
+**Built-in event names:**
+
+| Event | Description |
+|---|---|
+| `theme-changed` | Theme mode or palette changed |
+| `app-meta` | App metadata updated |
+| `locale-changed` | UI language changed |
+| `fullpage-changed` | Full-page mode toggled |
+| `shared-data` | Data received from another mini-app |
 
 ## Storage
 
@@ -66,45 +66,22 @@ Persistent key-value storage (server-side, max 64KB per value, 500 keys per app)
 await KinBot.storage.get(key)      // → value | null
 await KinBot.storage.set(key, value)  // JSON-serializable
 await KinBot.storage.delete(key)   // → boolean (true if deleted)
-await KinBot.storage.list()        // → Array<{ key: string, size: number }>
+await KinBot.storage.list()        // → [{ key, size }]
 await KinBot.storage.clear()       // → number (keys cleared)
 ```
 
 :::note
-`list()` returns objects with `key` and `size` (bytes), not just key strings. There is no prefix filter parameter.
+`list()` takes no arguments and returns objects with `key` and `size` (bytes), not just key strings.
 :::
 
-## UI
-
-### Toast & Dialogs
-
-These are called directly on the `KinBot` object:
-
-```javascript
-KinBot.toast("Saved!", "success")
-// type: "info" | "success" | "warning" | "error"
-
-const ok = await KinBot.confirm("Delete this item?", {
-  title: "Confirm",
-  confirmText: "Delete",
-  cancelText: "Cancel",
-})
-
-const name = await KinBot.prompt("Enter your name", {
-  title: "Input",
-  defaultValue: "",
-  placeholder: "John Doe",
-  confirmText: "OK",
-  cancelText: "Cancel",
-})
-```
-
-### Navigation & Display
+## Navigation & Display
 
 ```javascript
 KinBot.navigate(path)          // Navigate the parent KinBot UI to a path
+KinBot.fullpage(bool)          // Toggle full-page or side-panel mode
 KinBot.setTitle(title)         // Dynamically update the panel header title
 KinBot.setBadge(value)         // Set sidebar badge (number, string, or null to clear)
+KinBot.resize(width?, height?) // Request panel resize (320-1200px width, 200-2000px height)
 KinBot.openApp(slug)           // Open another mini-app from the same Kin by slug
 ```
 
@@ -114,6 +91,7 @@ KinBot.openApp(slug)           // Open another mini-app from the same Kin by slu
 await KinBot.sendMessage(text, options?)
 // Send a message to the Kin's conversation
 // options: { silent?: boolean }
+// Rate limited: 5 per 30s
 
 await KinBot.conversation.history(limit?)
 // Get recent messages (default 20, max 100)
@@ -133,15 +111,15 @@ await KinBot.memory.search(query, limit?)
 await KinBot.memory.store(content, { category?, subject? })
 // Store a new memory
 // category: "fact" | "preference" | "decision" | "knowledge" (default)
-// Returns: { id, content, category, subject }
 // Max 2000 chars
+// Returns: { id, content, category, subject }
 ```
 
 ## Clipboard
 
 ```javascript
-await KinBot.clipboard.write(text)  // → void
-await KinBot.clipboard.read()       // → string
+await KinBot.clipboard.write(text)  // Copy text to system clipboard (bypasses iframe restrictions)
+await KinBot.clipboard.read()       // Read text from system clipboard (may require permission)
 ```
 
 ## Notifications
@@ -150,6 +128,35 @@ await KinBot.clipboard.read()       // → string
 await KinBot.notification(title, body?)  // → boolean
 // Shows a browser notification via the parent window
 ```
+
+## Toast & Dialogs
+
+These are methods on the `KinBot` object directly:
+
+```javascript
+KinBot.toast("Saved!", "success")
+// type: "info" (default) | "success" | "warning" | "error"
+
+const ok = await KinBot.confirm("Delete this item?", {
+  title: "Confirm",
+  confirmText: "Delete",
+  cancelText: "Cancel",
+})
+// Returns: boolean
+
+const name = await KinBot.prompt("Enter your name", {
+  title: "Input",
+  placeholder: "John Doe",
+  defaultValue: "",
+  confirmText: "OK",
+  cancelText: "Cancel",
+})
+// Returns: string | null
+```
+
+:::note
+In the React layer (`@kinbot/react`), `toast`, `confirm`, and `prompt` are re-exported as standalone functions for convenience. Under the hood they call these same SDK methods.
+:::
 
 ## Keyboard Shortcuts
 
@@ -172,6 +179,7 @@ await KinBot.download(filename, content, mimeType?)
 ```javascript
 KinBot.share(targetSlug, data)
 // Share JSON data with another mini-app and open it
+// Note: this is synchronous (fire-and-forget)
 
 KinBot.on("shared-data", ({ from, fromName, data, ts }) => { ... })
 // Receive shared data from another app
@@ -187,8 +195,8 @@ Make external HTTP requests via KinBot's server (bypasses CORS). Rate limited: 6
 
 ```javascript
 const res = await KinBot.http(url, options?)
-const data = await KinBot.http.json(url, headers?)
-const data = await KinBot.http.post(url, body, headers?)
+const data = await KinBot.http.json(url)
+const data = await KinBot.http.post(url, body)
 ```
 
 ## Backend API Client
@@ -196,22 +204,22 @@ const data = await KinBot.http.post(url, body, headers?)
 Call routes defined in `_server.js`:
 
 ```javascript
-const data = await KinBot.api.get("/path", headers?)    // GET → JSON
-const data = await KinBot.api.post("/path", body)       // POST → JSON
-const data = await KinBot.api.put("/path", body)        // PUT → JSON
-const data = await KinBot.api.patch("/path", body)      // PATCH → JSON
-const data = await KinBot.api.delete("/path")           // DELETE → JSON
-const data = await KinBot.api.json("/path", headers?)   // GET → JSON (alias)
-const res = await KinBot.api("/path", opts?)             // Raw Response
+const data = await KinBot.api.get("/path")         // GET → JSON
+const data = await KinBot.api.post("/path", body)   // POST → JSON
+const data = await KinBot.api.put("/path", body)     // PUT → JSON
+const data = await KinBot.api.patch("/path", body)   // PATCH → JSON
+const data = await KinBot.api.delete("/path")        // DELETE → JSON
+const data = await KinBot.api.json("/path", headers?) // GET + JSON parse
+const res = await KinBot.api("/path", opts?)          // Raw Response
 ```
 
 ## Server-Sent Events
 
-Subscribe to real-time events from the backend (`ctx.events.emit()` in `_server.js`).
+Subscribe to real-time events from the backend (`_server.js` using `ctx.events.emit()`).
 
 ```javascript
 KinBot.events.on("eventName", (data) => { ... })
-KinBot.events.subscribe(({ event, data }) => { ... })  // all events
+KinBot.events.subscribe((event) => { ... })  // all events — { event, data }
 KinBot.events.close()
 KinBot.events.connected  // boolean
 ```
@@ -223,13 +231,42 @@ A design system CSS is auto-injected into every mini-app.
 ### CSS Variables
 
 ```css
+/* Core */
 var(--color-primary)
 var(--color-background)
 var(--color-foreground)
 var(--color-muted)
 var(--color-card)
 var(--color-border)
+
+/* Semantic */
+var(--color-secondary)
+var(--color-accent)
+var(--color-destructive)
+var(--color-success)
+var(--color-warning)
+var(--color-info)
+
+/* Charts */
 var(--color-chart-1) through var(--color-chart-5)
+
+/* Gradients & effects */
+var(--color-gradient-start)
+var(--color-gradient-mid)
+var(--color-gradient-end)
+var(--color-glow-1) through var(--color-glow-3)
+var(--color-glass-bg)
+var(--color-glass-strong-bg)
+
+/* Typography */
+var(--font-sans)
+var(--font-mono)
+
+/* Radius */
+var(--radius-sm) through var(--radius-full)
+
+/* Shadows */
+var(--shadow-xs) through var(--shadow-xl)
 ```
 
 ### Utility Classes

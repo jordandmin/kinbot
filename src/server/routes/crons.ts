@@ -40,6 +40,7 @@ function serializeCron(cron: any, kinInfo?: KinInfo, targetKinInfo?: KinInfo) {
     targetKinName: targetKinInfo?.name ?? null,
     targetKinAvatarUrl: cron.targetKinId && targetKinInfo ? kinAvatarUrl(cron.targetKinId, targetKinInfo.avatarPath) : null,
     model: cron.model,
+    runOnce: cron.runOnce,
     isActive: cron.isActive,
     requiresApproval: cron.requiresApproval,
     lastTriggeredAt: cron.lastTriggeredAt ? new Date(cron.lastTriggeredAt).getTime() : null,
@@ -78,6 +79,7 @@ cronRoutes.post('/', async (c) => {
     taskDescription: string
     targetKinId?: string
     model?: string
+    runOnce?: boolean
   }>()
 
   if (!body.kinId || !body.name || !body.schedule || !body.taskDescription) {
@@ -95,6 +97,7 @@ cronRoutes.post('/', async (c) => {
       taskDescription: body.taskDescription,
       targetKinId: body.targetKinId,
       model: body.model,
+      runOnce: body.runOnce,
       createdBy: 'user',
     })
 
@@ -126,6 +129,7 @@ cronRoutes.patch('/:id', async (c) => {
     targetKinId?: string | null
     model?: string | null
     isActive?: boolean
+    runOnce?: boolean
   }>()
 
   try {

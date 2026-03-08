@@ -182,6 +182,11 @@ export function CronDetailModal({
                     {t('sidebar.crons.paused')}
                   </Badge>
                 )}
+                {cron.runOnce && (
+                  <Badge variant="outline" className="text-info border-info/40">
+                    {t('cron.detail.oneTime', 'One-time')}
+                  </Badge>
+                )}
               </div>
             </div>
           </DialogHeader>

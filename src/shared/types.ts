@@ -161,6 +161,7 @@ export interface CronSummary {
   targetKinName: string | null
   targetKinAvatarUrl: string | null
   model: string | null
+  runOnce: boolean
   isActive: boolean
   requiresApproval: boolean
   lastTriggeredAt: number | null

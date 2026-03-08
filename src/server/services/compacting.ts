@@ -12,7 +12,7 @@ import {
 } from '@/server/db/schema'
 import { config } from '@/server/config'
 import { getExtractionModel } from '@/server/services/app-settings'
-import { createMemory, updateMemory, searchMemories } from '@/server/services/memory'
+import { createMemory, updateMemory, isDuplicateMemory } from '@/server/services/memory'
 import { sseManager } from '@/server/sse/index'
 import type { MemoryCategory } from '@/shared/types'
 
@@ -332,9 +332,7 @@ async function addIfNotDuplicate(
   importance: number | null,
   lastMessageId: string,
 ): Promise<boolean> {
-  const similar = await searchMemories(kinId, item.content, 3)
-  const isDuplicate = similar.some((s) => s.score > 0.03)
-  if (isDuplicate) return false
+  if (await isDuplicateMemory(kinId, item.content)) return false
 
   await createMemory(kinId, {
     content: item.content,

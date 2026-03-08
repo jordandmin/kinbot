@@ -101,6 +101,11 @@ function CronCard({
           <span className="text-[10px] text-muted-foreground truncate" title={cron.schedule}>
             {humanSchedule ?? cron.schedule}
           </span>
+          {cron.runOnce && (
+            <Badge variant="outline" className="ml-1 h-4 px-1 text-[9px] text-info border-info/40">
+              {t('cron.detail.oneTime', 'One-time')}
+            </Badge>
+          )}
           {cron.requiresApproval && (
             <Badge variant="outline" className="ml-1 h-4 px-1 text-[9px] text-warning border-warning/40">
               {t('sidebar.crons.pendingApproval')}

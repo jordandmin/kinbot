@@ -1107,3 +1107,46 @@
 ### Next run
 - Area 4 (revisit): Tasks/Crons
 - Area 5 (revisit): Provider settings
+
+## 2026-03-08 16:40 UTC
+### Area tested: Tasks/Crons (Area 4 - revisit)
+- **Pages visited:** Code review of CronList.tsx, CronFormModal.tsx, CronDetailModal.tsx, TaskList.tsx, TaskDetailModal.tsx, useCrons.ts, cron-next.ts, cron-tools.ts, crons.ts (service), crons.ts (routes), tasks.ts (routes), tasks.ts (service), wakeup-scheduler.ts, kins.ts (cascade delete)
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 3 (issues created: #168, #169, #170)
+  - #168: Kin cascade delete does not stop in-memory cron scheduler jobs (leaks croner timers)
+  - #169: Unused variable `targetKinId` in `triggerCron()` function (dead code)
+  - #170: `scheduleJob()` casts Date to string with unsafe `as string` type assertion
+
+- **UX suggestions:** 1 (issues created: #171)
+  - #171: Cron form does not support one-shot (run_once) or ISO datetime schedules despite backend support
+
+#### All clear:
+- Cron CRUD: clean create/edit/delete flow with proper validation and SSE real-time updates
+- Cron scheduling: croner-based in-memory scheduler with proper boot recovery (initCronScheduler)
+- Cron presets: 9 preset buttons for common schedules (5m, 15m, 30m, hourly, daily, weekly, monthly)
+- Schedule validation: real-time human-readable translation + next 3 runs preview
+- Invalid schedule feedback: red border, error message, submit button disabled
+- Cron detail modal: schedule info, description, target kin, model, execution history with task drill-down
+- Manual trigger: "Run Now" button in detail modal with proper API call and history refresh
+- Approval flow: Kin-created crons require user approval, pending badge, approve button, notification
+- Active toggle: switch on cron cards and in detail modal, with proper scheduler start/stop
+- Drag-and-drop reorder: dnd-kit with user-persisted order via /me endpoint
+- Search filter: filter by name, kin name, or schedule expression
+- Duplicate cron: one-click duplicate from detail modal with "(copy)" suffix
+- One-shot crons: backend supports `runOnce` flag with auto-deactivation after first fire
+- ISO datetime schedules: backend parses and schedules one-time future dates
+- Max active crons limit (config.crons.maxActive) enforced on creation
+- Max concurrent executions per cron (config.crons.maxConcurrentExecutions) prevents overlapping runs
+- Task list: timeline layout with day grouping, status icons, duration, infinite scroll
+- Task detail modal: full conversation view with streaming, tool calls side panel, cancel button, result/error blocks
+- Task cancel: proper API with status check (409 if already finished)
+- Stale task recovery on server restart (marks pending/in_progress as failed)
+- SSE events: cron:created, cron:updated, cron:deleted, cron:triggered all properly emitted and consumed
+- Kin delete cascade: properly cleans up crons from DB and nullifies targetKinId references
+- Unsaved changes guard on cron form with confirmation dialog
+- Cron tools: create, update, delete, list, trigger, journal (get history) - comprehensive tooling for Kins
+
+### Next run
+- Area 11: Contacts
+- Area 12: Webhooks
