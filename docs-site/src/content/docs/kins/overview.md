@@ -25,14 +25,15 @@ When you create a Kin, you define:
 | **Character** | Personality traits and communication style |
 | **Expertise** | Domain knowledge and capabilities |
 | **Model** | Which LLM to use (from your configured providers) |
+| **Provider** | Which AI provider to use (optional, defaults to instance default) |
 | **Avatar** | Visual identity in the UI |
 
 ## How they work
 
-1. **Messages queue** — each Kin has its own FIFO queue. User messages have priority over automated ones (cron, webhooks, inter-Kin).
+1. **Messages queue** — each Kin has its own priority queue. User messages are processed before automated ones (cron, webhooks, inter-Kin). Within the same priority, messages are processed in order.
 2. **System prompt** — KinBot builds a rich system prompt from the Kin's identity, relevant memories, contacts directory, Kin directory, active channels, and platform directives.
 3. **Memory injection** — before each turn, relevant memories are retrieved via semantic search and injected into context.
-4. **Session compacting** — when the conversation gets too long for the model's context window, older messages are summarized. Originals are always preserved and the process is rollback-able.
+4. **Session compacting** — when the conversation gets too long for the model's context window, older messages are summarized into a snapshot. Original messages are always preserved in the database, so no data is lost.
 5. **Tool execution** — Kins have access to 100+ built-in tools plus MCP servers and custom tools.
 
 ## Shared Kins
