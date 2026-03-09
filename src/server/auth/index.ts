@@ -19,6 +19,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 8,
     // Note: open sign-up is gated at the application layer, not here.
     // The onboarding /profile endpoint requires a valid invitation token
     // when an admin already exists. Without a profile, an auth-only user

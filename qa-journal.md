@@ -1260,3 +1260,38 @@
 ### Next run
 - Area 14: Account settings
 - Area 15: Quick chat / Ephemeral sessions
+
+## 2026-03-09 08:40 UTC
+### Area tested: Account Settings (Area 14)
+- **Pages visited:** Code review of AccountDialog.tsx (AccountPage.tsx), me.ts (routes), auth/index.ts, users.ts (routes), UsersSettings.tsx, 17-account-settings.spec.ts, 19-users-settings.spec.ts
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 2 (issues created: #196, #198)
+  - #196: PATCH /api/me accepts arbitrary kinOrder and cronOrder values without validation (can store non-JSON, non-array values)
+  - #198: Password change has no server-side minimum length enforcement (only client-side 8-char check, Better Auth accepts any length)
+
+- **UX suggestions:** 1 (issues created: #197)
+  - #197: Avatar size limit mismatch between client (2MB) and server (10MB), inconsistent but not breaking
+
+#### All clear:
+- Account dialog: clean modal with hero header, gradient bg, avatar with camera overlay, user info display
+- Avatar upload: client-side type + size validation, cropper with zoom slider, crop to square, proper loading states
+- Profile form: firstName/lastName (max 100), pseudonym (max 30, alphanumeric + underscore/hyphen), language selector
+- Server validation: comprehensive input checks on PATCH /me (type, length, regex, trimming), proper error aggregation
+- Profile upsert: handles missing profile row (e.g. skipped onboarding) via insert...onConflictDoUpdate
+- User table sync: updates Better Auth user.name when firstName/lastName change
+- Password change: expandable section with current/new/confirm fields, client-side mismatch + length checks, loading spinner, toast feedback
+- Avatar server: MIME type + extension validation, stores in data/uploads/avatars/, cache-busting URL
+- Form state reset: useEffect resets all state when dialog opens, cancel discards unsaved changes
+- Cancel behavior: discards unsaved edits properly
+- Language change: updates i18n.changeLanguage on save
+- Admin badge: shows "Admin" for admin users
+- Member since: displays join date with calendar icon
+- Users settings (admin): user list with avatars, roles, delete with confirmation, self-delete prevention
+- Invitation system: create with label + expiry, one-time URL reveal, copy button, status badges (active/used/expired), revoke with confirmation
+- Auth: Better Auth with email/password, cookie session with 5-min cache, trusted origins configured
+- E2E tests: comprehensive Playwright tests for dialog open/close, field editing, persistence, cancel reset, avatar fallback, language selector
+
+### Next run
+- Area 15: Quick chat / Ephemeral sessions
+- Area 1: Onboarding / First run (re-test)

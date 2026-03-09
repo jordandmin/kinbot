@@ -76,6 +76,20 @@ meRoutes.patch('/', async (c) => {
   if (body.language !== undefined) {
     if (!SUPPORTED_LANGUAGES.includes(body.language)) errors.push(`language must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`)
   }
+  if (body.kinOrder !== undefined) {
+    if (!Array.isArray(body.kinOrder) || !body.kinOrder.every((id: unknown) => typeof id === 'string')) {
+      errors.push('kinOrder must be an array of strings')
+    } else if (body.kinOrder.length > 200) {
+      errors.push('kinOrder exceeds maximum length')
+    }
+  }
+  if (body.cronOrder !== undefined) {
+    if (!Array.isArray(body.cronOrder) || !body.cronOrder.every((id: unknown) => typeof id === 'string')) {
+      errors.push('cronOrder must be an array of strings')
+    } else if (body.cronOrder.length > 200) {
+      errors.push('cronOrder exceeds maximum length')
+    }
+  }
 
   if (errors.length > 0) {
     return c.json(
@@ -169,10 +183,10 @@ meRoutes.post('/avatar', async (c) => {
   }
 
   // Safety-net file size limit (client already crops to 512x512 JPEG ~50-150KB)
-  const MAX_AVATAR_SIZE = 10 * 1024 * 1024
+  const MAX_AVATAR_SIZE = 2 * 1024 * 1024
   if (file.size > MAX_AVATAR_SIZE) {
     return c.json(
-      { error: { code: 'FILE_TOO_LARGE', message: 'Avatar must be under 10MB' } },
+      { error: { code: 'FILE_TOO_LARGE', message: 'Avatar must be under 2MB' } },
       400,
     )
   }
