@@ -1,4 +1,4 @@
-import { eq, desc, lt, and } from 'drizzle-orm'
+import { eq, desc, lt, and, notInArray, sql } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { randomBytes, timingSafeEqual } from 'crypto'
 import { db } from '@/server/db/index'
@@ -17,6 +17,7 @@ function generateToken(): string {
 }
 
 export function validateToken(provided: string, stored: string): boolean {
+  if (!provided || !stored) return false
   const a = Buffer.from(provided, 'utf8')
   const b = Buffer.from(stored, 'utf8')
   if (a.length !== b.length) return false
@@ -236,21 +237,25 @@ export async function pruneWebhookLogs(): Promise<void> {
   // 2. Per-webhook cap: keep only the most recent N logs
   const allWebhooks = await db.select({ id: webhooks.id }).from(webhooks).all()
   for (const wh of allWebhooks) {
-    const boundary = db
-      .select({ createdAt: webhookLogs.createdAt })
+    // Select IDs to keep (most recent N), delete everything else
+    const keepIds = db
+      .select({ id: webhookLogs.id })
       .from(webhookLogs)
       .where(eq(webhookLogs.webhookId, wh.id))
       .orderBy(desc(webhookLogs.createdAt))
-      .limit(1)
-      .offset(maxLogsPerWebhook)
-      .get()
+      .limit(maxLogsPerWebhook)
+      .all()
+      .map((r) => r.id)
 
-    if (boundary) {
+    if (keepIds.length === maxLogsPerWebhook) {
+      // Only prune if we've hit the cap
       db.delete(webhookLogs)
         .where(
           and(
             eq(webhookLogs.webhookId, wh.id),
-            lt(webhookLogs.createdAt, boundary.createdAt),
+            keepIds.length > 0
+              ? notInArray(webhookLogs.id, keepIds)
+              : undefined,
           ),
         )
         .run()

@@ -34,6 +34,7 @@ import { NotificationPreferences } from '@/client/components/notifications/Notif
 import { PluginsSettings } from '@/client/pages/settings/PluginsSettings'
 import { PluginMarketplace } from '@/client/pages/settings/PluginMarketplace'
 import { TeamsSettings } from '@/client/pages/settings/TeamsSettings'
+import { LogsSettings } from '@/client/pages/settings/LogsSettings'
 import {
   Bell,
   Brain,
@@ -54,6 +55,7 @@ import {
   Contact,
   ShoppingBag,
   UsersRound,
+  ScrollText,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/client/components/ui/tooltip'
 import { api } from '@/client/lib/api'
@@ -110,6 +112,12 @@ const sectionGroups: SectionGroup[] = [
       { id: 'notifications', icon: Bell, labelKey: 'settings.notifications.title' },
     ],
   },
+  {
+    groupKey: 'settings.groups.system',
+    items: [
+      { id: 'logs', icon: ScrollText, labelKey: 'settings.logs.title' },
+    ],
+  },
 ]
 
 const allSections = sectionGroups.flatMap((g) => g.items)
@@ -132,6 +140,7 @@ const sectionComponents: Record<string, React.FC> = {
   marketplace: PluginMarketplace,
   notifications: NotificationPreferences,
   teams: TeamsSettings,
+  logs: LogsSettings,
 }
 
 interface SettingsModalProps {

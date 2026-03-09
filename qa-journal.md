@@ -1185,3 +1185,42 @@
 
 ### Next run
 - Area 12: Webhooks
+
+## 2026-03-09 00:40 UTC
+### Area tested: Webhooks (Area 12)
+- **Pages visited:** Code review of webhooks.ts (routes), webhooks-incoming.ts (routes), webhooks.ts (service), webhooks.test.ts, webhook-tools.ts, webhook-tools.test.ts, WebhooksSettings.tsx, WebhookFormDialog.tsx, WebhookCard.tsx, WebhookLogDialog.tsx, 09-webhook-management.spec.ts, schema.ts (webhooks/webhookLogs tables), config.ts (webhook settings), app.ts (route mounting), auth/middleware.ts (auth bypass), kins.ts (cascade delete)
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 2 (issues created: #180, #181)
+  - #180: validateToken returns true for empty strings, allowing unauthenticated webhook calls if token field is ever empty
+  - #181: pruneWebhookLogs per-webhook cap fails when multiple logs share the same timestamp (uses strict lt instead of proper subquery)
+
+- **UX suggestions:** 2 (issues created: #182, #183)
+  - #182: Webhook list API has N+1 query problem for Kin info (same pattern as contacts #177)
+  - #183: Webhook incoming route returns 404 instead of 405 for non-POST methods
+
+#### All clear:
+- Webhook CRUD: clean create/edit/delete flow with proper validation (name required, max 200 chars, description max 1000)
+- Token security: 32-byte random hex token, timing-safe comparison, token shown only once at creation
+- Token regeneration: confirmation dialog, proper SSE event, toast notification
+- Token reveal dialog: show/hide toggle, copy buttons for URL and token, warning about one-time display
+- Rate limiting: per-webhook sliding window rate limiter (configurable, default 60/min), in-memory with periodic cleanup
+- Payload size limit: configurable max (default 1MB), proper 413 response
+- Auth bypass: incoming webhook route properly excluded from session auth middleware
+- Incoming webhook flow: token via Bearer header or query param, active check (409 if inactive), proper HTTP status codes
+- Webhook trigger: increments counter, logs payload (truncated to 10KB), enqueues message to target Kin, SSE event
+- Log viewer: expandable payloads, source IP badges, timestamp display, empty state, scroll area
+- Log cleanup: periodic pruning every 6h with configurable retention (default 30 days) and per-webhook cap (default 500)
+- Cascade delete: Kin deletion properly deletes webhooks and emits SSE events; webhook logs cascade via FK
+- SSE real-time updates: webhook:created, webhook:updated, webhook:deleted, webhook:triggered all properly emitted and consumed
+- Search and filter: text search on name/description/kinName, Kin selector filter
+- Empty state: proper icon, description, and CTA button
+- Max webhooks per Kin: configurable limit (default 20) enforced at creation
+- Kin tools: create, update, delete, list webhooks with proper ownership verification (kinId check)
+- E2E tests: comprehensive Playwright tests covering CRUD, token reveal, toggle, confirmation dialogs
+- Unit tests: validateToken edge cases, buildWebhookUrl construction
+- Config: all limits configurable via env vars (rate limit, payload size, retention, max per kin, max logs)
+
+### Next run
+- Area 13: MCP servers
+- Area 14: Account settings

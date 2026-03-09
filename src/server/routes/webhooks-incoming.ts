@@ -126,3 +126,12 @@ webhookIncomingRoutes.post('/:webhookId', async (c) => {
 
   return c.json({ success: true })
 })
+
+// Catch-all for non-POST methods
+webhookIncomingRoutes.all('/:webhookId', (c) => {
+  c.header('Allow', 'POST')
+  return c.json(
+    { error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST is supported' } },
+    405,
+  )
+})

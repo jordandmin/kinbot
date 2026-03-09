@@ -87,8 +87,8 @@ describe('validateToken', () => {
     expect(validateToken('sometoken', '')).toBe(false)
   })
 
-  it('returns true when both are empty', () => {
-    expect(validateToken('', '')).toBe(true)
+  it('returns false when both are empty', () => {
+    expect(validateToken('', '')).toBe(false)
   })
 
   it('is case-sensitive', () => {

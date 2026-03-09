@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { db } from '@/server/db/index'
 import { kins } from '@/server/db/schema'
 import {
@@ -49,12 +49,18 @@ webhookRoutes.get('/', async (c) => {
   const kinId = c.req.query('kinId')
   const allWebhooks = await listWebhooks(kinId ?? undefined)
 
-  // Fetch kin info
+  // Fetch kin info in a single query
   const kinIds = [...new Set(allWebhooks.map((w) => w.kinId))]
   const kinMap = new Map<string, KinInfo>()
-  for (const id of kinIds) {
-    const kin = await db.select({ name: kins.name, avatarPath: kins.avatarPath }).from(kins).where(eq(kins.id, id)).get()
-    if (kin) kinMap.set(id, kin)
+  if (kinIds.length > 0) {
+    const kinRows = await db
+      .select({ id: kins.id, name: kins.name, avatarPath: kins.avatarPath })
+      .from(kins)
+      .where(inArray(kins.id, kinIds))
+      .all()
+    for (const k of kinRows) {
+      kinMap.set(k.id, { name: k.name, avatarPath: k.avatarPath })
+    }
   }
 
   return c.json({

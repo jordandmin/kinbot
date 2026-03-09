@@ -40,6 +40,7 @@ import { miniAppRoutes, miniAppSdkRoutes } from '@/server/routes/mini-apps'
 import { pluginRoutes } from '@/server/routes/plugins'
 import { knowledgeRoutes } from '@/server/routes/knowledge'
 import { teamRoutes } from '@/server/routes/teams'
+import { logRoutes } from '@/server/routes/logs'
 
 export type AppVariables = {
   session: { id: string; userId: string; token: string }
@@ -175,6 +176,7 @@ app.route('/api/mini-apps/sdk', miniAppSdkRoutes)
 app.route('/api/mini-apps', miniAppRoutes)
 app.route('/api/plugins', pluginRoutes)
 app.route('/api/teams', teamRoutes)
+app.route('/api/logs', logRoutes)
 app.route('/s', sharedRoutes)
 
 export { app }

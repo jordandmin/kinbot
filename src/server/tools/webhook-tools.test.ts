@@ -82,6 +82,7 @@ const mockBuildWebhookUrl = mock((webhookId: string) => {
 import { timingSafeEqual, randomBytes } from 'crypto'
 
 function validateTokenImpl(provided: string, stored: string): boolean {
+  if (!provided || !stored) return false
   const a = Buffer.from(provided, 'utf8')
   const b = Buffer.from(stored, 'utf8')
   if (a.length !== b.length) return false
