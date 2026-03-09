@@ -42,11 +42,13 @@ const { sendMessageTool, replyTool, listKinsTool } = await import(
   '@/server/tools/inter-kin-tools'
 )
 
-// Verify mocks are working: call resolveKinId and check it returns our mock value.
-// If Bun didn't intercept the module, the real implementation runs instead.
-const mocksWorking = (() => {
+// Verify mocks are working by calling the *imported* resolveKinId from the
+// module that the tools use. If mock.module didn't intercept, the real
+// implementation will try to access the DB and throw.
+const mocksWorking = await (async () => {
   try {
-    const val = mockResolveKinId()
+    const { resolveKinId } = await import('@/server/services/kin-resolver')
+    const val = resolveKinId('test-slug')
     return val === 'kin-target-id'
   } catch {
     return false
