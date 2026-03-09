@@ -64,7 +64,7 @@ createRoot(document.getElementById("root")).render(<App />);
 </script>
 ```
 
-**Important:** Always call `useKinBot()` at the root of your app and wait for `ready` before rendering content. This initializes the SDK bridge.
+**Important:** Always call `useKinBot()` at the root of your app and wait for `ready` before rendering content. The hook calls `KinBot.ready()` internally and sets `ready` to `true` once the SDK bridge is initialized.
 
 ## Using Templates
 
@@ -99,7 +99,7 @@ function TodoApp() {
 }
 ```
 
-`useStorage` works like `useState` but persists to KinBot's key-value storage. The third return value (`loading`) is `true` while fetching the initial value.
+`useStorage` works like `useState` but persists to KinBot's key-value storage. It returns `[value, setValue, loading]`. The `loading` flag is `true` while fetching the initial value. `setValue` accepts either a direct value or an updater function (like React's `useState`).
 
 ## Adding a Backend
 
