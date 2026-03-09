@@ -182,6 +182,14 @@ export function validateManifest(data: unknown): { valid: boolean; errors: strin
         if (f.type === 'select' && (!Array.isArray(f.options) || f.options.length === 0)) {
           errors.push(`config.${key} with type "select" requires non-empty options array`)
         }
+        // Validate regex pattern syntax
+        if (f.type === 'string' && typeof f.pattern === 'string') {
+          try {
+            new RegExp(f.pattern)
+          } catch {
+            errors.push(`config.${key}.pattern is not a valid regular expression`)
+          }
+        }
       }
     }
   }

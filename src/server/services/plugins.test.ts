@@ -166,6 +166,41 @@ describe('validateManifest', () => {
     expect(result.errors.some(e => e.includes('label'))).toBe(true)
   })
 
+  test('rejects invalid regex pattern in config field', () => {
+    const result = validateManifest({
+      name: 'test',
+      version: '1.0.0',
+      description: 'Test',
+      main: 'index.ts',
+      config: {
+        code: {
+          type: 'string',
+          label: 'Code',
+          pattern: '[invalid(',
+        },
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors.some(e => e.includes('pattern') && e.includes('regular expression'))).toBe(true)
+  })
+
+  test('accepts valid regex pattern in config field', () => {
+    const result = validateManifest({
+      name: 'test',
+      version: '1.0.0',
+      description: 'Test',
+      main: 'index.ts',
+      config: {
+        code: {
+          type: 'string',
+          label: 'Code',
+          pattern: '^[A-Z]{3}$',
+        },
+      },
+    })
+    expect(result.valid).toBe(true)
+  })
+
   test('rejects non-array permissions', () => {
     const result = validateManifest({
       name: 'test',

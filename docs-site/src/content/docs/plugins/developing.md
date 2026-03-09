@@ -199,7 +199,7 @@ export default function(ctx) {
 }
 ```
 
-**Tool names** are automatically namespaced: `get_weather` in plugin `weather` becomes `weather__get_weather` in the AI's tool list.
+**Tool names** are automatically namespaced: `get_weather` in plugin `weather` becomes `plugin_weather_get_weather` in the AI's tool list.
 
 **Availability options:**
 - `'main'` — Available in the main Kin agent
