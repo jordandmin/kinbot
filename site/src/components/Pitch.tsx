@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { Server, Brain, Users, Shield, Puzzle, MessageSquare } from 'lucide-react'
 import { TiltCard } from './TiltCard'
+import { SplitText } from './SplitText'
 
 const points = [
   {
@@ -129,7 +130,7 @@ export function Pitch() {
     <section className="px-6 py-24 max-w-5xl mx-auto">
       <div className="text-center mb-14">
         <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: 'var(--color-foreground)' }}>
-          What is KinBot?
+          <SplitText stagger={80} duration={600}>What is KinBot?</SplitText>
         </h2>
         <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
           An open-source platform for running persistent AI agents on your own server.

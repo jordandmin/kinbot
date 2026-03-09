@@ -1,5 +1,6 @@
 import { Github, Star, GitFork, ArrowRight, Clock, CheckCircle, FlaskConical, ShieldCheck } from 'lucide-react'
 import { useGitHubData } from './GitHubDataProvider'
+import { SplitText } from './SplitText'
 
 interface RepoStats {
   stars: number
@@ -110,8 +111,8 @@ export function GitHubCTA() {
     <section className="px-6 py-24">
       <div className="max-w-3xl mx-auto text-center">
         {/* Heading */}
-        <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-          <span style={{ color: 'var(--color-foreground)' }}>Built in the open.</span>
+        <h2 className="text-4xl sm:text-5xl font-bold mb-4" style={{ color: 'var(--color-foreground)' }}>
+          <SplitText stagger={80} duration={600}>Built in the open.</SplitText>
         </h2>
         <p className="text-lg mb-8 max-w-xl mx-auto" style={{ color: 'var(--color-muted-foreground)' }}>
           KinBot is built by someone who got tired of AI forgetting everything.
