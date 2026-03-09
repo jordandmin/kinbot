@@ -42,18 +42,25 @@ const { sendMessageTool, replyTool, listKinsTool } = await import(
   '@/server/tools/inter-kin-tools'
 )
 
-// Verify mocks are working by calling the *imported* resolveKinId from the
-// module that the tools use. If mock.module didn't intercept, the real
-// implementation will try to access the DB and throw.
+// Verify mocks are working by doing a real tool execution.
+// If mock.module didn't intercept, the tool will hit the real DB and return an error.
 const mocksWorking = await (async () => {
   try {
-    const { resolveKinId } = await import('@/server/services/kin-resolver')
-    const val = resolveKinId('test-slug')
-    return val === 'kin-target-id'
+    const t = sendMessageTool.create({ kinId: 'test', userId: 'test', isSubKin: false })
+    const result = await t.execute(
+      { slug: 'test', message: 'probe', type: 'request' as const },
+      { toolCallId: 'probe', messages: [], abortSignal: new AbortController().signal },
+    )
+    // If mocks work, we get { success: true, requestId: 'req-123' }
+    return (result as any)?.success === true
   } catch {
     return false
   }
 })()
+
+// Reset mocks after the probe call
+mockSendInterKinMessage.mockClear()
+mockResolveKinId.mockClear()
 
 const itMocked = mocksWorking ? it : it.skip
 
