@@ -19,6 +19,7 @@ The extraction uses a dedicated model (configurable via `MEMORY_EXTRACTION_MODEL
 
 - **Category** — `fact`, `preference`, `decision`, or `knowledge`
 - **Subject** — Who or what the memory is about (e.g. a contact name)
+- **Source context** — A brief 1-2 sentence description of the conversational context in which the fact was mentioned (e.g. *"While discussing weekend plans, user mentioned..."*). This gives memories episodic flavor without a separate memory system.
 - **Importance** — Score from 1 (mundane) to 10 (critical)
 
 ### Explicit Remembering

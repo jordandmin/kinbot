@@ -11,6 +11,8 @@ KinBot gives every Kin **persistent long-term memory** — a dual-channel system
 
 After every LLM turn, KinBot runs an **extraction pipeline** that identifies important information from the conversation and saves it as memories. This happens silently in the background — the Kin doesn't need to do anything.
 
+Each extracted memory includes a **source context** — a brief description of the conversational context in which the fact was mentioned (e.g. *"While discussing weekend plans, user mentioned..."*). This gives memories episodic flavor, helping the Kin understand not just *what* was said but *when and why*.
+
 ### Explicit memorization
 
 Kins can also deliberately save information using the `memorize` tool:
