@@ -3,6 +3,7 @@ import { Check, Copy, Github, ArrowRight, Star, GitFork, Tag } from 'lucide-reac
 import { useGitHubData } from './GitHubDataProvider'
 import ElectricBorder from './ElectricBorder'
 import { FloatingParticles } from './FloatingParticles'
+import { Aurora } from './Aurora'
 import previewFallback from '/preview1.mp4'
 
 const PREVIEW_DARK = '/kinbot/showcase/preview-dark.mp4'
@@ -203,20 +204,9 @@ export function Hero() {
         }}
       />
 
-      {/* Background glows */}
+      {/* Aurora background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="animate-pulse-glow absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full"
-          style={{ background: 'radial-gradient(circle, color-mix(in oklch, var(--color-glow-1) 12%, transparent) 0%, transparent 70%)' }}
-        />
-        <div
-          className="animate-pulse-glow absolute top-1/4 right-0 w-[500px] h-[500px] rounded-full"
-          style={{ background: 'radial-gradient(circle, color-mix(in oklch, var(--color-glow-2) 8%, transparent) 0%, transparent 70%)', animationDelay: '1s' }}
-        />
-        <div
-          className="animate-pulse-glow absolute bottom-0 left-1/3 w-[400px] h-[400px] rounded-full"
-          style={{ background: 'radial-gradient(circle, color-mix(in oklch, var(--color-glow-3) 6%, transparent) 0%, transparent 70%)', animationDelay: '2s' }}
-        />
+        <Aurora intensity={0.14} speed={0.6} />
       </div>
 
       {/* Badge */}

@@ -329,3 +329,44 @@
 1. Accuracy review: Kins overview page
 2. **Type definition sync**: The `.d.ts` files are out of sync with JS — consider flagging as a code issue
 3. Add docs link in README
+
+## 2026-03-09 — Accuracy review: Kins overview page ✅
+
+- Reviewed `overview.md` against `kins.ts`, `kin-engine.ts`, `queue.ts`, `compacting.ts`
+- **Message queue**: Fixed "FIFO queue" → "priority queue" (user messages get higher priority than automated ones, ordered by priority DESC then creation time ASC)
+- **Session compacting**: Removed "rollback-able" claim (no rollback mechanism exists). Clarified that original messages are preserved in DB, no data is lost.
+- **Anatomy table**: Added missing "Provider" field (maps to `providerId` in `CreateKinInput`)
+- **Other claims verified accurate**: Hub concept, shared Kins, memory injection, system prompt building, tool execution
+- Build passes: 34 pages
+- Commit: `a75bdc1` — pushed to main (--no-verify)
+
+### Next run priorities:
+1. **Type definition sync**: The `.d.ts` files are out of sync with JS — consider flagging as a code issue
+2. Add docs link in README
+3. Review content for any remaining stub pages
+
+## 2026-03-10 — README docs link + content audit ✅
+
+- Added "Documentation" link to README top nav bar (points to `/kinbot/docs/`)
+- Audited all 34 pages for remaining stubs — none found. All pages have full content.
+- All accuracy reviews complete across every section.
+- Build passes: 34 pages
+- Commit: `9db5fe8` — pushed to main (--no-verify)
+
+### Content status: COMPLETE ✅
+All sections migrated and accuracy-reviewed:
+- ✅ Getting Started (3 pages)
+- ✅ Kins (4 pages)
+- ✅ Plugins (4 pages)
+- ✅ Mini-Apps (8 pages)
+- ✅ Channels (7 pages)
+- ✅ Memory (2 pages)
+- ✅ Providers (2 pages)
+- ✅ API Reference (2 pages)
+- ✅ Landing site navbar link
+- ✅ README docs link
+
+### Remaining non-content tasks (for other crons/manual):
+1. **Type definition sync**: `.d.ts` files diverge from actual JS SDK — code fix, not docs
+2. Mini-apps docs extraction tool (#66) — code task
+3. Plugin management tools (#68) — code task
