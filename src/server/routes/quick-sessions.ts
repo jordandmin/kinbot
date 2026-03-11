@@ -327,8 +327,13 @@ sessionRoutes.post('/:id/close', async (c) => {
     return c.json({ error: { code: 'SUMMARY_TOO_LONG', message: 'Memory summary must be 5000 characters or less' } }, 400)
   }
 
+  // Validate: if saveMemory is requested, summary must not be empty
+  if (saveMemory && !memorySummary) {
+    return c.json({ error: { code: 'SUMMARY_REQUIRED', message: 'A summary is required when saving as memory' } }, 400)
+  }
+
   // Save memory if requested (uses createMemory to generate embedding + vector index)
-  if (saveMemory && memorySummary?.trim()) {
+  if (saveMemory && memorySummary) {
     const memory = await createMemory(session!.kinId, {
       content: memorySummary.trim(),
       category: 'knowledge',

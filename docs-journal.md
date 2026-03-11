@@ -378,3 +378,13 @@ All sections migrated and accuracy-reviewed:
 - No new source changes today
 - All 34 pages remain accurate and complete
 - **Status: docs content is fully caught up with source code**
+
+## 2026-03-10 — Memory consolidation docs update ✅
+
+- New commit `02d8067` added consolidation improvements: abort on false merges, cluster size cap at 3, preserve details
+- **how-it-works.md**: Added new "Memory Consolidation" section explaining the 4-step process (pair detection → clustering → LLM merge → quality guardrails), including abort mechanism and cluster size cap
+- **configuration.md**: Added note under consolidation env vars explaining cluster cap and LLM abort behavior
+- Build passes: 34 pages
+- Commit: `ea95fd4` — pushed to main (--no-verify)
+
+### Status: docs fully caught up with latest source changes

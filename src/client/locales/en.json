@@ -659,6 +659,7 @@
       "description": "This conversation will not be saved in the main history. You can optionally save a summary as a memory.",
       "saveMemory": "Save a summary as memory",
       "summaryPlaceholder": "Describe what was discussed or decided...",
+      "summaryRequired": "Please describe what to remember before saving.",
       "save": "Save & close",
       "closeOnly": "Close without saving"
     },

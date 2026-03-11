@@ -229,19 +229,24 @@ export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, sessionId, onHide
             </label>
 
             {saveAsMemory && (
-              <Textarea
-                value={memorySummary}
-                onChange={(e) => setMemorySummary(e.target.value)}
-                placeholder={t('quickChat.closing.summaryPlaceholder')}
-                rows={3}
-                className="resize-none"
-              />
+              <div className="space-y-1.5">
+                <Textarea
+                  value={memorySummary}
+                  onChange={(e) => setMemorySummary(e.target.value)}
+                  placeholder={t('quickChat.closing.summaryPlaceholder')}
+                  rows={3}
+                  className="resize-none"
+                />
+                {!memorySummary.trim() && (
+                  <p className="text-xs text-muted-foreground">{t('quickChat.closing.summaryRequired')}</p>
+                )}
+              </div>
             )}
           </div>
 
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmEnd}>
+            <AlertDialogAction onClick={handleConfirmEnd} disabled={saveAsMemory && !memorySummary.trim()}>
               {saveAsMemory ? t('quickChat.closing.save') : t('quickChat.closing.closeOnly')}
             </AlertDialogAction>
           </AlertDialogFooter>

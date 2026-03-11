@@ -659,6 +659,7 @@
       "description": "Cette conversation ne sera pas conservée dans l'historique principal. Vous pouvez sauvegarder un résumé en mémoire.",
       "saveMemory": "Sauvegarder un résumé en mémoire",
       "summaryPlaceholder": "Décrivez ce qui a été discuté ou décidé...",
+      "summaryRequired": "Veuillez décrire ce dont il faut se souvenir avant de sauvegarder.",
       "save": "Sauvegarder et fermer",
       "closeOnly": "Fermer sans sauvegarder"
     },

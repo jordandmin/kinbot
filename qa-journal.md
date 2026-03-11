@@ -1295,3 +1295,42 @@
 ### Next run
 - Area 15: Quick chat / Ephemeral sessions
 - Area 1: Onboarding / First run (re-test)
+
+## 2026-03-10 22:11 UTC
+### Area tested: Quick Chat / Ephemeral Sessions (Area 15)
+- **Pages visited:** Code review of QuickChatPanel.tsx, QuickSessionHistory.tsx, useQuickChat.ts, useQuickSession.ts, useQuickSessionHistory.ts, quick-sessions.ts (routes), quick-session-cleanup.ts, ChatPanel.tsx (integration), ConversationHeader.tsx (button), schema.ts (quickSessions table), config.ts (quickSessions config)
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 2 (issues created: #199, #200)
+  - #199: Save-as-memory silently fails when summary is left empty (server skips memory creation, no user feedback)
+  - #200: Sheet panel shows blank content when session closes via SSE (activeSession becomes null while Sheet is open)
+
+- **UX suggestions:** 1 (issues created: #201)
+  - #201: No client-side session expiry awareness (no timer, no specific error handling for SESSION_EXPIRED, expiresAt not in API response type)
+
+#### All clear:
+- Quick session CRUD: clean create/close flow with proper validation (title max 200 chars)
+- Session ownership: loadSession helper verifies user ownership, returns 403 for unauthorized access
+- Max active sessions: configurable limit per user per kin (default 1), 409 on exceeded
+- Message sending: proper validation (content or files required, content max 100K chars, fileIds max 10 with UUID validation)
+- Streaming: SSE-based token streaming with batched UI updates (50ms), stop generation support
+- Close dialog: confirmation with save-as-memory option, checkbox + textarea, proper state reset on cancel
+- Memory save: creates memory with category 'knowledge', proper subject fallback, summary max 5000 chars
+- Session history: paginated list of closed sessions with message counts, load-more support
+- Session detail view: back navigation, loading state, message bubbles with proper avatars
+- Cleanup service: periodic expiry (closes active sessions past expiresAt) and retention (deletes closed sessions past retentionDays), SSE notifications
+- Cascade delete: Kin deletion cascades to quick sessions via FK, messages cascade via session FK
+- SSE real-time: quick-session:closed event properly emitted and consumed
+- Optimistic UI: user messages appear immediately, reverted on send failure
+- Draft persistence: per-session draft via useDraftMessage hook
+- File upload: reuses existing useFileUpload hook, optimistic file display
+- Tool calls: useToolCalls hook properly resolves tool call metadata for quick session messages
+- Responsive: quick chat button hidden on mobile header, available in dropdown menu
+- Lazy loading: QuickChatPanel and QuickSessionHistory loaded via React.lazy/Suspense
+- Sheet panel: proper side panel with close/hide distinction, history toggle
+- Empty state: proper icon + description when no messages
+- Config: all limits configurable via env vars (expiration hours, max per user/kin, retention days, cleanup interval)
+
+### Next run
+- Area 1: Onboarding / First run (re-test)
+- Area 10: Navigation & Layout
