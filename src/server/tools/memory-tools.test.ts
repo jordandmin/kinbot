@@ -15,6 +15,7 @@ const mockMemory = {
   getRelevantMemories: mock(() => Promise.resolve([] as any[])),
   reembedAllMemories: mock(() => Promise.resolve(0)),
   recalibrateImportance: mock(() => Promise.resolve(0)),
+  pruneStaleMemories: mock(() => Promise.resolve(0)),
 }
 
 mock.module('@/server/services/memory', () => mockMemory)
