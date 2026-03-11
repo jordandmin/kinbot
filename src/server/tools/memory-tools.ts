@@ -47,7 +47,8 @@ export const recallTool: ToolRegistration = {
       description:
         'Search your long-term memory for relevant information. Use this when you need ' +
         'to remember facts, preferences, decisions, or knowledge from past interactions. ' +
-        'Returns the most relevant memories ranked by relevance, with importance scores and age.',
+        'Returns the most relevant memories ranked by relevance, with importance scores, age, ' +
+        'and conversational context (sourceContext) showing when/how you learned this.',
       inputSchema: z.object({
         query: z.string().describe('What to search for (semantic + keyword search)'),
         limit: z
@@ -69,6 +70,7 @@ export const recallTool: ToolRegistration = {
             subject: m.subject,
             importance: m.importance,
             age: formatMemoryAge(m.updatedAt),
+            ...(m.sourceContext ? { sourceContext: m.sourceContext } : {}),
           })),
         }
       },
@@ -204,6 +206,7 @@ export const listMemoriesTool: ToolRegistration = {
             subject: m.subject,
             importance: m.importance,
             age: formatMemoryAge(m.updatedAt),
+            ...(m.sourceContext ? { sourceContext: m.sourceContext } : {}),
           })),
         }
       },
