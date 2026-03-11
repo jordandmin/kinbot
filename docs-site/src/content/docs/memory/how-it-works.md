@@ -39,6 +39,8 @@ Kins have six memory tools available (main agent only):
 | `list_memories` | List all memories, optionally filtered by subject or category |
 | `review_memories` | LLM-powered audit that detects contradictions, duplicates, stale entries, and clutter |
 
+Both `recall` and `list_memories` include conversational provenance: when a memory has a `sourceContext` (the context in which it was learned), it's included in the result. This helps Kins reason about the relevance and reliability of each memory.
+
 ## Storage
 
 Memories are stored as vector embeddings using an embedding provider (OpenAI, Voyage, Jina, etc.) in a SQLite database with two search indexes:
