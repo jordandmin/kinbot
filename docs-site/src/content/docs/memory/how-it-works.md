@@ -90,11 +90,14 @@ Fused scores are weighted by multiple factors:
 - **Retrieval frequency** — Memories retrieved more often get a mild logarithmic boost (the system finds them useful)
 - **Subject matching** — If the query mentions a known memory subject, those memories get a boost (default 1.3×)
 
-### 6. LLM Re-ranking (Optional)
+### 6. Re-ranking (Optional)
 
-If enabled, the top candidates are sent to an LLM that scores each memory's relevance on a 0-10 scale. The LLM score becomes the primary ranking signal, with the hybrid score as a tiebreaker.
+If enabled via `MEMORY_RERANK_MODEL`, top candidates are re-ranked for relevance. KinBot supports two re-ranking strategies:
 
-Controlled by `MEMORY_RERANK_MODEL` — disabled by default.
+1. **Cross-encoder rerank (preferred)** — If a provider with `rerank` capability is configured (Cohere or Jina), KinBot calls their dedicated rerank API. Cross-encoders are ~20× faster and ~10× cheaper than LLM rerankers with comparable accuracy.
+2. **LLM-based rerank (fallback)** — If no rerank provider is available, an LLM scores each memory's relevance on a 0-10 scale. The LLM score becomes the primary ranking signal, with the hybrid score as tiebreaker.
+
+The system tries cross-encoder first and falls back to LLM automatically. Controlled by `MEMORY_RERANK_MODEL` — disabled by default.
 
 ### 7. Adaptive K
 
@@ -153,7 +156,7 @@ User message
   → Multi-query expansion (if enabled)
   → Hybrid search (vector + FTS) per query
   → RRF fusion → score weighting → re-rank → adaptive K
-  → Relevant memories injected into Kin context
+  → Relevant memories injected into Kin context with prioritization guidance
   → LLM processes and responds
   → Extraction pipeline analyzes the turn
   → New memories stored as embeddings

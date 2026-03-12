@@ -7,31 +7,31 @@ KinBot supports 23 AI providers out of the box. Each provider offers different c
 
 ## Provider Table
 
-| Provider | LLM | Embedding | Image | Search | API Key Required |
-|----------|:---:|:---------:|:-----:|:------:|:----------------:|
-| [Anthropic](https://console.anthropic.com/settings/keys) | ✅ | | | | ✅ |
-| [Anthropic (Claude Max)](https://claude.ai) | ✅ | | | | ❌ (OAuth) |
-| [OpenAI](https://platform.openai.com/api-keys) | ✅ | ✅ | ✅ | | ✅ |
-| [Gemini](https://aistudio.google.com/apikey) | ✅ | | ✅ | | ✅ |
-| [Mistral AI](https://console.mistral.ai/api-keys) | ✅ | ✅ | | | ✅ |
-| [DeepSeek](https://platform.deepseek.com/api_keys) | ✅ | ✅ | | | ✅ |
-| [Groq](https://console.groq.com/keys) | ✅ | | | | ✅ |
-| [Together AI](https://api.together.xyz/settings/api-keys) | ✅ | ✅ | ✅ | | ✅ |
-| [Fireworks AI](https://fireworks.ai/account/api-keys) | ✅ | ✅ | ✅ | | ✅ |
-| [Ollama](https://ollama.ai) | ✅ | ✅ | | | ❌ (local) |
-| [OpenRouter](https://openrouter.ai/keys) | ✅ | ✅ | ✅ | | ✅ |
-| [Cohere](https://dashboard.cohere.com/api-keys) | ✅ | ✅ | | | ✅ |
-| [xAI](https://console.x.ai/) | ✅ | ✅ | ✅ | | ✅ |
-| [Perplexity](https://www.perplexity.ai/settings/api) | ✅ | | | ✅ | ✅ |
-| [Voyage](https://dash.voyageai.com/api-keys) | | ✅ | | | ✅ |
-| [Jina AI](https://jina.ai/api-dashboard/) | | ✅ | | | ✅ |
-| [Nomic](https://atlas.nomic.ai/cli-login) | | ✅ | | | ✅ |
-| [Replicate](https://replicate.com/account/api-tokens) | | | ✅ | | ✅ |
-| [Stability AI](https://platform.stability.ai/account/keys) | | | ✅ | | ✅ |
-| [fal.ai](https://fal.ai/dashboard/keys) | | | ✅ | | ✅ |
-| [Brave Search](https://brave.com/search/api/) | | | | ✅ | ✅ |
-| [Tavily](https://app.tavily.com/home) | | | | ✅ | ✅ |
-| [Serper](https://serper.dev/api-key) | | | | ✅ | ✅ |
+| Provider | LLM | Embedding | Image | Search | Rerank | API Key Required |
+|----------|:---:|:---------:|:-----:|:------:|:------:|:----------------:|
+| [Anthropic](https://console.anthropic.com/settings/keys) | ✅ | | | | | ✅ |
+| [Anthropic (Claude Max)](https://claude.ai) | ✅ | | | | | ❌ (OAuth) |
+| [OpenAI](https://platform.openai.com/api-keys) | ✅ | ✅ | ✅ | | | ✅ |
+| [Gemini](https://aistudio.google.com/apikey) | ✅ | | ✅ | | | ✅ |
+| [Mistral AI](https://console.mistral.ai/api-keys) | ✅ | ✅ | | | | ✅ |
+| [DeepSeek](https://platform.deepseek.com/api_keys) | ✅ | ✅ | | | | ✅ |
+| [Groq](https://console.groq.com/keys) | ✅ | | | | | ✅ |
+| [Together AI](https://api.together.xyz/settings/api-keys) | ✅ | ✅ | ✅ | | | ✅ |
+| [Fireworks AI](https://fireworks.ai/account/api-keys) | ✅ | ✅ | ✅ | | | ✅ |
+| [Ollama](https://ollama.ai) | ✅ | ✅ | | | | ❌ (local) |
+| [OpenRouter](https://openrouter.ai/keys) | ✅ | ✅ | ✅ | | | ✅ |
+| [Cohere](https://dashboard.cohere.com/api-keys) | ✅ | ✅ | | | ✅ | ✅ |
+| [xAI](https://console.x.ai/) | ✅ | ✅ | ✅ | | | ✅ |
+| [Perplexity](https://www.perplexity.ai/settings/api) | ✅ | | | ✅ | | ✅ |
+| [Voyage](https://dash.voyageai.com/api-keys) | | ✅ | | | | ✅ |
+| [Jina AI](https://jina.ai/api-dashboard/) | | ✅ | | | ✅ | ✅ |
+| [Nomic](https://atlas.nomic.ai/cli-login) | | ✅ | | | | ✅ |
+| [Replicate](https://replicate.com/account/api-tokens) | | | ✅ | | | ✅ |
+| [Stability AI](https://platform.stability.ai/account/keys) | | | ✅ | | | ✅ |
+| [fal.ai](https://fal.ai/dashboard/keys) | | | ✅ | | | ✅ |
+| [Brave Search](https://brave.com/search/api/) | | | | ✅ | | ✅ |
+| [Tavily](https://app.tavily.com/home) | | | | ✅ | | ✅ |
+| [Serper](https://serper.dev/api-key) | | | | ✅ | | ✅ |
 
 ## Capabilities
 

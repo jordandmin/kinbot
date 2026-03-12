@@ -35,7 +35,7 @@ These features use additional LLM calls to improve retrieval quality. Each is di
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MEMORY_MULTI_QUERY_MODEL` | *(disabled)* | Model for generating query variations. Expands each query into 3 alternatives targeting different aspects |
-| `MEMORY_RERANK_MODEL` | *(disabled)* | Model for LLM-based re-ranking. Scores each candidate's relevance on a 0-10 scale |
+| `MEMORY_RERANK_MODEL` | *(disabled)* | Model for re-ranking. If a rerank provider (Cohere/Jina) is configured, uses their cross-encoder API (~20× faster). Otherwise falls back to LLM-based scoring (0-10 scale) |
 | `MEMORY_CONTEXTUAL_REWRITE_MODEL` | *(disabled)* | Model for rewriting short/ambiguous messages into standalone queries using conversation context |
 | `MEMORY_CONTEXTUAL_REWRITE_THRESHOLD` | `80` | Character length threshold. Messages shorter than this are candidates for contextual rewriting |
 
