@@ -1334,3 +1334,44 @@
 ### Next run
 - Area 1: Onboarding / First run (re-test)
 - Area 10: Navigation & Layout
+
+## 2026-03-11 22:10 UTC
+### Area tested: Navigation & Layout (Area 10)
+- **Pages visited:** Code review of AppSidebar.tsx, SidebarFooterContent.tsx, SystemHealthBar.tsx, KinList.tsx, ChatPage.tsx, ConversationHeader.tsx, CommandPalette.tsx, KeyboardShortcutsDialog.tsx, ThemeToggle.tsx, PaletteToggle.tsx, PaletteSwitcher.tsx, theme-provider.tsx, SSEStatusIndicator.tsx, ConnectionBanner.tsx, GettingStartedChecklist.tsx, UserMenu.tsx, StatusNotifications.tsx, sidebar.tsx (UI), MessageInput.tsx (shortcut conflict)
+- **Note:** Browser unavailable (sandbox disabled), testing done via thorough code review
+
+- **Bugs found:** 2 (issues created: #202, #203)
+  - #202: Cmd+B keyboard shortcut conflict: toggles sidebar AND bolds text simultaneously (MessageInput lacks stopPropagation, sidebar handler on window catches it too; also listed twice in shortcuts dialog)
+  - #203: Sidebar resize jumps on first drag when width is in rem units (parseInt("20rem") = 20, far below SIDEBAR_WIDTH_MIN of 260, causing snap to 260px)
+
+- **UX suggestions:** 1 (issues created: #204)
+  - #204: Sidebar resize handle too narrow (4px w-1), hard to grab on trackpads. Suggest wider invisible hit area with narrow visible indicator.
+
+#### All clear:
+- Sidebar structure: clean SidebarHeader/Content/Footer layout with proper overflow management
+- Sidebar tabs: Tasks/Jobs/Apps with tab persistence via localStorage, badge counts for active tasks, pulse animation for awaiting human input
+- KinList: drag-and-drop reorder via @dnd-kit, search when >=5 kins, hub kin pinned at top outside DnD, export functionality
+- SystemHealthBar: real-time provider/channel health indicators via SSE, clickable to open relevant settings
+- SidebarFooterContent: version badge with changelog dialog, Cmd+K and ? shortcut hints, settings button
+- CommandPalette: Cmd+K with kin search, settings sections, theme toggle, proper keyboard navigation
+- KeyboardShortcutsDialog: '?' trigger with proper input detection (skips when typing), Mac/Windows key detection
+- ThemeToggle: light/dark/system with reduce contrast option, proper tooltips
+- PaletteToggle: 8 color palettes with visual preview dots
+- PaletteSwitcher: combined palette+mode picker for settings/onboarding
+- Theme system: oklch colors, data-palette/data-contrast attributes, localStorage persistence, SSR-safe defaults
+- Header: SidebarTrigger, separator, SSE status indicator, palette/theme toggles, notification bell, user menu
+- UserMenu: avatar with initials fallback, account/settings/logout
+- SSEStatusIndicator: green/amber/red dot for connected/reconnecting/disconnected
+- ConnectionBanner: animated banner for connection loss, auto-hide with "reconnected" confirmation, dismissable
+- StatusNotifications: toast notifications for provider/channel status changes, version update available alerts
+- GettingStartedChecklist: 4-step onboarding (providers -> hub -> specialist -> channels) with progress indicators
+- ConversationHeader: responsive design with 8 mobile-hidden elements, mobile popover for model picker and context, date navigator, conversation stats, more actions dropdown, clear conversation with confirmation dialog
+- Keyboard shortcuts: Cmd+1-9 for kin switching, Cmd+Shift+N for new kin, Cmd+, for settings, Escape for focus input (context-aware)
+- Lazy loading: modals (KinFormModal, SettingsModal, AccountDialog) loaded via React.lazy/Suspense
+- Dynamic document title: shows kin name + processing state + unread count
+- Favicon badge: unread message indicator
+- Unread per-kin tracking with clear on select
+
+### Next run
+- Area 1: Onboarding / First run (re-test)
+- Area 3: Conversations (re-test)

@@ -413,3 +413,18 @@ All sections migrated and accuracy-reviewed:
 - Previous run already covered `5ce43cb` (stale pruning) and `d9d413d` (session expiry)
 - All 34 pages remain accurate and complete
 - **Status: docs fully caught up with source code**
+
+## 2026-03-11 — sourceContext docs update ✅
+
+- New commit `3cb0bf9` added `sourceContext` field to `recall` and `list_memories` tool output
+- **how-it-works.md**: Added note in Memory Tools section explaining that both tools now include conversational provenance (`sourceContext`) when available
+- Build passes: 34 pages
+- Commit: `3665776` — pushed to main (--no-verify)
+
+### Status: docs fully caught up with latest source changes
+
+## 2026-03-12 — Maintenance check: no changes needed
+
+- Checked source commits since last run: only UI bugfix `a3dd921` (sidebar resize + Cmd+B shortcut) and `71b355e` (CHANGELOG backfill) — neither affects documentation
+- All 34 pages remain accurate and complete
+- **Status: docs fully caught up with source code**

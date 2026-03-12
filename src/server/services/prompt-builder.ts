@@ -284,7 +284,7 @@ function estimateTokens(text: string): number {
 }
 
 function buildMemoriesBlock(memories: Memory[]): string {
-  const header = `## Memories\n\nRelevant information from your past interactions (★ = high importance, ⬤ = highly relevant, ◉ = relevant, ○ = loosely related):`
+  const header = `## Memories\n\nRelevant information from your past interactions. Prioritize ⬤ (highly relevant) and ★ (important) memories. Treat ○ (loosely related) as background context only. When memories conflict, prefer the most recent one.\n\nLegend: ★ = high importance, ⬤ = highly relevant, ◉ = relevant, ○ = loosely related`
 
   // Normalize scores relative to top score so relevance tags are scale-independent
   const topScore = memories.reduce((max, m) => Math.max(max, m.score ?? 0), 0)
