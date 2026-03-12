@@ -123,7 +123,7 @@ describe('jinaProvider', () => {
       expect(models[1]).toEqual({
         id: 'jina-reranker-v2',
         name: 'jina-reranker-v2',
-        capability: 'embedding',
+        capability: 'rerank',
       })
     })
 

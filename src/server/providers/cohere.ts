@@ -13,8 +13,9 @@ interface CohereModelsResponse {
   models: CohereModel[]
 }
 
-function classifyModel(model: CohereModel): 'llm' | 'embedding' | null {
+function classifyModel(model: CohereModel): 'llm' | 'embedding' | 'rerank' | null {
   const endpoints = model.endpoints ?? []
+  if (endpoints.includes('rerank')) return 'rerank'
   if (endpoints.includes('embed')) return 'embedding'
   if (endpoints.includes('chat') || endpoints.includes('generate')) return 'llm'
   return null

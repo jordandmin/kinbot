@@ -12,7 +12,7 @@ export interface ProviderDefinition {
 export interface ProviderModel {
   id: string
   name: string
-  capability: 'llm' | 'embedding' | 'image'
+  capability: 'llm' | 'embedding' | 'image' | 'rerank'
   /** True if the image model accepts images as input (editing/inpainting) */
   supportsImageInput?: boolean
 }

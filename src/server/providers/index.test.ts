@@ -111,7 +111,7 @@ describe('Provider Registry', () => {
       })
 
       it(`${type} capabilities are valid strings`, () => {
-        const validCaps = ['llm', 'embedding', 'image', 'search']
+        const validCaps = ['llm', 'embedding', 'image', 'search', 'rerank']
         const caps = getCapabilitiesForType(type)
         for (const cap of caps) {
           expect(validCaps).toContain(cap)

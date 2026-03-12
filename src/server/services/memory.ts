@@ -7,6 +7,7 @@ import { memories } from '@/server/db/schema'
 import { generateEmbedding } from '@/server/services/embeddings'
 import { sseManager } from '@/server/sse/index'
 import { config } from '@/server/config'
+import { rerankDocuments } from '@/server/services/rerank'
 import type { MemoryCategory } from '@/shared/types'
 
 const log = createLogger('memory')
@@ -598,9 +599,9 @@ export async function searchMemories(
     .sort((a, b) => b.score - a.score)
     .slice(0, fetchLimit)
 
-  // Apply LLM re-ranking if enabled
+  // Apply re-ranking if enabled: try cross-encoder API first, fall back to LLM
   if (useRerank && sorted.length > 0) {
-    const reranked = await rerankWithLLM(query, sorted, maxResults)
+    const reranked = await rerankCandidates(query, sorted, maxResults)
     return applyAdaptiveK(reranked)
   }
 
@@ -714,6 +715,45 @@ function searchByFTS(
 
 /**
  * Re-rank memory search results using an LLM for better precision.
+ * Orchestrate re-ranking: try cross-encoder API first (faster, cheaper),
+ * fall back to LLM-based re-ranking if no rerank provider is configured.
+ */
+async function rerankCandidates(
+  query: string,
+  candidates: MemorySearchResult[],
+  limit: number,
+): Promise<MemorySearchResult[]> {
+  const rerankModel = config.memory.rerankModel
+  if (!rerankModel || candidates.length === 0) return candidates.slice(0, limit)
+
+  // Try cross-encoder API first
+  const documents = candidates.map((m) => m.content.slice(0, 512))
+  const apiResults = await rerankDocuments(query, documents, rerankModel, limit)
+
+  if (apiResults && apiResults.length > 0) {
+    const reranked: MemorySearchResult[] = apiResults
+      .filter((r) => r.index >= 0 && r.index < candidates.length)
+      .map((r) => ({
+        ...candidates[r.index]!,
+        score: r.relevanceScore + (candidates[r.index]!.score * 0.001), // tiebreaker
+      }))
+      .sort((a, b) => b.score - a.score)
+
+    // Append any candidates missed by the API
+    const seen = new Set(reranked.map((r) => r.id))
+    for (const c of candidates) {
+      if (!seen.has(c.id)) reranked.push(c)
+    }
+
+    log.debug({ query: query.slice(0, 80), candidates: candidates.length, reranked: reranked.length, method: 'cross-encoder' }, 'Re-ranking complete')
+    return reranked.slice(0, limit)
+  }
+
+  // Fall back to LLM-based re-ranking
+  return rerankWithLLM(query, candidates, limit)
+}
+
+/**
  * Takes the top candidates from hybrid search and asks an LLM to score
  * each memory's relevance to the query on a 0-10 scale.
  * Falls back to original ordering if the LLM call fails.

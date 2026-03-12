@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import { PROVIDER_META, type ProviderMeta, type ProviderType } from '@/shared/provider-metadata'
 
-const VALID_CAPABILITIES = ['llm', 'embedding', 'search', 'image'] as const
+const VALID_CAPABILITIES = ['llm', 'embedding', 'search', 'image', 'rerank'] as const
 
 const allTypes = Object.keys(PROVIDER_META) as ProviderType[]
 

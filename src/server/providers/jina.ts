@@ -43,7 +43,7 @@ export const jinaProvider: ProviderDefinition = {
       return apiModels.map((m): ProviderModel => ({
         id: m.id,
         name: m.id,
-        capability: 'embedding',
+        capability: m.id.includes('reranker') ? 'rerank' : 'embedding',
       }))
     } catch {
       return []

@@ -101,7 +101,7 @@ describe('cohereProvider', () => {
       expect(models[0]!.capability).toBe('embedding')
     })
 
-    it('filters out models with unknown endpoints', async () => {
+    it('classifies rerank models correctly', async () => {
       mockFetchResponse({
         models: [
           { name: 'command-r', endpoints: ['chat'] },
@@ -110,8 +110,11 @@ describe('cohereProvider', () => {
       })
       const { cohereProvider } = await import('@/server/providers/cohere')
       const models = await cohereProvider.listModels({ apiKey: 'test-key' })
-      expect(models).toHaveLength(1)
+      expect(models).toHaveLength(2)
       expect(models[0]!.id).toBe('command-r')
+      expect(models[0]!.capability).toBe('llm')
+      expect(models[1]!.id).toBe('rerank-v3')
+      expect(models[1]!.capability).toBe('rerank')
     })
 
     it('filters out models with no endpoints', async () => {
