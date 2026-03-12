@@ -1299,7 +1299,7 @@
       "hooks": "hooks",
       "providers": "fournisseurs",
       "channels": "canaux",
-      "permissions": "permissions",
+      "permissions": "autorisations",
       "viewPermissions": "Voir les permissions",
       "configure": "Configurer",
       "configureTitle": "Configurer {{name}}",
@@ -1354,14 +1354,14 @@
         "description": "Aucun plugin ne correspond à vos critères de recherche. Essayez d'ajuster vos filtres."
       },
       "communityTab": "Communauté",
-      "storeTab": "Store",
+      "storeTab": "Boutique",
       "storeDescription": "Plugins inclus dans le dépôt KinBot, vérifiés et maintenus par l'équipe.",
       "storeEmpty": {
         "title": "Aucun plugin",
         "description": "Aucun plugin curé n'est disponible pour le moment."
       },
       "curated": "Vérifié",
-      "permissions": "Permissions"
+      "permissions": "Autorisations"
     },
     "logs": {
       "title": "Logs",
