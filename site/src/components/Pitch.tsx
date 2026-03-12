@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { Server, Brain, Users, Shield, Puzzle, MessageSquare } from 'lucide-react'
 import { TiltCard } from './TiltCard'
 import { SplitText } from './SplitText'
+import { SpotlightGrid } from './SpotlightGrid'
 
 const points = [
   {
@@ -138,11 +139,13 @@ export function Pitch() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {points.map(({ icon: Icon, title, desc, color }, i) => (
-          <PitchCard key={title} icon={Icon} title={title} desc={desc} color={color} index={i} />
-        ))}
-      </div>
+      <SpotlightGrid radius={400} intensity={0.08} color="var(--color-glow-2)">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {points.map(({ icon: Icon, title, desc, color }, i) => (
+            <PitchCard key={title} icon={Icon} title={title} desc={desc} color={color} index={i} />
+          ))}
+        </div>
+      </SpotlightGrid>
     </section>
   )
 }
