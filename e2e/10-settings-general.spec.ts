@@ -181,9 +181,12 @@ test.describe.serial('Settings — General & Navigation', () => {
     await expect(selectTrigger).toBeVisible({ timeout: 10_000 })
     await selectTrigger.click()
 
-    // Pick the first available kin option
-    const option = page.getByRole('option').first()
-    await expect(option).toBeVisible({ timeout: 3_000 })
+    // Pick the first real kin option (skip the "None" option which is first)
+    const options = page.getByRole('option')
+    await expect(options.first()).toBeVisible({ timeout: 3_000 })
+    const count = await options.count()
+    // If there's more than one option, pick the second (first real kin); otherwise pick the first
+    const option = count > 1 ? options.nth(1) : options.first()
     const kinName = await option.textContent()
     await option.click()
 
