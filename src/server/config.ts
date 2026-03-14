@@ -126,7 +126,7 @@ export const config = {
   },
 
   tools: {
-    maxSteps: Number(process.env.TOOLS_MAX_STEPS ?? 0), // 0 = unlimited
+    maxSteps: Number(process.env.TOOLS_MAX_STEPS ?? 0), // 0 = unlimited (capped at 100 internally)
   },
 
   humanPrompts: {

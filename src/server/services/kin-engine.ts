@@ -540,7 +540,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       system: systemPrompt,
       messages: messageHistory,
       tools: hasTools ? tools : undefined,
-      stopWhen: hasTools && config.tools.maxSteps > 0 ? stepCountIs(config.tools.maxSteps) : undefined,
+      stopWhen: hasTools ? stepCountIs(config.tools.maxSteps > 0 ? config.tools.maxSteps : 100) : undefined,
       abortSignal: abortController.signal,
     })
 
@@ -1046,7 +1046,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
       system: systemPrompt,
       messages: messageHistory,
       tools: hasTools ? tools : undefined,
-      stopWhen: hasTools && config.tools.maxSteps > 0 ? stepCountIs(config.tools.maxSteps) : undefined,
+      stopWhen: hasTools ? stepCountIs(config.tools.maxSteps > 0 ? config.tools.maxSteps : 100) : undefined,
       abortSignal: abortController.signal,
     })
 
