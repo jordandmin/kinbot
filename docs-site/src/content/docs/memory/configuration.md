@@ -59,14 +59,19 @@ Consolidation clusters are capped at 3 memories to preserve detail. Larger group
 
 ## Compacting Settings
 
-Session compacting summarizes long conversations to stay within token limits.
+Session compacting summarizes long conversations when they approach the model's context window limit.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COMPACTING_MESSAGE_THRESHOLD` | `50` | Messages before auto-compacting triggers |
-| `COMPACTING_TOKEN_THRESHOLD` | `30000` | Token count before auto-compacting triggers |
+| `COMPACTING_THRESHOLD_PERCENT` | `75` | Trigger compaction when context usage reaches this % of the model's context window (50-95) |
 | `COMPACTING_MODEL` | Provider default | Model used for session compacting/summarization |
 | `COMPACTING_MAX_SNAPSHOTS` | `10` | Maximum compacting snapshots kept per Kin |
+
+The threshold can also be configured per-Kin (overrides the global setting) or via **Settings > Memory** in the UI.
+
+:::note
+The older `COMPACTING_MESSAGE_THRESHOLD` and `COMPACTING_TOKEN_THRESHOLD` env vars are still accepted for backward compatibility but no longer drive the compaction logic. Use `COMPACTING_THRESHOLD_PERCENT` instead.
+:::
 
 ## Embedding Provider
 
@@ -94,7 +99,7 @@ Without an embedding provider, memory storage and retrieval will not work. The K
 ### Basic Tuning
 - **Lower `MEMORY_SIMILARITY_THRESHOLD`** (e.g., 0.5) to retrieve more memories at the cost of relevance
 - **Raise `MEMORY_MAX_RELEVANT`** if your Kin needs broader context awareness
-- **Lower `COMPACTING_MESSAGE_THRESHOLD`** for Kins with very long conversations
+- **Lower `COMPACTING_THRESHOLD_PERCENT`** (e.g., 60) for Kins with very long conversations to compact earlier
 
 ### Search Quality
 - **Enable multi-query** (`MEMORY_MULTI_QUERY_MODEL=gpt-4.1-mini`) for better recall on complex queries

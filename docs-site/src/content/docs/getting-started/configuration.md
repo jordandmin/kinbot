@@ -64,8 +64,9 @@ When using Docker, mount a volume to `/app/data` to persist data across containe
 
 See [`.env.example`](https://github.com/MarlBurroW/kinbot/blob/main/.env.example) for the complete list of all options including:
 
-- Compacting thresholds
+- Compacting threshold (`COMPACTING_THRESHOLD_PERCENT`, default 75%)
 - Memory tuning (extraction, vector dimensions, search pipeline)
+- Tool step limit (`TOOLS_MAX_STEPS`, default 0 = unlimited)
 - Queue settings
 - Cron limits
 - Web browsing configuration
