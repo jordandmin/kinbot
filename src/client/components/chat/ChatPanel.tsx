@@ -490,7 +490,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]!
       if (msg.role === 'user' && msg.sourceType === 'user') {
-        sendMessage(msg.content)
+        const fileIds = msg.files && msg.files.length > 0 ? msg.files.map((f) => f.id) : undefined
+        sendMessage(msg.content, fileIds)
         return
       }
     }

@@ -636,6 +636,27 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
     log.info({ kinId, messageId: assistantMessageId, contentLength: fullContent.length, toolCalls: toolCallsLog.length, wasAborted }, 'LLM turn completed')
 
+    // Detect truncated turns: tool calls executed but no text response generated.
+    // This typically happens when the step limit (maxSteps) is reached before the
+    // LLM can produce a final text response. Add a fallback message so the user
+    // knows work was done even though no text was returned.
+    if (!fullContent && toolCallsLog.length > 0 && !wasAborted) {
+      log.warn(
+        { kinId, messageId: assistantMessageId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },
+        'LLM turn produced tool calls but no text content (possible step limit truncation)',
+      )
+      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated, likely due to the tool step limit. You can ask me to continue or summarize the results.)*`
+      sseManager.sendToKin(kinId, {
+        type: 'chat:token',
+        kinId,
+        data: {
+          messageId: assistantMessageId,
+          token: fullContent,
+          isFirst: true,
+        },
+      })
+    }
+
     // Save assistant message (partial if aborted) with tool call metadata
     if (fullContent || toolCallsLog.length > 0 || wasAborted) {
       await db.insert(messages).values({
@@ -1065,6 +1086,15 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
       }
     } finally {
       quickAbortControllers.delete(sessionId)
+    }
+
+    // Detect truncated turns (same as main path)
+    if (!fullContent && toolCallsLog.length > 0 && !wasAborted) {
+      log.warn(
+        { kinId, sessionId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },
+        'Quick session LLM turn produced tool calls but no text content',
+      )
+      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated. You can ask me to continue or summarize.)*`
     }
 
     // Save assistant message (with sessionId)

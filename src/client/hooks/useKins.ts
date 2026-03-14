@@ -75,8 +75,23 @@ export function useKins() {
 
   const fetchKins = useCallback(async () => {
     try {
-      const data = await api.get<{ kins: KinSummary[] }>('/kins')
+      const data = await api.get<{ kins: (KinSummary & { isProcessing?: boolean; queueSize?: number })[] }>('/kins')
       setKins(data.kins)
+      // Hydrate queue state from initial fetch so we don't miss processing state
+      setKinQueueState((prev) => {
+        const next = new Map(prev)
+        for (const kin of data.kins) {
+          if (kin.isProcessing || (kin.queueSize && kin.queueSize > 0)) {
+            const existing = next.get(kin.id)
+            next.set(kin.id, {
+              ...existing,
+              isProcessing: kin.isProcessing ?? false,
+              queueSize: kin.queueSize ?? 0,
+            })
+          }
+        }
+        return next
+      })
     } catch {
       // Ignore errors
     } finally {

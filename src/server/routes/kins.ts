@@ -48,23 +48,38 @@ const kinRoutes = new Hono<{ Variables: AppVariables }>()
 
 // GET /api/kins — list all kins
 kinRoutes.get('/', async (c) => {
-  const [allKins, hubKinId] = await Promise.all([
+  const [allKins, hubKinId, allQueueItems] = await Promise.all([
     db.select().from(kins).all(),
     getHubKinId(),
+    db.select({ kinId: queueItems.kinId, status: queueItems.status }).from(queueItems).all(),
   ])
 
+  // Build per-kin queue state from all queue items
+  const queueStateMap = new Map<string, { isProcessing: boolean; queueSize: number }>()
+  for (const item of allQueueItems) {
+    const state = queueStateMap.get(item.kinId) ?? { isProcessing: false, queueSize: 0 }
+    if (item.status === 'processing') state.isProcessing = true
+    if (item.status === 'pending') state.queueSize++
+    queueStateMap.set(item.kinId, state)
+  }
+
   return c.json({
-    kins: allKins.map((k) => ({
-      id: k.id,
-      slug: k.slug,
-      name: k.name,
-      role: k.role,
-      avatarUrl: kinAvatarUrl(k.id, k.avatarPath, k.updatedAt),
-      model: k.model,
-      providerId: k.providerId ?? null,
-      createdAt: k.createdAt,
-      isHub: k.id === hubKinId,
-    })),
+    kins: allKins.map((k) => {
+      const qs = queueStateMap.get(k.id)
+      return {
+        id: k.id,
+        slug: k.slug,
+        name: k.name,
+        role: k.role,
+        avatarUrl: kinAvatarUrl(k.id, k.avatarPath, k.updatedAt),
+        model: k.model,
+        providerId: k.providerId ?? null,
+        createdAt: k.createdAt,
+        isHub: k.id === hubKinId,
+        isProcessing: qs?.isProcessing ?? false,
+        queueSize: qs?.queueSize ?? 0,
+      }
+    }),
   })
 })
 
