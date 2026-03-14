@@ -48,11 +48,7 @@ mock.module('@/server/config', () => ({
   },
 }))
 
-mock.module('@/server/utils/slug', () => ({
-  generateSlug: mock(() => 'test-slug'),
-  ensureUniqueSlug: mock(async () => 'test-slug'),
-  isValidSlug: mock(() => true),
-}))
+// Slug functions are pure — no need to mock them
 
 mock.module('@/server/sse/index', () => ({
   sseManager: {
