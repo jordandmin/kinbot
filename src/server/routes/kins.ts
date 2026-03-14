@@ -40,7 +40,7 @@ const OPENAI_COMPATIBLE_PROVIDERS = new Set([
   'mistral', 'perplexity', 'xai', 'ollama', 'cohere',
 ])
 import { createLogger } from '@/server/logger'
-import { getLastContextUsage } from '@/server/services/kin-engine'
+import { getLastContextUsage, compactingKins } from '@/server/services/kin-engine'
 import { getModelContextWindow } from '@/shared/model-context-windows'
 
 const log = createLogger('routes:kins')
@@ -452,6 +452,7 @@ kinRoutes.get('/:id', async (c) => {
     mcpServers: details.mcpServers,
     queueSize,
     isProcessing,
+    isCompacting: compactingKins.has(kin.id),
     createdAt: details.createdAt,
   })
 })

@@ -177,6 +177,18 @@ export function useChat(kinId: string | null) {
     }
     // Restore live task cards for active tasks after clearing
     fetchActiveTasks()
+    // Restore compacting state if a compaction is in progress
+    api.get<{ isCompacting?: boolean }>(`/kins/${kinId}`).then((kin) => {
+      if (kin.isCompacting) {
+        setLiveCompacting({
+          kinId,
+          status: 'running',
+          summary: null,
+          memoriesExtracted: null,
+          startedAt: new Date().toISOString(),
+        })
+      }
+    }).catch(() => {})
   }, [fetchMessages, fetchActiveTasks])
 
   // Fetch older messages (pagination — prepend to existing)

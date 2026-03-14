@@ -49,7 +49,8 @@ const kinLocks = new Set<string>()
 const quickLocks = new Set<string>()
 
 // In-memory lock to prevent queue processing while compacting is running
-const compactingKins = new Set<string>()
+// Exported so the API can report compacting state to the frontend
+export const compactingKins = new Set<string>()
 
 // AbortController registry — one per actively-streaming Kin
 const activeAbortControllers = new Map<string, AbortController>()
