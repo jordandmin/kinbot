@@ -58,8 +58,8 @@ async function getKinContextWindow(kinId: string): Promise<number> {
   return getModelContextWindow(kin?.model ?? 'unknown')
 }
 
-/** Get non-compacted message stats for a Kin (shared by shouldCompact + getCompactingProximity) */
-async function getNonCompactedStats(kinId: string): Promise<{ currentTokens: number; currentMessages: number }> {
+/** Get non-compacted token count for a Kin (shared by shouldCompact + getCompactingProximity) */
+async function getNonCompactedStats(kinId: string): Promise<{ currentTokens: number }> {
   const activeSnapshot = await db
     .select()
     .from(compactingSnapshots)
@@ -90,7 +90,7 @@ async function getNonCompactedStats(kinId: string): Promise<{ currentTokens: num
     0,
   )
 
-  return { currentTokens, currentMessages: nonCompacted.length }
+  return { currentTokens }
 }
 
 // ─── Threshold Evaluation ────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ async function shouldCompact(kinId: string): Promise<boolean> {
     getKinContextWindow(kinId),
   ])
 
-  if (stats.currentMessages === 0) return false
+  if (stats.currentTokens === 0) return false
   const tokenThreshold = Math.floor((contextWindow * thresholdPercent) / 100)
   return stats.currentTokens > tokenThreshold
 }
@@ -118,7 +118,6 @@ export interface CompactingProximity {
   tokenThreshold: number
   thresholdPercent: number
   contextWindow: number
-  currentMessages: number
 }
 
 /** Get compacting proximity data for display in the chat UI */
@@ -136,7 +135,6 @@ export async function getCompactingProximity(kinId: string): Promise<CompactingP
     tokenThreshold,
     thresholdPercent,
     contextWindow,
-    currentMessages: stats.currentMessages,
   }
 }
 

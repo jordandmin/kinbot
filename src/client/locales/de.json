@@ -471,7 +471,7 @@
     "forceCompact": "Komprimierung erzwingen",
     "tooltipContext": "Kontextfenster",
     "tooltipCompacting": "Komprimierung",
-    "compactingProximity": "Komprimierung in ~{{tokens}}-Tokens ({{messages}}/{{maxMessages}}-Nachrichten)",
+    "compactingProximity": "Komprimierung bei {{thresholdPercent}}% (~{{tokens}} Tokens verbleibend)",
     "compactingMarker": "Komprimierungsschwelle",
     "moreActions": "Weitere Aktionen",
     "compacting": {

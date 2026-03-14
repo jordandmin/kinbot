@@ -475,7 +475,7 @@
     "forceCompact": "Force compaction",
     "tooltipContext": "Context window",
     "tooltipCompacting": "Compaction",
-    "compactingProximity": "Compaction at {{thresholdPercent}}% ({{messages}} msgs, ~{{tokens}} tokens remaining)",
+    "compactingProximity": "Compaction at {{thresholdPercent}}% (~{{tokens}} tokens remaining)",
     "compactingMarker": "Compaction threshold",
     "moreActions": "More actions",
     "compacting": {

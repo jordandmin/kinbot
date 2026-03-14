@@ -65,7 +65,6 @@ interface ConversationHeaderProps {
   compactingTokens?: number
   compactingThreshold?: number
   compactingThresholdPercent?: number
-  compactingMessages?: number
   messages?: ChatMessage[]
   scrollViewportRef?: React.RefObject<HTMLElement | null>
 }
@@ -102,7 +101,6 @@ export const ConversationHeader = memo(function ConversationHeader({
   compactingTokens,
   compactingThreshold,
   compactingThresholdPercent,
-  compactingMessages,
   messages,
   scrollViewportRef,
 }: ConversationHeaderProps) {
@@ -238,7 +236,6 @@ export const ConversationHeader = memo(function ConversationHeader({
               <p className="text-[10px] text-muted-foreground/70">
                 {t('chat.compactingProximity', {
                   tokens: formatTokenCount(compactingRemaining),
-                  messages: compactingMessages ?? 0,
                   thresholdPercent: compactingThresholdPercent ?? 75,
                 })}
               </p>
@@ -260,7 +257,7 @@ export const ConversationHeader = memo(function ConversationHeader({
         {/* Context usage + compacting proximity */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex w-28 flex-col gap-1">
+            <div className="flex w-56 flex-col gap-1">
               <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <MessageSquare className="size-3" />
@@ -300,14 +297,13 @@ export const ConversationHeader = memo(function ConversationHeader({
                 <p className="truncate text-[9px] text-muted-foreground">
                   {t('chat.compactingProximity', {
                     tokens: formatTokenCount(compactingRemaining),
-                    messages: compactingMessages ?? 0,
                     thresholdPercent: compactingThresholdPercent ?? 75,
                   })}
                 </p>
               )}
             </div>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="w-64 space-y-3 p-3">
+          <TooltipContent side="bottom" hideArrow className="w-64 space-y-3 border border-border bg-popover p-3 text-popover-foreground shadow-md">
             {/* Context window */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px]">
@@ -397,7 +393,6 @@ export const ConversationHeader = memo(function ConversationHeader({
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span>{t('chat.compactingProximity', {
                     tokens: formatTokenCount(compactingRemaining),
-                    messages: compactingMessages ?? 0,
                     thresholdPercent: compactingThresholdPercent ?? 75,
                   })}</span>
                 </div>

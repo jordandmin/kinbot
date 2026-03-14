@@ -132,8 +132,6 @@ export interface KinToolConfig {
 /** Per-Kin compacting configuration (stored as JSON in kins.compacting_config) */
 export interface KinCompactingConfig {
   /** @deprecated Use thresholdPercent instead */
-  messageThreshold?: number | null
-  /** @deprecated Use thresholdPercent instead */
   tokenThreshold?: number | null
   /** Trigger compaction at this % of model's context window (null = use global default) */
   thresholdPercent?: number | null

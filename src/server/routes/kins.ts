@@ -358,7 +358,6 @@ kinRoutes.get('/:id/context-usage', async (c) => {
       compactingTokens: compacting.currentTokens,
       compactingThreshold: compacting.tokenThreshold,
       compactingThresholdPercent: compacting.thresholdPercent,
-      compactingMessages: compacting.currentMessages,
     })
   }
 
@@ -413,7 +412,6 @@ kinRoutes.get('/:id/context-usage', async (c) => {
     compactingTokens: compacting.currentTokens,
     compactingThreshold: compacting.tokenThreshold,
     compactingThresholdPercent: compacting.thresholdPercent,
-    compactingMessages: compacting.currentMessages,
   })
 })
 
