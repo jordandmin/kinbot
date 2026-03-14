@@ -234,10 +234,13 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       }
     }
 
+    // Only propagate userId when the source is actually a user (not a kin or task)
+    const effectiveUserId = queueItem.sourceType === 'user' ? (queueItem.sourceId ?? undefined) : undefined
+
     // Execute beforeChat hook
     await hookRegistry.execute('beforeChat', {
       kinId,
-      userId: queueItem.sourceId ?? undefined,
+      userId: effectiveUserId,
       message: queueItem.content,
     })
 
@@ -430,7 +433,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
     const nativeTools = toolRegistry.resolve({
       kinId,
-      userId: queueItem.sourceId ?? undefined,
+      userId: effectiveUserId,
       isSubKin: false,
     })
 
@@ -669,7 +672,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       // Execute afterChat hook
       await hookRegistry.execute('afterChat', {
         kinId,
-        userId: queueItem.sourceId ?? undefined,
+        userId: effectiveUserId,
         message: queueItem.content,
         response: fullContent,
       })
@@ -965,7 +968,8 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
 
     // Resolve tools (with exclusion list for quick sessions)
     const toolConfig: KinToolConfig | null = kin.toolConfig ? JSON.parse(kin.toolConfig) : null
-    const nativeTools = toolRegistry.resolve({ kinId, userId: queueItem.sourceId ?? undefined, isSubKin: false })
+    const quickEffectiveUserId = queueItem.sourceType === 'user' ? (queueItem.sourceId ?? undefined) : undefined
+    const nativeTools = toolRegistry.resolve({ kinId, userId: quickEffectiveUserId, isSubKin: false })
 
     // Apply Kin-level deny-list
     if (toolConfig?.disabledNativeTools?.length) {

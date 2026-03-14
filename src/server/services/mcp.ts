@@ -71,6 +71,7 @@ interface MCPToolDef {
 const connections = new Map<string, MCPConnection>()
 
 const MCP_CONNECT_TIMEOUT_MS = 30_000
+const MCP_CALL_TIMEOUT_MS = 120_000 // 2 minutes max for any single MCP tool call
 
 async function connectToServer(serverId: string): Promise<MCPConnection | null> {
   const server = await db.select().from(mcpServers).where(eq(mcpServers.id, serverId)).get()
@@ -363,26 +364,39 @@ export async function getMCPToolsForConfig(
 
 // ─── Call an MCP tool ────────────────────────────────────────────────────────
 
+/** Race a promise against a timeout */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+    ),
+  ])
+}
+
+/** Extract text content from an MCP call result */
+function extractMCPResult(result: Awaited<ReturnType<Client['callTool']>>): unknown {
+  if (result.content && Array.isArray(result.content)) {
+    const texts = result.content
+      .filter((c: any) => c.type === 'text')
+      .map((c: any) => c.text)
+    return texts.length === 1 ? texts[0] : texts.join('\n')
+  }
+  return result
+}
+
 async function callMCPTool(
   conn: MCPConnection,
   toolName: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   try {
-    const result = await conn.client.callTool({
-      name: toolName,
-      arguments: args,
-    })
-
-    // Extract text content from MCP result
-    if (result.content && Array.isArray(result.content)) {
-      const texts = result.content
-        .filter((c: any) => c.type === 'text')
-        .map((c: any) => c.text)
-      return texts.length === 1 ? texts[0] : texts.join('\n')
-    }
-
-    return result
+    const result = await withTimeout(
+      conn.client.callTool({ name: toolName, arguments: args }),
+      MCP_CALL_TIMEOUT_MS,
+      `MCP tool ${toolName}`,
+    )
+    return extractMCPResult(result)
   } catch (err) {
     // Connection may be dead, try to reconnect once
     log.warn({ toolName, serverName: conn.serverName, err }, 'MCP tool call failed, attempting reconnection')
@@ -391,19 +405,12 @@ async function callMCPTool(
     try {
       const newConn = await connectToServer(conn.serverId)
       if (newConn) {
-        const retryResult = await newConn.client.callTool({
-          name: toolName,
-          arguments: args,
-        })
-
-        if (retryResult.content && Array.isArray(retryResult.content)) {
-          const texts = retryResult.content
-            .filter((c: any) => c.type === 'text')
-            .map((c: any) => c.text)
-          return texts.length === 1 ? texts[0] : texts.join('\n')
-        }
-
-        return retryResult
+        const retryResult = await withTimeout(
+          newConn.client.callTool({ name: toolName, arguments: args }),
+          MCP_CALL_TIMEOUT_MS,
+          `MCP tool ${toolName} (retry)`,
+        )
+        return extractMCPResult(retryResult)
       }
     } catch (retryErr) {
       log.error({ toolName, serverName: conn.serverName, retryErr }, 'MCP tool call retry also failed')
