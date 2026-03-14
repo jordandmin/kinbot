@@ -280,3 +280,55 @@
 - Verify kinbot-promo works with 600s timeout
 - Watch memory-research for repeated timeouts
 - Check if any crons are doing duplicate/overlapping work on the same files
+
+## 2026-03-14 13:02 UTC
+### Audit summary
+- **Active KinBot crons:** 17 (unchanged from last audit)
+- **Non-KinBot active:** PinchChat, woodbrass-reply-check, reddit-token-refresh
+
+### Healthy (productive, no issues)
+- **kinbot-add-tests** (8h, Opus, 900s) — Working. Last run 283s.
+- **kinbot-plugin-improve** (8h, Opus) — Working. Last run 223s.
+- **kinbot-docs-content** (6h, Opus, 600s) — Working. Last run 89s.
+- **kinbot-github-maintenance** (12h, Opus) — Working. Last run 177s.
+- **kinbot-improve-site** (12h, Opus, 600s) — Working. Last run 127s.
+- **kinbot-qa-explorer** (12h, Opus, 900s) — Working. Last run 170s.
+- **kinbot-release** (1x/day 17:00 UTC, Opus) — Working. v0.19.4 shipped, last run 227s.
+- **kinbot-ci-watchdog** (6h, Opus) — 8s last run. CI green.
+- **kinbot-improve-cli** (24h, Opus, 600s) — Working. Last run 224s.
+- **kinbot-sse-reactivity** (24h, Opus) — Working. Last run 283s.
+- **kinbot-i18n-audit** (48h, Opus) — Working. Last run 238s.
+- **kinbot-consistency-guardian** (48h, Opus) — Working. Last run 119s.
+- **kinbot-memory-research** (12h, Opus, 600s) — Working. Last run 120s.
+- **kinbot-promo** (1x/day 14:00 Paris, Opus, 600s) — Working after previous timeouts at 300s. Last run 134s.
+- **reddit-token-refresh** (12h, Flash) — 2.6s. Minimal.
+- **PinchChat** (2x/day, Opus, 900s) — Working. Last run 157s.
+- **woodbrass-reply-check** (4h, Flash) — 1.4s. Still finding nothing.
+
+### Issues found & actions taken
+
+1. **kinbot-community: MASSIVELY too frequent (10 min!)** ⚠️⚠️⚠️
+   - Was running every 10 MINUTES on Opus (everyMs: 600000).
+   - 90%+ of runs just say "Nothing to do" in ~14s. GitHub issues/PRs don't arrive every 10 minutes.
+   - That's ~144 Opus runs/day, burning tokens for "Nothing to do" over and over.
+   - Occasional productive runs when issues come in, but the vast majority are wasted.
+   - **Action: Changed interval from 10 min to 8h (28800000ms).** This still catches issues same-day (3x/day) which is plenty for an open-source project. When issues DO arrive, the webhook bot already gives an instant acknowledgment, so the community cron just needs to do the actual implementation work, which doesn't need to be immediate.
+
+2. **kinbot-e2e-tests: still disabled, still timing out** ⛔
+   - Last 3 runs all timed out at 900s. Disabled since last audit. No change needed.
+   - The agent STILL runs Playwright locally despite every possible warning in the prompt.
+
+### Proposals (for Nicolas to decide)
+
+1. **Model downgrade: kinbot-ci-watchdog → Gemini Flash** (11th time proposing). 95%+ of runs are "CI green ✅" in 8s on Opus. Most obvious cost savings in the fleet.
+
+2. **Disable woodbrass-reply-check?** Still running every 4h on Flash, still finding nothing. Extremely cheap but pointless.
+
+### Cost analysis
+- Disabling the 10min community cron loop saves ~130 Opus runs/day. This was by far the biggest waste in the fleet.
+- 30 commits in recent git log, healthy development pace across all crons.
+
+### Next audit focus
+- Monitor kinbot-community at 8h interval, verify it still catches issues timely
+- Check if kinbot-promo timeout is stable at 600s
+- Watch for any new cron frequency issues
