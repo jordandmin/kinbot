@@ -683,13 +683,24 @@ export const MessageBubble = memo(function MessageBubble({
   const channelPlatform = isFromChannel ? content.match(/^\[(\w+):/)?.[1] ?? 'channel' : null
   const isTaskResult = sourceType === 'task'
   const isSystem = sourceType === 'system' || sourceType === 'cron'
-  const hasToolCalls = toolCalls && toolCalls.length > 0
+  // Deduplicate tool calls by ID (safety net for race conditions between
+  // streaming and fetched state that can produce the same call twice)
+  const dedupedToolCalls = useMemo(() => {
+    if (!toolCalls || toolCalls.length === 0) return toolCalls
+    const seen = new Set<string>()
+    return toolCalls.filter((tc) => {
+      if (seen.has(tc.id)) return false
+      seen.add(tc.id)
+      return true
+    })
+  }, [toolCalls])
+  const hasToolCalls = dedupedToolCalls && dedupedToolCalls.length > 0
   const hasFiles = files && files.length > 0
   const hasMemories = injectedMemories && injectedMemories.length > 0
 
   const contentParts = useMemo(
-    () => (hasToolCalls ? buildContentParts(content, toolCalls) : null),
-    [content, toolCalls, hasToolCalls],
+    () => (hasToolCalls ? buildContentParts(content, dedupedToolCalls) : null),
+    [content, dedupedToolCalls, hasToolCalls],
   )
 
   // Task result cards (from persisted messages)
