@@ -91,8 +91,9 @@ export function useToolCalls(kinId: string | null, messages: ChatMessage[]) {
         const next = new Map(prev)
         const existing = next.get(data.toolCallId as string)
         if (existing) {
-          // Update existing entry (from tool-call-streaming-start) with args
-          next.set(existing.id, { ...existing, args: data.args })
+          // Update existing entry (from tool-call-streaming-start) with args and offset
+          const updatedOffset = typeof data.contentOffset === 'number' ? data.contentOffset : existing.offset
+          next.set(existing.id, { ...existing, args: data.args, offset: updatedOffset })
         } else {
           // No streaming-start was emitted — create entry now
           next.set(data.toolCallId as string, {

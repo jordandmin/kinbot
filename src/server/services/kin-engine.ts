@@ -543,6 +543,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
               messageId: assistantMessageId,
               toolCallId: p.toolCallId,
               toolName: p.toolName,
+              contentOffset: fullContent.length,
             },
           })
           continue
@@ -1034,7 +1035,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
           sseManager.sendToKin(kinId, {
             type: 'chat:tool-call-start',
             kinId,
-            data: { messageId: assistantMessageId, toolCallId: p.toolCallId, toolName: p.toolName, sessionId },
+            data: { messageId: assistantMessageId, toolCallId: p.toolCallId, toolName: p.toolName, contentOffset: fullContent.length, sessionId },
           })
           continue
         }

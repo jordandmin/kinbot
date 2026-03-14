@@ -399,6 +399,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
               messageId: assistantMessageId,
               toolCallId: p.toolCallId,
               toolName: p.toolName,
+              contentOffset: fullContent.length,
               taskId,
             },
           })
