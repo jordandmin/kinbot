@@ -56,6 +56,7 @@ function deriveStatus(entry: ToolCallEntry): ToolCallStatus {
 export function useTaskDetail(taskId: string | null) {
   const [task, setTask] = useState<TaskDetail | null>(null)
   const [messages, setMessages] = useState<TaskMessage[]>([])
+  const messagesRef = useRef<TaskMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   // Streaming state (same pattern as useChat)
@@ -69,18 +70,66 @@ export function useTaskDetail(taskId: string | null) {
   const [streamingToolCalls, setStreamingToolCalls] = useState<ToolCallViewItem[]>([])
   const streamingToolCallsRef = useRef<ToolCallViewItem[]>([])
 
-  const fetchDetail = useCallback(async () => {
-    if (!taskId) {
-      setTask(null)
-      setMessages([])
-      return
+  // Gate: SSE streaming events are buffered until the first fetchDetail()
+  // resolves. Without this, events arriving before fetchDetail seed from an
+  // empty messagesRef, causing a text gap. Buffered events are replayed once
+  // messagesRef is populated.
+  const readyRef = useRef(false)
+  const pendingEventsRef = useRef<Array<{ type: string; data: Record<string, unknown> }>>([])
+
+
+  // Keep messagesRef always in sync with messages state
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  // Reset ALL state when taskId changes (modal close/reopen).
+  // Without this, stale streaming refs from a previous open cause
+  // unpredictable content on each re-open.
+  useEffect(() => {
+    readyRef.current = false
+    pendingEventsRef.current = []
+    setTask(null)
+    setMessages([])
+    setIsStreaming(false)
+    setStreamingMessage(null)
+    streamingContentRef.current = ''
+    streamingMessageIdRef.current = null
+    streamingToolCallsRef.current = []
+    setStreamingToolCalls([])
+    if (batchTimerRef.current) {
+      clearTimeout(batchTimerRef.current)
+      batchTimerRef.current = null
     }
+  }, [taskId])
+
+  const fetchDetail = useCallback(async () => {
+    if (!taskId) return
 
     setIsLoading(true)
     try {
       const data = await api.get<TaskDetailResponse>(`/tasks/${taskId}`)
       setTask(data.task)
-      setMessages(data.messages)
+      // Smart merge: preserve object references for unchanged messages to
+      // avoid unnecessary re-renders (same pattern as useChat.fetchMessages)
+      // Smart merge: preserve object references for unchanged messages
+      const merged = data.messages.map((newMsg) => {
+        const existing = messagesRef.current.find((m) => m.id === newMsg.id)
+        if (
+          existing &&
+          existing.content === newMsg.content &&
+          JSON.stringify(existing.toolCalls) === JSON.stringify(newMsg.toolCalls)
+        ) {
+          return existing
+        }
+        return newMsg
+      })
+      // Update ref synchronously BEFORE replaying buffered events,
+      // because setMessages is async and the useEffect([messages]) sync
+      // won't run until the next render.
+      messagesRef.current = merged
+      setMessages(merged)
+
       // Safety net: if task is terminal, ensure streaming is cleared
       const s = data.task.status
       if (s === 'completed' || s === 'failed' || s === 'cancelled') {
@@ -91,12 +140,147 @@ export function useTaskDetail(taskId: string | null) {
         streamingToolCallsRef.current = []
         setStreamingToolCalls([])
       }
+      // Allow SSE handlers to process events now that messagesRef is populated,
+      // then replay any events that arrived while we were fetching.
+      readyRef.current = true
+      replayPendingEvents()
     } catch {
       // Silently fail — task may have been deleted
     } finally {
       setIsLoading(false)
     }
   }, [taskId])
+
+  // ── Streaming event handlers (used both by SSE and replay) ──────────────
+
+  function seedStreaming(messageId: string, extraContent = '') {
+    const existing = messagesRef.current.find((m) => m.id === messageId)
+    const baseContent = (existing?.content ?? '') + extraContent
+    streamingMessageIdRef.current = messageId
+    streamingContentRef.current = baseContent
+    setIsStreaming(true)
+    setStreamingMessage({
+      id: messageId,
+      role: 'assistant',
+      content: baseContent,
+      sourceType: 'kin',
+      sourceId: null,
+      isRedacted: false,
+      toolCalls: null,
+      createdAt: existing?.createdAt ?? Date.now(),
+    })
+  }
+
+  function handleToolCallStart(data: Record<string, unknown>) {
+    const messageId = data.messageId as string
+    if (!streamingMessageIdRef.current) seedStreaming(messageId)
+  }
+
+  function handleToken(data: Record<string, unknown>) {
+    const token = data.token as string
+    const messageId = data.messageId as string
+
+    if (!streamingMessageIdRef.current) {
+      seedStreaming(messageId, token)
+    } else {
+      streamingContentRef.current += token
+      if (!batchTimerRef.current) {
+        batchTimerRef.current = setTimeout(() => {
+          batchTimerRef.current = null
+          setStreamingMessage((prev) =>
+            prev ? { ...prev, content: streamingContentRef.current } : prev,
+          )
+        }, STREAMING_BATCH_MS)
+      }
+    }
+  }
+
+  function handleToolCall(data: Record<string, unknown>) {
+    const messageId = data.messageId as string
+    if (!streamingMessageIdRef.current) seedStreaming(messageId)
+
+    const item: ToolCallViewItem = {
+      id: data.toolCallId as string,
+      messageId,
+      name: data.toolName as string,
+      domain: getToolDomain(data.toolName as string),
+      args: data.args,
+      result: undefined,
+      status: 'pending',
+      timestamp: new Date().toISOString(),
+      offset: data.contentOffset as number | undefined,
+    }
+    streamingToolCallsRef.current = [...streamingToolCallsRef.current, item]
+    setStreamingToolCalls(streamingToolCallsRef.current)
+  }
+
+  function handleToolResult(data: Record<string, unknown>) {
+    const toolCallId = data.toolCallId as string
+    const resultData = data.result
+    const hasError =
+      typeof resultData === 'object' &&
+      resultData !== null &&
+      'error' in (resultData as Record<string, unknown>)
+
+    streamingToolCallsRef.current = streamingToolCallsRef.current.map((tc) =>
+      tc.id === toolCallId
+        ? { ...tc, result: resultData, status: (hasError ? 'error' : 'success') as ToolCallStatus }
+        : tc,
+    )
+    setStreamingToolCalls(streamingToolCallsRef.current)
+  }
+
+  function handleDone(data: Record<string, unknown>) {
+    if (batchTimerRef.current) {
+      clearTimeout(batchTimerRef.current)
+      batchTimerRef.current = null
+    }
+
+    const finalContent = (data.content as string) ?? streamingContentRef.current
+    const doneMessageId = (data.messageId as string) ?? streamingMessageIdRef.current
+
+    if (doneMessageId) {
+      setMessages((prev) => {
+        const withoutOld = prev.filter((m) => m.id !== doneMessageId)
+        return [
+          ...withoutOld,
+          {
+            id: doneMessageId,
+            role: 'assistant' as const,
+            content: finalContent,
+            sourceType: 'kin',
+            sourceId: null,
+            isRedacted: false,
+            toolCalls: null,
+            createdAt: Date.now(),
+          },
+        ]
+      })
+    }
+
+    setIsStreaming(false)
+    setStreamingMessage(null)
+    streamingContentRef.current = ''
+    streamingMessageIdRef.current = null
+    streamingToolCallsRef.current = []
+    setStreamingToolCalls([])
+
+    fetchDetail()
+  }
+
+  function replayPendingEvents() {
+    const events = pendingEventsRef.current
+    pendingEventsRef.current = []
+    for (const { type, data } of events) {
+      switch (type) {
+        case 'chat:tool-call-start': handleToolCallStart(data); break
+        case 'chat:token': handleToken(data); break
+        case 'chat:tool-call': handleToolCall(data); break
+        case 'chat:tool-result': handleToolResult(data); break
+        case 'chat:done': handleDone(data); break
+      }
+    }
+  }
 
   // Initial fetch
   useEffect(() => {
@@ -177,145 +361,37 @@ export function useTaskDetail(taskId: string | null) {
     },
 
     // Streaming events — filtered by taskId
+    // All streaming handlers buffer events until fetchDetail has resolved
+    // (readyRef), then replay them so no tokens are lost.
+
     'chat:tool-call-start': (data) => {
       if (data.taskId !== taskId) return
-
-      const messageId = data.messageId as string
-
-      // Initialise streaming state on the very first LLM event (even if it's
-      // a tool call with no preceding text).  This switches the modal out of
-      // the "No messages yet" branch so the typing indicator becomes visible.
-      if (!streamingMessageIdRef.current) {
-        streamingMessageIdRef.current = messageId
-        streamingContentRef.current = ''
-        setIsStreaming(true)
-
-        setStreamingMessage({
-          id: messageId,
-          role: 'assistant',
-          content: '',
-          sourceType: 'kin',
-          sourceId: null,
-          isRedacted: false,
-          toolCalls: null,
-          createdAt: Date.now(),
-        })
-      }
+      if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:tool-call-start', data }); return }
+      handleToolCallStart(data)
     },
 
     'chat:token': (data) => {
       if (data.taskId !== taskId) return
-
-      const token = data.token as string
-      const messageId = data.messageId as string
-
-      if (!streamingMessageIdRef.current) {
-        // First token: create streaming message
-        streamingMessageIdRef.current = messageId
-        streamingContentRef.current = token
-        setIsStreaming(true)
-
-        setStreamingMessage({
-          id: messageId,
-          role: 'assistant',
-          content: token,
-          sourceType: 'kin',
-          sourceId: null,
-          isRedacted: false,
-          toolCalls: null,
-          createdAt: Date.now(),
-        })
-      } else {
-        // Accumulate token in ref, batch UI updates
-        streamingContentRef.current += token
-
-        if (!batchTimerRef.current) {
-          batchTimerRef.current = setTimeout(() => {
-            batchTimerRef.current = null
-            setStreamingMessage((prev) =>
-              prev ? { ...prev, content: streamingContentRef.current } : prev,
-            )
-          }, STREAMING_BATCH_MS)
-        }
-      }
+      if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:token', data }); return }
+      handleToken(data)
     },
 
     'chat:tool-call': (data) => {
       if (data.taskId !== taskId) return
-
-      const messageId = data.messageId as string
-
-      // Ensure streaming state is initialised (tool-call-streaming-start
-      // is provider-dependent and may never fire).
-      if (!streamingMessageIdRef.current) {
-        streamingMessageIdRef.current = messageId
-        streamingContentRef.current = ''
-        setIsStreaming(true)
-
-        setStreamingMessage({
-          id: messageId,
-          role: 'assistant',
-          content: '',
-          sourceType: 'kin',
-          sourceId: null,
-          isRedacted: false,
-          toolCalls: null,
-          createdAt: Date.now(),
-        })
-      }
-
-      const item: ToolCallViewItem = {
-        id: data.toolCallId as string,
-        messageId,
-        name: data.toolName as string,
-        domain: getToolDomain(data.toolName as string),
-        args: data.args,
-        result: undefined,
-        status: 'pending',
-        timestamp: new Date().toISOString(),
-        offset: data.contentOffset as number | undefined,
-      }
-
-      streamingToolCallsRef.current = [...streamingToolCallsRef.current, item]
-      setStreamingToolCalls(streamingToolCallsRef.current)
+      if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:tool-call', data }); return }
+      handleToolCall(data)
     },
 
     'chat:tool-result': (data) => {
       if (data.taskId !== taskId) return
-
-      const toolCallId = data.toolCallId as string
-      const resultData = data.result
-      const hasError =
-        typeof resultData === 'object' &&
-        resultData !== null &&
-        'error' in (resultData as Record<string, unknown>)
-
-      streamingToolCallsRef.current = streamingToolCallsRef.current.map((tc) =>
-        tc.id === toolCallId
-          ? { ...tc, result: resultData, status: (hasError ? 'error' : 'success') as ToolCallStatus }
-          : tc,
-      )
-      setStreamingToolCalls(streamingToolCallsRef.current)
+      if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:tool-result', data }); return }
+      handleToolResult(data)
     },
 
     'chat:done': (data) => {
       if (data.taskId !== taskId) return
-
-      // Flush any pending batch timer
-      if (batchTimerRef.current) {
-        clearTimeout(batchTimerRef.current)
-        batchTimerRef.current = null
-      }
-
-      setIsStreaming(false)
-      setStreamingMessage(null)
-      streamingContentRef.current = ''
-      streamingMessageIdRef.current = null
-      streamingToolCallsRef.current = []
-      setStreamingToolCalls([])
-
-      // Refresh to get the final message from DB
-      fetchDetail()
+      if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:done', data }); return }
+      handleDone(data)
     },
   })
 
@@ -323,12 +399,15 @@ export function useTaskDetail(taskId: string | null) {
   // periodically refresh the task detail so messages still appear.
   useEffect(() => {
     if (!taskId) return
+    // SSE is the source of truth during streaming — don't let polling
+    // overwrite the streaming state with stale DB content
+    if (isStreaming) return
     const status = task?.status
     if (!status || status === 'completed' || status === 'failed' || status === 'cancelled') return
 
     const interval = setInterval(fetchDetail, 3000)
     return () => clearInterval(interval)
-  }, [taskId, task?.status, fetchDetail])
+  }, [taskId, task?.status, fetchDetail, isStreaming])
 
   // Extract tool calls from persisted messages
   const historicalToolCalls = useMemo(() => {

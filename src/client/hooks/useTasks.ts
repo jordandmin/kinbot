@@ -103,13 +103,16 @@ export function useTasks() {
 
       const isActiveStatus = status === 'pending' || status === 'in_progress' || status === 'awaiting_human_input'
 
+      let movedTask: TaskSummary | null = null
+
       setActiveTasks((prev) => {
         const existing = prev.find((t) => t.id === taskId)
         if (existing) {
           if (isActiveStatus) {
             return prev.map((t) => (t.id === taskId ? { ...t, status, updatedAt: now } : t))
           }
-          // Moved to terminal state — remove from active
+          // Moved to terminal state — remove from active, save for history move
+          movedTask = { ...existing, status, updatedAt: now }
           return prev.filter((t) => t.id !== taskId)
         }
         if (isActiveStatus) {
@@ -120,10 +123,18 @@ export function useTasks() {
         return prev
       })
 
-      // Update in history if present
-      setHistoryTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status, updatedAt: now } : t)),
-      )
+      // Move to history or update in-place
+      setHistoryTasks((prev) => {
+        const exists = prev.some((t) => t.id === taskId)
+        if (exists) {
+          return prev.map((t) => (t.id === taskId ? { ...t, status, updatedAt: now } : t))
+        }
+        // Task was in activeTasks but not in history — prepend it
+        if (movedTask) {
+          return [movedTask, ...prev]
+        }
+        return prev
+      })
     },
     'task:deleted': (data) => {
       const taskId = data.taskId as string

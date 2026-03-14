@@ -17,6 +17,9 @@ import type { TaskStatus, TaskMode, KinToolConfig } from '@/shared/types'
 
 const log = createLogger('tasks')
 
+// AbortController registry — one per actively-streaming task
+const activeTaskAbortControllers = new Map<string, AbortController>()
+
 /** Build a public avatar URL from a Kin's stored avatar path */
 function kinAvatarUrl(kinId: string, avatarPath: string | null, updatedAt?: Date | null): string | null {
   if (!avatarPath) return null
@@ -378,6 +381,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
     let fullContent = ''
     const toolCallsLog: Array<{ id: string; name: string; args: unknown; result?: unknown; offset: number }> = []
     let streamError: Error | null = null
+    let lastCheckpointAt = Date.now()
 
     // Pre-insert assistant message so it's visible in fetchDetail() during streaming.
     // Content and tool calls will be updated when the stream completes.
@@ -407,12 +411,17 @@ async function executeSubKin(taskId: string, isNudge = false) {
       },
     })
 
+    // Create an AbortController so the stream can be cancelled from outside
+    const abortController = new AbortController()
+    activeTaskAbortControllers.set(taskId, abortController)
+
     const result = streamText({
       model,
       system: systemPrompt,
       messages: messageHistory,
       tools: hasTools ? tools : undefined,
       stopWhen: hasTools ? stepCountIs(config.tools.maxSteps) : undefined,
+      abortSignal: abortController.signal,
     })
 
     try {
@@ -442,6 +451,20 @@ async function executeSubKin(taskId: string, isNudge = false) {
               kinId: task.parentKinId,
               data: { messageId: assistantMessageId, token: part.text, taskId },
             })
+
+            // Periodic checkpoint: persist partial content every 2s so a page
+            // refresh can show accumulated text instead of an empty message.
+            const now = Date.now()
+            if (now - lastCheckpointAt >= 500) {
+              lastCheckpointAt = now
+              db.update(messages)
+                .set({
+                  content: fullContent,
+                  toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
+                })
+                .where(eq(messages.id, assistantMessageId))
+                .then(() => {}, () => {})
+            }
             break
           }
           case 'tool-call': {
@@ -480,12 +503,45 @@ async function executeSubKin(taskId: string, isNudge = false) {
                 taskId,
               },
             })
+
+            // Checkpoint: persist partial content + tool calls so a page refresh
+            // can show progress instead of an empty message.
+            await db.update(messages)
+              .set({
+                content: fullContent,
+                toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
+              })
+              .where(eq(messages.id, assistantMessageId))
             break
           }
         }
       }
     } catch (err) {
-      streamError = err instanceof Error ? err : new Error(String(err))
+      // If the stream was aborted (user cancelled), handle gracefully
+      if (abortController.signal.aborted) {
+        log.info({ taskId }, 'Sub-Kin stream aborted by cancellation')
+      } else {
+        streamError = err instanceof Error ? err : new Error(String(err))
+      }
+    } finally {
+      activeTaskAbortControllers.delete(taskId)
+    }
+
+    // If the stream was aborted (cancel), persist partial content and stop
+    if (abortController.signal.aborted) {
+      await db.update(messages)
+        .set({
+          content: fullContent || '',
+          toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
+        })
+        .where(eq(messages.id, assistantMessageId))
+
+      sseManager.sendToKin(task.parentKinId, {
+        type: 'chat:done',
+        kinId: task.parentKinId,
+        data: { messageId: assistantMessageId, content: fullContent, taskId },
+      })
+      return
     }
 
     // If the stream errored, fail the task immediately
@@ -749,6 +805,13 @@ export async function cancelTask(taskId: string, kinId: string) {
   if (!task) return false
   if (task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled') {
     return false
+  }
+
+  // Abort the running LLM stream if any
+  const controller = activeTaskAbortControllers.get(taskId)
+  if (controller) {
+    controller.abort()
+    activeTaskAbortControllers.delete(taskId)
   }
 
   // Cancel any pending human prompts for this task
