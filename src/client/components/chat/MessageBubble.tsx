@@ -40,6 +40,7 @@ interface MessageBubbleProps {
   timestamp?: string
   toolCalls?: ToolCallViewItem[]
   injectedMemories?: InjectedMemory[] | null
+  stepLimitReached?: boolean
   files?: MessageFile[]
   reactions?: MessageReaction[]
   currentUserId?: string
@@ -649,6 +650,7 @@ export const MessageBubble = memo(function MessageBubble({
   timestamp,
   toolCalls,
   injectedMemories,
+  stepLimitReached = false,
   files,
   reactions,
   currentUserId,
@@ -763,6 +765,14 @@ export const MessageBubble = memo(function MessageBubble({
           {/* Injected memories indicator */}
           {hasMemories && <InjectedMemoriesIndicator memories={injectedMemories} />}
 
+          {/* Step limit indicator */}
+          {stepLimitReached && (
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-warning">
+              <span>⚠️</span>
+              <span className="text-muted-foreground">{t('chat.stepLimitReached')}</span>
+            </div>
+          )}
+
           <ReactionDisplay reactions={reactions ?? []} currentUserId={currentUserId} onToggle={handleToggleReaction} />
 
           <div className="flex items-center gap-1.5">
@@ -827,6 +837,14 @@ export const MessageBubble = memo(function MessageBubble({
 
         {/* Injected memories indicator */}
         {!isRedacted && hasMemories && <InjectedMemoriesIndicator memories={injectedMemories} />}
+
+        {/* Step limit indicator */}
+        {!isRedacted && stepLimitReached && (
+          <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+            <span>⚠️</span>
+            <span className="text-muted-foreground">{t('chat.stepLimitReached')}</span>
+          </div>
+        )}
 
         <ReactionDisplay reactions={reactions ?? []} currentUserId={currentUserId} onToggle={handleToggleReaction} />
 

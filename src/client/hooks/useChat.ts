@@ -25,6 +25,7 @@ export interface ChatMessage {
   resolvedTaskId: string | null
   injectedMemories: Array<{ id: string; category: string; content: string; subject: string | null }> | null
   memoriesExtracted: number | null
+  stepLimitReached: boolean
   files: MessageFile[]
   reactions: MessageReaction[]
   createdAt: string

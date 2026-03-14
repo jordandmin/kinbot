@@ -525,7 +525,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       system: systemPrompt,
       messages: messageHistory,
       tools: hasTools ? tools : undefined,
-      stopWhen: hasTools ? stepCountIs(config.tools.maxSteps) : undefined,
+      stopWhen: hasTools && config.tools.maxSteps > 0 ? stepCountIs(config.tools.maxSteps) : undefined,
       abortSignal: abortController.signal,
     })
 
@@ -641,12 +641,13 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     // This typically happens when the step limit (maxSteps) is reached before the
     // LLM can produce a final text response. Add a fallback message so the user
     // knows work was done even though no text was returned.
-    if (!fullContent && toolCallsLog.length > 0 && !wasAborted) {
+    const stepLimitReached = !fullContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
+    if (stepLimitReached) {
       log.warn(
         { kinId, messageId: assistantMessageId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },
-        'LLM turn produced tool calls but no text content (possible step limit truncation)',
+        'LLM turn produced tool calls but no text content (step limit truncation)',
       )
-      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated, likely due to the tool step limit. You can ask me to continue or summarize the results.)*`
+      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated due to the tool step limit of ${config.tools.maxSteps}. You can ask me to continue or summarize the results.)*`
       sseManager.sendToKin(kinId, {
         type: 'chat:token',
         kinId,
@@ -668,9 +669,16 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceType: 'kin',
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
-        metadata: relevantMemories.length > 0
-          ? JSON.stringify({ injectedMemories: relevantMemories })
-          : null,
+        metadata: (() => {
+          const meta: Record<string, unknown> = {}
+          if (relevantMemories.length > 0) meta.injectedMemories = relevantMemories
+          if (stepLimitReached) {
+            meta.stepLimitReached = true
+            meta.maxSteps = config.tools.maxSteps
+            meta.toolCallCount = toolCallsLog.length
+          }
+          return Object.keys(meta).length > 0 ? JSON.stringify(meta) : null
+        })(),
         createdAt: new Date(),
       })
     }
@@ -687,6 +695,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceId: kinId,
         sourceName: kin.name,
         sourceAvatarUrl: kin.avatarPath ? `/api/uploads/kins/${kin.id}/avatar.${kin.avatarPath.split('.').pop()}` : null,
+        ...(stepLimitReached ? { stepLimitReached: true } : {}),
       },
     })
 
@@ -1022,7 +1031,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
       system: systemPrompt,
       messages: messageHistory,
       tools: hasTools ? tools : undefined,
-      stopWhen: hasTools ? stepCountIs(config.tools.maxSteps) : undefined,
+      stopWhen: hasTools && config.tools.maxSteps > 0 ? stepCountIs(config.tools.maxSteps) : undefined,
       abortSignal: abortController.signal,
     })
 
@@ -1090,12 +1099,13 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     }
 
     // Detect truncated turns (same as main path)
-    if (!fullContent && toolCallsLog.length > 0 && !wasAborted) {
+    const stepLimitReached = !fullContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
+    if (stepLimitReached) {
       log.warn(
         { kinId, sessionId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },
-        'Quick session LLM turn produced tool calls but no text content',
+        'Quick session LLM turn produced tool calls but no text content (step limit truncation)',
       )
-      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated. You can ask me to continue or summarize.)*`
+      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated due to the tool step limit of ${config.tools.maxSteps}. You can ask me to continue or summarize.)*`
     }
 
     // Save assistant message (with sessionId)
@@ -1109,7 +1119,16 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
         sourceType: 'kin',
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
-        metadata: relevantMemories.length > 0 ? JSON.stringify({ injectedMemories: relevantMemories }) : null,
+        metadata: (() => {
+          const meta: Record<string, unknown> = {}
+          if (relevantMemories.length > 0) meta.injectedMemories = relevantMemories
+          if (stepLimitReached) {
+            meta.stepLimitReached = true
+            meta.maxSteps = config.tools.maxSteps
+            meta.toolCallCount = toolCallsLog.length
+          }
+          return Object.keys(meta).length > 0 ? JSON.stringify(meta) : null
+        })(),
         createdAt: new Date(),
       })
     }
