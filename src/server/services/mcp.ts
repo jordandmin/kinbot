@@ -139,17 +139,80 @@ async function getConnection(serverId: string): Promise<MCPConnection | null> {
   return connectToServer(serverId)
 }
 
-// Register graceful shutdown hook
+// Register graceful shutdown hooks
 process.on('beforeExit', () => { disconnectAll() })
+process.on('SIGINT', () => { disconnectAll().finally(() => process.exit(0)) })
+process.on('SIGTERM', () => { disconnectAll().finally(() => process.exit(0)) })
+
+// ─── Process tree cleanup ────────────────────────────────────────────────────
+
+/**
+ * Kill a process and all its descendants.
+ * Uses /proc on Linux to find child processes recursively.
+ */
+async function killProcessTree(pid: number) {
+  try {
+    // Collect all descendant PIDs first (bottom-up kill avoids re-parenting)
+    const descendants = await getDescendantPids(pid)
+    const allPids = [...descendants.reverse(), pid]
+
+    // SIGTERM first
+    for (const p of allPids) {
+      try { process.kill(p, 'SIGTERM') } catch { /* already dead */ }
+    }
+
+    // Wait briefly, then SIGKILL survivors
+    await new Promise((r) => setTimeout(r, 2000))
+    for (const p of allPids) {
+      try { process.kill(p, 'SIGKILL') } catch { /* already dead */ }
+    }
+  } catch {
+    // Best effort - if we can't enumerate children, at least kill the parent
+    try { process.kill(pid, 'SIGKILL') } catch { /* already dead */ }
+  }
+}
+
+/**
+ * Get all descendant PIDs of a process using /proc filesystem (Linux).
+ */
+async function getDescendantPids(pid: number): Promise<number[]> {
+  try {
+    const proc = Bun.spawn(['pgrep', '-P', String(pid)], { stdout: 'pipe', stderr: 'pipe' })
+    const output = await new Response(proc.stdout).text()
+    await proc.exited
+
+    const childPids = output.trim().split('\n').filter(Boolean).map(Number).filter((n) => !isNaN(n))
+    const allDescendants: number[] = []
+
+    for (const childPid of childPids) {
+      allDescendants.push(childPid)
+      const grandchildren = await getDescendantPids(childPid)
+      allDescendants.push(...grandchildren)
+    }
+
+    return allDescendants
+  } catch {
+    return []
+  }
+}
 
 // ─── Disconnect ──────────────────────────────────────────────────────────────
 
 export async function disconnectServer(serverId: string) {
   const conn = connections.get(serverId)
   if (conn) {
+    // Grab the PID before close() clears it
+    const pid = conn.transport.pid
     try {
       await conn.client.close()
     } catch { /* ignore */ }
+
+    // Kill the entire process tree to clean up npm exec → sh → node chains.
+    // client.close() only kills the direct child; grandchildren may survive.
+    if (pid) {
+      await killProcessTree(pid)
+    }
+
     connections.delete(serverId)
   }
 }
@@ -400,7 +463,7 @@ async function callMCPTool(
   } catch (err) {
     // Connection may be dead, try to reconnect once
     log.warn({ toolName, serverName: conn.serverName, err }, 'MCP tool call failed, attempting reconnection')
-    connections.delete(conn.serverId)
+    await disconnectServer(conn.serverId)
 
     try {
       const newConn = await connectToServer(conn.serverId)
