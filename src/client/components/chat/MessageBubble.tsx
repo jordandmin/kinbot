@@ -48,6 +48,8 @@ interface MessageBubbleProps {
   isRedacted?: boolean
   /** When true, the message is part of a consecutive group from the same sender — avatar and name are hidden, spacing is tighter. */
   isGrouped?: boolean
+  /** When true, the message was just added to the list (animate entrance). */
+  isNew?: boolean
   messageId?: string
   resolvedTaskId?: string | null
   onOpenTaskDetail?: (taskId: string) => void
@@ -658,6 +660,7 @@ export const MessageBubble = memo(function MessageBubble({
   resolvedTaskId,
   isRedacted = false,
   isGrouped = false,
+  isNew = false,
   onOpenTaskDetail,
   onRegenerate,
   onQuoteReply,
@@ -697,7 +700,7 @@ export const MessageBubble = memo(function MessageBubble({
   // System messages centered
   if (isSystem) {
     return (
-      <div className="flex justify-center px-4 py-2 animate-fade-in">
+      <div className={cn('flex justify-center px-4 py-2', isNew && 'animate-fade-in')}>
         <div className="rounded-lg bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
           {content}
         </div>
@@ -723,7 +726,7 @@ export const MessageBubble = memo(function MessageBubble({
   if (!isUser && contentParts) {
     return (
       <MessageContextMenu content={content} isUser={false} onRegenerate={onRegenerate} onQuoteReply={onQuoteReply} onEditResend={onEditResend}>
-      <div className={cn('flex gap-3 px-4 animate-fade-in-up', isGrouped ? 'py-0.5' : 'py-2')}>
+      <div className={cn('flex gap-3 px-4', isNew && 'animate-fade-in-up', isGrouped ? 'py-0.5' : 'py-2')}>
         {isGrouped ? (
           <div className="size-10 shrink-0" />
         ) : (
@@ -795,7 +798,8 @@ export const MessageBubble = memo(function MessageBubble({
     <MessageContextMenu content={content} isUser={isUser} onRegenerate={isUser ? undefined : onRegenerate} onQuoteReply={onQuoteReply} onEditResend={isUser ? onEditResend : undefined}>
     <div
       className={cn(
-        'flex gap-3 px-4 animate-fade-in-up',
+        'flex gap-3 px-4',
+        isNew && 'animate-fade-in-up',
         isUser ? 'flex-row-reverse' : 'flex-row',
         isGrouped ? 'py-0.5' : 'py-2',
       )}
