@@ -505,3 +505,9 @@ All sections migrated and accuracy-reviewed:
 - Commit: `f20a9db` — pushed to main (--no-verify)
 
 ### Status: docs fully caught up with source code
+
+## 2026-03-14 — Maintenance check: no changes needed (run 2)
+
+- Checked source commits since last run: i18n (Spanish #6, German), test fixes, UI tweaks (context tooltip, typing indicator, maxSteps fix) — no documentation impact
+- All 34 pages remain accurate and complete
+- **Status: docs fully caught up with source code**
