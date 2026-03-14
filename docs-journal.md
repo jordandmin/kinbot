@@ -491,3 +491,17 @@ All sections migrated and accuracy-reviewed:
 - Commit: `da133d5` — pushed to main (--no-verify)
 
 ### Status: docs fully caught up with source code
+
+## 2026-03-14 — Compacting percentage threshold + tool step limit docs ✅
+
+- New feature `6ad7da7`: replaced dual `COMPACTING_MESSAGE_THRESHOLD` / `COMPACTING_TOKEN_THRESHOLD` with single `COMPACTING_THRESHOLD_PERCENT` (default 75%)
+- New feature `a59e82a`: `TOOLS_MAX_STEPS` default changed from 10 to 0 (unlimited)
+- **memory/configuration.md**: Rewrote Compacting Settings section with new percentage-based env var, added deprecation note for old vars, updated tuning tips
+- **memory/how-it-works.md**: Updated compacting trigger description from "message/token count" to "context usage percentage"
+- **api/rest.md**: Added `GET/PUT /api/settings/compacting-threshold` endpoints
+- **getting-started/configuration.md**: Updated advanced options list with new compacting var and TOOLS_MAX_STEPS
+- Other commits since last run: UI fixes (duplicate tool calls, typing indicator, compacting state persistence, animation fixes, MCP process cleanup, shell stderr rendering) — no docs impact
+- Build passes: 34 pages
+- Commit: `f20a9db` — pushed to main (--no-verify)
+
+### Status: docs fully caught up with source code
