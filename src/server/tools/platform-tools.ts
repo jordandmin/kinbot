@@ -352,3 +352,61 @@ export const updatePlatformConfigTool: ToolRegistration = {
       },
     }),
 }
+
+/**
+ * restart_platform — trigger a graceful restart of KinBot.
+ * Works by exiting the process and relying on the service manager to restart it.
+ * Opt-in tool: disabled by default.
+ */
+export const restartPlatformTool: ToolRegistration = {
+  availability: ['main'],
+  defaultDisabled: true,
+  create: (ctx) =>
+    tool({
+      description:
+        'Trigger a graceful restart of KinBot. This exits the process so the service manager ' +
+        '(systemd, Docker) can restart it automatically. For manual installations, the process ' +
+        'will simply stop. IMPORTANT: Always use prompt_human() to get explicit user confirmation ' +
+        'before calling this tool. Only use after a config change that requires a restart.',
+      inputSchema: z.object({
+        reason: z.string().describe('Why the restart is needed (e.g., "Applied PUBLIC_URL change").'),
+        confirmed: z.boolean().describe(
+          'Must be true. Set this to true only after the user has explicitly confirmed the restart via prompt_human().',
+        ),
+      }),
+      execute: async ({ reason, confirmed }) => {
+        if (!confirmed) {
+          return {
+            success: false,
+            error: 'Restart not confirmed. Use prompt_human() to get explicit user confirmation before restarting.',
+          }
+        }
+
+        const installType = config.environment.installationType
+
+        // Manual installations won't auto-restart
+        if (installType === 'manual') {
+          return {
+            success: false,
+            error: 'KinBot is running manually (not managed by a service manager). ' +
+              'Exiting would stop the process without automatic restart. ' +
+              'Please ask the user to restart KinBot manually.',
+          }
+        }
+
+        log.warn({ kinId: ctx.kinId, reason, installType }, 'Platform restart triggered by Kin')
+
+        // Schedule exit after a short delay to allow the response to be sent
+        setTimeout(() => {
+          log.info('Graceful shutdown initiated by restart_platform tool')
+          process.exit(0)
+        }, 1500)
+
+        return {
+          success: true,
+          message: `KinBot is restarting (${installType} will bring it back up). Reason: ${reason}`,
+          installationType: installType,
+        }
+      },
+    }),
+}

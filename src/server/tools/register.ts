@@ -106,7 +106,7 @@ import {
   searchKnowledgeTool,
   listKnowledgeSourcesTool,
 } from '@/server/tools/knowledge-tools'
-import { getPlatformLogsTool, getPlatformConfigTool, updatePlatformConfigTool } from '@/server/tools/platform-tools'
+import { getPlatformLogsTool, getPlatformConfigTool, updatePlatformConfigTool, restartPlatformTool } from '@/server/tools/platform-tools'
 import { getSystemInfoTool } from '@/server/tools/system-info-tools'
 import { httpRequestTool } from '@/server/tools/http-request-tools'
 import { executeSqlTool } from '@/server/tools/database-tools'
@@ -291,6 +291,7 @@ export function registerAllTools(): void {
   toolRegistry.register('get_platform_logs', getPlatformLogsTool)
   toolRegistry.register('get_platform_config', getPlatformConfigTool)
   toolRegistry.register('update_platform_config', updatePlatformConfigTool)
+  toolRegistry.register('restart_platform', restartPlatformTool)
   toolRegistry.register('get_system_info', getSystemInfoTool)
   toolRegistry.register('http_request', httpRequestTool)
 
