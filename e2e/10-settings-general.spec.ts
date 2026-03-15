@@ -190,6 +190,11 @@ test.describe.serial('Settings — General & Navigation', () => {
     const kinName = await option.textContent()
     await option.click()
 
+    // Click Save to persist the change
+    const saveButton = page.getByRole('dialog').getByRole('button', { name: 'Save' })
+    await expect(saveButton).toBeEnabled({ timeout: 3_000 })
+    await saveButton.click()
+
     // Should show success toast
     await expect(page.getByText('Hub Kin updated').first()).toBeVisible({ timeout: 5_000 })
 
