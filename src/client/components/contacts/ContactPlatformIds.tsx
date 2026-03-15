@@ -5,12 +5,17 @@ import { Badge } from '@/client/components/ui/badge'
 import { Button } from '@/client/components/ui/button'
 import { Input } from '@/client/components/ui/input'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
+import { PlatformSelector } from '@/client/components/common/PlatformSelector'
 import { X, Plus, Check } from 'lucide-react'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { api, toastError } from '@/client/lib/api'
 import type { ContactPlatformId } from '@/shared/types'
 
-const PLATFORMS = ['discord', 'telegram', 'whatsapp', 'signal', 'slack', 'irc', 'matrix', 'webchat'] as const
+/** Extra platforms useful for contact identification but not backed by a channel adapter */
+const EXTRA_CONTACT_PLATFORMS = [
+  { platform: 'irc', displayName: 'IRC' },
+  { platform: 'webchat', displayName: 'Webchat' },
+]
 
 interface ContactPlatformIdsProps {
   contactId: string
@@ -41,7 +46,7 @@ export function ContactPlatformIds({ contactId, initialPlatformIds }: ContactPla
   }
 
   const [addingPlatformId, setAddingPlatformId] = useState(false)
-  const [newPlatform, setNewPlatform] = useState<string>(PLATFORMS[0])
+  const [newPlatform, setNewPlatform] = useState('telegram')
   const [newPlatformId, setNewPlatformId] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -95,15 +100,12 @@ export function ContactPlatformIds({ contactId, initialPlatformIds }: ContactPla
       </div>
       {addingPlatformId ? (
         <div className="flex items-center gap-2 mt-1">
-          <select
+          <PlatformSelector
             value={newPlatform}
-            onChange={(e) => setNewPlatform(e.target.value)}
-            className="h-7 rounded-md border border-input bg-background px-2 text-xs"
-          >
-            {PLATFORMS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+            onValueChange={setNewPlatform}
+            extraPlatforms={EXTRA_CONTACT_PLATFORMS}
+            size="sm"
+          />
           <Input
             value={newPlatformId}
             onChange={(e) => setNewPlatformId(e.target.value)}

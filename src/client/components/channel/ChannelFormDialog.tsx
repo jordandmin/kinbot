@@ -13,33 +13,18 @@ import {
   DialogTitle,
 } from '@/client/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/client/components/ui/select'
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/client/components/ui/collapsible'
 import { KinSelector } from '@/client/components/common/KinSelector'
 import type { KinOption } from '@/client/components/common/KinSelectItem'
-import { PlatformIcon } from '@/client/components/common/PlatformIcon'
+import { PlatformSelector } from '@/client/components/common/PlatformSelector'
 import { ChevronRight, HelpCircle, Lightbulb, Loader2 } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { cn } from '@/client/lib/utils'
-import { api } from '@/client/lib/api'
+import { usePlatforms } from '@/client/hooks/usePlatforms'
 import type { ChannelSummary } from '@/shared/types'
-
-interface PlatformInfo {
-  platform: string
-  displayName: string
-  brandColor?: string
-  iconUrl?: string
-  isPlugin: boolean
-}
 
 function PlatformSetupGuide({ platform }: { platform: string }) {
   const { t } = useTranslation()
@@ -117,25 +102,20 @@ export function ChannelFormDialog({
 }: ChannelFormDialogProps) {
   const { t } = useTranslation()
   const isEdit = !!channel
+  const { platforms } = usePlatforms()
 
   const [selectedKinId, setSelectedKinId] = useState('')
   const [name, setName] = useState('')
   const [platform, setPlatform] = useState('')
   const [botToken, setBotToken] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [platforms, setPlatforms] = useState<PlatformInfo[]>([])
 
-  // Fetch available platforms from API
+  // Set default platform when platforms load
   useEffect(() => {
-    api.get<{ platforms: PlatformInfo[] }>('/channels/platforms')
-      .then((res) => {
-        setPlatforms(res.platforms)
-        if (!platform && res.platforms.length > 0) {
-          setPlatform(res.platforms[0].platform)
-        }
-      })
-      .catch(() => {})
-  }, [])
+    if (!platform && platforms.length > 0) {
+      setPlatform(platforms[0].platform)
+    }
+  }, [platforms])
 
   useEffect(() => {
     if (channel) {
@@ -176,7 +156,6 @@ export function ChannelFormDialog({
     }
   }
 
-  const currentPlatform = platforms.find((p) => p.platform === platform)
   const canSubmit = name.trim() && (isEdit || (selectedKinId && botToken.trim() && platform))
 
   return (
@@ -222,30 +201,12 @@ export function ChannelFormDialog({
           {!isEdit && platforms.length > 0 && (
             <div className="space-y-2">
               <Label>{t('settings.channels.platform')}</Label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    <span className="flex items-center gap-2">
-                      <PlatformIcon platform={platform} variant="color" className="size-4" />
-                      {currentPlatform?.displayName ?? platform}
-                    </span>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {platforms.map((p) => (
-                    <SelectItem key={p.platform} value={p.platform}>
-                      <span className="flex items-center gap-2">
-                        <PlatformIcon platform={p.platform} variant="color" className="size-4" />
-                        {p.displayName}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PlatformSelector
+                value={platform}
+                onValueChange={setPlatform}
+              />
             </div>
           )}
-
-
 
           {/* Bot token (only for create) */}
           {!isEdit && (
