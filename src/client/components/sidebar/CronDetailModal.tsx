@@ -194,7 +194,7 @@ export function CronDetailModal({
 
           {/* Content */}
           <ScrollArea className="flex-1 min-h-0 py-4 px-1">
-            <div className="space-y-4 px-5">
+            <div className="space-y-4 px-5 overflow-hidden">
               {/* Schedule */}
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">{t('cron.detail.schedule')}</p>
