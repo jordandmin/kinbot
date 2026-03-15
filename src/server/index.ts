@@ -128,4 +128,12 @@ const shutdown = async () => {
 process.on('SIGTERM', shutdown)
 process.on('SIGINT', shutdown)
 
+// Stream log entries to connected clients via SSE
+logStore.setOnEntry((entry) => {
+  sseManager.broadcast({
+    type: 'log:entry',
+    data: entry as unknown as Record<string, unknown>,
+  })
+})
+
 log.info({ port: config.port, env: process.env.NODE_ENV ?? 'development', dataDir: config.dataDir }, 'KinBot server started')

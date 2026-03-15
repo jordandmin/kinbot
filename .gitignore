@@ -46,6 +46,7 @@ e2e-report/
 
 # Claude Code
 .claude/
+.mcp.json
 .marlbot-context.md
 e2e-journal.md
 memory-research.md
