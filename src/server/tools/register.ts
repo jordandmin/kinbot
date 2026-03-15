@@ -101,6 +101,11 @@ import {
   listChannelsTool,
   listChannelConversationsTool,
   sendChannelMessageTool,
+  createChannelTool,
+  updateChannelTool,
+  deleteChannelTool,
+  activateChannelTool,
+  deactivateChannelTool,
 } from '@/server/tools/channel-tools'
 import {
   searchKnowledgeTool,
@@ -281,10 +286,15 @@ export function registerAllTools(): void {
   toolRegistry.register('delete_webhook', deleteWebhookTool)
   toolRegistry.register('list_webhooks', listWebhooksTool)
 
-  // Channel tools (main only, send_channel_message is opt-in)
+  // Channel tools (main only, send_channel_message/create/update/delete are opt-in)
   toolRegistry.register('list_channels', listChannelsTool)
   toolRegistry.register('list_channel_conversations', listChannelConversationsTool)
   toolRegistry.register('send_channel_message', sendChannelMessageTool)
+  toolRegistry.register('create_channel', createChannelTool)
+  toolRegistry.register('update_channel', updateChannelTool)
+  toolRegistry.register('delete_channel', deleteChannelTool)
+  toolRegistry.register('activate_channel', activateChannelTool)
+  toolRegistry.register('deactivate_channel', deactivateChannelTool)
   toolRegistry.register('attach_file', attachFileTool)
 
   // Platform / system tools (main only, opt-in required)

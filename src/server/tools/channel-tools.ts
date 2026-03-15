@@ -1,10 +1,20 @@
 import { tool } from 'ai'
 import { z } from 'zod'
-import { listChannels, getChannel, listChannelConversations } from '@/server/services/channels'
+import {
+  listChannels,
+  getChannel,
+  listChannelConversations,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+  activateChannel,
+  deactivateChannel,
+} from '@/server/services/channels'
 import { channelAdapters } from '@/server/channels/index'
 import { createLogger } from '@/server/logger'
 import type { ToolRegistration } from '@/server/tools/types'
 import type { OutboundAttachment } from '@/server/channels/adapter'
+import type { ChannelPlatform } from '@/shared/types'
 
 const log = createLogger('tools:channel')
 
@@ -115,6 +125,207 @@ export const sendChannelMessageTool: ToolRegistration = {
             attachments: outboundAttachments?.length ? outboundAttachments : undefined,
           })
           return { success: true, platformMessageId: result.platformMessageId }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * create_channel — create a new messaging channel for this Kin.
+ * Opt-in tool (defaultDisabled). Available to main agents only.
+ */
+export const createChannelTool: ToolRegistration = {
+  availability: ['main'],
+  defaultDisabled: true,
+  create: (ctx) =>
+    tool({
+      description:
+        'Create a new external messaging channel for this Kin. ' +
+        'Available platforms: ' + channelAdapters.list().join(', ') + '. ' +
+        'IMPORTANT: Retrieve bot tokens from the Vault (get_secret) — never hardcode them.',
+      inputSchema: z.object({
+        name: z.string().describe('Display name for the channel'),
+        platform: z.string().describe('Platform identifier (e.g. "telegram", "discord")'),
+        bot_token: z.string().describe('Bot token / API credential for the platform'),
+        allowed_chat_ids: z.array(z.string()).optional().describe('Restrict to specific chat/group IDs'),
+        auto_create_contacts: z.boolean().optional().describe('Auto-create contacts for new senders (default: true)'),
+      }),
+      execute: async ({ name, platform, bot_token, allowed_chat_ids, auto_create_contacts }) => {
+        log.debug({ kinId: ctx.kinId, platform, name }, 'Channel creation requested')
+
+        if (!channelAdapters.get(platform)) {
+          return { error: `Unknown platform "${platform}". Available: ${channelAdapters.list().join(', ')}` }
+        }
+
+        try {
+          const channel = await createChannel({
+            kinId: ctx.kinId,
+            name,
+            platform: platform as ChannelPlatform,
+            botToken: bot_token,
+            allowedChatIds: allowed_chat_ids,
+            autoCreateContacts: auto_create_contacts,
+            createdBy: 'kin',
+          })
+          return {
+            success: true,
+            channel: {
+              id: channel.id,
+              name: channel.name,
+              platform: channel.platform,
+              status: channel.status,
+            },
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * update_channel — update an existing channel's configuration.
+ * Opt-in tool (defaultDisabled). Available to main agents only.
+ */
+export const updateChannelTool: ToolRegistration = {
+  availability: ['main'],
+  defaultDisabled: true,
+  create: (ctx) =>
+    tool({
+      description:
+        'Update an existing channel\'s configuration. Only channels owned by this Kin can be updated.',
+      inputSchema: z.object({
+        channel_id: z.string().describe('Channel ID to update'),
+        name: z.string().optional().describe('New display name'),
+        allowed_chat_ids: z.array(z.string()).optional().describe('Updated chat ID restrictions (empty array to remove)'),
+        auto_create_contacts: z.boolean().optional().describe('Toggle auto-contact creation'),
+      }),
+      execute: async ({ channel_id, name, allowed_chat_ids, auto_create_contacts }) => {
+        const channel = await getChannel(channel_id)
+        if (!channel || channel.kinId !== ctx.kinId) {
+          return { error: 'Channel not found' }
+        }
+
+        try {
+          const updated = await updateChannel(channel_id, {
+            name,
+            allowedChatIds: allowed_chat_ids?.length ? allowed_chat_ids : allowed_chat_ids?.length === 0 ? null : undefined,
+            autoCreateContacts: auto_create_contacts,
+          })
+          if (!updated) return { error: 'Update failed' }
+          return {
+            success: true,
+            channel: {
+              id: updated.id,
+              name: updated.name,
+              platform: updated.platform,
+              status: updated.status,
+            },
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * delete_channel — permanently delete a channel.
+ * Opt-in tool (defaultDisabled). Available to main agents only.
+ */
+export const deleteChannelTool: ToolRegistration = {
+  availability: ['main'],
+  defaultDisabled: true,
+  create: (ctx) =>
+    tool({
+      description:
+        'Permanently delete a messaging channel. This stops the channel and removes it entirely. Only channels owned by this Kin can be deleted.',
+      inputSchema: z.object({
+        channel_id: z.string().describe('Channel ID to delete'),
+      }),
+      execute: async ({ channel_id }) => {
+        const channel = await getChannel(channel_id)
+        if (!channel || channel.kinId !== ctx.kinId) {
+          return { error: 'Channel not found' }
+        }
+
+        try {
+          const deleted = await deleteChannel(channel_id)
+          return deleted ? { success: true } : { error: 'Delete failed' }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * activate_channel — activate an inactive channel (start listening).
+ * Available to main agents only.
+ */
+export const activateChannelTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Activate an inactive channel so it starts listening for incoming messages.',
+      inputSchema: z.object({
+        channel_id: z.string().describe('Channel ID to activate'),
+      }),
+      execute: async ({ channel_id }) => {
+        const channel = await getChannel(channel_id)
+        if (!channel || channel.kinId !== ctx.kinId) {
+          return { error: 'Channel not found' }
+        }
+
+        if (channel.status === 'active') {
+          return { error: 'Channel is already active' }
+        }
+
+        try {
+          const activated = await activateChannel(channel_id)
+          if (!activated) return { error: 'Activation failed' }
+          return {
+            success: activated.status === 'active',
+            status: activated.status,
+            statusMessage: activated.statusMessage,
+          }
+        } catch (err) {
+          return { error: err instanceof Error ? err.message : 'Unknown error' }
+        }
+      },
+    }),
+}
+
+/**
+ * deactivate_channel — deactivate an active channel (stop listening).
+ * Available to main agents only.
+ */
+export const deactivateChannelTool: ToolRegistration = {
+  availability: ['main'],
+  create: (ctx) =>
+    tool({
+      description:
+        'Deactivate an active channel so it stops listening for incoming messages.',
+      inputSchema: z.object({
+        channel_id: z.string().describe('Channel ID to deactivate'),
+      }),
+      execute: async ({ channel_id }) => {
+        const channel = await getChannel(channel_id)
+        if (!channel || channel.kinId !== ctx.kinId) {
+          return { error: 'Channel not found' }
+        }
+
+        if (channel.status === 'inactive') {
+          return { error: 'Channel is already inactive' }
+        }
+
+        try {
+          const deactivated = await deactivateChannel(channel_id)
+          if (!deactivated) return { error: 'Deactivation failed' }
+          return { success: true, status: deactivated.status }
         } catch (err) {
           return { error: err instanceof Error ? err.message : 'Unknown error' }
         }
