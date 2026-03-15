@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/client/components/ui/dialog'
-import { ScrollArea } from '@/client/components/ui/scroll-area'
 import { Button } from '@/client/components/ui/button'
 import { Badge } from '@/client/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
@@ -107,7 +106,8 @@ export function TaskDetailModal({
     () => messages.filter((msg) =>
       !(msg.sourceType === 'system' && msg.role === 'user') &&
       msg.sourceType !== 'task' &&
-      !(streamingMessage && msg.id === streamingMessage.id)
+      !(streamingMessage && msg.id === streamingMessage.id) &&
+      !(msg.role === 'assistant' && !msg.content && !msg.toolCalls?.length)
     ),
     [messages, streamingMessage],
   )
@@ -219,7 +219,7 @@ export function TaskDetailModal({
         {/* Middle: messages + optional tool calls panel */}
         <div className="flex min-h-0 flex-1">
           {/* Conversation */}
-          <ScrollArea className="flex-1 min-h-0 py-4">
+          <div className="flex-1 min-h-0 overflow-y-auto py-4">
             {isLoading && !task ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -244,7 +244,7 @@ export function TaskDetailModal({
                     sourceType={msg.sourceType}
                     avatarUrl={msg.role === 'assistant' ? kinAvatarUrl : undefined}
                     senderName={msg.role === 'assistant' ? kinName : undefined}
-                    timestamp={String(msg.createdAt)}
+                    timestamp={msg.createdAt ? String(msg.createdAt) : undefined}
                     toolCalls={toolCallsByMessage.get(msg.id)}
                   />
                 ))}
@@ -256,7 +256,7 @@ export function TaskDetailModal({
                     sourceType={streamingMessage.sourceType}
                     avatarUrl={kinAvatarUrl}
                     senderName={kinName}
-                    timestamp={String(streamingMessage.createdAt)}
+                    timestamp={streamingMessage.createdAt ? String(streamingMessage.createdAt) : undefined}
                     toolCalls={toolCallsByMessage.get(streamingMessage.id)}
                   />
                 )}
@@ -269,8 +269,8 @@ export function TaskDetailModal({
                     />
                   </div>
                 ))}
-                {(isStreaming || (isActive && visibleMessages.length === 0 && !streamingMessage && pendingPrompts.length === 0)) && (
-                  <TypingIndicator />
+                {(isStreaming || (isActive && !streamingMessage && pendingPrompts.length === 0)) && (
+                  <TypingIndicator kinName={kinName} kinAvatarUrl={kinAvatarUrl} />
                 )}
               </div>
             )}
@@ -301,7 +301,7 @@ export function TaskDetailModal({
             )}
 
             <div ref={bottomRef} />
-          </ScrollArea>
+          </div>
 
           {/* Tool calls side panel — animated width */}
           <div

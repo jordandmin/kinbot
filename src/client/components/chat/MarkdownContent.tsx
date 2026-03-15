@@ -412,19 +412,22 @@ export const MarkdownContent = memo(function MarkdownContent({
   isUser = false,
   className,
 }: MarkdownContentProps) {
+  // Strip leading whitespace — LLMs sometimes start with \n
+  const trimmed = content.trimStart()
+
   // Skip markdown rendering for very short / plain messages
   const isPlainText = useMemo(() => {
     // No markdown markers at all → render as-is
-    return !/[*_`#\[!\-|>~$\\]/.test(content) && !/^\d+\.\s/m.test(content)
-  }, [content])
+    return !/[*_`#\[!\-|>~$\\]/.test(trimmed) && !/^\d+\.\s/m.test(trimmed)
+  }, [trimmed])
 
   if (isPlainText) {
     return (
       <div className={cn('text-sm whitespace-pre-wrap break-words leading-relaxed', className)}>
-        <HighlightText text={content} />
+        <HighlightText text={trimmed} />
       </div>
     )
   }
 
-  return <MarkdownRenderer content={content} isUser={isUser} className={className} />
+  return <MarkdownRenderer content={trimmed} isUser={isUser} className={className} />
 })

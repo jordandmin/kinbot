@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { lazyWithRetry as lazy } from '@/client/lib/lazy-with-retry'
 import { useTranslation } from 'react-i18next'
+import { useSSE } from '@/client/hooks/useSSE'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { Badge } from '@/client/components/ui/badge'
 import { Button } from '@/client/components/ui/button'
-import { ScrollArea } from '@/client/components/ui/scroll-area'
 import { Switch } from '@/client/components/ui/switch'
 import { Label } from '@/client/components/ui/label'
 const TaskDetailModal = lazy(() => import('@/client/components/sidebar/TaskDetailModal').then(m => ({ default: m.TaskDetailModal })))
@@ -25,7 +25,6 @@ import {
   XCircle,
   Loader2,
   Ban,
-  FileText,
   UserCheck,
   Cpu,
   Copy,
@@ -116,6 +115,25 @@ export function CronDetailModal({
     if (open) fetchExecutions()
   }, [open, fetchExecutions])
 
+  // Keep execution statuses in sync via SSE
+  useSSE({
+    'task:status': (data) => {
+      const taskId = data.taskId as string
+      const status = data.status as TaskStatus
+      setExecutions((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status, updatedAt: new Date().toISOString() } : t))
+      )
+    },
+    'task:done': (data) => {
+      const taskId = data.taskId as string
+      const status = data.status as TaskStatus
+      const title = (data.title as string) ?? null
+      setExecutions((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, status, ...(title && { title }), updatedAt: new Date().toISOString() } : t))
+      )
+    },
+  })
+
   async function handleToggleActive(checked: boolean) {
     setIsTogglingActive(true)
     try {
@@ -156,9 +174,9 @@ export function CronDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogContent className="max-h-[80vh] flex flex-col gap-0 sm:max-w-2xl">
           {/* Header */}
-          <DialogHeader className="shrink-0 px-6 pb-3 pt-6 border-b border-border">
+          <DialogHeader className="pb-3 border-b border-border">
             <div className="flex items-center gap-3">
               <Avatar className="size-9 shrink-0">
                 {cron.kinAvatarUrl && <AvatarImage src={cron.kinAvatarUrl} alt={kinName} />}
@@ -193,8 +211,8 @@ export function CronDetailModal({
           </DialogHeader>
 
           {/* Content */}
-          <ScrollArea className="flex-1 min-h-0 py-4 px-1">
-            <div className="space-y-4 px-5 overflow-hidden">
+          <div className="py-4">
+            <div className="space-y-4">
               {/* Schedule */}
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">{t('cron.detail.schedule')}</p>
@@ -227,7 +245,7 @@ export function CronDetailModal({
               {/* Description */}
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">{t('cron.detail.description')}</p>
-                <div className="rounded-md bg-muted/50 px-3 py-2 overflow-hidden text-sm">
+                <div className="max-h-48 overflow-y-auto rounded-md bg-muted/50 px-3 py-2 text-sm">
                   <MarkdownContent content={cron.taskDescription} />
                 </div>
               </div>
@@ -317,7 +335,7 @@ export function CronDetailModal({
                     {t('cron.detail.historyEmpty')}
                   </p>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
                     {executions.map((task) => {
                       const statusCfg = TASK_STATUS_CONFIG[task.status]
                       const StatusIcon = statusCfg.icon
@@ -354,10 +372,10 @@ export function CronDetailModal({
                 )}
               </div>
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Footer */}
-          <DialogFooter className="shrink-0 flex-row items-center gap-2 border-t border-border px-6 py-3">
+          <DialogFooter className="flex-row items-center gap-2 pt-3 border-t border-border">
             {cron.requiresApproval && (
               <Button
                 size="sm"
