@@ -237,7 +237,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
     // Get user language and speaker profile
     let userLanguage: 'fr' | 'en' = 'fr'
-    let currentSpeaker: { firstName: string | null; lastName: string | null; pseudonym: string; role: string; contactNotes?: string[] } | undefined
+    let currentSpeaker: { firstName: string | null; lastName: string | null; pseudonym: string; role: string; contactId?: string; contactNotes?: string[] } | undefined
     if (queueItem.sourceType === 'user' && queueItem.sourceId) {
       const profile = await db
         .select()
@@ -256,6 +256,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         // Fetch global notes from linked contact record
         const linkedContact = findContactByLinkedUserId(queueItem.sourceId)
         if (linkedContact) {
+          speakerData.contactId = linkedContact.id
           const globalNotes = db
             .select({ content: contactNotesTable.content })
             .from(contactNotesTable)
