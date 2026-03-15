@@ -217,6 +217,11 @@ export const TOOL_DOMAIN_MAP: Record<string, ToolDomain> = {
   list_channels: 'channels',
   list_channel_conversations: 'channels',
   send_channel_message: 'channels',
+  create_channel: 'channels',
+  update_channel: 'channels',
+  delete_channel: 'channels',
+  activate_channel: 'channels',
+  deactivate_channel: 'channels',
   // System
   get_platform_logs: 'system',
   get_platform_config: 'system',
