@@ -77,12 +77,6 @@ export function useTaskDetail(taskId: string | null) {
   const readyRef = useRef(false)
   const pendingEventsRef = useRef<Array<{ type: string; data: Record<string, unknown> }>>([])
 
-  // Joined mid-stream: when modal opens and task is already in_progress,
-  // we can't build accurate streaming content from SSE (missed prior tokens
-  // cause content/offset mismatch → text fragmentation). Instead, we fall
-  // back to fast polling (1s) which always returns consistent content+offsets
-  // from the same DB checkpoint.
-  const joinedMidStreamRef = useRef(false)
 
 
   // Keep messagesRef always in sync with messages state
@@ -96,7 +90,6 @@ export function useTaskDetail(taskId: string | null) {
   useEffect(() => {
     readyRef.current = false
     pendingEventsRef.current = []
-    joinedMidStreamRef.current = false
     setTask(null)
     setMessages([])
     setIsStreaming(false)
@@ -138,15 +131,8 @@ export function useTaskDetail(taskId: string | null) {
       messagesRef.current = merged
       setMessages(merged)
 
-      // Detect joined-mid-stream: task is already in_progress and we haven't
-      // started our own streaming session. In this case, don't trust SSE tokens
-      // (we missed prior ones) — use polling instead.
-      const s = data.task.status
-      if (s === 'in_progress' && !streamingMessageIdRef.current) {
-        joinedMidStreamRef.current = true
-      }
-
       // Safety net: if task is terminal, ensure streaming is cleared
+      const s = data.task.status
       if (s === 'completed' || s === 'failed' || s === 'cancelled') {
         setIsStreaming(false)
         setStreamingMessage(null)
@@ -223,7 +209,12 @@ export function useTaskDetail(taskId: string | null) {
       result: undefined,
       status: 'pending',
       timestamp: new Date().toISOString(),
-      offset: data.contentOffset as number | undefined,
+      // Intentionally omit offset during streaming: the frontend's accumulated
+      // content may not match the backend's fullContent (missed tokens on
+      // reconnect), so offsets would split text at wrong positions.  Without
+      // offsets, MessageBubble uses fallback mode (text block + tools below).
+      // On stream end, fetchDetail returns correct offsets for proper interleaving.
+      offset: undefined,
     }
     streamingToolCallsRef.current = [...streamingToolCallsRef.current, item]
     setStreamingToolCalls(streamingToolCallsRef.current)
@@ -381,40 +372,30 @@ export function useTaskDetail(taskId: string | null) {
 
     'chat:tool-call-start': (data) => {
       if (data.taskId !== taskId) return
-      if (joinedMidStreamRef.current) return
       if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:tool-call-start', data }); return }
       handleToolCallStart(data)
     },
 
     'chat:token': (data) => {
       if (data.taskId !== taskId) return
-      if (joinedMidStreamRef.current) return
       if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:token', data }); return }
       handleToken(data)
     },
 
     'chat:tool-call': (data) => {
       if (data.taskId !== taskId) return
-      if (joinedMidStreamRef.current) return
       if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:tool-call', data }); return }
       handleToolCall(data)
     },
 
     'chat:tool-result': (data) => {
       if (data.taskId !== taskId) return
-      if (joinedMidStreamRef.current) return
       if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:tool-result', data }); return }
       handleToolResult(data)
     },
 
     'chat:done': (data) => {
       if (data.taskId !== taskId) return
-      // In mid-stream mode, just fetch the final state from DB
-      if (joinedMidStreamRef.current) {
-        joinedMidStreamRef.current = false
-        fetchDetail()
-        return
-      }
       if (!readyRef.current) { pendingEventsRef.current.push({ type: 'chat:done', data }); return }
       handleDone(data)
     },
