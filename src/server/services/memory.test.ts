@@ -72,6 +72,7 @@ mock.module('@/server/config', () => ({
       adaptiveKMinScoreRatio: 0.3,
       multiQueryModel: null,
       rerankModel: null,
+      recencyBoostEnabled: true,
     },
   },
 }))
@@ -110,6 +111,8 @@ mock.module('@/server/db/schema', () => ({
 }))
 
 // ─── Import the module under test ────────────────────────────────────────────
+
+import { recencyBoost } from '@/server/services/memory'
 
 // Since the pure functions (temporalDecayWeight, applyAdaptiveK) are not exported,
 // we test them indirectly through the exported API, and also test the exported
@@ -159,6 +162,34 @@ describe('memory service', () => {
       // When updatedAt is null, the function returns 1 (no decay)
       // This is verified by the implementation: if (!updatedAt) return 1
       expect(true).toBe(true) // Structural assertion - verified via code review
+    })
+  })
+
+  // ─── recencyBoost (exported pure function) ───────────────────────────────
+
+  describe('recency boost', () => {
+    it('should return 1.5 for memories updated today', () => {
+      const now = new Date()
+      expect(recencyBoost(now)).toBe(1.5)
+    })
+
+    it('should return 1.25 for memories updated 3 days ago', () => {
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      expect(recencyBoost(threeDaysAgo)).toBe(1.25)
+    })
+
+    it('should return 1.1 for memories updated 15 days ago', () => {
+      const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+      expect(recencyBoost(fifteenDaysAgo)).toBe(1.1)
+    })
+
+    it('should return 1.0 for memories older than 30 days', () => {
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+      expect(recencyBoost(sixtyDaysAgo)).toBe(1.0)
+    })
+
+    it('should return 1 for null updatedAt', () => {
+      expect(recencyBoost(null)).toBe(1)
     })
   })
 

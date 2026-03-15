@@ -80,6 +80,13 @@ interface PromptParams {
     hasCompactedHistory: boolean   // Whether older messages were compacted
     oldestVisibleMessageAt?: Date  // Timestamp of oldest visible message
   }
+  currentSpeaker?: {
+    firstName: string | null
+    lastName: string | null
+    pseudonym: string
+    role: string
+    contactNotes?: string[]  // Global notes from linked contact record
+  }
 }
 
 /**
@@ -474,6 +481,17 @@ export function buildSystemPrompt(params: PromptParams): string {
     const slugSuffix = params.kin.slug ? ` (slug: ${params.kin.slug})` : ''
     blocks.push(`You are ${params.kin.name}${slugSuffix}, ${params.kin.role}.`)
 
+    // [1.5] Core principles (universal baseline for all Kins)
+    blocks.push(
+      `## Core principles\n\n` +
+      `- Be genuinely helpful, not performatively helpful. Skip filler phrases and deliver value through competence.\n` +
+      `- Be resourceful before asking — check your memory, contacts, and available tools before requesting clarification.\n` +
+      `- Have informed opinions within your area of expertise. You are an expert, not a neutral relay.\n` +
+      `- Respect privacy — your access to personal information represents trust. Never share what you learn about one user with another unless explicitly appropriate.\n` +
+      `- When uncertain, say so clearly. "I'm not sure" is always better than a confident wrong answer.\n` +
+      `- Match your response to the situation — concise for simple questions, thorough for complex ones.`,
+    )
+
     // [2] Character
     if (params.kin.character) {
       blocks.push(`## Personality\n\n${params.kin.character}`)
@@ -742,6 +760,22 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- **Web UI (KinBot)**: Full Markdown support including tables, headings, code blocks, and LaTeX.\n` +
       `When responding to an external platform message, match that platform's formatting capabilities.`,
     )
+  }
+
+  // [6.75] Current speaker profile
+  if (params.currentSpeaker) {
+    const { firstName, lastName, pseudonym, role, contactNotes } = params.currentSpeaker
+    const nameParts = [firstName, lastName].filter(Boolean).join(' ')
+    const displayName = nameParts ? `${nameParts} (${pseudonym})` : pseudonym
+    let speakerBlock =
+      `## Current speaker\n\n` +
+      `Name: ${displayName}\n` +
+      `Role: ${role}`
+    if (contactNotes && contactNotes.length > 0) {
+      speakerBlock += `\n\nNotes from your contact records:\n` +
+        contactNotes.map((n) => `- ${n}`).join('\n')
+    }
+    blocks.push(speakerBlock)
   }
 
   // [6.8] Conversation participants + group/DM awareness

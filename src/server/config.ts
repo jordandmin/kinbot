@@ -102,6 +102,7 @@ export const config = {
     contextualRewriteModel: process.env.MEMORY_CONTEXTUAL_REWRITE_MODEL ?? undefined,
     contextualRewriteThreshold: Number(process.env.MEMORY_CONTEXTUAL_REWRITE_THRESHOLD ?? 80),
     tokenBudget: Number(process.env.MEMORY_TOKEN_BUDGET || 0), // 0 = unlimited (no budget enforcement)
+    recencyBoostEnabled: process.env.MEMORY_RECENCY_BOOST !== 'false', // Boost very recent memories (default: true)
   },
 
   queue: {

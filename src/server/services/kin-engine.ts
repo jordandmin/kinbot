@@ -30,7 +30,8 @@ import { resolveMCPTools, getMCPToolsSummary } from '@/server/services/mcp'
 import { resolveCustomTools } from '@/server/services/custom-tools'
 import type { KinToolConfig } from '@/shared/types'
 import { listAvailableKins } from '@/server/services/inter-kin'
-import { listContactsForPrompt } from '@/server/services/contacts'
+import { listContactsForPrompt, findContactByLinkedUserId } from '@/server/services/contacts'
+import { contactNotes as contactNotesTable } from '@/server/db/schema'
 import { linkFilesToMessage, getFilesForMessage } from '@/server/services/files'
 import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel } from '@/server/services/channels'
 import { popStagedAttachments, clearStagedAttachments } from '@/server/tools/attach-file-tool'
@@ -234,8 +235,9 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       await linkFilesToMessage(queueItem.fileIds, userMessageId)
     }
 
-    // Get user language
+    // Get user language and speaker profile
     let userLanguage: 'fr' | 'en' = 'fr'
+    let currentSpeaker: { firstName: string | null; lastName: string | null; pseudonym: string; role: string; contactNotes?: string[] } | undefined
     if (queueItem.sourceType === 'user' && queueItem.sourceId) {
       const profile = await db
         .select()
@@ -244,6 +246,26 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         .get()
       if (profile) {
         userLanguage = profile.language as 'fr' | 'en'
+        // Build current speaker context for prompt injection
+        const speakerData: typeof currentSpeaker = {
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          pseudonym: profile.pseudonym,
+          role: profile.role,
+        }
+        // Fetch global notes from linked contact record
+        const linkedContact = findContactByLinkedUserId(queueItem.sourceId)
+        if (linkedContact) {
+          const globalNotes = db
+            .select({ content: contactNotesTable.content })
+            .from(contactNotesTable)
+            .where(and(eq(contactNotesTable.contactId, linkedContact.id), eq(contactNotesTable.scope, 'global')))
+            .all()
+          if (globalNotes.length > 0) {
+            speakerData.contactNotes = globalNotes.map((n) => n.content)
+          }
+        }
+        currentSpeaker = speakerData
       }
     }
 
@@ -382,6 +404,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       compactedUpTo,
       participants: participants.length > 0 ? participants : undefined,
       currentMessageSource,
+      currentSpeaker,
       conversationState: {
         visibleMessageCount,
         totalMessageCount,

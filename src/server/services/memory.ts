@@ -273,6 +273,23 @@ function temporalDecayWeight(updatedAt: Date | null, category: string, importanc
   return Math.max(decayFloor, Math.exp(-effectiveLambda * daysSinceUpdate))
 }
 
+// ─── Recency Boost ──────────────────────────────────────────────────────────
+
+/**
+ * Apply a multiplicative boost to very recent memories.
+ * This complements temporal decay (which penalizes old memories) by giving
+ * an explicit advantage to memories updated in the last few days.
+ */
+export function recencyBoost(updatedAt: Date | null): number {
+  if (!config.memory.recencyBoostEnabled || !updatedAt) return 1
+  const daysSince = (Date.now() - updatedAt.getTime()) / (1000 * 60 * 60 * 24)
+
+  if (daysSince <= 1) return 1.5    // Today: strong boost
+  if (daysSince <= 7) return 1.25   // This week: moderate boost
+  if (daysSince <= 30) return 1.1   // This month: mild boost
+  return 1.0                         // Older: no boost (decay still applies)
+}
+
 // ─── Multi-Query Generation ──────────────────────────────────────────────────
 
 /**
@@ -590,7 +607,9 @@ export async function searchMemories(
     const subjectBoost = data.subject && matchedSubjects.has(data.subject) ? subjectBoostFactor : 1.0
     // Category intent boost: if query intent matches this memory's category, boost its score
     const categoryBoost = intentCategories.has(data.category) ? categoryBoostFactor : 1.0
-    data.score *= decay * importanceWeight * retrievalBoost * subjectBoost * categoryBoost
+    // Recency boost: explicitly favor very recent memories (complements temporal decay)
+    const recentBoost = recencyBoost(data.updatedAt)
+    data.score *= decay * importanceWeight * retrievalBoost * subjectBoost * categoryBoost * recentBoost
   }
 
   // Sort by weighted score descending
