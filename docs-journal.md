@@ -511,3 +511,10 @@ All sections migrated and accuracy-reviewed:
 - Checked source commits since last run: i18n (Spanish #6, German), test fixes, UI tweaks (context tooltip, typing indicator, maxSteps fix) — no documentation impact
 - All 34 pages remain accurate and complete
 - **Status: docs fully caught up with source code**
+
+## 2026-03-15 — Maintenance check: no changes needed
+
+- Checked source commits since last run: `506d519` (toast fix), `0c7c69d` (memory test), `8f70c66` (v0.20.0 release), `4817029` (task modal fix), `27e42f5` (Spanish i18n), test fixes, UI tweaks — no documentation impact
+- v0.20.0 release bundles features already documented (compacting threshold, tool step limit, cross-encoder rerank)
+- All 34 pages remain accurate and complete
+- **Status: docs fully caught up with source code**
