@@ -1724,6 +1724,21 @@
     "message": "Une erreur est survenue. Veuillez recharger la page.",
     "reload": "Recharger"
   },
+  "updateAvailable": {
+    "title": "Mise à jour disponible",
+    "description": "v{{current}} → v{{latest}}",
+    "current": "Actuelle",
+    "latest": "Dernière",
+    "releaseNotes": "Notes de version",
+    "howToUpdate": "Comment mettre à jour",
+    "dockerInstructions": "Exécutez la commande suivante dans le répertoire contenant votre docker-compose.yml :",
+    "nonDockerInstructions": "Cliquez sur le bouton ci-dessous pour télécharger la dernière version et redémarrer le serveur. La page se rechargera automatiquement.",
+    "viewOnGitHub": "Voir la release sur GitHub",
+    "updateButton": "Mettre à jour maintenant",
+    "updating": "Mise à jour en cours...",
+    "updateSuccess": "Mise à jour appliquée ! Rechargement...",
+    "updateFailed": "La mise à jour a échoué"
+  },
   "whatsNew": {
     "title": "Nouveautés",
     "description": "Vous utilisez la v{{version}}",

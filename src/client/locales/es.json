@@ -1724,6 +1724,21 @@
     "message": "Algo salió mal. Por favor recarga la página.",
     "reload": "Recargar"
   },
+  "updateAvailable": {
+    "title": "Actualización disponible",
+    "description": "v{{current}} → v{{latest}}",
+    "current": "Actual",
+    "latest": "Última",
+    "releaseNotes": "Notas de la versión",
+    "howToUpdate": "Cómo actualizar",
+    "dockerInstructions": "Ejecuta el siguiente comando en el directorio que contiene tu docker-compose.yml:",
+    "nonDockerInstructions": "Haz clic en el botón de abajo para descargar la última versión y reiniciar el servidor. La página se recargará automáticamente.",
+    "viewOnGitHub": "Ver release en GitHub",
+    "updateButton": "Actualizar ahora",
+    "updating": "Actualizando...",
+    "updateSuccess": "¡Actualización aplicada! Recargando...",
+    "updateFailed": "La actualización falló"
+  },
   "whatsNew": {
     "title": "Novedades",
     "description": "Estás ejecutando v{{version}}",

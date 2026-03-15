@@ -55,4 +55,58 @@ versionCheckRoutes.post('/check', async (c) => {
   return c.json(info)
 })
 
+// POST /api/version-check/update — self-update (admin only, non-Docker)
+versionCheckRoutes.post('/update', async (c) => {
+  const currentUser = c.get('user')
+  const profile = db
+    .select({ role: userProfiles.role })
+    .from(userProfiles)
+    .where(eq(userProfiles.userId, currentUser.id))
+    .get()
+
+  if (!profile || profile.role !== 'admin') {
+    return c.json(
+      { error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+      403,
+    )
+  }
+
+  if (config.isDocker) {
+    return c.json(
+      { error: { code: 'DOCKER_MODE', message: 'Use docker compose pull to update in Docker mode' } },
+      400,
+    )
+  }
+
+  try {
+    const gitPull = Bun.spawnSync(['git', 'pull'], { cwd: process.cwd() })
+    if (gitPull.exitCode !== 0) {
+      const stderr = gitPull.stderr.toString().trim()
+      return c.json(
+        { error: { code: 'UPDATE_FAILED', message: `git pull failed: ${stderr}` } },
+        500,
+      )
+    }
+
+    const bunInstall = Bun.spawnSync(['bun', 'install'], { cwd: process.cwd() })
+    if (bunInstall.exitCode !== 0) {
+      const stderr = bunInstall.stderr.toString().trim()
+      return c.json(
+        { error: { code: 'UPDATE_FAILED', message: `bun install failed: ${stderr}` } },
+        500,
+      )
+    }
+
+    // Schedule restart after response is sent
+    setTimeout(() => process.exit(0), 2000)
+
+    return c.json({ success: true, message: 'Update applied. Server will restart shortly.' })
+  } catch {
+    return c.json(
+      { error: { code: 'UPDATE_FAILED', message: 'Update process failed' } },
+      500,
+    )
+  }
+})
+
 export { versionCheckRoutes }

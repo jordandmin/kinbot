@@ -40,6 +40,7 @@ import { miniAppRoutes, miniAppSdkRoutes } from '@/server/routes/mini-apps'
 import { pluginRoutes } from '@/server/routes/plugins'
 import { knowledgeRoutes } from '@/server/routes/knowledge'
 import { logRoutes } from '@/server/routes/logs'
+import { versionCheckRoutes } from '@/server/routes/version-check'
 
 export type AppVariables = {
   session: { id: string; userId: string; token: string }
@@ -124,6 +125,7 @@ app.get('/api/info', async (c) => {
   ])
   return c.json({
     version: config.version,
+    isDocker: config.isDocker,
     startedAt,
     uptimeMs: Date.now() - startedAt,
     stats: {
@@ -175,6 +177,7 @@ app.route('/api/mini-apps/sdk', miniAppSdkRoutes)
 app.route('/api/mini-apps', miniAppRoutes)
 app.route('/api/plugins', pluginRoutes)
 app.route('/api/logs', logRoutes)
+app.route('/api/version-check', versionCheckRoutes)
 app.route('/s', sharedRoutes)
 
 export { app }

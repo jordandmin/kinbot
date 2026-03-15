@@ -1715,6 +1715,21 @@
     "message": "Etwas ist schief gelaufen. Bitte lade die Seite neu.",
     "reload": "Neu laden"
   },
+  "updateAvailable": {
+    "title": "Update verfügbar",
+    "description": "v{{current}} → v{{latest}}",
+    "current": "Aktuell",
+    "latest": "Neueste",
+    "releaseNotes": "Versionshinweise",
+    "howToUpdate": "So aktualisieren Sie",
+    "dockerInstructions": "Führen Sie den folgenden Befehl im Verzeichnis aus, das Ihre docker-compose.yml enthält:",
+    "nonDockerInstructions": "Klicken Sie auf die Schaltfläche unten, um die neueste Version herunterzuladen und den Server neu zu starten. Die Seite wird automatisch neu geladen.",
+    "viewOnGitHub": "Release auf GitHub ansehen",
+    "updateButton": "Jetzt aktualisieren",
+    "updating": "Aktualisierung läuft...",
+    "updateSuccess": "Update angewendet! Wird neu geladen...",
+    "updateFailed": "Update fehlgeschlagen"
+  },
   "whatsNew": {
     "title": "Was ist neu",
     "description": "Du nutzt v{{version}}",

@@ -4,6 +4,8 @@ import { Settings2, Keyboard, Command } from 'lucide-react'
 import { Button } from '@/client/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/client/components/ui/tooltip'
 import { WhatsNewDialog } from '@/client/components/common/WhatsNewDialog'
+import { UpdateAvailableDialog } from '@/client/components/common/UpdateAvailableDialog'
+import { useVersionCheck } from '@/client/hooks/useVersionCheck'
 import { api } from '@/client/lib/api'
 
 interface SidebarFooterContentProps {
@@ -13,33 +15,55 @@ interface SidebarFooterContentProps {
 export const SidebarFooterContent = memo(function SidebarFooterContent({ onOpenSettings }: SidebarFooterContentProps) {
   const { t } = useTranslation()
   const [version, setVersion] = useState<string | null>(null)
+  const [isDocker, setIsDocker] = useState(false)
   const [whatsNewOpen, setWhatsNewOpen] = useState(false)
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const { versionInfo } = useVersionCheck()
 
   useEffect(() => {
     api
-      .get<{ version: string }>('/info')
-      .then((data) => setVersion(data.version))
+      .get<{ version: string; isDocker?: boolean }>('/info')
+      .then((data) => {
+        setVersion(data.version)
+        setIsDocker(data.isDocker ?? false)
+      })
       .catch(() => {})
   }, [])
+
+  const hasUpdate = versionInfo?.isUpdateAvailable === true
 
   const isMac =
     typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
 
   return (
     <div className="flex items-center justify-between px-2 py-1">
-      {/* Left: version badge — clickable to open changelog */}
+      {/* Left: version badge — clickable to open changelog or update dialog */}
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => setWhatsNewOpen(true)}
-            className="text-[10px] text-muted-foreground/50 font-medium select-none transition-colors hover:text-muted-foreground cursor-pointer"
+            onClick={() => {
+              if (hasUpdate) {
+                setUpdateDialogOpen(true)
+              } else {
+                setWhatsNewOpen(true)
+              }
+            }}
+            className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/50 font-medium select-none transition-colors hover:text-muted-foreground cursor-pointer"
           >
             {version ? `v${version}` : ''}
+            {hasUpdate && (
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+            )}
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          {t('sidebar.footer.whatsNew')}
+          {hasUpdate
+            ? t('updateAvailable.title')
+            : t('sidebar.footer.whatsNew')}
         </TooltipContent>
       </Tooltip>
       <WhatsNewDialog
@@ -47,6 +71,14 @@ export const SidebarFooterContent = memo(function SidebarFooterContent({ onOpenS
         onOpenChange={setWhatsNewOpen}
         currentVersion={version}
       />
+      {hasUpdate && versionInfo && (
+        <UpdateAvailableDialog
+          open={updateDialogOpen}
+          onOpenChange={setUpdateDialogOpen}
+          versionInfo={versionInfo}
+          isDocker={isDocker}
+        />
+      )}
 
       {/* Right: shortcut hints + settings */}
       <div className="flex items-center gap-0.5">

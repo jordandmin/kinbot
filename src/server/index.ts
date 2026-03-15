@@ -92,6 +92,10 @@ startChannelFileCleanup()
 import { startWebhookLogCleanup } from '@/server/services/webhooks'
 startWebhookLogCleanup()
 
+// Version check cron (checks GitHub for new releases)
+import { startVersionCheckCron } from '@/server/services/version-check'
+startVersionCheckCron()
+
 // Notification cleanup cron (daily)
 import { cleanupOldNotifications } from '@/server/services/notifications'
 new Cron('0 3 * * *', async () => {

@@ -61,6 +61,7 @@ export const config = {
   dataDir,
   encryptionKey: resolveEncryptionKey(),
   logLevel: (process.env.LOG_LEVEL ?? 'info') as 'debug' | 'info' | 'warn' | 'error',
+  isDocker: existsSync('/.dockerenv') || process.env.KINBOT_DATA_DIR === '/app/data',
 
   db: {
     path: process.env.DB_PATH ?? `${dataDir}/kinbot.db`,
@@ -233,7 +234,7 @@ export const config = {
   },
 
   versionCheck: {
-    enabled: process.env.VERSION_CHECK_ENABLED === 'true',
+    enabled: process.env.VERSION_CHECK_ENABLED !== 'false',
     repo: process.env.VERSION_CHECK_REPO ?? 'MarlBurroW/kinbot',
     intervalHours: Number(process.env.VERSION_CHECK_INTERVAL_HOURS ?? 12),
   },

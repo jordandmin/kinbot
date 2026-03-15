@@ -1724,6 +1724,21 @@
     "message": "Something went wrong. Please reload the page.",
     "reload": "Reload"
   },
+  "updateAvailable": {
+    "title": "Update Available",
+    "description": "v{{current}} → v{{latest}}",
+    "current": "Current",
+    "latest": "Latest",
+    "releaseNotes": "Release Notes",
+    "howToUpdate": "How to Update",
+    "dockerInstructions": "Run the following command in the directory containing your docker-compose.yml:",
+    "nonDockerInstructions": "Click the button below to pull the latest version and restart the server. The page will reload automatically.",
+    "viewOnGitHub": "View release on GitHub",
+    "updateButton": "Update now",
+    "updating": "Updating...",
+    "updateSuccess": "Update applied! Reloading...",
+    "updateFailed": "Update failed"
+  },
   "whatsNew": {
     "title": "What's New",
     "description": "You're running v{{version}}",
