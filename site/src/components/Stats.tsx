@@ -73,6 +73,7 @@ function StatCard({
   label,
   highlight,
   href,
+  index = 0,
 }: {
   icon: typeof Cpu
   value: number
@@ -80,30 +81,73 @@ function StatCard({
   label: string
   highlight?: boolean
   href?: string
+  index?: number
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+  const [hovered, setHovered] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setVisible(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => setVisible(true), index * 80)
+          observer.unobserve(el)
+        }
+      },
+      { threshold: 0.2 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [index])
+
   const content = (
     <div
+      ref={ref}
       className={`text-center group ${href ? 'cursor-pointer' : ''}`}
-      style={highlight ? {
-        background: 'linear-gradient(135deg, color-mix(in oklch, var(--color-glow-1) 6%, transparent), color-mix(in oklch, var(--color-glow-2) 4%, transparent))',
-        border: '1px solid color-mix(in oklch, var(--color-glow-1) 15%, transparent)',
-        borderRadius: '1rem',
-        padding: '1.25rem 0.5rem',
-      } : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.95)',
+        transition: `opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)`,
+        ...(highlight ? {
+          background: hovered
+            ? 'linear-gradient(135deg, color-mix(in oklch, var(--color-glow-1) 10%, transparent), color-mix(in oklch, var(--color-glow-2) 7%, transparent))'
+            : 'linear-gradient(135deg, color-mix(in oklch, var(--color-glow-1) 6%, transparent), color-mix(in oklch, var(--color-glow-2) 4%, transparent))',
+          border: `1px solid color-mix(in oklch, var(--color-glow-1) ${hovered ? '30' : '15'}%, transparent)`,
+          borderRadius: '1rem',
+          padding: '1.25rem 0.5rem',
+          boxShadow: hovered ? '0 0 24px color-mix(in oklch, var(--color-glow-1) 12%, transparent)' : 'none',
+        } : {
+          borderRadius: '1rem',
+          padding: '1.25rem 0.5rem',
+          background: hovered ? 'color-mix(in oklch, var(--color-glow-1) 4%, transparent)' : 'transparent',
+          border: `1px solid ${hovered ? 'color-mix(in oklch, var(--color-glow-1) 15%, transparent)' : 'transparent'}`,
+          boxShadow: hovered ? '0 0 16px color-mix(in oklch, var(--color-glow-1) 8%, transparent)' : 'none',
+        }),
+      }}
     >
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform duration-300 group-hover:scale-110"
+        className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 transition-all duration-300 group-hover:scale-110"
         style={{
           background:
             'linear-gradient(135deg, color-mix(in oklch, var(--color-glow-1) 15%, transparent), color-mix(in oklch, var(--color-glow-2) 10%, transparent))',
           border: '1px solid color-mix(in oklch, var(--color-glow-1) 20%, transparent)',
+          boxShadow: hovered ? '0 0 12px color-mix(in oklch, var(--color-glow-1) 20%, transparent)' : 'none',
         }}
       >
         <Icon size={18} style={{ color: 'var(--color-primary)' }} />
       </div>
       <p
-        className="text-2xl sm:text-3xl font-bold mb-1"
-        style={{ color: 'var(--color-foreground)' }}
+        className="text-2xl sm:text-3xl font-bold mb-1 transition-colors duration-300"
+        style={{ color: hovered ? 'var(--color-primary)' : 'var(--color-foreground)' }}
       >
         <AnimatedNumber target={value} suffix={suffix} />
       </p>
@@ -152,61 +196,20 @@ export function Stats() {
         Making your LLM stack work
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-        {/* GitHub stars (live) */}
-        {gh.stars !== null && (
-          <StatCard
-            icon={Star}
-            value={gh.stars}
-            suffix=""
-            label="GitHub stars"
-            highlight
-            href="https://github.com/MarlBurroW/kinbot/stargazers"
-          />
-        )}
+        {(() => {
+          const cards: { icon: typeof Cpu; value: number; suffix: string; label: string; highlight?: boolean; href?: string }[] = []
 
-        {/* GitHub forks (live) */}
-        {gh.forks !== null && (
-          <StatCard
-            icon={GitFork}
-            value={gh.forks}
-            suffix=""
-            label="Forks"
-            href="https://github.com/MarlBurroW/kinbot/network/members"
-          />
-        )}
+          if (gh.stars !== null) cards.push({ icon: Star, value: gh.stars, suffix: '', label: 'GitHub stars', highlight: true, href: 'https://github.com/MarlBurroW/kinbot/stargazers' })
+          if (gh.forks !== null) cards.push({ icon: GitFork, value: gh.forks, suffix: '', label: 'Forks', href: 'https://github.com/MarlBurroW/kinbot/network/members' })
+          if (gh.totalCommits !== null) cards.push({ icon: GitCommit, value: gh.totalCommits, suffix: '+', label: 'Commits', href: 'https://github.com/MarlBurroW/kinbot/commits/main' })
+          if (gh.openIssues !== null && gh.openIssues > 0) cards.push({ icon: AlertCircle, value: gh.openIssues, suffix: '', label: 'Open issues', href: 'https://github.com/MarlBurroW/kinbot/issues' })
 
-        {/* Total commits (live) */}
-        {gh.totalCommits !== null && (
-          <StatCard
-            icon={GitCommit}
-            value={gh.totalCommits}
-            suffix="+"
-            label="Commits"
-            href="https://github.com/MarlBurroW/kinbot/commits/main"
-          />
-        )}
+          staticStats.forEach(s => cards.push(s))
 
-        {/* Open issues (live) */}
-        {gh.openIssues !== null && gh.openIssues > 0 && (
-          <StatCard
-            icon={AlertCircle}
-            value={gh.openIssues}
-            suffix=""
-            label="Open issues"
-            href="https://github.com/MarlBurroW/kinbot/issues"
-          />
-        )}
-
-        {/* Static stats */}
-        {staticStats.map(({ icon, value, suffix, label }) => (
-          <StatCard
-            key={label}
-            icon={icon}
-            value={value}
-            suffix={suffix}
-            label={label}
-          />
-        ))}
+          return cards.map((card, i) => (
+            <StatCard key={card.label} index={i} {...card} />
+          ))
+        })()}
       </div>
       </div>
     </section>
