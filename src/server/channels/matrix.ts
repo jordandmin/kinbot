@@ -1,6 +1,6 @@
 import type { ChannelAdapter, IncomingAttachment, IncomingMessageHandler, OutboundMessageParams } from '@/server/channels/adapter'
 import { readAttachmentBlob, attachmentFileName, isImageAttachment } from '@/server/channels/adapter'
-import type { ChannelPlatform } from '@/shared/types'
+import type { ChannelAdapterMeta } from '@/server/channels/adapter'
 import { getSecretValue } from '@/server/services/vault'
 import { createLogger } from '@/server/logger'
 
@@ -92,7 +92,8 @@ async function matrixApi(
  * Matrix spec: https://spec.matrix.org/latest/client-server-api/
  */
 export class MatrixAdapter implements ChannelAdapter {
-  readonly platform: ChannelPlatform = 'matrix'
+  readonly platform = 'matrix'
+  readonly meta: ChannelAdapterMeta = { displayName: 'Matrix', brandColor: '#0DBD8B' }
 
   private syncAbortControllers = new Map<string, AbortController>()
   private handlers = new Map<string, { onMessage: IncomingMessageHandler; cfg: MatrixChannelConfig }>()

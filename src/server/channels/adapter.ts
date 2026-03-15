@@ -1,5 +1,12 @@
-import type { ChannelPlatform } from '@/shared/types'
 import { existsSync } from 'fs'
+
+// ─── Adapter metadata ──────────────────────────────────────────────────────
+
+export interface ChannelAdapterMeta {
+  displayName: string
+  brandColor?: string
+  iconUrl?: string
+}
 
 // ─── Incoming attachments from an external platform ─────────────────────────
 
@@ -58,7 +65,10 @@ export interface OutboundMessageParams {
 
 export interface ChannelAdapter {
   /** Unique platform identifier */
-  readonly platform: ChannelPlatform
+  readonly platform: string
+
+  /** Optional metadata for display purposes (name, color, icon) */
+  readonly meta?: ChannelAdapterMeta
 
   /**
    * Start receiving messages. Called when a channel becomes active.

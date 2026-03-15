@@ -1,6 +1,6 @@
 import type { ChannelAdapter, IncomingAttachment, IncomingMessageHandler, OutboundMessageParams } from '@/server/channels/adapter'
 import { readAttachmentBlob, attachmentFileName } from '@/server/channels/adapter'
-import type { ChannelPlatform } from '@/shared/types'
+import type { ChannelAdapterMeta } from '@/server/channels/adapter'
 import { getSecretValue } from '@/server/services/vault'
 import { config } from '@/server/config'
 import { createLogger } from '@/server/logger'
@@ -90,7 +90,8 @@ async function signalApi(
  * The webhook URL is registered when the channel starts.
  */
 export class SignalAdapter implements ChannelAdapter {
-  readonly platform: ChannelPlatform = 'signal'
+  readonly platform = 'signal'
+  readonly meta: ChannelAdapterMeta = { displayName: 'Signal', brandColor: '#3A76F0' }
 
   /** Store message handlers for webhook processing */
   private handlers = new Map<string, { onMessage: IncomingMessageHandler; cfg: SignalChannelConfig }>()

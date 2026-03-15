@@ -17,8 +17,7 @@ import {
   countPendingApprovalsForChannel,
 } from '@/server/services/channels'
 import type { AppVariables } from '@/server/app'
-import type { ChannelPlatform } from '@/shared/types'
-import { CHANNEL_PLATFORMS } from '@/shared/constants'
+import { channelAdapters } from '@/server/channels/index'
 import { createLogger } from '@/server/logger'
 
 const log = createLogger('routes:channels')
@@ -77,6 +76,11 @@ channelRoutes.get('/', async (c) => {
   })
 })
 
+// GET /api/channels/platforms — list registered platforms with metadata
+channelRoutes.get('/platforms', async (c) => {
+  return c.json({ platforms: channelAdapters.listWithMeta() })
+})
+
 // GET /api/channels/pending-count — global pending approval count (must be before /:id)
 channelRoutes.get('/pending-count', async (c) => {
   const count = await countPendingApprovals()
@@ -101,9 +105,10 @@ channelRoutes.post('/', async (c) => {
     )
   }
 
-  if (!CHANNEL_PLATFORMS.includes(body.platform as ChannelPlatform)) {
+  if (!channelAdapters.get(body.platform)) {
+    const available = channelAdapters.list().join(', ')
     return c.json(
-      { error: { code: 'VALIDATION_ERROR', message: `Invalid platform. Supported: ${CHANNEL_PLATFORMS.join(', ')}` } },
+      { error: { code: 'VALIDATION_ERROR', message: `Invalid platform. Registered: ${available}` } },
       400,
     )
   }
@@ -118,7 +123,7 @@ channelRoutes.post('/', async (c) => {
     const channel = await createChannel({
       kinId: body.kinId,
       name: body.name,
-      platform: body.platform as ChannelPlatform,
+      platform: body.platform,
       botToken: body.botToken,
       allowedChatIds: body.allowedChatIds,
       autoCreateContacts: body.autoCreateContacts,

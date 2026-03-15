@@ -5,7 +5,7 @@ import { notificationChannels, channels, kins, contacts, contactPlatformIds } fr
 import { channelAdapters } from '@/server/channels/index'
 import { config } from '@/server/config'
 import { createLogger } from '@/server/logger'
-import type { ChannelPlatform, NotificationType, NotificationChannelSummary, AvailableNotificationChannel, ContactForNotification } from '@/shared/types'
+import type { NotificationType, NotificationChannelSummary, AvailableNotificationChannel, ContactForNotification } from '@/shared/types'
 
 const log = createLogger('notification-delivery')
 
@@ -121,7 +121,7 @@ export async function deliverExternalNotification(
           .where(eq(channels.id, nc.channelId)).get()
         if (!channel || channel.status !== 'active') continue
 
-        const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+        const adapter = channelAdapters.get(channel.platform )
         if (!adapter) continue
 
         // Format and send
@@ -185,7 +185,7 @@ export async function listUserNotificationChannels(userId: string): Promise<Noti
     id: r.id,
     channelId: r.channelId,
     channelName: r.channelName,
-    platform: r.platform as ChannelPlatform,
+    platform: r.platform ,
     platformChatId: r.platformChatId,
     label: r.label,
     isActive: r.isActive,
@@ -241,7 +241,7 @@ export async function createUserNotificationChannel(userId: string, params: Crea
     id,
     channelId: channel.id,
     channelName: channel.name,
-    platform: channel.platform as ChannelPlatform,
+    platform: channel.platform ,
     platformChatId: params.platformChatId,
     label: params.label ?? null,
     isActive: true,
@@ -300,7 +300,7 @@ export async function testNotificationChannel(id: string, userId: string): Promi
   if (!channel) return { success: false, error: 'Source channel not found' }
   if (channel.status !== 'active') return { success: false, error: 'Source channel is not active' }
 
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform )
   if (!adapter) return { success: false, error: `No adapter for platform "${channel.platform}"` }
 
   try {
@@ -341,7 +341,7 @@ export async function listAvailableChannels(): Promise<AvailableNotificationChan
   return rows.map((r) => ({
     channelId: r.channelId,
     channelName: r.channelName,
-    platform: r.platform as ChannelPlatform,
+    platform: r.platform ,
     kinName: r.kinName,
   }))
 }

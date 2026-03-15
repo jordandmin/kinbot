@@ -13,7 +13,7 @@ import { useKinList } from '@/client/hooks/useKinList'
 import { ChannelCard } from '@/client/components/channel/ChannelCard'
 import { ChannelFormDialog } from '@/client/components/channel/ChannelFormDialog'
 import { ChannelUserMappings } from '@/client/components/channel/ChannelUserMappings'
-import type { ChannelSummary, ChannelPlatform } from '@/shared/types'
+import type { ChannelSummary } from '@/shared/types'
 import type { KinOption } from '@/client/components/common/KinSelectItem'
 
 export function ChannelsSettings() {
@@ -69,7 +69,7 @@ export function ChannelsSettings() {
   const handleCreate = async (data: {
     kinId: string
     name: string
-    platform: ChannelPlatform
+    platform: string
     botToken: string
   }) => {
     await api.post('/channels', data)

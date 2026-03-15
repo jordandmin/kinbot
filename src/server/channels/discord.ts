@@ -1,6 +1,6 @@
 import type { ChannelAdapter, IncomingAttachment, IncomingMessageHandler, OutboundMessageParams } from '@/server/channels/adapter'
 import { readAttachmentBlob, attachmentFileName } from '@/server/channels/adapter'
-import type { ChannelPlatform } from '@/shared/types'
+import type { ChannelAdapterMeta } from '@/server/channels/adapter'
 import { getSecretValue } from '@/server/services/vault'
 import { createLogger } from '@/server/logger'
 
@@ -294,7 +294,8 @@ function reconnect(state: GatewayState): void {
 }
 
 export class DiscordAdapter implements ChannelAdapter {
-  readonly platform: ChannelPlatform = 'discord'
+  readonly platform = 'discord'
+  readonly meta: ChannelAdapterMeta = { displayName: 'Discord', brandColor: '#5865F2' }
   private gateways = new Map<string, GatewayState>()
 
   async start(channelId: string, cfg: Record<string, unknown>, onMessage: IncomingMessageHandler): Promise<void> {

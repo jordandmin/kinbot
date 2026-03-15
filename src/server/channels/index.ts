@@ -1,8 +1,15 @@
-import type { ChannelPlatform } from '@/shared/types'
 import type { ChannelAdapter } from '@/server/channels/adapter'
 
+export interface ChannelPlatformInfo {
+  platform: string
+  displayName: string
+  brandColor?: string
+  iconUrl?: string
+  isPlugin: boolean
+}
+
 class ChannelAdapterRegistry {
-  private adapters = new Map<ChannelPlatform, ChannelAdapter>()
+  private adapters = new Map<string, ChannelAdapter>()
   private pluginAdapters = new Set<string>()
 
   register(adapter: ChannelAdapter): void {
@@ -16,17 +23,27 @@ class ChannelAdapterRegistry {
 
   unregisterPlugin(platform: string): void {
     if (this.pluginAdapters.has(platform)) {
-      this.adapters.delete(platform as ChannelPlatform)
+      this.adapters.delete(platform)
       this.pluginAdapters.delete(platform)
     }
   }
 
-  get(platform: ChannelPlatform | string): ChannelAdapter | undefined {
-    return this.adapters.get(platform as ChannelPlatform)
+  get(platform: string): ChannelAdapter | undefined {
+    return this.adapters.get(platform)
   }
 
-  list(): ChannelPlatform[] {
+  list(): string[] {
     return Array.from(this.adapters.keys())
+  }
+
+  listWithMeta(): ChannelPlatformInfo[] {
+    return Array.from(this.adapters.entries()).map(([p, a]) => ({
+      platform: p,
+      displayName: a.meta?.displayName ?? p,
+      brandColor: a.meta?.brandColor,
+      iconUrl: a.meta?.iconUrl,
+      isPlugin: this.pluginAdapters.has(p),
+    }))
   }
 
   isPluginAdapter(platform: string): boolean {

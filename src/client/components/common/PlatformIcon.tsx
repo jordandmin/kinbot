@@ -1,5 +1,4 @@
 import { Radio } from 'lucide-react'
-import type { ChannelPlatform } from '@/shared/types'
 
 /** Brand colors per platform */
 const PLATFORM_COLORS: Record<string, string> = {
@@ -84,6 +83,6 @@ export function PlatformIcon({ platform, className, variant = 'mono' }: Platform
 }
 
 /** Get the brand color for a platform */
-export function getPlatformColor(platform: ChannelPlatform): string {
+export function getPlatformColor(platform: string): string {
   return PLATFORM_COLORS[platform] ?? 'currentColor'
 }

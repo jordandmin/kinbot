@@ -52,7 +52,10 @@ export const MEMORY_CATEGORIES = ['fact', 'preference', 'decision', 'knowledge']
 
 export const MESSAGE_SOURCES = ['user', 'kin', 'task', 'cron', 'system', 'webhook', 'channel'] as const
 
-export const CHANNEL_PLATFORMS = ['telegram', 'discord', 'slack', 'whatsapp', 'signal', 'matrix'] as const
+export const KNOWN_CHANNEL_PLATFORMS = ['telegram', 'discord', 'slack', 'whatsapp', 'signal', 'matrix'] as const
+
+/** @deprecated Use KNOWN_CHANNEL_PLATFORMS for built-in platforms or fetch from /api/channels/platforms for all registered platforms */
+export const CHANNEL_PLATFORMS = KNOWN_CHANNEL_PLATFORMS
 
 export const TASK_STATUSES = ['pending', 'in_progress', 'awaiting_human_input', 'completed', 'failed', 'cancelled'] as const
 

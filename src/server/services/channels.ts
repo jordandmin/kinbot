@@ -167,7 +167,7 @@ export async function deleteChannel(channelId: string) {
 
   // Stop adapter if active
   if (existing.status === 'active') {
-    const adapter = channelAdapters.get(existing.platform as ChannelPlatform)
+    const adapter = channelAdapters.get(existing.platform)
     if (adapter) {
       try {
         const cfg = JSON.parse(existing.platformConfig) as Record<string, unknown>
@@ -203,7 +203,7 @@ export async function activateChannel(channelId: string) {
   const channel = await getChannel(channelId)
   if (!channel) return null
 
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform)
   if (!adapter) {
     await setChannelStatus(channelId, 'error', `No adapter for platform "${channel.platform}"`)
     return null
@@ -228,7 +228,7 @@ export async function deactivateChannel(channelId: string) {
   const channel = await getChannel(channelId)
   if (!channel) return null
 
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform)
   if (adapter) {
     try {
       const cfg = JSON.parse(channel.platformConfig) as Record<string, unknown>
@@ -265,7 +265,7 @@ export async function testChannel(channelId: string): Promise<{ valid: boolean; 
   const channel = await getChannel(channelId)
   if (!channel) return { valid: false, error: 'Channel not found' }
 
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform)
   if (!adapter) return { valid: false, error: `No adapter for platform "${channel.platform}"` }
 
   const cfg = JSON.parse(channel.platformConfig) as Record<string, unknown>
@@ -299,7 +299,7 @@ export async function handleIncomingChannelMessage(channelId: string, incoming: 
 
   // ─── Approval gate ────────────────────────────────────────────────────────
   if (pendingMappingId) {
-    const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+    const adapter = channelAdapters.get(channel.platform)
     if (adapter) {
       const adapterCfg = JSON.parse(channel.platformConfig) as Record<string, unknown>
       adapter.sendMessage(channel.id, adapterCfg, {
@@ -366,7 +366,7 @@ export async function handleIncomingChannelMessage(channelId: string, incoming: 
   })
 
   // Send typing indicator (fire-and-forget)
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform)
   if (adapter?.sendTypingIndicator) {
     const adapterCfg = JSON.parse(channel.platformConfig) as Record<string, unknown>
     adapter.sendTypingIndicator(channel.id, adapterCfg, incoming.platformChatId).catch(() => {})
@@ -411,7 +411,7 @@ async function handleBotStart(
   const welcomeText = `Hi! I'm ${kinName}${kinRole}.\nSend me a message and I'll respond.`
 
   // Send welcome message via adapter
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform)
   if (adapter) {
     const cfg = JSON.parse(channel.platformConfig) as Record<string, unknown>
     try {
@@ -449,7 +449,7 @@ export async function deliverChannelResponse(
   const channel = await getChannel(meta.channelId)
   if (!channel || channel.status !== 'active') return
 
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform)
   if (!adapter) {
     log.error({ channelId: meta.channelId }, 'No adapter found for response delivery')
     return
@@ -699,7 +699,7 @@ export async function approveChannelUser(mappingId: string, params: ApproveParam
   })
 
   // Send approval notification to the user on the platform
-  const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+  const adapter = channelAdapters.get(channel.platform)
   if (adapter) {
     const adapterCfg = JSON.parse(channel.platformConfig) as Record<string, unknown>
     adapter.sendMessage(channel.id, adapterCfg, {
@@ -862,7 +862,7 @@ export async function restoreActiveChannels() {
   log.info({ count: activeChannels.length }, 'Restoring active channels')
 
   for (const channel of activeChannels) {
-    const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+    const adapter = channelAdapters.get(channel.platform)
     if (!adapter) {
       log.warn({ channelId: channel.id, platform: channel.platform }, 'No adapter for active channel, marking as error')
       await setChannelStatus(channel.id, 'error', `No adapter for platform "${channel.platform}"`)

@@ -38,7 +38,6 @@ import { popStagedAttachments, clearStagedAttachments } from '@/server/tools/att
 import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
 import { getGlobalPrompt, getHubKinId } from '@/server/services/app-settings'
 import { channelAdapters } from '@/server/channels/index'
-import type { ChannelPlatform } from '@/shared/types'
 import { getModelContextWindow } from '@/shared/model-context-windows'
 
 const log = createLogger('kin-engine')
@@ -568,7 +567,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       if (meta) {
         const ch = await getChannel(meta.channelId)
         if (ch) {
-          const chAdapter = channelAdapters.get(ch.platform as ChannelPlatform)
+          const chAdapter = channelAdapters.get(ch.platform)
           if (chAdapter?.sendTypingIndicator) {
             const chCfg = JSON.parse(ch.platformConfig) as Record<string, unknown>
             chAdapter.sendTypingIndicator(ch.id, chCfg, meta.platformChatId).catch(() => {})

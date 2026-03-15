@@ -4,7 +4,6 @@ import { listChannels, getChannel, listChannelConversations } from '@/server/ser
 import { channelAdapters } from '@/server/channels/index'
 import { createLogger } from '@/server/logger'
 import type { ToolRegistration } from '@/server/tools/types'
-import type { ChannelPlatform } from '@/shared/types'
 import type { OutboundAttachment } from '@/server/channels/adapter'
 
 const log = createLogger('tools:channel')
@@ -18,7 +17,7 @@ export const listChannelsTool: ToolRegistration = {
   create: (ctx) =>
     tool({
       description:
-        'List all external messaging channels (Telegram, Discord) connected to this Kin.',
+        'List all external messaging channels connected to this Kin.',
       inputSchema: z.object({}),
       execute: async () => {
         const items = await listChannels(ctx.kinId)
@@ -72,7 +71,7 @@ export const sendChannelMessageTool: ToolRegistration = {
   create: (ctx) =>
     tool({
       description:
-        'Send a message to an external platform (Telegram, Discord) via a connected channel. ' +
+        'Send a message to an external platform via a connected channel. ' +
         'Use this to proactively reach out to users on external platforms, or to send follow-up messages ' +
         'after delegating work to other Kins.',
       inputSchema: z.object({
@@ -98,7 +97,7 @@ export const sendChannelMessageTool: ToolRegistration = {
           return { error: 'Channel is not active' }
         }
 
-        const adapter = channelAdapters.get(channel.platform as ChannelPlatform)
+        const adapter = channelAdapters.get(channel.platform)
         if (!adapter) {
           return { error: `No adapter for platform ${channel.platform}` }
         }

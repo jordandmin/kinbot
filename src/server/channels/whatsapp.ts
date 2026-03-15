@@ -1,6 +1,6 @@
 import type { ChannelAdapter, IncomingAttachment, IncomingMessageHandler, OutboundMessageParams, OutboundAttachment } from '@/server/channels/adapter'
 import { readAttachmentBlob, attachmentFileName } from '@/server/channels/adapter'
-import type { ChannelPlatform } from '@/shared/types'
+import type { ChannelAdapterMeta } from '@/server/channels/adapter'
 import { getSecretValue } from '@/server/services/vault'
 import { config } from '@/server/config'
 import { createLogger } from '@/server/logger'
@@ -71,7 +71,8 @@ async function whatsappApi(
 }
 
 export class WhatsAppAdapter implements ChannelAdapter {
-  readonly platform: ChannelPlatform = 'whatsapp'
+  readonly platform = 'whatsapp'
+  readonly meta: ChannelAdapterMeta = { displayName: 'WhatsApp', brandColor: '#25D366' }
 
   async start(channelId: string, cfg: Record<string, unknown>): Promise<void> {
     // WhatsApp Cloud API uses a webhook configured in Meta Developer Console.

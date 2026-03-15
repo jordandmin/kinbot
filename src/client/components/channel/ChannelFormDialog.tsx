@@ -30,24 +30,28 @@ import { PlatformIcon } from '@/client/components/common/PlatformIcon'
 import { ChevronRight, HelpCircle, Lightbulb, Loader2 } from 'lucide-react'
 import { InfoTip } from '@/client/components/common/InfoTip'
 import { cn } from '@/client/lib/utils'
-import type { ChannelSummary, ChannelPlatform } from '@/shared/types'
-import { CHANNEL_PLATFORMS } from '@/shared/constants'
+import { api } from '@/client/lib/api'
+import type { ChannelSummary } from '@/shared/types'
 
-const PLATFORM_LABELS: Record<ChannelPlatform, string> = {
-  telegram: 'Telegram',
-  discord: 'Discord',
-  slack: 'Slack',
-  whatsapp: 'WhatsApp',
-  signal: 'Signal',
-  matrix: 'Matrix',
+interface PlatformInfo {
+  platform: string
+  displayName: string
+  brandColor?: string
+  iconUrl?: string
+  isPlugin: boolean
 }
 
-function PlatformSetupGuide({ platform }: { platform: ChannelPlatform }) {
+function PlatformSetupGuide({ platform }: { platform: string }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
   const steps = t(`settings.channels.setupGuide.${platform}.steps`, { returnObjects: true }) as string[]
   const tip = t(`settings.channels.setupGuide.${platform}.tip`)
+
+  // Don't render setup guide if no translation exists (e.g. plugin platforms)
+  const hasGuide = Array.isArray(steps) && steps.length > 0 && steps[0] !== `settings.channels.setupGuide.${platform}.steps`
+
+  if (!hasGuide) return null
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -67,7 +71,7 @@ function PlatformSetupGuide({ platform }: { platform: ChannelPlatform }) {
             {t(`settings.channels.setupGuide.${platform}.title`)}
           </p>
           <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-            {Array.isArray(steps) && steps.map((step, i) => (
+            {steps.map((step, i) => (
               <li key={i}>{step}</li>
             ))}
           </ol>
@@ -89,7 +93,7 @@ interface ChannelFormDialogProps {
   onSave: (data: {
     kinId: string
     name: string
-    platform: ChannelPlatform
+    platform: string
     botToken: string
   }) => Promise<void>
   onUpdate?: (channelId: string, data: {
@@ -116,9 +120,22 @@ export function ChannelFormDialog({
 
   const [selectedKinId, setSelectedKinId] = useState('')
   const [name, setName] = useState('')
-  const [platform, setPlatform] = useState<ChannelPlatform>('telegram')
+  const [platform, setPlatform] = useState('')
   const [botToken, setBotToken] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [platforms, setPlatforms] = useState<PlatformInfo[]>([])
+
+  // Fetch available platforms from API
+  useEffect(() => {
+    api.get<{ platforms: PlatformInfo[] }>('/channels/platforms')
+      .then((res) => {
+        setPlatforms(res.platforms)
+        if (!platform && res.platforms.length > 0) {
+          setPlatform(res.platforms[0].platform)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (channel) {
@@ -128,7 +145,7 @@ export function ChannelFormDialog({
       setBotToken('')
     } else {
       setName('')
-      setPlatform('telegram')
+      setPlatform(platforms[0]?.platform ?? '')
       setSelectedKinId(hubKinId ?? '')
       setBotToken('')
     }
@@ -159,7 +176,8 @@ export function ChannelFormDialog({
     }
   }
 
-  const canSubmit = name.trim() && (isEdit || (selectedKinId && botToken.trim()))
+  const currentPlatform = platforms.find((p) => p.platform === platform)
+  const canSubmit = name.trim() && (isEdit || (selectedKinId && botToken.trim() && platform))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -201,24 +219,24 @@ export function ChannelFormDialog({
           </div>
 
           {/* Platform selector (only for create) */}
-          {!isEdit && (
+          {!isEdit && platforms.length > 0 && (
             <div className="space-y-2">
               <Label>{t('settings.channels.platform')}</Label>
-              <Select value={platform} onValueChange={(v) => setPlatform(v as ChannelPlatform)}>
+              <Select value={platform} onValueChange={setPlatform}>
                 <SelectTrigger className="w-full">
                   <SelectValue>
                     <span className="flex items-center gap-2">
                       <PlatformIcon platform={platform} variant="color" className="size-4" />
-                      {PLATFORM_LABELS[platform]}
+                      {currentPlatform?.displayName ?? platform}
                     </span>
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {CHANNEL_PLATFORMS.map((p) => (
-                    <SelectItem key={p} value={p}>
+                  {platforms.map((p) => (
+                    <SelectItem key={p.platform} value={p.platform}>
                       <span className="flex items-center gap-2">
-                        <PlatformIcon platform={p} variant="color" className="size-4" />
-                        {PLATFORM_LABELS[p]}
+                        <PlatformIcon platform={p.platform} variant="color" className="size-4" />
+                        {p.displayName}
                       </span>
                     </SelectItem>
                   ))}

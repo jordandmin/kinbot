@@ -1,6 +1,6 @@
 import type { ChannelAdapter, IncomingAttachment, IncomingMessageHandler, OutboundMessageParams } from '@/server/channels/adapter'
 import { readAttachmentBlob, attachmentFileName } from '@/server/channels/adapter'
-import type { ChannelPlatform } from '@/shared/types'
+import type { ChannelAdapterMeta } from '@/server/channels/adapter'
 import { getSecretValue } from '@/server/services/vault'
 import { config } from '@/server/config'
 import { createLogger } from '@/server/logger'
@@ -218,7 +218,8 @@ export async function handleSlackWebhook(
 }
 
 export class SlackAdapter implements ChannelAdapter {
-  readonly platform: ChannelPlatform = 'slack'
+  readonly platform = 'slack'
+  readonly meta: ChannelAdapterMeta = { displayName: 'Slack', brandColor: '#4A154B' }
 
   async start(channelId: string, cfg: Record<string, unknown>, onMessage: IncomingMessageHandler): Promise<void> {
     const token = await resolveToken(cfg)

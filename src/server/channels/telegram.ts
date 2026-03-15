@@ -1,6 +1,6 @@
 import type { ChannelAdapter, IncomingMessageHandler, OutboundMessageParams, OutboundAttachment } from '@/server/channels/adapter'
 import { readAttachmentBlob, attachmentFileName, isImageAttachment } from '@/server/channels/adapter'
-import type { ChannelPlatform } from '@/shared/types'
+import type { ChannelAdapterMeta } from '@/server/channels/adapter'
 import { getSecretValue } from '@/server/services/vault'
 import { config } from '@/server/config'
 import { createLogger } from '@/server/logger'
@@ -62,7 +62,8 @@ async function telegramApi(token: string, method: string, body?: Record<string, 
 }
 
 export class TelegramAdapter implements ChannelAdapter {
-  readonly platform: ChannelPlatform = 'telegram'
+  readonly platform = 'telegram'
+  readonly meta: ChannelAdapterMeta = { displayName: 'Telegram', brandColor: '#26A5E4' }
 
   async start(channelId: string, cfg: Record<string, unknown>): Promise<void> {
     const token = await resolveToken(cfg)
