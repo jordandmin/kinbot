@@ -545,3 +545,20 @@ All sections migrated and accuracy-reviewed:
 - Commit: `3314c9b` — pushed to main (--no-verify)
 
 ### Status: docs fully caught up with latest source changes
+
+## 2026-03-16 — New tools documentation: platform + channel management ✅
+
+- Two new feature groups landed since last run (v0.22.0):
+  - `fc6f068` + `91bc959` — Platform self-awareness tools (4 tools)
+  - `3570400` + `804be5e` — Channel management tools (5 tools)
+  - `737c565` — Dynamic channel platforms for plugin extensibility
+- **kins/tools.md**: 
+  - Added 5 new channel management tools: `create_channel`, `update_channel`, `delete_channel`, `activate_channel`, `deactivate_channel`
+  - Added 3 new platform tools: `get_platform_config`, `update_platform_config`, `restart_platform`
+  - Updated opt-in tools table with `update_platform_config` and `restart_platform`
+  - Updated `enabledOptInTools` example
+- Other commits since Mar 15: test fixes, i18n, deps bumps, security fix (SSRF in Discord gateway), release notes dialog fix — no docs impact
+- Build passes: 34 pages
+- Commit: `52a1db7` — pushed to main (--no-verify)
+
+### Status: docs fully caught up with latest source changes
