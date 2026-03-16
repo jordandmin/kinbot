@@ -28,6 +28,7 @@ import {
   XCircle,
   Ban,
   UserCheck,
+  MessageSquare,
   GitBranch,
   Layers,
   Wrench,
@@ -63,6 +64,7 @@ const STATUS_CONFIG: Record<
   pending: { icon: Clock, iconClass: 'text-muted-foreground', badgeVariant: 'secondary' },
   in_progress: { icon: Loader2, iconClass: 'animate-spin', badgeVariant: 'default' },
   awaiting_human_input: { icon: UserCheck, iconClass: 'text-warning animate-pulse', badgeVariant: 'outline' },
+  awaiting_kin_response: { icon: MessageSquare, iconClass: 'text-info animate-pulse', badgeVariant: 'outline' },
   completed: { icon: CheckCircle2, iconClass: 'text-success', badgeVariant: 'outline' },
   failed: { icon: XCircle, iconClass: 'text-destructive', badgeVariant: 'destructive' },
   cancelled: { icon: Ban, iconClass: 'text-muted-foreground', badgeVariant: 'secondary' },
@@ -124,7 +126,7 @@ export function TaskDetailModal({
 
   const statusConfig = task ? STATUS_CONFIG[task.status] : null
   const StatusIcon = statusConfig?.icon
-  const isActive = task?.status === 'pending' || task?.status === 'in_progress' || task?.status === 'awaiting_human_input'
+  const isActive = task?.status === 'pending' || task?.status === 'in_progress' || task?.status === 'awaiting_human_input' || task?.status === 'awaiting_kin_response'
   const initials = kinName?.slice(0, 2).toUpperCase() ?? 'K'
   const resolvedModel = task?.model ? llmModels.find((m) => m.id === task.model) : null
 

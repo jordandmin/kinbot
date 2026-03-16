@@ -37,8 +37,9 @@ function kinAvatarUrl(kinId: string, avatarPath: string | null, updatedAt?: Date
  */
 export function recoverStaleTasks() {
   // Note: 'awaiting_human_input' is NOT recovered — the human can still respond after restart
+  // Note: 'awaiting_kin_response' IS recovered — the timeout timer is lost on restart
   const result = sqlite.run(
-    `UPDATE tasks SET status = 'failed', error = 'Interrupted by server restart', updated_at = ? WHERE status IN ('pending', 'in_progress')`,
+    `UPDATE tasks SET status = 'failed', error = 'Interrupted by server restart', updated_at = ? WHERE status IN ('pending', 'in_progress', 'awaiting_kin_response')`,
     [Date.now()],
   )
   if (result.changes > 0) {
@@ -246,6 +247,8 @@ async function executeSubKin(taskId: string, isNudge = false) {
 
     // Build sub-Kin system prompt
     const globalPrompt = await getGlobalPrompt()
+    const { listAvailableKins } = await import('@/server/services/inter-kin')
+    const kinDirectory = await listAvailableKins(kinIdentity.id)
 
     const systemPrompt = buildSystemPrompt({
       kin: {
@@ -257,7 +260,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       },
       contacts: [],
       relevantMemories: [],
-      kinDirectory: [],
+      kinDirectory,
       isSubKin: true,
       taskDescription: task.description,
       previousCronRuns,
@@ -305,7 +308,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
     const SUB_KIN_EXCLUDED_TOOLS = [
       'spawn_self', 'spawn_kin',
       'respond_to_task', 'cancel_task', 'list_tasks',
-      'send_message', 'reply', 'list_kins',
+      'reply',
       'create_cron', 'update_cron', 'delete_cron', 'list_crons',
       'add_mcp_server', 'update_mcp_server', 'remove_mcp_server', 'list_mcp_servers',
       'register_tool', 'list_custom_tools',
@@ -603,9 +606,15 @@ async function executeSubKin(taskId: string, isNudge = false) {
       data: { messageId: assistantMessageId, content: responseText, taskId },
     })
 
+    // If the task was suspended for an inter-Kin response, don't nudge — just return
+    const currentTask = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
+    if (currentTask && currentTask.status === 'awaiting_kin_response') {
+      log.info({ taskId }, 'Sub-Kin suspended awaiting inter-Kin response')
+      return
+    }
+
     // If the Kin didn't explicitly resolve the task via update_task_status(),
     // give it one more chance (nudge turn) before marking as failed.
-    const currentTask = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
     if (currentTask && currentTask.status === 'in_progress') {
       if (!isNudge) {
         // First attempt — inject a reminder and re-run one more LLM turn
@@ -820,7 +829,7 @@ export async function cancelTask(taskId: string, kinId: string) {
 
   await db
     .update(tasks)
-    .set({ status: 'cancelled', updatedAt: new Date() })
+    .set({ status: 'cancelled', pendingRequestId: null, updatedAt: new Date() })
     .where(eq(tasks.id, taskId))
 
   sseManager.sendToKin(kinId, {
@@ -1045,6 +1054,150 @@ export async function respondToTask(taskId: string, answer: string) {
   // Re-trigger sub-Kin execution
   executeSubKin(taskId).catch((err) =>
     log.error({ taskId, err }, 'Sub-Kin re-execution error'),
+  )
+
+  return true
+}
+
+// ─── Inter-Kin Request Suspension ───────────────────────────────────────────
+
+/**
+ * Suspend a sub-Kin task while it waits for another Kin to reply.
+ * Called from the `send_message` tool when `type === 'request'` in sub-Kin context.
+ */
+export async function suspendTaskForKinResponse(
+  taskId: string,
+  requestId: string,
+) {
+  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
+  if (!task || task.status !== 'in_progress') {
+    return { success: false as const, error: 'Task not active' }
+  }
+
+  if (task.interKinRequestCount >= config.tasks.maxInterKinRequests) {
+    return {
+      success: false as const,
+      error: `Max inter-Kin request limit (${config.tasks.maxInterKinRequests}) reached for this task`,
+    }
+  }
+
+  await db
+    .update(tasks)
+    .set({
+      status: 'awaiting_kin_response',
+      pendingRequestId: requestId,
+      interKinRequestCount: task.interKinRequestCount + 1,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, taskId))
+
+  sseManager.sendToKin(task.parentKinId, {
+    type: 'task:status',
+    kinId: task.parentKinId,
+    data: {
+      taskId,
+      kinId: task.parentKinId,
+      status: 'awaiting_kin_response',
+      title: task.title ?? task.description,
+    },
+  })
+
+  scheduleInterKinTimeout(taskId, requestId)
+
+  return { success: true as const }
+}
+
+/**
+ * Schedule a timeout that resumes the task if no inter-Kin reply arrives in time.
+ */
+function scheduleInterKinTimeout(taskId: string, requestId: string) {
+  setTimeout(async () => {
+    try {
+      const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
+      if (!task || task.status !== 'awaiting_kin_response' || task.pendingRequestId !== requestId) {
+        return // Already resumed, cancelled, or different request
+      }
+
+      log.info({ taskId, requestId }, 'Inter-Kin response timeout — resuming task')
+
+      await db.insert(messages).values({
+        id: uuid(),
+        kinId: task.parentKinId,
+        taskId,
+        role: 'user',
+        content: '[System] The inter-Kin request timed out — no response was received. Continue your task without this information or try an alternative approach.',
+        sourceType: 'system',
+        createdAt: new Date(),
+      })
+
+      await db
+        .update(tasks)
+        .set({ status: 'in_progress', pendingRequestId: null, updatedAt: new Date() })
+        .where(eq(tasks.id, taskId))
+
+      sseManager.sendToKin(task.parentKinId, {
+        type: 'task:status',
+        kinId: task.parentKinId,
+        data: {
+          taskId,
+          kinId: task.parentKinId,
+          status: 'in_progress',
+          title: task.title ?? task.description,
+        },
+      })
+
+      executeSubKin(taskId).catch((err) =>
+        log.error({ taskId, err }, 'Sub-Kin resume error after inter-Kin timeout'),
+      )
+    } catch (err) {
+      log.error({ taskId, err }, 'Inter-Kin timeout handler error')
+    }
+  }, config.tasks.interKinResponseTimeoutMs)
+}
+
+/**
+ * Resume a sub-Kin task after receiving an inter-Kin reply.
+ * Called from the inter-Kin service when a reply matches a suspended task.
+ */
+export async function resumeTaskFromKinResponse(
+  taskId: string,
+  senderKinId: string,
+  senderName: string,
+  replyMessage: string,
+) {
+  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
+  if (!task || task.status !== 'awaiting_kin_response') return false
+
+  // Inject reply into task's message history
+  await db.insert(messages).values({
+    id: uuid(),
+    kinId: task.parentKinId,
+    taskId,
+    role: 'user',
+    content: `[Inter-Kin response from ${senderName}]: ${replyMessage}`,
+    sourceType: 'kin',
+    sourceId: senderKinId,
+    createdAt: new Date(),
+  })
+
+  await db
+    .update(tasks)
+    .set({ status: 'in_progress', pendingRequestId: null, updatedAt: new Date() })
+    .where(eq(tasks.id, taskId))
+
+  sseManager.sendToKin(task.parentKinId, {
+    type: 'task:status',
+    kinId: task.parentKinId,
+    data: {
+      taskId,
+      kinId: task.parentKinId,
+      status: 'in_progress',
+      title: task.title ?? task.description,
+    },
+  })
+
+  executeSubKin(taskId).catch((err) =>
+    log.error({ taskId, err }, 'Sub-Kin resume error after inter-Kin reply'),
   )
 
   return true

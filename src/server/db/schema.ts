@@ -248,13 +248,15 @@ export const tasks = sqliteTable('tasks', {
   model: text('model'),
   title: text('title'),
   description: text('description').notNull(),
-  status: text('status').notNull().default('pending'), // 'pending' | 'in_progress' | 'awaiting_human_input' | 'completed' | 'failed' | 'cancelled'
+  status: text('status').notNull().default('pending'), // 'pending' | 'in_progress' | 'awaiting_human_input' | 'awaiting_kin_response' | 'completed' | 'failed' | 'cancelled'
   result: text('result'),
   error: text('error'),
   depth: integer('depth').notNull().default(1),
   parentTaskId: text('parent_task_id').references((): AnySQLiteColumn => tasks.id),
   cronId: text('cron_id').references(() => crons.id),
   requestInputCount: integer('request_input_count').notNull().default(0),
+  interKinRequestCount: integer('inter_kin_request_count').notNull().default(0),
+  pendingRequestId: text('pending_request_id'),
   allowHumanPrompt: integer('allow_human_prompt', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),

@@ -195,6 +195,8 @@ export const config = {
   tasks: {
     maxDepth: Number(process.env.TASKS_MAX_DEPTH ?? 3),
     maxRequestInput: Number(process.env.TASKS_MAX_REQUEST_INPUT ?? 3),
+    maxInterKinRequests: Number(process.env.TASKS_MAX_INTER_KIN_REQUESTS ?? 3),
+    interKinResponseTimeoutMs: Number(process.env.TASKS_INTER_KIN_RESPONSE_TIMEOUT_MS ?? 300000), // 5min
     maxConcurrent: Number(process.env.TASKS_MAX_CONCURRENT ?? 10),
   },
 

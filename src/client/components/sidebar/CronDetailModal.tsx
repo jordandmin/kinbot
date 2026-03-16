@@ -26,6 +26,7 @@ import {
   Loader2,
   Ban,
   UserCheck,
+  MessageSquare,
   Cpu,
   Copy,
   Play,
@@ -74,6 +75,7 @@ const TASK_STATUS_CONFIG: Record<TaskStatus, {
   failed: { icon: XCircle, iconClass: 'text-destructive' },
   cancelled: { icon: Ban, iconClass: 'text-muted-foreground' },
   awaiting_human_input: { icon: UserCheck, iconClass: 'text-warning animate-pulse' },
+  awaiting_kin_response: { icon: MessageSquare, iconClass: 'text-info animate-pulse' },
 }
 
 export function CronDetailModal({

@@ -194,6 +194,7 @@
         "pending": "Ausstehend",
         "in_progress": "Läuft",
         "awaiting_human_input": "Warten auf dich",
+        "awaiting_kin_response": "Warten auf Kin",
         "completed": "Erledigt",
         "failed": "Fehlgeschlagen",
         "cancelled": "Abgesagt"
