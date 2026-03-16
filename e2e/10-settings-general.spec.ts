@@ -179,15 +179,26 @@ test.describe.serial('Settings — General & Navigation', () => {
     await hubKinLabel.scrollIntoViewIfNeeded()
     const selectTrigger = page.getByRole('dialog').getByRole('combobox').first()
     await expect(selectTrigger).toBeVisible({ timeout: 10_000 })
+
+    // Read the currently selected value so we can pick a DIFFERENT one
+    const currentText = (await selectTrigger.textContent()) ?? ''
     await selectTrigger.click()
 
-    // Pick the first real kin option (skip the "None" option which is first)
+    // Pick an option that differs from the current selection
     const options = page.getByRole('option')
     await expect(options.first()).toBeVisible({ timeout: 3_000 })
     const count = await options.count()
-    // If there's more than one option, pick the second (first real kin); otherwise pick the first
-    const option = count > 1 ? options.nth(1) : options.first()
-    const kinName = await option.textContent()
+    let option = options.first()
+    let kinName = await option.textContent()
+    for (let i = 0; i < count; i++) {
+      const candidate = options.nth(i)
+      const text = await candidate.textContent()
+      if (text && text !== currentText) {
+        option = candidate
+        kinName = text
+        break
+      }
+    }
     await option.click()
 
     // Click Save to persist the change
@@ -206,7 +217,7 @@ test.describe.serial('Settings — General & Navigation', () => {
     await openSettings(page)
 
     // Find and click the help toggle
-    const helpToggle = page.getByRole('dialog').locator('button:has(.lucide-circle-question-mark)')
+    const helpToggle = page.getByRole('dialog').locator('button:has(.lucide-help-circle)')
     await expect(helpToggle).toBeVisible({ timeout: 5_000 })
     await helpToggle.click()
 
