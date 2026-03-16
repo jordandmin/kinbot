@@ -127,6 +127,11 @@ These tools let a Kin spawn background sub-agents and manage delegated work:
 | `list_channels` | List configured messaging channels |
 | `list_channel_conversations` | List recent conversations on a channel |
 | `send_channel_message` | Send a message to a channel |
+| `create_channel` | Create a new messaging channel |
+| `update_channel` | Update channel configuration |
+| `delete_channel` | Delete a messaging channel |
+| `activate_channel` | Activate an inactive channel |
+| `deactivate_channel` | Deactivate an active channel |
 
 ### Files & Images
 
@@ -202,7 +207,10 @@ Plugin management tools are **opt-in** (disabled by default). Enable them via `e
 |---|---|
 | `run_shell` | Execute a shell command (main + sub-kin) |
 | `http_request` | Make HTTP requests to external APIs |
+| `get_platform_config` | Read current KinBot configuration (sensitive values redacted) |
 | `get_platform_logs` | View KinBot platform logs (opt-in) |
+| `update_platform_config` | Modify a config value in the .env file (opt-in) |
+| `restart_platform` | Trigger a graceful restart of KinBot (opt-in) |
 | `get_system_info` | Get system/platform information |
 | `execute_sql` | Run raw SQL on the database (opt-in, dangerous) |
 
@@ -233,14 +241,14 @@ Each Kin has a **tool config** that controls access:
   "mcpAccess": {
     "server-id": ["*"]
   },
-  "enabledOptInTools": ["create_kin", "get_platform_logs"],
+  "enabledOptInTools": ["create_kin", "get_platform_logs", "update_platform_config", "restart_platform"],
   "searchProviderId": "provider-id"
 }
 ```
 
 - **disabledNativeTools** — deny-list of native tools to hide from this Kin
 - **mcpAccess** — which MCP server tools the Kin can use (`["*"]` for all tools on a server, or specific tool names)
-- **enabledOptInTools** — explicitly enable tools that are disabled by default (kin management, plugin management, `get_platform_logs`, `execute_sql`)
+- **enabledOptInTools** — explicitly enable tools that are disabled by default (kin management, plugin management, platform tools, `execute_sql`)
 - **searchProviderId** — override the global web search provider for this Kin
 
 Configure this in the Kin's settings page in the UI.
@@ -254,6 +262,8 @@ Some powerful tools are **disabled by default** and must be explicitly enabled v
 | `create_kin`, `update_kin`, `delete_kin`, `get_kin_details` | Can modify platform structure |
 | All plugin management tools | Can install/remove server extensions |
 | `get_platform_logs` | Exposes internal server logs |
+| `update_platform_config` | Can modify server configuration |
+| `restart_platform` | Can restart the entire KinBot process |
 | `execute_sql` | Direct database access — use with extreme caution |
 
 ## Tool availability
