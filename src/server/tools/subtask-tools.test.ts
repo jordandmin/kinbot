@@ -78,10 +78,9 @@ describe('subtask-tools', () => {
       expect(mockReportToParent).toHaveBeenCalledWith('task-1', longMsg)
     })
 
-    it('has a description mentioning await and async modes', () => {
+    it('has a description mentioning parent Kin', () => {
       const tool = createTool(reportToParentTool, { kinId: 'kin-1', taskId: 'task-1' })
-      expect(tool.description).toContain('await')
-      expect(tool.description).toContain('async')
+      expect(tool.description).toContain('parent Kin')
     })
   })
 

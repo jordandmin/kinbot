@@ -210,9 +210,8 @@ describe('buildSystemPrompt', () => {
         },
       ],
     }))
-    expect(result).toContain('## MCP Tools')
-    expect(result).toContain('**weather-server**')
-    expect(result).toContain('`get_weather`')
+    expect(result).toContain('## MCP Tools (external servers)')
+    expect(result).toContain('**weather-server** (1 tools)')
   })
 
   it('includes active channels block', () => {
