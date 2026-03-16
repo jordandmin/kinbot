@@ -827,6 +827,13 @@ export async function cancelTask(taskId: string, kinId: string) {
   const { cancelPendingPromptsForTask } = await import('@/server/services/human-prompts')
   await cancelPendingPromptsForTask(taskId)
 
+  // Clear any pending inter-Kin timeout timer
+  const interKinTimer = interKinTimeouts.get(taskId)
+  if (interKinTimer) {
+    clearTimeout(interKinTimer)
+    interKinTimeouts.delete(taskId)
+  }
+
   await db
     .update(tasks)
     .set({ status: 'cancelled', pendingRequestId: null, updatedAt: new Date() })
@@ -1107,16 +1114,25 @@ export async function suspendTaskForKinResponse(
   return { success: true as const }
 }
 
+/** Active timeout timers for inter-Kin requests, keyed by taskId */
+const interKinTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+
 /**
  * Schedule a timeout that resumes the task if no inter-Kin reply arrives in time.
  */
 function scheduleInterKinTimeout(taskId: string, requestId: string) {
-  setTimeout(async () => {
+  const timer = setTimeout(async () => {
+    interKinTimeouts.delete(taskId)
     try {
+      // Atomic claim: only one path (timeout or reply) can transition the task
+      const result = sqlite.run(
+        `UPDATE tasks SET status = 'in_progress', pending_request_id = NULL, updated_at = ? WHERE id = ? AND status = 'awaiting_kin_response' AND pending_request_id = ?`,
+        [Date.now(), taskId, requestId],
+      )
+      if (result.changes === 0) return // Already resumed, cancelled, or different request
+
       const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
-      if (!task || task.status !== 'awaiting_kin_response' || task.pendingRequestId !== requestId) {
-        return // Already resumed, cancelled, or different request
-      }
+      if (!task) return
 
       log.info({ taskId, requestId }, 'Inter-Kin response timeout — resuming task')
 
@@ -1129,11 +1145,6 @@ function scheduleInterKinTimeout(taskId: string, requestId: string) {
         sourceType: 'system',
         createdAt: new Date(),
       })
-
-      await db
-        .update(tasks)
-        .set({ status: 'in_progress', pendingRequestId: null, updatedAt: new Date() })
-        .where(eq(tasks.id, taskId))
 
       sseManager.sendToKin(task.parentKinId, {
         type: 'task:status',
@@ -1153,6 +1164,7 @@ function scheduleInterKinTimeout(taskId: string, requestId: string) {
       log.error({ taskId, err }, 'Inter-Kin timeout handler error')
     }
   }, config.tasks.interKinResponseTimeoutMs)
+  interKinTimeouts.set(taskId, timer)
 }
 
 /**
@@ -1165,8 +1177,22 @@ export async function resumeTaskFromKinResponse(
   senderName: string,
   replyMessage: string,
 ) {
+  // Atomic claim: only one path (timeout or reply) can transition the task
+  const result = sqlite.run(
+    `UPDATE tasks SET status = 'in_progress', pending_request_id = NULL, updated_at = ? WHERE id = ? AND status = 'awaiting_kin_response'`,
+    [Date.now(), taskId],
+  )
+  if (result.changes === 0) return false
+
+  // Clear the timeout timer since we got the reply
+  const timer = interKinTimeouts.get(taskId)
+  if (timer) {
+    clearTimeout(timer)
+    interKinTimeouts.delete(taskId)
+  }
+
   const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
-  if (!task || task.status !== 'awaiting_kin_response') return false
+  if (!task) return false
 
   // Inject reply into task's message history
   await db.insert(messages).values({
@@ -1179,11 +1205,6 @@ export async function resumeTaskFromKinResponse(
     sourceId: senderKinId,
     createdAt: new Date(),
   })
-
-  await db
-    .update(tasks)
-    .set({ status: 'in_progress', pendingRequestId: null, updatedAt: new Date() })
-    .where(eq(tasks.id, taskId))
 
   sseManager.sendToKin(task.parentKinId, {
     type: 'task:status',
