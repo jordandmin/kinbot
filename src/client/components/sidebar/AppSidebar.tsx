@@ -68,7 +68,7 @@ export function AppSidebar({
   const { t } = useTranslation()
   const taskData = useTasks()
   const activeCount = taskData.activeTasks.length
-  const hasAwaiting = taskData.activeTasks.some((t) => t.status === 'awaiting_human_input')
+  const hasAwaiting = taskData.activeTasks.some((t) => t.status === 'awaiting_human_input' || t.status === 'awaiting_kin_response')
 
   const [activeTab, setActiveTab] = useState(() => {
     try {

@@ -69,7 +69,7 @@ export type ProviderCapability = 'llm' | 'embedding' | 'image' | 'search' | 'rer
 
 export type MessageSource = 'user' | 'kin' | 'task' | 'cron' | 'system' | 'webhook' | 'channel'
 
-export type TaskStatus = 'pending' | 'in_progress' | 'awaiting_human_input' | 'completed' | 'failed' | 'cancelled'
+export type TaskStatus = 'pending' | 'in_progress' | 'awaiting_human_input' | 'awaiting_kin_response' | 'completed' | 'failed' | 'cancelled'
 
 export type TaskMode = 'await' | 'async'
 

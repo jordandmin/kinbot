@@ -611,6 +611,23 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- When you receive a reply from a Kin you delegated to, synthesize the result and present it to the user in context.\n` +
       `- Use list_kins() to refresh the directory if a new Kin may have been added.`,
     )
+  } else if (params.isSubKin && params.kinDirectory.length > 0) {
+    // Sub-Kin view: compact directory with inter-Kin communication instructions
+    const directoryLines = params.kinDirectory
+      .map((k) => `- ${k.name} (slug: ${k.slug}) — ${k.role}`)
+      .join('\n')
+    blocks.push(
+      `## Kin directory\n\n` +
+      `Available Kins you can communicate with:\n\n` +
+      directoryLines + `\n\n` +
+      `### Inter-Kin communication\n` +
+      `- Use send_message(slug, message, "request") when you need help or information from another Kin. Your task will pause until the response arrives (with a timeout).\n` +
+      `- Use send_message(slug, message, "inform") for one-way notifications (your task continues immediately).\n` +
+      `- Use list_kins() to refresh the directory if needed.\n` +
+      `- You have a limited number of inter-Kin requests per task. Use them wisely.\n\n` +
+      `### Escalation philosophy\n` +
+      `Try to solve the task yourself first. If you encounter something outside your expertise or that requires coordination, reach out to the appropriate Kin. Only involve the human (via notify() or request_input()) as a last resort.`,
+    )
   } else if (!params.isSubKin && params.kinDirectory.length > 0) {
     // Standard view: compact directory
     const directoryLines = params.kinDirectory

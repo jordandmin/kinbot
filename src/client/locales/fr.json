@@ -194,6 +194,7 @@
         "pending": "En attente",
         "in_progress": "En cours",
         "awaiting_human_input": "En attente de votre réponse",
+        "awaiting_kin_response": "En attente d'un Kin",
         "completed": "Terminée",
         "failed": "Échouée",
         "cancelled": "Annulée"

@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/client/components/ui/collapsible'
-import { CheckCircle2, AlertCircle, ChevronRight, Loader2, Clock, XCircle, ExternalLink, UserCheck, ArrowDownToLine } from 'lucide-react'
+import { CheckCircle2, AlertCircle, ChevronRight, Loader2, Clock, XCircle, ExternalLink, UserCheck, MessageSquare, ArrowDownToLine } from 'lucide-react'
 import { MarkdownContent } from '@/client/components/chat/MarkdownContent'
 import { cn } from '@/client/lib/utils'
 import type { TaskStatus } from '@/shared/types'
@@ -145,6 +145,13 @@ function getStatusConfig(status: DisplayTaskStatus, t: (key: string) => string) 
         label: t('sidebar.tasks.status.awaiting_human_input'),
         animate: true,
       }
+    case 'awaiting_kin_response':
+      return {
+        icon: MessageSquare,
+        colorClass: 'text-info',
+        label: t('sidebar.tasks.status.awaiting_kin_response'),
+        animate: true,
+      }
     case 'cancelled':
       return {
         icon: XCircle,
@@ -189,7 +196,7 @@ export const TaskResultCard = memo(function TaskResultCard(props: TaskResultCard
 
   const statusConfig = getStatusConfig(task.status, t)
   const StatusIcon = statusConfig.icon
-  const isActive = task.status === 'pending' || task.status === 'in_progress' || task.status === 'awaiting_human_input'
+  const isActive = task.status === 'pending' || task.status === 'in_progress' || task.status === 'awaiting_human_input' || task.status === 'awaiting_kin_response'
   const isError = task.status === 'failed'
   const hasResult = task.result.trim().length > 0
 

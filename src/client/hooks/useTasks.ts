@@ -36,12 +36,13 @@ export function useTasks() {
   // Fetch active tasks (no pagination — bounded by maxConcurrent)
   const fetchActiveTasks = useCallback(async () => {
     try {
-      const [pending, inProgress, awaitingHuman] = await Promise.all([
+      const [pending, inProgress, awaitingHuman, awaitingKin] = await Promise.all([
         api.get<TasksResponse>('/tasks?status=pending&limit=100&offset=0'),
         api.get<TasksResponse>('/tasks?status=in_progress&limit=100&offset=0'),
         api.get<TasksResponse>('/tasks?status=awaiting_human_input&limit=100&offset=0'),
+        api.get<TasksResponse>('/tasks?status=awaiting_kin_response&limit=100&offset=0'),
       ])
-      const all = [...awaitingHuman.tasks, ...inProgress.tasks, ...pending.tasks]
+      const all = [...awaitingHuman.tasks, ...awaitingKin.tasks, ...inProgress.tasks, ...pending.tasks]
       for (const task of all) knownTaskIdsRef.current.add(task.id)
       setActiveTasks(all)
     } catch {
@@ -101,7 +102,7 @@ export function useTasks() {
       const status = data.status as TaskStatus
       const now = new Date().toISOString()
 
-      const isActiveStatus = status === 'pending' || status === 'in_progress' || status === 'awaiting_human_input'
+      const isActiveStatus = status === 'pending' || status === 'in_progress' || status === 'awaiting_human_input' || status === 'awaiting_kin_response'
 
       let movedTask: TaskSummary | null = null
 

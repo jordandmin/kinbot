@@ -40,6 +40,21 @@ export const sendMessageTool: ToolRegistration = {
             message,
             type,
           })
+
+          // Sub-Kin context with request type: suspend task and wait for reply
+          if (ctx.taskId && type === 'request' && result.requestId) {
+            const { suspendTaskForKinResponse } = await import('@/server/services/tasks')
+            const suspendResult = await suspendTaskForKinResponse(ctx.taskId, result.requestId)
+            if (!suspendResult.success) {
+              return { error: suspendResult.error }
+            }
+            return {
+              success: true,
+              requestId: result.requestId,
+              note: `Your task is now paused waiting for a response from "${slug}". You will receive the response when the task resumes.`,
+            }
+          }
+
           return { success: true, requestId: result.requestId }
         } catch (err) {
           return { error: err instanceof Error ? err.message : 'Unknown error' }

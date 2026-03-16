@@ -154,7 +154,7 @@ export function useChat(kinId: string | null) {
   const fetchActiveTasks = useCallback(async () => {
     if (!kinId) return
     try {
-      const activeStatuses: TaskStatus[] = ['in_progress', 'pending', 'awaiting_human_input']
+      const activeStatuses: TaskStatus[] = ['in_progress', 'pending', 'awaiting_human_input', 'awaiting_kin_response']
       const results = await Promise.all(
         activeStatuses.map((s) =>
           api.get<{ tasks: Array<{ id: string; status: TaskStatus; title: string; description: string; sourceKinName: string | null; sourceKinAvatarUrl: string | null; createdAt: string; parentKinName: string; parentKinAvatarUrl: string | null }> }>(

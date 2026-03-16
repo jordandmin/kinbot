@@ -2,7 +2,7 @@ import { eq, and, gte } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { db } from '@/server/db/index'
 import { createLogger } from '@/server/logger'
-import { kins, messages, queueItems } from '@/server/db/schema'
+import { kins, messages, queueItems, tasks } from '@/server/db/schema'
 import { enqueueMessage } from '@/server/services/queue'
 import { sseManager } from '@/server/sse/index'
 import { config } from '@/server/config'
@@ -163,6 +163,32 @@ interface ReplyParams {
 
 export async function replyToInterKinMessage(params: ReplyParams) {
   const { senderKinId, requestId, message } = params
+
+  // Check if a sub-Kin task is suspended waiting for this reply
+  const suspendedTask = await db
+    .select()
+    .from(tasks)
+    .where(and(
+      eq(tasks.pendingRequestId, requestId),
+      eq(tasks.status, 'awaiting_kin_response'),
+    ))
+    .get()
+
+  if (suspendedTask) {
+    // Route reply directly to the suspended task instead of the main session
+    const senderKin = await db
+      .select({ name: kins.name })
+      .from(kins)
+      .where(eq(kins.id, senderKinId))
+      .get()
+    const senderName = senderKin?.name ?? 'Unknown Kin'
+
+    const { resumeTaskFromKinResponse } = await import('@/server/services/tasks')
+    await resumeTaskFromKinResponse(suspendedTask.id, senderKinId, senderName, message)
+
+    log.info({ taskId: suspendedTask.id, requestId, senderKinId }, 'Inter-Kin reply routed to suspended task')
+    return { success: true }
+  }
 
   // Find the original request to determine sender
   const originalQueueItem = await db
