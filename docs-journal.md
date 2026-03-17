@@ -573,3 +573,9 @@ All sections migrated and accuracy-reviewed:
 - Commit: `3158c85` — pushed to main (--no-verify)
 
 ### Status: docs fully caught up with latest source changes
+
+## 2026-03-17 — Maintenance check: no changes needed
+
+- Checked source commits since last run: `57d2234` (SSE fix for incoming channel messages — `chat:message` already documented), `1a48007`/`f3353b2` (rerank tests), `6df894b` (SSRF security fix in Discord gateway), `4149316` (Discord adapter tests) — no documentation impact
+- All 34 pages remain accurate and complete
+- **Status: docs fully caught up with source code**
