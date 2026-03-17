@@ -115,6 +115,7 @@ describe('rerankDocuments', () => {
       let capturedUrl = ''
       let capturedInit: any = null
 
+      // @ts-expect-error mock fetch
       globalThis.fetch = async (url: any, init: any) => {
         capturedUrl = url.toString()
         capturedInit = init
@@ -151,6 +152,7 @@ describe('rerankDocuments', () => {
     it('sends top_n when provided', async () => {
       let capturedBody: any = null
 
+      // @ts-expect-error mock fetch
       globalThis.fetch = async (_url: any, init: any) => {
         capturedBody = JSON.parse(init.body)
         return new Response(
@@ -174,6 +176,7 @@ describe('rerankDocuments', () => {
       ]
 
       let capturedUrl = ''
+      // @ts-expect-error mock fetch
       globalThis.fetch = async (url: any, _init: any) => {
         capturedUrl = url.toString()
         return new Response(
@@ -187,6 +190,7 @@ describe('rerankDocuments', () => {
     })
 
     it('returns null on API error (does not throw)', async () => {
+      // @ts-expect-error mock fetch
       globalThis.fetch = async () => {
         return new Response('Internal Server Error', { status: 500 })
       }
@@ -196,6 +200,7 @@ describe('rerankDocuments', () => {
     })
 
     it('returns null on network error (does not throw)', async () => {
+      // @ts-expect-error mock fetch
       globalThis.fetch = async () => {
         throw new Error('Network failure')
       }
@@ -221,6 +226,7 @@ describe('rerankDocuments', () => {
       let capturedUrl = ''
       let capturedInit: any = null
 
+      // @ts-expect-error mock fetch
       globalThis.fetch = async (url: any, init: any) => {
         capturedUrl = url.toString()
         capturedInit = init
@@ -255,6 +261,7 @@ describe('rerankDocuments', () => {
     it('sends top_n when provided', async () => {
       let capturedBody: any = null
 
+      // @ts-expect-error mock fetch
       globalThis.fetch = async (_url: any, init: any) => {
         capturedBody = JSON.parse(init.body)
         return new Response(
@@ -278,6 +285,7 @@ describe('rerankDocuments', () => {
       ]
 
       let capturedUrl = ''
+      // @ts-expect-error mock fetch
       globalThis.fetch = async (url: any) => {
         capturedUrl = url.toString()
         return new Response(
@@ -291,6 +299,7 @@ describe('rerankDocuments', () => {
     })
 
     it('returns null on API error', async () => {
+      // @ts-expect-error mock fetch
       globalThis.fetch = async () => new Response('Bad Request', { status: 400 })
 
       const result = await rerankDocuments('q', ['d'], 'model')
@@ -332,6 +341,7 @@ describe('rerankDocuments', () => {
       ]
 
       let capturedUrl = ''
+      // @ts-expect-error mock fetch
       globalThis.fetch = async (url: any) => {
         capturedUrl = url.toString()
         return new Response(
@@ -358,6 +368,7 @@ describe('rerankDocuments', () => {
     })
 
     it('handles empty results array', async () => {
+      // @ts-expect-error mock fetch
       globalThis.fetch = async () =>
         new Response(JSON.stringify({ results: [] }), {
           status: 200,
@@ -369,6 +380,7 @@ describe('rerankDocuments', () => {
     })
 
     it('maps relevance_score to relevanceScore correctly', async () => {
+      // @ts-expect-error mock fetch
       globalThis.fetch = async () =>
         new Response(
           JSON.stringify({
