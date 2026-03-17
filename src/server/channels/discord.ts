@@ -103,7 +103,8 @@ function createGateway(state: GatewayState): void {
     try {
       const parsed = new URL(resumeUrl)
       if (parsed.protocol === 'wss:' && parsed.hostname.endsWith('.discord.gg')) {
-        url = resumeUrl
+        // Reconstruct from validated components to avoid SSRF taint propagation
+        url = `wss://${parsed.hostname}${parsed.pathname}${parsed.search}`
       } else {
         log.warn({ channelId: state.channelId, resumeUrl }, 'Ignoring invalid resume gateway URL')
         state.resumeGatewayUrl = null
