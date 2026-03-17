@@ -74,6 +74,11 @@ interface PromptParams {
     platform: string  // e.g. "telegram", "discord", "whatsapp", "web"
     senderName?: string
   }
+  pendingChannelContext?: {
+    platform: string
+    senderName: string
+    channelId: string
+  }
   conversationState?: {
     visibleMessageCount: number    // Messages currently in context window
     totalMessageCount: number      // Total messages (including compacted)
@@ -886,6 +891,19 @@ export function buildSystemPrompt(params: PromptParams): string {
   const messageHint = buildCurrentMessageHint(params.currentMessageSource)
   if (messageHint) {
     blocks.push(messageHint)
+  }
+
+  // [7.6] Pending channel context (multi-turn awareness)
+  if (params.pendingChannelContext) {
+    const ctx = params.pendingChannelContext
+    blocks.push(
+      `## Pending channel context\n\n` +
+      `The current interaction originated from **${ctx.platform}** (sender: ${ctx.senderName}).\n` +
+      `The user is waiting for a response on ${ctx.platform} — they cannot see this conversation in the web UI.\n` +
+      `When you have the final answer to the user's original request, use \`send_channel_message()\` ` +
+      `with channel_id "${ctx.channelId}" to deliver it back to ${ctx.platform}.\n` +
+      `Adapt your formatting to the ${ctx.platform} platform.`,
+    )
   }
 
   // [8] Date and context

@@ -34,7 +34,7 @@ import { listAvailableKins } from '@/server/services/inter-kin'
 import { listContactsForPrompt, findContactByLinkedUserId } from '@/server/services/contacts'
 import { contactNotes as contactNotesTable } from '@/server/db/schema'
 import { linkFilesToMessage, getFilesForMessage } from '@/server/services/files'
-import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel, findContactByPlatformId } from '@/server/services/channels'
+import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel, findContactByPlatformId, setPendingChannelContext, getPendingChannelContext, clearPendingChannelContext } from '@/server/services/channels'
 import { popStagedAttachments, clearStagedAttachments } from '@/server/tools/attach-file-tool'
 import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
 import { getGlobalPrompt, getHubKinId } from '@/server/services/app-settings'
@@ -424,8 +424,34 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
           }
         }
       }
+      // Store pending channel context for multi-turn awareness
+      if (meta && currentMessageSource) {
+        setPendingChannelContext(kinId, {
+          channelId: meta.channelId,
+          platformChatId: meta.platformChatId,
+          platform: currentMessageSource.platform,
+          senderName: currentMessageSource.senderName ?? 'unknown',
+          createdAt: Date.now(),
+          ttlMs: config.channels.pendingContextTtlMs,
+        })
+      }
     } else if (queueItem.sourceType === 'user') {
       currentMessageSource = { platform: 'web' }
+      // New web UI message replaces any pending channel context
+      clearPendingChannelContext(kinId)
+    }
+
+    // Resolve pending channel context for non-channel turns (inter-Kin, task, cron, etc.)
+    let pendingChannelContext: { platform: string; senderName: string; channelId: string } | undefined
+    if (queueItem.sourceType !== 'channel' && queueItem.sourceType !== 'user') {
+      const pending = getPendingChannelContext(kinId)
+      if (pending) {
+        pendingChannelContext = {
+          platform: pending.platform,
+          senderName: pending.senderName,
+          channelId: pending.channelId,
+        }
+      }
     }
 
     const systemPrompt = buildSystemPrompt({
@@ -445,6 +471,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       compactedUpTo,
       participants: participants.length > 0 ? participants : undefined,
       currentMessageSource,
+      pendingChannelContext,
       currentSpeaker,
       conversationState: {
         visibleMessageCount,

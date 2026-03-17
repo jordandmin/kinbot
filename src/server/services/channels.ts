@@ -40,6 +40,37 @@ export function popChannelQueueMeta(queueItemId: string): ChannelQueueMeta | und
   return meta
 }
 
+// ─── Pending channel context (persists across queue items for multi-turn) ────
+
+export interface PendingChannelContext {
+  channelId: string
+  platformChatId: string
+  platform: string
+  senderName: string
+  createdAt: number
+  ttlMs: number
+}
+
+const pendingChannelContexts = new Map<string, PendingChannelContext>()
+
+export function setPendingChannelContext(kinId: string, ctx: PendingChannelContext) {
+  pendingChannelContexts.set(kinId, ctx)
+}
+
+export function getPendingChannelContext(kinId: string): PendingChannelContext | undefined {
+  const ctx = pendingChannelContexts.get(kinId)
+  if (!ctx) return undefined
+  if (Date.now() - ctx.createdAt > ctx.ttlMs) {
+    pendingChannelContexts.delete(kinId)
+    return undefined
+  }
+  return ctx
+}
+
+export function clearPendingChannelContext(kinId: string) {
+  pendingChannelContexts.delete(kinId)
+}
+
 // ─── CRUD ───────────────────────────────────────────────────────────────────
 
 interface CreateChannelParams {

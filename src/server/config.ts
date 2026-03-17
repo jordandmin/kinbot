@@ -259,6 +259,7 @@ export const config = {
   channels: {
     maxPerKin: Number(process.env.CHANNELS_MAX_PER_KIN ?? 5),
     telegramWebhookPath: '/api/channels/telegram',
+    pendingContextTtlMs: Number(process.env.CHANNEL_PENDING_CONTEXT_TTL ?? 600_000),
   },
 
   quickSessions: {
