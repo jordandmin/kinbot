@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState, type HTMLAttributes } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState, type AnchorHTMLAttributes, type HTMLAttributes } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useTranslation } from 'react-i18next'
@@ -358,6 +358,19 @@ function withHighlight(Tag: string) {
   }
 }
 
+function MarkdownLink({ children, href, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) {
+  const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'))
+  return (
+    <a
+      href={href}
+      {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      {...props}
+    >
+      {highlightChildren(children)}
+    </a>
+  )
+}
+
 const markdownComponents = {
   pre: PreBlock,
   p: withHighlight('p'),
@@ -367,7 +380,7 @@ const markdownComponents = {
   strong: withHighlight('strong'),
   em: withHighlight('em'),
   del: withHighlight('del'),
-  a: withHighlight('a'),
+  a: MarkdownLink,
   h1: withHighlight('h1'),
   h2: withHighlight('h2'),
   h3: withHighlight('h3'),
