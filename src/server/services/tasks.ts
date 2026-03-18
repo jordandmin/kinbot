@@ -113,6 +113,7 @@ interface SpawnParams {
   cronId?: string
   depth?: number
   allowHumanPrompt?: boolean
+  channelOriginId?: string
 }
 
 export async function spawnTask(params: SpawnParams) {
@@ -150,6 +151,7 @@ export async function spawnTask(params: SpawnParams) {
     depth,
     parentTaskId: params.parentTaskId ?? null,
     cronId: params.cronId ?? null,
+    channelOriginId: params.channelOriginId ?? null,
     allowHumanPrompt: params.allowHumanPrompt ?? true,
     createdAt: now,
     updatedAt: now,
@@ -286,6 +288,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       kinId: kinIdentity.id,
       taskId,
       isSubKin: false,
+      channelOriginId: task.channelOriginId ?? undefined,
     })
 
     // Filter disabled native tools per Kin config (deny-list)
@@ -323,6 +326,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       kinId: task.parentKinId,
       taskId,
       isSubKin: true,
+      channelOriginId: task.channelOriginId ?? undefined,
     })
 
     // MCP + custom tools for the spawned Kin
@@ -718,6 +722,7 @@ export async function resolveTask(
       sourceId: executingKinId,
       priority: config.queue.taskPriority,
       taskId, // Used by kin-engine to set metadata.resolvedTaskId on the message
+      channelOriginId: task.channelOriginId ?? undefined,
     })
   } else if (task.mode === 'await' && status === 'failed') {
     await enqueueMessage({
@@ -728,6 +733,7 @@ export async function resolveTask(
       sourceId: executingKinId,
       priority: config.queue.taskPriority,
       taskId,
+      channelOriginId: task.channelOriginId ?? undefined,
     })
   } else if (task.mode === 'async' && status === 'completed' && result) {
     // Async mode: deposit as informational message (no queue entry)
@@ -770,6 +776,7 @@ export async function resolveTask(
         sourceId: executingKinId,
         priority: config.queue.taskPriority,
         taskId,
+        channelOriginId: task.channelOriginId ?? undefined,
       })
     } else {
       // Non-cron async failure: deposit as informational message (no turn)

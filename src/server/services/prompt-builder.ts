@@ -893,16 +893,15 @@ export function buildSystemPrompt(params: PromptParams): string {
     blocks.push(messageHint)
   }
 
-  // [7.6] Pending channel context (multi-turn awareness)
+  // [7.6] Channel origin context (multi-turn awareness — delivery is automatic)
   if (params.pendingChannelContext) {
     const ctx = params.pendingChannelContext
     blocks.push(
-      `## Pending channel context\n\n` +
-      `The current interaction originated from **${ctx.platform}** (sender: ${ctx.senderName}).\n` +
-      `The user is waiting for a response on ${ctx.platform} — they cannot see this conversation in the web UI.\n` +
-      `When you have the final answer to the user's original request, use \`send_channel_message()\` ` +
-      `with channel_id "${ctx.channelId}" to deliver it back to ${ctx.platform}.\n` +
-      `Adapt your formatting to the ${ctx.platform} platform.`,
+      `## Channel origin context\n\n` +
+      `This turn is part of a conversation chain that originated from **${ctx.platform}**.\n` +
+      `Your response will be **automatically delivered** back to ${ctx.platform} — ` +
+      `you do NOT need to call send_channel_message().\n` +
+      `Adapt your formatting to ${ctx.platform} (keep concise, avoid web-only elements).`,
     )
   }
 

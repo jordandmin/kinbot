@@ -39,6 +39,7 @@ export const sendMessageTool: ToolRegistration = {
             targetKinId,
             message,
             type,
+            channelOriginId: ctx.channelOriginId,
           })
 
           // Sub-Kin context with request type: suspend task and wait for reply

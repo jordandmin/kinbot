@@ -70,10 +70,11 @@ interface SendMessageParams {
   message: string
   type: 'request' | 'inform'
   chainRequestId?: string // For depth tracking in ongoing chains
+  channelOriginId?: string // Causal chain tracking for channel follow-up delivery
 }
 
 export async function sendInterKinMessage(params: SendMessageParams) {
-  const { senderKinId, targetKinId, message, type, chainRequestId } = params
+  const { senderKinId, targetKinId, message, type, chainRequestId, channelOriginId } = params
 
   // Validate target Kin exists
   const targetKin = await db.select().from(kins).where(eq(kins.id, targetKinId)).get()
@@ -118,6 +119,7 @@ export async function sendInterKinMessage(params: SendMessageParams) {
       sourceId: senderKinId,
       priority: config.queue.kinPriority,
       requestId,
+      channelOriginId,
     })
   } else {
     // Inform: deposit directly in target's session (no queue, no LLM turn)
@@ -129,6 +131,7 @@ export async function sendInterKinMessage(params: SendMessageParams) {
       content: message,
       sourceType: 'kin',
       sourceId: senderKinId,
+      channelOriginId: channelOriginId ?? null,
       createdAt: new Date(),
     })
 
@@ -209,6 +212,9 @@ export async function replyToInterKinMessage(params: ReplyParams) {
     throw new Error('Original request not found — cannot correlate reply')
   }
 
+  // Propagate channel origin from the original request through the reply chain
+  const channelOriginId = originalQueueItem?.channelOriginId ?? originalMessage?.channelOriginId
+
   const senderKin = await db
     .select({ name: kins.name })
     .from(kins)
@@ -227,6 +233,7 @@ export async function replyToInterKinMessage(params: ReplyParams) {
     sourceId: senderKinId,
     priority: config.queue.kinPriority,
     inReplyTo: requestId,
+    channelOriginId: channelOriginId ?? undefined,
   })
 
   return { success: true }

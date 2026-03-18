@@ -34,7 +34,7 @@ import { listAvailableKins } from '@/server/services/inter-kin'
 import { listContactsForPrompt, findContactByLinkedUserId } from '@/server/services/contacts'
 import { contactNotes as contactNotesTable } from '@/server/db/schema'
 import { linkFilesToMessage, getFilesForMessage } from '@/server/services/files'
-import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel, findContactByPlatformId, setPendingChannelContext, getPendingChannelContext, clearPendingChannelContext } from '@/server/services/channels'
+import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel, findContactByPlatformId, getChannelOriginMeta } from '@/server/services/channels'
 import { popStagedAttachments, clearStagedAttachments } from '@/server/tools/attach-file-tool'
 import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
 import { getGlobalPrompt, getHubKinId } from '@/server/services/app-settings'
@@ -208,6 +208,11 @@ export function abortQuickSessionStream(sessionId: string): boolean {
   return true
 }
 
+/** Determines whether a follow-up queue item should be auto-delivered to the originating channel */
+function shouldAutoDeliverToChannel(queueItem: { messageType: string }): boolean {
+  return ['kin_reply', 'task_result', 'wakeup'].includes(queueItem.messageType)
+}
+
 /**
  * Process the next message in a Kin's queue.
  * Returns true if a message was processed, false if the queue was empty.
@@ -264,6 +269,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceId: queueItem.sourceId,
         requestId: queueItem.requestId,
         inReplyTo: queueItem.inReplyTo,
+        channelOriginId: queueItem.channelOriginId ?? null,
         metadata: messageMetadata,
         createdAt: new Date(),
       })
@@ -456,32 +462,22 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
           }
         }
       }
-      // Store pending channel context for multi-turn awareness
-      if (meta && currentMessageSource) {
-        setPendingChannelContext(kinId, {
-          channelId: meta.channelId,
-          platformChatId: meta.platformChatId,
-          platform: currentMessageSource.platform,
-          senderName: currentMessageSource.senderName ?? 'unknown',
-          createdAt: Date.now(),
-          ttlMs: config.channels.pendingContextTtlMs,
-        })
-      }
     } else if (queueItem.sourceType === 'user') {
       currentMessageSource = { platform: 'web' }
-      // New web UI message replaces any pending channel context
-      clearPendingChannelContext(kinId)
     }
 
-    // Resolve pending channel context for non-channel turns (inter-Kin, task, cron, etc.)
+    // Resolve channel origin context for non-channel turns (inter-Kin reply, task result, etc.)
     let pendingChannelContext: { platform: string; senderName: string; channelId: string } | undefined
-    if (queueItem.sourceType !== 'channel' && queueItem.sourceType !== 'user') {
-      const pending = getPendingChannelContext(kinId)
-      if (pending) {
-        pendingChannelContext = {
-          platform: pending.platform,
-          senderName: pending.senderName,
-          channelId: pending.channelId,
+    if (queueItem.sourceType !== 'channel' && queueItem.sourceType !== 'user' && queueItem.channelOriginId) {
+      const originMeta = getChannelOriginMeta(queueItem.channelOriginId)
+      if (originMeta) {
+        const originChannel = await getChannel(originMeta.channelId)
+        if (originChannel) {
+          pendingChannelContext = {
+            platform: originChannel.platform,
+            senderName: 'user',
+            channelId: originMeta.channelId,
+          }
         }
       }
     }
@@ -571,6 +567,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       kinId,
       userId: effectiveUserId,
       isSubKin: false,
+      channelOriginId: queueItem.channelOriginId ?? undefined,
     })
 
     // Filter disabled native tools (deny-list)
@@ -806,6 +803,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceType: 'kin',
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
+        channelOriginId: queueItem.channelOriginId ?? null,
         metadata: (() => {
           const meta: Record<string, unknown> = {}
           if (relevantMemories.length > 0) meta.injectedMemories = relevantMemories
@@ -854,6 +852,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
       // Channel response delivery (fire-and-forget)
       if (queueItem.sourceType === 'channel' && fullContent) {
+        // Direct channel response: one-shot pop of channel queue meta
         const channelMeta = popChannelQueueMeta(queueItem.id)
         if (channelMeta) {
           const stagedFiles = popStagedAttachments(kinId)
@@ -861,11 +860,25 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
             log.error({ kinId, channelId: channelMeta.channelId, err }, 'Channel response delivery failed')
           })
         } else {
-          // No channel meta — clear any staged attachments to avoid leaking to next turn
+          clearStagedAttachments(kinId)
+        }
+      } else if (queueItem.channelOriginId && fullContent && shouldAutoDeliverToChannel(queueItem)) {
+        // Follow-up auto-delivery: this turn is part of a causal chain from an external channel
+        const originMeta = getChannelOriginMeta(queueItem.channelOriginId)
+        if (originMeta) {
+          const stagedFiles = popStagedAttachments(kinId)
+          deliverChannelResponse(
+            { channelId: originMeta.channelId, platformChatId: originMeta.platformChatId, platformMessageId: originMeta.platformMessageId, platformUserId: originMeta.platformUserId },
+            assistantMessageId,
+            fullContent,
+            stagedFiles.length > 0 ? stagedFiles : undefined,
+          ).catch((err) => {
+            log.error({ kinId, channelOriginId: queueItem.channelOriginId, err }, 'Follow-up channel delivery failed')
+          })
+        } else {
           clearStagedAttachments(kinId)
         }
       } else {
-        // Non-channel source — clear any staged attachments
         clearStagedAttachments(kinId)
       }
 

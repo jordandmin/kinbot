@@ -119,6 +119,7 @@ export const messages = sqliteTable('messages', {
   toolCallId: text('tool_call_id'),
   requestId: text('request_id'),
   inReplyTo: text('in_reply_to'),
+  channelOriginId: text('channel_origin_id'),
   isRedacted: integer('is_redacted', { mode: 'boolean' }).notNull().default(false),
   redactPending: integer('redact_pending', { mode: 'boolean' }).notNull().default(false),
   metadata: text('metadata'), // JSON
@@ -257,6 +258,7 @@ export const tasks = sqliteTable('tasks', {
   requestInputCount: integer('request_input_count').notNull().default(0),
   interKinRequestCount: integer('inter_kin_request_count').notNull().default(0),
   pendingRequestId: text('pending_request_id'),
+  channelOriginId: text('channel_origin_id'),
   allowHumanPrompt: integer('allow_human_prompt', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
@@ -360,6 +362,7 @@ export const queueItems = sqliteTable('queue_items', {
   inReplyTo: text('in_reply_to'),
   taskId: text('task_id').references(() => tasks.id),
   sessionId: text('session_id'),
+  channelOriginId: text('channel_origin_id'),
   status: text('status').notNull().default('pending'), // 'pending' | 'processing' | 'done'
   createdMessageId: text('created_message_id'), // tracks whether the user message was already inserted (idempotency on recovery)
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
