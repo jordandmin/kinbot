@@ -122,6 +122,34 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
 }
 
+/** Max characters to inline from a text-based attachment. */
+const MAX_INLINE_TEXT_LENGTH = 100_000
+
+/** Max file size (bytes) to attempt inlining at all. */
+const MAX_INLINE_FILE_SIZE = 20 * 1024 * 1024
+
+/**
+ * Check if a MIME type represents a text-readable file whose content
+ * can be inlined directly into the LLM context as text.
+ */
+function isTextReadable(mimeType: string): boolean {
+  if (mimeType.startsWith('text/')) return true
+  const textMimes = [
+    'application/json',
+    'application/xml',
+    'application/javascript',
+    'application/typescript',
+    'application/x-yaml',
+    'application/toml',
+    'application/x-sh',
+    'application/sql',
+    'application/graphql',
+    'application/x-httpd-php',
+    'application/xhtml+xml',
+  ]
+  return textMimes.includes(mimeType)
+}
+
 /**
  * Estimate the total token count of a full LLM request payload.
  */
@@ -141,6 +169,10 @@ function estimateContextTokens(
           messagesTokens += estimateTokens(part.text)
         } else if ('type' in part && part.type === 'image') {
           messagesTokens += 85 // rough per-image overhead
+        } else if ('type' in part && part.type === 'file') {
+          // Rough estimate for PDF: ~500 tokens per page, ~3KB per page
+          const dataLen = 'data' in part && typeof part.data === 'string' ? part.data.length * 0.75 : 0
+          messagesTokens += Math.max(500, Math.ceil(dataLen / 3000) * 500)
         }
       }
     }
@@ -1425,11 +1457,35 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
                 image: new Uint8Array(fileBuffer),
                 mimeType: f.mimeType,
               })
-            } else {
-              // Non-image files: mention them as text context
+            } else if (isTextReadable(f.mimeType) && fileBuffer.byteLength <= MAX_INLINE_FILE_SIZE) {
+              // Text-based files: inline content so the LLM can read it
+              let textContent = new TextDecoder().decode(fileBuffer)
+              let truncated = false
+              if (textContent.length > MAX_INLINE_TEXT_LENGTH) {
+                textContent = textContent.slice(0, MAX_INLINE_TEXT_LENGTH)
+                truncated = true
+              }
               contentParts.push({
                 type: 'text' as const,
-                text: `[Attached file: ${f.originalName} (${f.mimeType})]`,
+                text: `[Attached file: ${f.originalName} (${f.mimeType})]\n\n${textContent}${truncated ? '\n\n[... content truncated ...]' : ''}`,
+              })
+            } else if (f.mimeType === 'application/pdf' && fileBuffer.byteLength <= MAX_INLINE_FILE_SIZE) {
+              // PDFs: pass as file content part for providers with native PDF support
+              contentParts.push({
+                type: 'text' as const,
+                text: `[Attached PDF: ${f.originalName}]`,
+              })
+              contentParts.push({
+                type: 'file' as const,
+                data: new Uint8Array(fileBuffer),
+                filename: f.originalName,
+                mediaType: 'application/pdf',
+              })
+            } else {
+              // Binary files or files too large to inline: mention with path for tool access
+              contentParts.push({
+                type: 'text' as const,
+                text: `[Attached file: ${f.originalName} (${f.mimeType}) — use read_file with path: ${f.storedPath}]`,
               })
             }
           } catch {

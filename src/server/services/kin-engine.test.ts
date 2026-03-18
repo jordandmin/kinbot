@@ -161,6 +161,9 @@ function estimateContextTokens(
           total += estimateTokens(part.text)
         } else if ('type' in part && part.type === 'image') {
           total += 85
+        } else if ('type' in part && part.type === 'file') {
+          const dataLen = 'data' in part && typeof part.data === 'string' ? part.data.length * 0.75 : 0
+          total += Math.max(500, Math.ceil(dataLen / 3000) * 500)
         }
       }
     }
@@ -237,6 +240,20 @@ describe('estimateContextTokens', () => {
     expect(estimateContextTokens('sys', messages, undefined)).toBe(
       estimateTokens('sys'),
     )
+  })
+
+  it('handles file parts (PDF estimates)', () => {
+    const messages: ModelMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'file', data: 'A'.repeat(9000), mediaType: 'application/pdf' },
+        ],
+      },
+    ]
+    // 9000 base64 chars ≈ 6750 bytes ≈ ~2.25 pages → ceil(6750/3000)*500 = 1500
+    const expected = estimateTokens('sys') + 1500
+    expect(estimateContextTokens('sys', messages, undefined)).toBe(expected)
   })
 
   it('handles multiple images in one message', () => {
