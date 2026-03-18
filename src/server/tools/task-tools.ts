@@ -48,6 +48,7 @@ export const spawnSelfTool: ToolRegistration = {
           spawnType: 'self',
           model,
           allowHumanPrompt: allow_human_prompt,
+          channelOriginId: ctx.channelOriginId,
         })
         return { taskId, status: 'pending' }
       },
@@ -91,6 +92,7 @@ export const spawnKinTool: ToolRegistration = {
           sourceKinId: kinId,
           model,
           allowHumanPrompt: allow_human_prompt,
+          channelOriginId: ctx.channelOriginId,
         })
         return { taskId, status: 'pending' }
       },

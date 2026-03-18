@@ -9,6 +9,8 @@ export interface ToolExecutionContext {
   userId?: string
   taskId?: string
   isSubKin: boolean
+  /** ID of the originating channel queue item (causal chain tracking) */
+  channelOriginId?: string
 }
 
 /** Factory function that creates an AI SDK Tool bound to an execution context */

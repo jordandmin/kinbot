@@ -93,12 +93,30 @@ export async function checkForUpdates(): Promise<VersionInfo> {
   const currentVersion = config.version
   const release = await fetchLatestRelease(config.versionCheck.repo)
 
+  if (!release) {
+    // Don't update last_time so the next cache-stale check retries sooner.
+    // Return current cache directly (not via getCachedVersionInfo to avoid re-triggering).
+    log.warn('Version check failed, will retry on next interval')
+    const [latest, releaseUrl, releaseNotes, publishedAt, lastCheckedAt] = await Promise.all([
+      getSetting('version_check_latest'),
+      getSetting('version_check_release_url'),
+      getSetting('version_check_release_notes'),
+      getSetting('version_check_published_at'),
+      getSetting('version_check_last_time'),
+    ])
+    return {
+      currentVersion,
+      latestVersion: latest,
+      isUpdateAvailable: latest ? compareSemver(currentVersion, latest) < 0 : false,
+      releaseUrl: releaseUrl ?? null,
+      releaseNotes: releaseNotes ?? null,
+      publishedAt: publishedAt ? Number(publishedAt) : null,
+      lastCheckedAt: lastCheckedAt ? Number(lastCheckedAt) : null,
+    }
+  }
+
   const now = Date.now()
   await setSetting('version_check_last_time', String(now))
-
-  if (!release) {
-    return getCachedVersionInfo(currentVersion)
-  }
 
   const latestVersion = release.tag_name.replace(/^v/, '')
   const isUpdateAvailable = compareSemver(currentVersion, latestVersion) < 0

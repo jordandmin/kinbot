@@ -24,13 +24,17 @@ export interface EnqueueParams {
   sessionId?: string
   /** Uploaded file IDs to link to the message once it's created */
   fileIds?: string[]
+  /** Optional pre-generated ID (used by channel origin to self-reference) */
+  id?: string
+  /** ID of the originating channel queue item (causal chain tracking) */
+  channelOriginId?: string
 }
 
 /**
  * Enqueue a message for a Kin. Returns the queue item ID and position.
  */
 export async function enqueueMessage(params: EnqueueParams) {
-  const id = uuid()
+  const id = params.id ?? uuid()
   const priority = params.priority ?? (params.sourceType === 'user' ? config.queue.userPriority : config.queue.kinPriority)
 
   await db.insert(queueItems).values({
@@ -45,6 +49,7 @@ export async function enqueueMessage(params: EnqueueParams) {
     inReplyTo: params.inReplyTo,
     taskId: params.taskId,
     sessionId: params.sessionId,
+    channelOriginId: params.channelOriginId ?? null,
     status: 'pending',
     createdAt: new Date(),
   })
@@ -102,6 +107,7 @@ export async function dequeueMessage(kinId: string, mode: 'main' | 'quick' = 'ma
     in_reply_to: string | null
     task_id: string | null
     session_id: string | null
+    channel_origin_id: string | null
     status: string
     created_message_id: string | null
     created_at: number
@@ -136,6 +142,7 @@ export async function dequeueMessage(kinId: string, mode: 'main' | 'quick' = 'ma
     inReplyTo: row.in_reply_to,
     taskId: row.task_id,
     sessionId: row.session_id,
+    channelOriginId: row.channel_origin_id,
     status: row.status,
     createdMessageId: row.created_message_id,
     createdAt: new Date(row.created_at),

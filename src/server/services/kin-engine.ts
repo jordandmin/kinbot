@@ -34,7 +34,7 @@ import { listAvailableKins } from '@/server/services/inter-kin'
 import { listContactsForPrompt, findContactByLinkedUserId } from '@/server/services/contacts'
 import { contactNotes as contactNotesTable } from '@/server/db/schema'
 import { linkFilesToMessage, getFilesForMessage } from '@/server/services/files'
-import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel, findContactByPlatformId } from '@/server/services/channels'
+import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel, findContactByPlatformId, getChannelOriginMeta } from '@/server/services/channels'
 import { popStagedAttachments, clearStagedAttachments } from '@/server/tools/attach-file-tool'
 import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
 import { getGlobalPrompt, getHubKinId } from '@/server/services/app-settings'
@@ -122,6 +122,34 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
 }
 
+/** Max characters to inline from a text-based attachment. */
+const MAX_INLINE_TEXT_LENGTH = 100_000
+
+/** Max file size (bytes) to attempt inlining at all. */
+const MAX_INLINE_FILE_SIZE = 20 * 1024 * 1024
+
+/**
+ * Check if a MIME type represents a text-readable file whose content
+ * can be inlined directly into the LLM context as text.
+ */
+function isTextReadable(mimeType: string): boolean {
+  if (mimeType.startsWith('text/')) return true
+  const textMimes = [
+    'application/json',
+    'application/xml',
+    'application/javascript',
+    'application/typescript',
+    'application/x-yaml',
+    'application/toml',
+    'application/x-sh',
+    'application/sql',
+    'application/graphql',
+    'application/x-httpd-php',
+    'application/xhtml+xml',
+  ]
+  return textMimes.includes(mimeType)
+}
+
 /**
  * Estimate the total token count of a full LLM request payload.
  */
@@ -141,6 +169,10 @@ function estimateContextTokens(
           messagesTokens += estimateTokens(part.text)
         } else if ('type' in part && part.type === 'image') {
           messagesTokens += 85 // rough per-image overhead
+        } else if ('type' in part && part.type === 'file') {
+          // Rough estimate for PDF: ~500 tokens per page, ~3KB per page
+          const dataLen = 'data' in part && typeof part.data === 'string' ? part.data.length * 0.75 : 0
+          messagesTokens += Math.max(500, Math.ceil(dataLen / 3000) * 500)
         }
       }
     }
@@ -174,6 +206,11 @@ export function abortQuickSessionStream(sessionId: string): boolean {
   if (!controller) return false
   controller.abort()
   return true
+}
+
+/** Determines whether a follow-up queue item should be auto-delivered to the originating channel */
+function shouldAutoDeliverToChannel(queueItem: { messageType: string }): boolean {
+  return ['kin_reply', 'task_result', 'wakeup'].includes(queueItem.messageType)
 }
 
 /**
@@ -232,6 +269,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceId: queueItem.sourceId,
         requestId: queueItem.requestId,
         inReplyTo: queueItem.inReplyTo,
+        channelOriginId: queueItem.channelOriginId ?? null,
         metadata: messageMetadata,
         createdAt: new Date(),
       })
@@ -452,6 +490,22 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       currentMessageSource = { platform: 'web' }
     }
 
+    // Resolve channel origin context for non-channel turns (inter-Kin reply, task result, etc.)
+    let pendingChannelContext: { platform: string; senderName: string; channelId: string } | undefined
+    if (queueItem.sourceType !== 'channel' && queueItem.sourceType !== 'user' && queueItem.channelOriginId) {
+      const originMeta = getChannelOriginMeta(queueItem.channelOriginId)
+      if (originMeta) {
+        const originChannel = await getChannel(originMeta.channelId)
+        if (originChannel) {
+          pendingChannelContext = {
+            platform: originChannel.platform,
+            senderName: 'user',
+            channelId: originMeta.channelId,
+          }
+        }
+      }
+    }
+
     const systemPrompt = buildSystemPrompt({
       kin: { name: kin.name, slug: kin.slug, role: kin.role, character: kin.character, expertise: kin.expertise },
       contacts: contactsWithSlug,
@@ -469,6 +523,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       compactedUpTo,
       participants: participants.length > 0 ? participants : undefined,
       currentMessageSource,
+      pendingChannelContext,
       currentSpeaker,
       conversationState: {
         visibleMessageCount,
@@ -536,6 +591,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       kinId,
       userId: effectiveUserId,
       isSubKin: false,
+      channelOriginId: queueItem.channelOriginId ?? undefined,
     })
 
     // Filter disabled native tools (deny-list)
@@ -771,6 +827,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceType: 'kin',
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
+        channelOriginId: queueItem.channelOriginId ?? null,
         metadata: (() => {
           const meta: Record<string, unknown> = {}
           if (relevantMemories.length > 0) meta.injectedMemories = relevantMemories
@@ -819,6 +876,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
       // Channel response delivery (fire-and-forget)
       if (queueItem.sourceType === 'channel' && fullContent) {
+        // Direct channel response: one-shot pop of channel queue meta
         const channelMeta = popChannelQueueMeta(queueItem.id)
         if (channelMeta) {
           const stagedFiles = popStagedAttachments(kinId)
@@ -826,11 +884,25 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
             log.error({ kinId, channelId: channelMeta.channelId, err }, 'Channel response delivery failed')
           })
         } else {
-          // No channel meta — clear any staged attachments to avoid leaking to next turn
+          clearStagedAttachments(kinId)
+        }
+      } else if (queueItem.channelOriginId && fullContent && shouldAutoDeliverToChannel(queueItem)) {
+        // Follow-up auto-delivery: this turn is part of a causal chain from an external channel
+        const originMeta = getChannelOriginMeta(queueItem.channelOriginId)
+        if (originMeta) {
+          const stagedFiles = popStagedAttachments(kinId)
+          deliverChannelResponse(
+            { channelId: originMeta.channelId, platformChatId: originMeta.platformChatId, platformMessageId: originMeta.platformMessageId, platformUserId: originMeta.platformUserId },
+            assistantMessageId,
+            fullContent,
+            stagedFiles.length > 0 ? stagedFiles : undefined,
+          ).catch((err) => {
+            log.error({ kinId, channelOriginId: queueItem.channelOriginId, err }, 'Follow-up channel delivery failed')
+          })
+        } else {
           clearStagedAttachments(kinId)
         }
       } else {
-        // Non-channel source — clear any staged attachments
         clearStagedAttachments(kinId)
       }
 
@@ -1422,11 +1494,35 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
                 image: new Uint8Array(fileBuffer),
                 mimeType: f.mimeType,
               })
-            } else {
-              // Non-image files: mention them as text context
+            } else if (isTextReadable(f.mimeType) && fileBuffer.byteLength <= MAX_INLINE_FILE_SIZE) {
+              // Text-based files: inline content so the LLM can read it
+              let textContent = new TextDecoder().decode(fileBuffer)
+              let truncated = false
+              if (textContent.length > MAX_INLINE_TEXT_LENGTH) {
+                textContent = textContent.slice(0, MAX_INLINE_TEXT_LENGTH)
+                truncated = true
+              }
               contentParts.push({
                 type: 'text' as const,
-                text: `[Attached file: ${f.originalName} (${f.mimeType})]`,
+                text: `[Attached file: ${f.originalName} (${f.mimeType})]\n\n${textContent}${truncated ? '\n\n[... content truncated ...]' : ''}`,
+              })
+            } else if (f.mimeType === 'application/pdf' && fileBuffer.byteLength <= MAX_INLINE_FILE_SIZE) {
+              // PDFs: pass as file content part for providers with native PDF support
+              contentParts.push({
+                type: 'text' as const,
+                text: `[Attached PDF: ${f.originalName}]`,
+              })
+              contentParts.push({
+                type: 'file' as const,
+                data: new Uint8Array(fileBuffer),
+                filename: f.originalName,
+                mediaType: 'application/pdf',
+              })
+            } else {
+              // Binary files or files too large to inline: mention with path for tool access
+              contentParts.push({
+                type: 'text' as const,
+                text: `[Attached file: ${f.originalName} (${f.mimeType}) — use read_file with path: ${f.storedPath}]`,
               })
             }
           } catch {

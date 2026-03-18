@@ -40,6 +40,33 @@ export function popChannelQueueMeta(queueItemId: string): ChannelQueueMeta | und
   return meta
 }
 
+// ─── Channel origin store (causal chain tracking for follow-up delivery) ─────
+
+export interface ChannelOriginMeta {
+  channelId: string
+  platformChatId: string
+  platformMessageId: string
+  platformUserId: string
+  createdAt: number
+  ttlMs: number
+}
+
+const channelOriginStore = new Map<string, ChannelOriginMeta>()
+
+export function setChannelOriginMeta(originId: string, meta: ChannelOriginMeta): void {
+  channelOriginStore.set(originId, meta)
+}
+
+export function getChannelOriginMeta(originId: string): ChannelOriginMeta | undefined {
+  const meta = channelOriginStore.get(originId)
+  if (!meta) return undefined
+  if (Date.now() - meta.createdAt > meta.ttlMs) {
+    channelOriginStore.delete(originId)
+    return undefined
+  }
+  return meta
+}
+
 // ─── CRUD ───────────────────────────────────────────────────────────────────
 
 interface CreateChannelParams {
@@ -346,8 +373,12 @@ export async function handleIncomingChannelMessage(channelId: string, incoming: 
     if (fileIds.length === 0) fileIds = undefined
   }
 
+  // Pre-generate ID so the queue item can self-reference as its own channelOriginId
+  const originId = uuid()
+
   // Enqueue message to Kin's queue
   const { id: queueItemId } = await enqueueMessage({
+    id: originId,
     kinId: channel.kinId,
     messageType: 'channel',
     content,
@@ -355,14 +386,25 @@ export async function handleIncomingChannelMessage(channelId: string, incoming: 
     sourceId: channelId,
     priority: config.queue.userPriority,
     fileIds,
+    channelOriginId: originId,
   })
 
-  // Store channel metadata in sideband for response routing
+  // Store channel metadata in one-shot sideband for direct channel response
   setChannelQueueMeta(queueItemId, {
     channelId,
     platformChatId: incoming.platformChatId,
     platformMessageId: incoming.platformMessageId,
     platformUserId: incoming.platformUserId,
+  })
+
+  // Store origin metadata for causal chain tracking (persists for follow-up turns)
+  setChannelOriginMeta(originId, {
+    channelId,
+    platformChatId: incoming.platformChatId,
+    platformMessageId: incoming.platformMessageId,
+    platformUserId: incoming.platformUserId,
+    createdAt: Date.now(),
+    ttlMs: config.channels.pendingOriginTtlMs,
   })
 
   // Send typing indicator (fire-and-forget)

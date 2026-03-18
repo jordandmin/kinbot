@@ -259,6 +259,7 @@ export const config = {
   channels: {
     maxPerKin: Number(process.env.CHANNELS_MAX_PER_KIN ?? 5),
     telegramWebhookPath: '/api/channels/telegram',
+    pendingOriginTtlMs: Number(process.env.CHANNEL_PENDING_ORIGIN_TTL ?? 300_000),
   },
 
   quickSessions: {
@@ -319,7 +320,7 @@ export const config = {
   versionCheck: {
     enabled: process.env.VERSION_CHECK_ENABLED !== 'false',
     repo: process.env.VERSION_CHECK_REPO ?? 'MarlBurroW/kinbot',
-    intervalHours: Number(process.env.VERSION_CHECK_INTERVAL_HOURS ?? 12),
+    intervalHours: Number(process.env.VERSION_CHECK_INTERVAL_HOURS ?? 1),
   },
 
   publicUrl: process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3333}`,
