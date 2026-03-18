@@ -151,10 +151,17 @@ These tools let a Kin spawn background sub-agents and manage delegated work:
 
 | Tool | Description |
 |---|---|
-| `create_webhook` | Create an incoming webhook |
-| `update_webhook` | Update webhook configuration |
+| `create_webhook` | Create an incoming webhook with optional payload filtering |
+| `update_webhook` | Update webhook configuration, including filters |
 | `delete_webhook` | Remove a webhook |
-| `list_webhooks` | List all webhooks |
+| `list_webhooks` | List all webhooks with filter and stats info |
+
+Webhooks support **payload filtering** to drop irrelevant events before they reach the Kin queue, saving LLM tokens. Two filter modes are available:
+
+- **Simple mode** (`filter_mode: "simple"`): Extract a value from the JSON payload using a dot-notation path (`filter_field`, e.g. `"action"` or `"event.type"`) and match against an allowlist (`filter_allowed_values`). Case-insensitive matching.
+- **Advanced mode** (`filter_mode: "advanced"`): Test the raw payload body against a regex pattern (`filter_expression`).
+
+Set `filter_mode` to `null` to disable filtering.
 
 ### Kin Management
 
@@ -200,6 +207,28 @@ Plugin management tools are **opt-in** (disabled by default). Enable them via `e
 |---|---|---|
 | `prompt_human` | main, sub-kin | Ask the user a question and wait for a response |
 | `notify` | main, sub-kin | Send a notification to the user |
+
+### Filesystem & Code
+
+| Tool | Description |
+|---|---|
+| `read_file` | Read a file's contents (text or binary as base64) |
+| `write_file` | Create or overwrite a file |
+| `edit_file` | Replace exact text in a file. Supports `replaceAll` flag for bulk find-and-replace |
+| `multi_edit` | Apply multiple text replacements to a single file atomically (all succeed or none applied) |
+| `list_directory` | List files and directories with optional glob pattern filtering |
+| `grep` | Regex search across files using ripgrep (with grep fallback). Supports 3 output modes: `content`, `files_with_matches`, `count`. Glob filtering, context lines, multiline mode |
+
+:::tip[Tool selection guidance]
+The system prompt includes a tool selection table that steers Kins toward structured file tools over `run_shell`:
+
+- **Search file contents** → `grep` (not `run_shell` with grep/rg)
+- **Find files by pattern** → `list_directory` with pattern (not `run_shell` with find/ls)
+- **Single text replacement** → `edit_file` (not `run_shell` with sed/awk)
+- **Replace all occurrences** → `edit_file` with `replaceAll=true`
+- **Multiple edits, same file** → `multi_edit` (not sequential `edit_file` calls)
+- **Git, builds, tests** → `run_shell`
+:::
 
 ### System & Advanced
 
