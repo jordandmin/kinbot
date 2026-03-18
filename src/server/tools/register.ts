@@ -156,6 +156,8 @@ import {
   editFileTool,
   listDirectoryTool,
 } from '@/server/tools/filesystem-tools'
+import { grepTool } from '@/server/tools/grep-tools'
+import { multiEditTool } from '@/server/tools/multi-edit-tools'
 import {
   listInstalledPluginsTool,
   browsePluginStoreTool,
@@ -358,7 +360,9 @@ export function registerAllTools(): void {
   toolRegistry.register('read_file', readFileTool)
   toolRegistry.register('write_file', writeFileTool)
   toolRegistry.register('edit_file', editFileTool)
+  toolRegistry.register('multi_edit', multiEditTool)
   toolRegistry.register('list_directory', listDirectoryTool)
+  toolRegistry.register('grep', grepTool)
 
   // Knowledge base tools (main only)
   toolRegistry.register('search_knowledge', searchKnowledgeTool)

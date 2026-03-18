@@ -58,7 +58,7 @@ function isBinary(buffer: Buffer): boolean {
   return false
 }
 
-function isPathBlocked(absPath: string): boolean {
+export function isPathBlocked(absPath: string): boolean {
   for (const blocked of BLOCKED_PATHS) {
     if (absPath === blocked || absPath.startsWith(blocked + '/')) return true
   }
@@ -67,7 +67,7 @@ function isPathBlocked(absPath: string): boolean {
   return false
 }
 
-function resolveAndValidate(inputPath: string, workspace: string): string {
+export function resolveAndValidate(inputPath: string, workspace: string): string {
   const absPath = resolve(workspace, inputPath)
   if (isPathBlocked(absPath)) {
     throw new Error(`Access denied: ${inputPath}`)
@@ -82,7 +82,7 @@ export const readFileTool: ToolRegistration = {
   create: (ctx) =>
     tool({
       description:
-        'Read a text file or extract text from a PDF. Use offset/limit for large files.',
+        'Read a text file or extract text from a PDF. Use offset/limit for large files. For searching content across files, use grep instead.',
       inputSchema: z.object({
         path: z.string().describe('Relative to workspace or absolute'),
         offset: z.number().int().min(1).optional().describe('Start line (1-indexed)'),
@@ -187,7 +187,7 @@ export const writeFileTool: ToolRegistration = {
   create: (ctx) =>
     tool({
       description:
-        'Write content to a file. Creates if missing, overwrites if exists.',
+        'Write content to a file. Creates if missing, overwrites if exists. Prefer edit_file or multi_edit for targeted changes to existing files.',
       inputSchema: z.object({
         path: z.string().describe('Relative to workspace or absolute'),
         content: z.string(),
@@ -251,13 +251,17 @@ export const editFileTool: ToolRegistration = {
   create: (ctx) =>
     tool({
       description:
-        'Edit a file by replacing exact text. oldText must match exactly once.',
+        'Edit a file by replacing exact text. By default oldText must match exactly once; set replaceAll=true to replace all occurrences. For multiple different edits to the same file, use multi_edit instead.',
       inputSchema: z.object({
         path: z.string().describe('Relative to workspace or absolute'),
         oldText: z.string().describe('Must match exactly including whitespace'),
         newText: z.string(),
+        replaceAll: z
+          .boolean()
+          .optional()
+          .describe('If true, replace ALL occurrences of oldText. Default: false'),
       }),
-      execute: async ({ path: filePath, oldText, newText }) => {
+      execute: async ({ path: filePath, oldText, newText, replaceAll }) => {
         const workspace = resolve(config.workspace.baseDir, ctx.kinId)
         const absPath = resolveAndValidate(filePath, workspace)
 
@@ -279,20 +283,42 @@ export const editFileTool: ToolRegistration = {
               path: filePath,
             }
           }
-          if (occurrences > 1) {
+          if (!replaceAll && occurrences > 1) {
             return {
               success: false,
               applied: false,
-              error: `oldText matches ${occurrences} locations. It must match exactly once. Use a larger context to disambiguate.`,
+              error: `oldText matches ${occurrences} locations. It must match exactly once. Use a larger context to disambiguate, or set replaceAll=true to replace all occurrences.`,
               path: filePath,
             }
           }
 
-          // Apply the edit
-          const newContent = content.replace(oldText, newText)
+          // Apply the edit(s)
+          const newContent = replaceAll
+            ? content.split(oldText).join(newText)
+            : content.replace(oldText, newText)
           await writeFile(absPath, newContent, 'utf-8')
 
-          // Extract context lines
+          const language = detectLanguage(absPath)
+
+          log.info(
+            { kinId: ctx.kinId, path: filePath, replacementCount: replaceAll ? occurrences : 1 },
+            'File edited',
+          )
+
+          // For replaceAll, skip per-edit context (too many locations)
+          if (replaceAll && occurrences > 1) {
+            return {
+              success: true,
+              applied: true,
+              path: filePath,
+              oldText,
+              newText,
+              replacementCount: occurrences,
+              language: language ?? null,
+            }
+          }
+
+          // Extract context lines for single replacement
           const lines = newContent.split('\n')
           const editStart = content.indexOf(oldText)
           const linesBefore = content.substring(0, editStart).split('\n')
@@ -301,16 +327,13 @@ export const editFileTool: ToolRegistration = {
           const newTextLines = newText.split('\n').length
           const contextEnd = Math.min(lines.length, editLineNum + newTextLines + 3)
 
-          const language = detectLanguage(absPath)
-
-          log.info({ kinId: ctx.kinId, path: filePath }, 'File edited')
-
           return {
             success: true,
             applied: true,
             path: filePath,
             oldText,
             newText,
+            replacementCount: 1,
             language: language ?? null,
             editLine: editLineNum,
             contextBefore: lines.slice(contextStart, editLineNum - 1).join('\n') || undefined,
@@ -399,7 +422,7 @@ export const listDirectoryTool: ToolRegistration = {
   create: (ctx) =>
     tool({
       description:
-        'List directory contents. Skips node_modules, .git, etc. by default.',
+        'List directory contents. Skips node_modules, .git, etc. by default. For searching file contents, use grep instead.',
       inputSchema: z.object({
         path: z.string().optional().describe('Defaults to workspace root'),
         recursive: z.boolean().optional().describe('Default: false'),

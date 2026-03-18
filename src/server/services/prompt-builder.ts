@@ -740,6 +740,18 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- Check duplicates before creating contacts (find_contact_by_identifier).\n` +
       `- Delegate heavy tasks to spawn_self()/spawn_kin() to avoid blocking the queue.\n` +
       `- Use store_file() for substantial content instead of long chat messages.\n\n` +
+      `### File & code tool selection\n` +
+      `| Task | Use | Do NOT use |\n` +
+      `|---|---|---|\n` +
+      `| Search file contents | grep | run_shell with grep/rg |\n` +
+      `| Find files by pattern | list_directory with pattern | run_shell with find/ls |\n` +
+      `| Read a file | read_file | run_shell with cat/head/tail |\n` +
+      `| Single text replacement | edit_file | run_shell with sed/awk |\n` +
+      `| Replace all occurrences | edit_file with replaceAll=true | multiple edit_file calls |\n` +
+      `| Multiple edits, same file | multi_edit | sequential edit_file calls |\n` +
+      `| Create/overwrite file | write_file | run_shell with echo > |\n` +
+      `| Git, builds, tests | run_shell | — |\n\n` +
+      `Prefer structured tools over run_shell for file operations — they have better error handling, security, and structured output. Use grep before read_file when locating something in a codebase. Use multi_edit for 2+ changes to the same file (atomic: all succeed or none applied).\n\n` +
       `### Mini-Apps\n` +
       `You can create interactive web apps (mini-apps) in the KinBot sidebar.\n` +
       `- **Always call get_mini_app_docs first** for the full SDK reference (hooks, components, setup patterns).\n` +
