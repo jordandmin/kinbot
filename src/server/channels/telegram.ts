@@ -2,6 +2,7 @@ import type { ChannelAdapter, IncomingMessageHandler, OutboundMessageParams, Out
 import { readAttachmentBlob, attachmentFileName, isImageAttachment } from '@/server/channels/adapter'
 import type { ChannelAdapterMeta } from '@/server/channels/adapter'
 import { getSecretValue } from '@/server/services/vault'
+import { extractAttachments } from '@/server/channels/telegram-utils'
 import { config } from '@/server/config'
 import { createLogger } from '@/server/logger'
 
@@ -9,6 +10,8 @@ const log = createLogger('channel:telegram')
 
 const TELEGRAM_API = 'https://api.telegram.org'
 const MAX_MESSAGE_LENGTH = 4096
+const POLLING_TIMEOUT_S = 30
+const MAX_BACKOFF_MS = 30_000
 
 export interface TelegramChannelConfig {
   botTokenVaultKey: string
@@ -48,11 +51,12 @@ async function resolveToken(cfg: Record<string, unknown>): Promise<string> {
   return token
 }
 
-async function telegramApi(token: string, method: string, body?: Record<string, unknown>) {
+async function telegramApi(token: string, method: string, body?: Record<string, unknown>, signal?: AbortSignal) {
   const resp = await fetch(`${TELEGRAM_API}/bot${token}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
+    signal,
   })
   const data = await resp.json() as { ok: boolean; result?: unknown; description?: string }
   if (!data.ok) {
@@ -61,21 +65,70 @@ async function telegramApi(token: string, method: string, body?: Record<string, 
   return data.result
 }
 
+/** Returns true when no public HTTPS URL is configured (local/dev setup) */
+export function shouldUsePolling(): boolean {
+  return !process.env.PUBLIC_URL || !config.publicUrl.startsWith('https://')
+}
+
+interface TelegramPollingState {
+  token: string
+  channelId: string
+  onMessage: IncomingMessageHandler
+  offset: number
+  stopped: boolean
+  abortController: AbortController
+  allowedChatIds: Set<string> | null
+}
+
 export class TelegramAdapter implements ChannelAdapter {
   readonly platform = 'telegram'
   readonly meta: ChannelAdapterMeta = { displayName: 'Telegram', brandColor: '#26A5E4' }
+  private pollers = new Map<string, TelegramPollingState>()
 
-  async start(channelId: string, cfg: Record<string, unknown>): Promise<void> {
+  async start(channelId: string, cfg: Record<string, unknown>, onMessage?: IncomingMessageHandler): Promise<void> {
     const token = await resolveToken(cfg)
-    const webhookUrl = `${config.publicUrl}${config.channels.telegramWebhookPath}/${channelId}`
+    const telegramCfg = cfg as unknown as TelegramChannelConfig
 
-    await telegramApi(token, 'setWebhook', { url: webhookUrl })
-    log.info({ channelId, webhookUrl }, 'Telegram webhook set')
+    if (shouldUsePolling()) {
+      // Delete any existing webhook (Telegram requirement before getUpdates)
+      await telegramApi(token, 'deleteWebhook')
+
+      const state: TelegramPollingState = {
+        token,
+        channelId,
+        onMessage: onMessage!,
+        offset: 0,
+        stopped: false,
+        abortController: new AbortController(),
+        allowedChatIds: telegramCfg.allowedChatIds?.length
+          ? new Set(telegramCfg.allowedChatIds)
+          : null,
+      }
+
+      this.pollers.set(channelId, state)
+      // Fire-and-forget — the loop runs in the background
+      this.pollLoop(state)
+      log.info({ channelId, mode: 'polling' }, 'Telegram polling started')
+    } else {
+      const webhookUrl = `${config.publicUrl}${config.channels.telegramWebhookPath}/${channelId}`
+      await telegramApi(token, 'setWebhook', { url: webhookUrl })
+      log.info({ channelId, mode: 'webhook', webhookUrl }, 'Telegram webhook set')
+    }
   }
 
   async stop(channelId: string, cfg?: Record<string, unknown>): Promise<void> {
+    // Check polling mode first
+    const state = this.pollers.get(channelId)
+    if (state) {
+      state.stopped = true
+      state.abortController.abort()
+      this.pollers.delete(channelId)
+      log.info({ channelId }, 'Telegram polling stopped')
+      return
+    }
+
+    // Webhook mode cleanup
     try {
-      // cfg may be passed explicitly or we just attempt to delete
       if (cfg) {
         const token = await resolveToken(cfg)
         await telegramApi(token, 'deleteWebhook')
@@ -84,6 +137,73 @@ export class TelegramAdapter implements ChannelAdapter {
       log.warn({ channelId, err }, 'Failed to delete Telegram webhook (token may be invalid)')
     }
     log.info({ channelId }, 'Telegram webhook removed')
+  }
+
+  private async pollLoop(state: TelegramPollingState): Promise<void> {
+    let backoff = 0
+
+    while (!state.stopped) {
+      try {
+        const updates = await telegramApi(
+          state.token,
+          'getUpdates',
+          {
+            offset: state.offset,
+            timeout: POLLING_TIMEOUT_S,
+            allowed_updates: ['message', 'edited_message'],
+          },
+          state.abortController.signal,
+        ) as Array<{ update_id: number; message?: Record<string, unknown>; edited_message?: Record<string, unknown> }>
+
+        backoff = 0 // reset on success
+
+        for (const update of updates) {
+          state.offset = update.update_id + 1
+          const message = update.message ?? update.edited_message
+          if (!message) continue
+
+          try {
+            await this.processUpdate(state, message)
+          } catch (err) {
+            log.error({ channelId: state.channelId, err }, 'Error processing Telegram update')
+          }
+        }
+      } catch (err) {
+        if (state.stopped) break
+        log.error({ channelId: state.channelId, err }, 'Telegram polling error')
+        backoff = Math.min((backoff || 1000) * 2, MAX_BACKOFF_MS)
+        await new Promise((r) => setTimeout(r, backoff))
+      }
+    }
+  }
+
+  private async processUpdate(state: TelegramPollingState, message: Record<string, unknown>): Promise<void> {
+    const from = message.from as Record<string, unknown> | undefined
+    const chat = message.chat as Record<string, unknown> | undefined
+    if (!from || !chat) return
+
+    const chatId = String(chat.id)
+
+    // Filter by allowed chat IDs
+    if (state.allowedChatIds && !state.allowedChatIds.has(chatId)) return
+
+    const text = (message.text ?? message.caption ?? '') as string
+
+    // Extract file attachments using shared logic
+    const attachments = await extractAttachments(message, state.token)
+
+    // Skip if no text AND no attachments
+    if (!text && attachments.length === 0) return
+
+    await state.onMessage({
+      platformUserId: String(from.id),
+      platformUsername: from.username as string | undefined,
+      platformDisplayName: [from.first_name, from.last_name].filter(Boolean).join(' ') || undefined,
+      platformMessageId: String(message.message_id),
+      platformChatId: chatId,
+      content: text,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    })
   }
 
   async sendMessage(
