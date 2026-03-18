@@ -119,7 +119,7 @@ export function WhatsNewDialog({ open, onOpenChange, currentVersion }: WhatsNewD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col gap-0">
+      <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col gap-0 overflow-hidden">
         <DialogHeader className="pb-3 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="rounded-lg bg-primary/10 p-2">
