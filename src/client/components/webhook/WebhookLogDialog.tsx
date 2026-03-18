@@ -89,9 +89,16 @@ export function WebhookLogDialog({ open, onOpenChange, webhook }: WebhookLogDial
                     className="rounded-lg border p-3 space-y-1.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(log.createdAt).toLocaleString()}
+                        </span>
+                        {log.filtered && (
+                          <Badge variant="secondary" size="xs" className="text-amber-500 border-amber-500/30">
+                            {t('settings.webhooks.filtered')}
+                          </Badge>
+                        )}
+                      </div>
                       {log.sourceIp && (
  <Badge variant="outline" size="xs" className="font-mono">
                           {log.sourceIp}

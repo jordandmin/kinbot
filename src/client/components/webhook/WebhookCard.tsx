@@ -5,7 +5,7 @@ import { Switch } from '@/client/components/ui/switch'
 import { KinBadge } from '@/client/components/common/KinBadge'
 import { ConfirmDeleteButton } from '@/client/components/common/ConfirmDeleteButton'
 import { Badge } from '@/client/components/ui/badge'
-import { Pencil, Trash2, Webhook, Copy, RefreshCw, History } from 'lucide-react'
+import { Pencil, Trash2, Webhook, Copy, RefreshCw, History, Filter } from 'lucide-react'
 import { cn } from '@/client/lib/utils'
 import { useCopyToClipboard } from '@/client/hooks/useCopyToClipboard'
 import type { WebhookSummary } from '@/shared/types'
@@ -39,12 +39,26 @@ export function WebhookCard({ webhook, onEdit, onDelete, onToggle, onRegenerateT
               <p className="text-sm font-medium truncate">{webhook.name}</p>
               <KinBadge name={webhook.kinName} avatarUrl={webhook.kinAvatarUrl} />
               {!webhook.isActive && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t('settings.webhooks.inactive')}</Badge>}
+              {webhook.filterMode && (
+                <Badge variant="outline" size="xs" className="gap-0.5">
+                  <Filter className="size-2.5" />
+                  {webhook.filterMode === 'simple' ? t('settings.webhooks.filterModeSimple') : t('settings.webhooks.filterModeAdvanced')}
+                </Badge>
+              )}
             </div>
             {webhook.description && (
               <p className="text-xs text-muted-foreground truncate mt-0.5">{webhook.description}</p>
             )}
             <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
-              <span>{t('settings.webhooks.triggerCount', { count: webhook.triggerCount })}</span>
+              {webhook.filteredCount > 0 ? (
+                <>
+                  <span>{t('settings.webhooks.statsReceived', { count: webhook.triggerCount })}</span>
+                  <span>{t('settings.webhooks.statsTransmitted', { count: webhook.triggerCount - webhook.filteredCount })}</span>
+                  <span>{t('settings.webhooks.statsFiltered', { count: webhook.filteredCount })}</span>
+                </>
+              ) : (
+                <span>{t('settings.webhooks.triggerCount', { count: webhook.triggerCount })}</span>
+              )}
               <span>{t('settings.webhooks.lastTriggered')}: {formattedLastTriggered}</span>
             </div>
           </div>

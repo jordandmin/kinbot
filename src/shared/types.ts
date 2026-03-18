@@ -178,6 +178,8 @@ export interface CronSummary {
   createdAt: number
 }
 
+export type WebhookFilterMode = 'simple' | 'advanced'
+
 /** Webhook summary as returned by GET /api/webhooks */
 export interface WebhookSummary {
   id: string
@@ -189,6 +191,11 @@ export interface WebhookSummary {
   isActive: boolean
   triggerCount: number
   lastTriggeredAt: number | null
+  filterMode: WebhookFilterMode | null
+  filterField: string | null
+  filterAllowedValues: string[] | null
+  filterExpression: string | null
+  filteredCount: number
   createdBy: 'user' | 'kin'
   createdAt: number
   /** Full incoming URL (scheme + host + path) */
@@ -201,7 +208,15 @@ export interface WebhookLog {
   webhookId: string
   payload: string | null
   sourceIp: string | null
+  filtered: boolean
   createdAt: number
+}
+
+/** Result of testing a webhook filter against a payload */
+export interface WebhookFilterTestResult {
+  passed: boolean
+  extractedValue?: string | null
+  error?: string
 }
 
 // ─── Human Prompt types ──────────────────────────────────────────────────────

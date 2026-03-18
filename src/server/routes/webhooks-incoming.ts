@@ -124,6 +124,10 @@ webhookIncomingRoutes.post('/:webhookId', async (c) => {
     )
   }
 
+  if ('filtered' in result && result.filtered) {
+    return c.json({ success: true, filtered: true })
+  }
+
   return c.json({ success: true })
 })
 

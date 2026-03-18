@@ -294,6 +294,10 @@ export const webhooks = sqliteTable('webhooks', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   lastTriggeredAt: integer('last_triggered_at', { mode: 'timestamp_ms' }),
   triggerCount: integer('trigger_count').notNull().default(0),
+  filterMode: text('filter_mode'), // null | 'simple' | 'advanced'
+  filterField: text('filter_field'), // dot-notation path (simple mode)
+  filterAllowedValues: text('filter_allowed_values'), // JSON array of strings (simple mode)
+  filterExpression: text('filter_expression'), // regex pattern (advanced mode)
   createdBy: text('created_by'), // 'user' | 'kin'
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
@@ -306,6 +310,7 @@ export const webhookLogs = sqliteTable('webhook_logs', {
   webhookId: text('webhook_id').notNull().references(() => webhooks.id, { onDelete: 'cascade' }),
   payload: text('payload'),
   sourceIp: text('source_ip'),
+  filtered: integer('filtered', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 }, (table) => [
   index('idx_webhook_logs_webhook_created').on(table.webhookId, table.createdAt),

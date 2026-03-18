@@ -11,7 +11,13 @@ import {
   regenerateToken,
   buildWebhookUrl,
   getWebhookLogs,
+  getFilteredCounts,
+  getFilteredCount,
+  evaluateFilter,
+  extractFieldPaths,
 } from '@/server/services/webhooks'
+import { webhookLogs } from '@/server/db/schema'
+import { desc } from 'drizzle-orm'
 import type { AppVariables } from '@/server/app'
 import { createLogger } from '@/server/logger'
 
@@ -27,7 +33,7 @@ function kinAvatarUrl(kinId: string, avatarPath: string | null): string | null {
 
 interface KinInfo { name: string; avatarPath: string | null }
 
-function serializeWebhook(webhook: any, kinInfo?: KinInfo) {
+function serializeWebhook(webhook: any, kinInfo?: KinInfo, filteredCount = 0) {
   return {
     id: webhook.id,
     kinId: webhook.kinId,
@@ -38,6 +44,11 @@ function serializeWebhook(webhook: any, kinInfo?: KinInfo) {
     isActive: webhook.isActive,
     triggerCount: webhook.triggerCount,
     lastTriggeredAt: webhook.lastTriggeredAt ? new Date(webhook.lastTriggeredAt).getTime() : null,
+    filterMode: webhook.filterMode ?? null,
+    filterField: webhook.filterField ?? null,
+    filterAllowedValues: webhook.filterAllowedValues ? JSON.parse(webhook.filterAllowedValues) : null,
+    filterExpression: webhook.filterExpression ?? null,
+    filteredCount,
     createdBy: webhook.createdBy,
     createdAt: new Date(webhook.createdAt).getTime(),
     url: buildWebhookUrl(webhook.id),
@@ -63,8 +74,11 @@ webhookRoutes.get('/', async (c) => {
     }
   }
 
+  // Batch-query filtered counts
+  const filteredCounts = await getFilteredCounts(allWebhooks.map((w) => w.id))
+
   return c.json({
-    webhooks: allWebhooks.map((w) => serializeWebhook(w, kinMap.get(w.kinId))),
+    webhooks: allWebhooks.map((w) => serializeWebhook(w, kinMap.get(w.kinId), filteredCounts[w.id] ?? 0)),
   })
 })
 
@@ -144,6 +158,10 @@ webhookRoutes.patch('/:id', async (c) => {
     name?: string
     description?: string | null
     isActive?: boolean
+    filterMode?: string | null
+    filterField?: string | null
+    filterAllowedValues?: string[] | null
+    filterExpression?: string | null
   }>()
 
   // Validate name is non-empty after trimming if provided
@@ -171,14 +189,80 @@ webhookRoutes.patch('/:id', async (c) => {
     )
   }
 
+  // Validate filter fields
+  if (body.filterMode === 'simple') {
+    if (!body.filterField?.trim()) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Filter field is required in simple mode' } },
+        400,
+      )
+    }
+    if (body.filterAllowedValues !== undefined && body.filterAllowedValues !== null) {
+      if (!Array.isArray(body.filterAllowedValues)) {
+        return c.json(
+          { error: { code: 'VALIDATION_ERROR', message: 'filterAllowedValues must be an array' } },
+          400,
+        )
+      }
+    }
+  } else if (body.filterMode === 'advanced') {
+    if (!body.filterExpression?.trim()) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Filter expression is required in advanced mode' } },
+        400,
+      )
+    }
+    if (body.filterExpression.length > 500) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Filter expression must be 500 characters or less' } },
+        400,
+      )
+    }
+    try {
+      new RegExp(body.filterExpression)
+    } catch {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Invalid regular expression' } },
+        400,
+      )
+    }
+  }
+
+  // Build update payload — serialize filterAllowedValues to JSON string for DB
+  const updates: Record<string, unknown> = {}
+  if (body.name !== undefined) updates.name = body.name
+  if (body.description !== undefined) updates.description = body.description
+  if (body.isActive !== undefined) updates.isActive = body.isActive
+
+  if (body.filterMode !== undefined) {
+    if (body.filterMode === null) {
+      // Clear all filter fields
+      updates.filterMode = null
+      updates.filterField = null
+      updates.filterAllowedValues = null
+      updates.filterExpression = null
+    } else if (body.filterMode === 'simple') {
+      updates.filterMode = 'simple'
+      updates.filterField = body.filterField?.trim() ?? null
+      updates.filterAllowedValues = body.filterAllowedValues ? JSON.stringify(body.filterAllowedValues) : null
+      updates.filterExpression = null
+    } else if (body.filterMode === 'advanced') {
+      updates.filterMode = 'advanced'
+      updates.filterField = null
+      updates.filterAllowedValues = null
+      updates.filterExpression = body.filterExpression?.trim() ?? null
+    }
+  }
+
   try {
-    const updated = await updateWebhook(webhookId, body)
+    const updated = await updateWebhook(webhookId, updates)
     if (!updated) {
       return c.json({ error: { code: 'NOT_FOUND', message: 'Webhook not found' } }, 404)
     }
 
     const kin = await db.select({ name: kins.name, avatarPath: kins.avatarPath }).from(kins).where(eq(kins.id, updated.kinId)).get()
-    return c.json({ webhook: serializeWebhook(updated, kin ?? undefined) })
+    const fc = await getFilteredCount(webhookId)
+    return c.json({ webhook: serializeWebhook(updated, kin ?? undefined, fc) })
   } catch (err) {
     return c.json(
       { error: { code: 'WEBHOOK_UPDATE_ERROR', message: err instanceof Error ? err.message : 'Unknown error' } },
@@ -226,6 +310,7 @@ webhookRoutes.get('/:id/logs', async (c) => {
       webhookId: l.webhookId,
       payload: l.payload,
       sourceIp: l.sourceIp,
+      filtered: l.filtered,
       createdAt: new Date(l.createdAt).getTime(),
     })),
   })
@@ -252,5 +337,71 @@ webhookRoutes.post('/:id/regenerate-token', async (c) => {
       { error: { code: 'WEBHOOK_REGENERATE_ERROR', message: err instanceof Error ? err.message : 'Unknown error' } },
       500,
     )
+  }
+})
+
+// POST /api/webhooks/:id/test-filter — test filter config against a payload
+webhookRoutes.post('/:id/test-filter', async (c) => {
+  const webhookId = c.req.param('id')
+  const existing = await getWebhook(webhookId)
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Webhook not found' } }, 404)
+  }
+
+  const body = await c.req.json<{
+    payload: string
+    filterMode?: string | null
+    filterField?: string | null
+    filterAllowedValues?: string[] | null
+    filterExpression?: string | null
+  }>()
+
+  if (!body.payload && body.payload !== '') {
+    return c.json(
+      { error: { code: 'VALIDATION_ERROR', message: 'payload is required' } },
+      400,
+    )
+  }
+
+  // Use overrides if provided, otherwise use saved config
+  const filterConfig = {
+    filterMode: body.filterMode !== undefined ? body.filterMode : existing.filterMode,
+    filterField: body.filterField !== undefined ? body.filterField : existing.filterField,
+    filterAllowedValues: body.filterAllowedValues !== undefined
+      ? (body.filterAllowedValues ? JSON.stringify(body.filterAllowedValues) : null)
+      : existing.filterAllowedValues,
+    filterExpression: body.filterExpression !== undefined ? body.filterExpression : existing.filterExpression,
+  }
+
+  const result = evaluateFilter(filterConfig, body.payload)
+  return c.json(result)
+})
+
+// POST /api/webhooks/:id/suggest-fields — extract field paths from last payload
+webhookRoutes.post('/:id/suggest-fields', async (c) => {
+  const webhookId = c.req.param('id')
+  const existing = await getWebhook(webhookId)
+  if (!existing) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Webhook not found' } }, 404)
+  }
+
+  const lastLog = db
+    .select({ payload: webhookLogs.payload })
+    .from(webhookLogs)
+    .where(eq(webhookLogs.webhookId, webhookId))
+    .orderBy(desc(webhookLogs.createdAt))
+    .limit(1)
+    .get()
+
+  if (!lastLog?.payload) {
+    return c.json({ fields: [], lastPayload: null })
+  }
+
+  try {
+    const parsed = JSON.parse(lastLog.payload)
+    const fields = extractFieldPaths(parsed)
+    return c.json({ fields, lastPayload: lastLog.payload })
+  } catch {
+    return c.json({ fields: [], lastPayload: lastLog.payload })
   }
 })

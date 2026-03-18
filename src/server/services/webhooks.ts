@@ -1,4 +1,4 @@
-import { eq, desc, lt, and, notInArray, sql } from 'drizzle-orm'
+import { eq, desc, lt, and, notInArray, sql, count } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { randomBytes, timingSafeEqual } from 'crypto'
 import { db } from '@/server/db/index'
@@ -90,6 +90,10 @@ export async function updateWebhook(
     name: string
     description: string | null
     isActive: boolean
+    filterMode: string | null
+    filterField: string | null
+    filterAllowedValues: string | null
+    filterExpression: string | null
   }>,
 ) {
   await db
@@ -155,6 +159,125 @@ export async function regenerateToken(webhookId: string) {
   return { token }
 }
 
+// ─── Filter ─────────────────────────────────────────────────────────────────
+
+const MAX_FILTER_EXPRESSION_LENGTH = 500
+
+interface FilterConfig {
+  filterMode: string | null
+  filterField: string | null
+  filterAllowedValues: string | null // raw JSON string from DB
+  filterExpression: string | null
+}
+
+interface FilterResult {
+  passed: boolean
+  extractedValue?: string | null
+  error?: string
+}
+
+function extractByPath(obj: unknown, path: string): unknown {
+  const parts = path.split('.')
+  let current: unknown = obj
+  for (const part of parts) {
+    if (current == null || typeof current !== 'object') return undefined
+    current = (current as Record<string, unknown>)[part]
+  }
+  return current
+}
+
+export function evaluateFilter(config: FilterConfig, payload: string): FilterResult {
+  if (!config.filterMode) return { passed: true }
+
+  if (config.filterMode === 'simple') {
+    if (!config.filterField) return { passed: true }
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(payload)
+    } catch {
+      return { passed: true, error: 'non-json' }
+    }
+
+    const raw = extractByPath(parsed, config.filterField)
+    const extractedValue = raw == null ? null : String(raw)
+
+    let allowedValues: string[] = []
+    try {
+      allowedValues = config.filterAllowedValues ? JSON.parse(config.filterAllowedValues) : []
+    } catch {
+      return { passed: true, error: 'invalid-allowed-values' }
+    }
+
+    if (allowedValues.length === 0) {
+      return { passed: false, extractedValue }
+    }
+
+    if (extractedValue == null) {
+      return { passed: false, extractedValue: null }
+    }
+
+    const lowerValue = extractedValue.toLowerCase()
+    const passed = allowedValues.some((v) => v.toLowerCase() === lowerValue)
+    return { passed, extractedValue }
+  }
+
+  if (config.filterMode === 'advanced') {
+    if (!config.filterExpression) return { passed: true }
+    if (config.filterExpression.length > MAX_FILTER_EXPRESSION_LENGTH) {
+      return { passed: true, error: 'expression-too-long' }
+    }
+
+    try {
+      const regex = new RegExp(config.filterExpression)
+      return { passed: regex.test(payload) }
+    } catch {
+      return { passed: true, error: 'invalid-regex' }
+    }
+  }
+
+  return { passed: true }
+}
+
+export function extractFieldPaths(obj: unknown, prefix = '', depth = 0): string[] {
+  if (depth > 5 || obj == null || typeof obj !== 'object' || Array.isArray(obj)) return []
+
+  const paths: string[] = []
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    const path = prefix ? `${prefix}.${key}` : key
+    paths.push(path)
+    if (value != null && typeof value === 'object' && !Array.isArray(value)) {
+      paths.push(...extractFieldPaths(value, path, depth + 1))
+    }
+    if (paths.length >= 100) break
+  }
+  return paths.slice(0, 100)
+}
+
+export async function getFilteredCount(webhookId: string): Promise<number> {
+  const result = db
+    .select({ value: count() })
+    .from(webhookLogs)
+    .where(and(eq(webhookLogs.webhookId, webhookId), eq(webhookLogs.filtered, true)))
+    .get()
+  return result?.value ?? 0
+}
+
+export async function getFilteredCounts(webhookIds: string[]): Promise<Record<string, number>> {
+  if (webhookIds.length === 0) return {}
+  const rows = db
+    .select({ webhookId: webhookLogs.webhookId, value: count() })
+    .from(webhookLogs)
+    .where(eq(webhookLogs.filtered, true))
+    .groupBy(webhookLogs.webhookId)
+    .all()
+  const map: Record<string, number> = {}
+  for (const row of rows) {
+    map[row.webhookId] = row.value
+  }
+  return map
+}
+
 // ─── Trigger ────────────────────────────────────────────────────────────────
 
 const MAX_LOG_PAYLOAD_BYTES = 10_240 // 10 KB
@@ -163,8 +286,37 @@ export async function triggerWebhook(webhookId: string, payload: string, sourceI
   const webhook = await db.select().from(webhooks).where(eq(webhooks.id, webhookId)).get()
   if (!webhook || !webhook.isActive) return null
 
-  // Increment trigger count + update lastTriggeredAt
   const now = new Date()
+  const logPayload = payload.length > MAX_LOG_PAYLOAD_BYTES ? payload.slice(0, MAX_LOG_PAYLOAD_BYTES) : payload || null
+
+  // Evaluate filter before enqueueing
+  const filterResult = evaluateFilter(webhook, payload)
+
+  if (!filterResult.passed) {
+    // Still increment counter and log (marked as filtered)
+    await db
+      .update(webhooks)
+      .set({
+        triggerCount: webhook.triggerCount + 1,
+        lastTriggeredAt: now,
+        updatedAt: now,
+      })
+      .where(eq(webhooks.id, webhookId))
+
+    await db.insert(webhookLogs).values({
+      id: uuid(),
+      webhookId,
+      payload: logPayload,
+      sourceIp: sourceIp ?? null,
+      filtered: true,
+      createdAt: now,
+    })
+
+    log.debug({ webhookId, webhookName: webhook.name }, 'Webhook payload filtered out')
+    return { filtered: true }
+  }
+
+  // Increment trigger count + update lastTriggeredAt
   await db
     .update(webhooks)
     .set({
@@ -175,12 +327,12 @@ export async function triggerWebhook(webhookId: string, payload: string, sourceI
     .where(eq(webhooks.id, webhookId))
 
   // Insert trigger log (payload truncated to 10KB)
-  const logPayload = payload.length > MAX_LOG_PAYLOAD_BYTES ? payload.slice(0, MAX_LOG_PAYLOAD_BYTES) : payload || null
   await db.insert(webhookLogs).values({
     id: uuid(),
     webhookId,
     payload: logPayload,
     sourceIp: sourceIp ?? null,
+    filtered: false,
     createdAt: now,
   })
 
