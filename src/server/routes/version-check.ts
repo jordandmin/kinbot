@@ -88,7 +88,7 @@ versionCheckRoutes.post('/update', async (c) => {
       )
     }
 
-    const bunInstall = Bun.spawnSync(['bun', 'install'], { cwd: process.cwd() })
+    const bunInstall = Bun.spawnSync([process.execPath, 'install'], { cwd: process.cwd() })
     if (bunInstall.exitCode !== 0) {
       const stderr = bunInstall.stderr.toString().trim()
       return c.json(
@@ -97,7 +97,7 @@ versionCheckRoutes.post('/update', async (c) => {
       )
     }
 
-    const bunBuild = Bun.spawnSync(['bun', 'run', 'build'], { cwd: process.cwd() })
+    const bunBuild = Bun.spawnSync([process.execPath, 'run', 'build'], { cwd: process.cwd() })
     if (bunBuild.exitCode !== 0) {
       const stderr = bunBuild.stderr.toString().trim()
       return c.json(
@@ -110,9 +110,10 @@ versionCheckRoutes.post('/update', async (c) => {
     setTimeout(() => process.exit(0), 2000)
 
     return c.json({ success: true, message: 'Update applied. Server will restart shortly.' })
-  } catch {
+  } catch (err) {
+    console.error('Self-update process failed:', err)
     return c.json(
-      { error: { code: 'UPDATE_FAILED', message: 'Update process failed' } },
+      { error: { code: 'UPDATE_FAILED', message: err instanceof Error ? err.message : 'Update process failed' } },
       500,
     )
   }
