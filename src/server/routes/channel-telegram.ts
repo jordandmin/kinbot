@@ -5,6 +5,8 @@ import { createLogger } from '@/server/logger'
 import type { IncomingAttachment } from '@/server/channels/adapter'
 import { extractAttachments } from '@/server/channels/telegram-utils'
 
+const log = createLogger('routes:channel-telegram')
+
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
 export const channelTelegramRoutes = new Hono()

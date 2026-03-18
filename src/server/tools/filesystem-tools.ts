@@ -109,7 +109,7 @@ export const readFileTool: ToolRegistration = {
             // PDF: extract text instead of rejecting
             if (absPath.endsWith('.pdf')) {
               try {
-                const pdfParse = (await import('pdf-parse')).default
+                const pdfParse = (await import('pdf-parse') as any).default
                 const pdf = await pdfParse(buffer)
                 const text = pdf.text
                 const allLines = text.split('\n')

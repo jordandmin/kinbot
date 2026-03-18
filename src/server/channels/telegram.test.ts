@@ -331,7 +331,7 @@ describe('TelegramAdapter polling mode', () => {
       photo: [{ file_id: 'abc', file_unique_id: 'def', width: 100, height: 100 }],
     }
 
-    const text = (telegramMessage.text ?? telegramMessage.caption ?? '') as string
+    const text = ((telegramMessage as any).text ?? telegramMessage.caption ?? '') as string
     expect(text).toBe('Photo caption here')
   })
 

@@ -190,17 +190,17 @@ describe('addMcpServerTool', () => {
 
     // Check DB inserts
     expect(dbStore['mcp_servers']).toHaveLength(1)
-    expect(dbStore['mcp_servers'][0].name).toBe('my-server')
-    expect(dbStore['mcp_servers'][0].command).toBe('npx')
-    expect(dbStore['mcp_servers'][0].args).toBe(JSON.stringify(['-y', 'some-pkg']))
-    expect(dbStore['mcp_servers'][0].env).toBe(JSON.stringify({ API_KEY: 'secret' }))
-    expect(dbStore['mcp_servers'][0].status).toBe('active')
-    expect(dbStore['mcp_servers'][0].createdByKinId).toBe('test-kin-1')
+    expect(dbStore['mcp_servers']![0]!.name).toBe('my-server')
+    expect(dbStore['mcp_servers']![0]!.command).toBe('npx')
+    expect(dbStore['mcp_servers']![0]!.args).toBe(JSON.stringify(['-y', 'some-pkg']))
+    expect(dbStore['mcp_servers']![0]!.env).toBe(JSON.stringify({ API_KEY: 'secret' }))
+    expect(dbStore['mcp_servers']![0]!.status).toBe('active')
+    expect(dbStore['mcp_servers']![0]!.createdByKinId).toBe('test-kin-1')
 
     // Check auto-assignment
     expect(dbStore['kin_mcp_servers']).toHaveLength(1)
-    expect(dbStore['kin_mcp_servers'][0].kinId).toBe('test-kin-1')
-    expect(dbStore['kin_mcp_servers'][0].mcpServerId).toBe('test-uuid-1234')
+    expect(dbStore['kin_mcp_servers']![0]!.kinId).toBe('test-kin-1')
+    expect(dbStore['kin_mcp_servers']![0]!.mcpServerId).toBe('test-uuid-1234')
 
     // Check SSE broadcast
     expect(broadcastedEvents).toHaveLength(1)
@@ -217,12 +217,12 @@ describe('addMcpServerTool', () => {
 
     expect(result.status).toBe('pending_approval')
     expect(result.message).toContain('approval')
-    expect(dbStore['mcp_servers'][0].status).toBe('pending_approval')
+    expect(dbStore['mcp_servers']![0]!.status).toBe('pending_approval')
 
     // Check notification created
     expect(notificationsCreated).toHaveLength(1)
-    expect(notificationsCreated[0].type).toBe('mcp:pending-approval')
-    expect(notificationsCreated[0].title).toContain('approval')
+    expect(notificationsCreated[0]!.type).toBe('mcp:pending-approval')
+    expect(notificationsCreated[0]!.title).toContain('approval')
   })
 
   it('handles missing optional args and env', async () => {
@@ -232,8 +232,8 @@ describe('addMcpServerTool', () => {
     })
 
     expect(result.serverId).toBe('test-uuid-1234')
-    expect(dbStore['mcp_servers'][0].args).toBeNull()
-    expect(dbStore['mcp_servers'][0].env).toBeNull()
+    expect(dbStore['mcp_servers']![0]!.args).toBeNull()
+    expect(dbStore['mcp_servers']![0]!.env).toBeNull()
   })
 
   it('broadcasts SSE event on creation', async () => {

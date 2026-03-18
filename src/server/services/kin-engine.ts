@@ -897,7 +897,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
             fullContent,
             stagedFiles.length > 0 ? stagedFiles : undefined,
           ).catch((err) => {
-            log.error({ kinId, channelOriginId: queueItem.channelOriginId, err }, 'Follow-up channel delivery failed')
+            log.error({ kinId, channelOriginId: queueItem!.channelOriginId, err }, 'Follow-up channel delivery failed')
           })
         } else {
           clearStagedAttachments(kinId)
