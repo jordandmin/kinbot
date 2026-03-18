@@ -72,7 +72,7 @@ export function UpdateAvailableDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 py-4">
+        <div className="flex-1 min-h-0 overflow-hidden py-4">
           <div className="space-y-4 px-1">
             {/* Version badges */}
             <div className="flex items-center gap-2 flex-wrap">
@@ -87,84 +87,84 @@ export function UpdateAvailableDialog({
 
             {/* Release notes */}
             {versionInfo.releaseNotes && (
-              <div>
+              <div className="flex flex-col min-h-0">
                 <h4 className="text-sm font-semibold mb-2">
                   {t('updateAvailable.releaseNotes')}
                 </h4>
-                <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground overflow-x-auto prose prose-xs prose-neutral dark:prose-invert max-w-none prose-headings:text-sm prose-headings:font-semibold prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-pre:bg-muted prose-pre:text-xs prose-pre:overflow-x-auto prose-code:text-xs prose-code:break-all">
+                <div className="max-h-[40vh] overflow-y-auto rounded-md bg-muted/50 p-3 text-xs text-muted-foreground prose prose-xs prose-neutral dark:prose-invert max-w-none prose-headings:text-sm prose-headings:font-semibold prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-pre:bg-muted prose-pre:text-xs prose-pre:overflow-x-auto prose-code:text-xs prose-code:break-all">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {versionInfo.releaseNotes}
                   </ReactMarkdown>
                 </div>
               </div>
             )}
-
-            {/* Update instructions */}
-            <div>
-              <h4 className="text-sm font-semibold mb-2">
-                {t('updateAvailable.howToUpdate')}
-              </h4>
-
-              {isDocker ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    {t('updateAvailable.dockerInstructions')}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono truncate">
-                      {DOCKER_UPDATE_COMMAND}
-                    </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => copy(DOCKER_UPDATE_COMMAND)}
-                    >
-                      <Copy className="size-3.5 mr-1" />
-                      {copied ? t('common.copied') : t('common.copy')}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground">
-                    {t('updateAvailable.nonDockerInstructions')}
-                  </p>
-                  <Button
-                    onClick={handleUpdate}
-                    disabled={isUpdating}
-                    className="w-full"
-                  >
-                    {isUpdating ? (
-                      <>
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                        {t('updateAvailable.updating')}
-                      </>
-                    ) : (
-                      <>
-                        <Download className="size-4 mr-2" />
-                        {t('updateAvailable.updateButton')}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Link to GitHub release */}
-            {versionInfo.releaseUrl && (
-              <a
-                href={versionInfo.releaseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-              >
-                <ExternalLink className="size-3" />
-                {t('updateAvailable.viewOnGitHub')}
-              </a>
-            )}
           </div>
-        </ScrollArea>
+        </div>
+
+        {/* Update instructions — always visible outside scroll */}
+        <div className="border-t border-border pt-4 space-y-3 px-1">
+          <h4 className="text-sm font-semibold">
+            {t('updateAvailable.howToUpdate')}
+          </h4>
+
+          {isDocker ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {t('updateAvailable.dockerInstructions')}
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono truncate">
+                  {DOCKER_UPDATE_COMMAND}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => copy(DOCKER_UPDATE_COMMAND)}
+                >
+                  <Copy className="size-3.5 mr-1" />
+                  {copied ? t('common.copied') : t('common.copy')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                {t('updateAvailable.nonDockerInstructions')}
+              </p>
+              <Button
+                onClick={handleUpdate}
+                disabled={isUpdating}
+                className="w-full"
+              >
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                    {t('updateAvailable.updating')}
+                  </>
+                ) : (
+                  <>
+                    <Download className="size-4 mr-2" />
+                    {t('updateAvailable.updateButton')}
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Link to GitHub release */}
+          {versionInfo.releaseUrl && (
+            <a
+              href={versionInfo.releaseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+            >
+              <ExternalLink className="size-3" />
+              {t('updateAvailable.viewOnGitHub')}
+            </a>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
