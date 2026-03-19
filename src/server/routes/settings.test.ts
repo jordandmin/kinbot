@@ -1,5 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ mock.module('@/server/db/index', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   userProfiles: { userId: 'userId', role: 'role' },
   kins: { id: 'id', name: 'name', slug: 'slug' },
 }))
@@ -65,6 +67,7 @@ mock.module('@/server/logger', () => ({
 }))
 
 mock.module('drizzle-orm', () => ({
+  ...fullMockDrizzleOrm,
   eq: (...args: unknown[]) => args,
 }))
 

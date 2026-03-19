@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mock DB before importing module ─────────────────────────────────────────
 
@@ -17,28 +18,7 @@ mock.module('@/server/db/index', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
-  kins: {},
-  kinMcpServers: {},
-  mcpServers: {},
-  queueItems: {},
-  compactingSnapshots: {},
-  memories: {},
-  messages: {},
-  contacts: {},
-  contactNotes: {},
-  customTools: {},
-  tasks: {},
-  crons: {},
-  files: {},
-  webhooks: {},
-  humanPrompts: {},
-  channels: {},
-  fileStorage: {},
-  vaultSecrets: {},
-  scheduledWakeups: {},
-  miniApps: {},
-  quickSessions: {},
-  providers: {},
+  ...fullMockSchema,
 }))
 
 mock.module('@/server/config', () => ({
@@ -85,6 +65,7 @@ mock.module('@/server/services/crons', () => ({
 }))
 
 mock.module('drizzle-orm', () => ({
+  ...fullMockDrizzleOrm,
   eq: mock((...args: any[]) => args),
   and: mock((...args: any[]) => args),
   not: mock((a: any) => a),

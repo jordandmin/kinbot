@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import type { ToolExecutionContext } from '@/server/tools/types'
+import { fullMockSchema, fullMockDrizzleOrm, fullMockDbIndex } from '../../test-helpers'
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -14,9 +15,9 @@ const mockHumanPrompts = {
   createHumanPrompt: mock(() => Promise.resolve({ promptId: 'prompt-1' })),
 }
 
-mock.module('@/server/db/index', () => ({ db: mockDb }))
-mock.module('@/server/db/schema', () => ({ tasks: {} }))
-mock.module('drizzle-orm', () => ({ eq: (...args: any[]) => args }))
+mock.module('@/server/db/index', () => ({ ...fullMockDbIndex, db: mockDb }))
+mock.module('@/server/db/schema', () => ({ ...fullMockSchema, tasks: {} }))
+mock.module('drizzle-orm', () => ({ ...fullMockDrizzleOrm, eq: (...args: any[]) => args }))
 mock.module('@/server/services/human-prompts', () => mockHumanPrompts)
 mock.module('@/server/logger', () => ({
   createLogger: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} }),

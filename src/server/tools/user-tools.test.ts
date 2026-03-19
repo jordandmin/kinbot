@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import type { ToolExecutionContext } from '@/server/tools/types'
+import { fullMockSchema, fullMockDbIndex } from '../../test-helpers'
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -11,12 +12,14 @@ const mockDbFrom = mock((): any => ({ innerJoin: mockDbInnerJoin }))
 const mockDbSelect = mock((): any => ({ from: mockDbFrom }))
 
 mock.module('@/server/db/index', () => ({
+  ...fullMockDbIndex,
   db: {
     select: mockDbSelect,
   },
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   user: { id: 'user.id', email: 'user.email', image: 'user.image' },
   userProfiles: {
     userId: 'userProfiles.userId',

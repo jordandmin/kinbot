@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach, spyOn } from 'bun:test'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mock dependencies before importing the module ───────────────────────────
 
@@ -87,6 +88,7 @@ mock.module('ai', () => ({
 
 // Drizzle operators — just return the args for mock matching
 mock.module('drizzle-orm', () => ({
+  ...fullMockDrizzleOrm,
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
   and: (...args: unknown[]) => ({ type: 'and', args }),
   like: (...args: unknown[]) => ({ type: 'like', args }),
@@ -99,6 +101,7 @@ mock.module('@/server/services/rerank', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   memories: {
     id: 'id',
     kinId: 'kinId',

@@ -355,6 +355,7 @@ kinRoutes.get('/:id/context-usage', async (c) => {
       contextTokens: cached.contextTokens,
       contextWindow: cached.contextWindow,
       contextBreakdown: cached.breakdown ?? null,
+      pipelineStatus: cached.pipelineStatus ?? null,
       compactingTokens: compacting.currentTokens,
       compactingThreshold: compacting.tokenThreshold,
       compactingThresholdPercent: compacting.thresholdPercent,
@@ -408,7 +409,8 @@ kinRoutes.get('/:id/context-usage', async (c) => {
   return c.json({
     contextTokens,
     contextWindow,
-    contextBreakdown: { systemPrompt: systemPromptTokens, messages: messagesTokens, tools: 0, total: contextTokens },
+    contextBreakdown: { systemPrompt: systemPromptTokens, messages: messagesTokens, tools: 0, summary: 0, total: contextTokens },
+    pipelineStatus: null,
     compactingTokens: compacting.currentTokens,
     compactingThreshold: compacting.tokenThreshold,
     compactingThresholdPercent: compacting.thresholdPercent,

@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mock dependencies before importing the module ───────────────────────────
 
@@ -46,6 +47,7 @@ mock.module('@/server/db/index', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   files: {
     id: 'id',
     kinId: 'kinId',
@@ -57,44 +59,11 @@ mock.module('@/server/db/schema', () => ({
     size: 'size',
     createdAt: 'createdAt',
   },
-  // Stub other commonly-used exports to prevent mock leak breaking sibling test files
-  kins: { id: 'id', toolConfig: 'toolConfig' },
-  providers: { id: 'id' },
-  messages: { id: 'id' },
-  memories: { id: 'id' },
-  user: { id: 'id' },
-  userProfiles: { id: 'id' },
-  contacts: { id: 'id' },
-  session: { id: 'id' },
-  account: { id: 'id' },
-  compactingSnapshots: { id: 'id' },
-  humanPrompts: { id: 'id' },
-  messageReactions: { id: 'id' },
-  channels: { id: 'id' },
-  channelUserMappings: { id: 'id' },
-  invitations: { id: 'id' },
-  contactIdentifiers: { id: 'id' },
-  contactPlatformIds: { id: 'id' },
-  contactNotes: { id: 'id' },
-  customTools: { id: 'id' },
-  mcpServers: { id: 'id' },
-  kinMcpServers: { id: 'id' },
-  quickSessions: { id: 'id' },
-  tasks: { id: 'id' },
-  crons: { id: 'id' },
-  webhooks: { id: 'id' },
-  webhookLogs: { id: 'id' },
-  vaultSecrets: { id: 'id' },
-  vaultTypes: { id: 'id' },
-  vaultAttachments: { id: 'id' },
-  queueItems: { id: 'id' },
-  verification: { id: 'id' },
-  notifications: { id: 'id' },
 }))
 
 // Mock drizzle-orm operators
-// Stub all commonly-used drizzle-orm operators to prevent mock leak
 mock.module('drizzle-orm', () => ({
+  ...fullMockDrizzleOrm,
   eq: (a: unknown, b: unknown) => ({ op: 'eq', a, b }),
   ne: (a: unknown, b: unknown) => ({ op: 'ne', a, b }),
   and: (...args: unknown[]) => ({ op: 'and', args }),

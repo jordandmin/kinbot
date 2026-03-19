@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // Mock all external dependencies before importing the module
 mock.module('ai', () => ({
@@ -25,6 +26,7 @@ mock.module('@ai-sdk/google', () => ({
 }))
 
 mock.module('drizzle-orm', () => ({
+  ...fullMockDrizzleOrm,
   eq: mock((...args: unknown[]) => args),
 }))
 
@@ -51,6 +53,7 @@ mock.module('@/server/logger', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   providers: {},
 }))
 

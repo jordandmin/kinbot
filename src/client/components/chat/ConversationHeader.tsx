@@ -29,6 +29,7 @@ import { cn } from '@/client/lib/utils'
 import { ConversationStats } from '@/client/components/chat/ConversationStats'
 import { DateNavigator } from '@/client/components/chat/DateNavigator'
 import type { ChatMessage } from '@/client/hooks/useChat'
+import type { ContextTokenBreakdown, ContextPipelineStatus } from '@/shared/types'
 
 interface LLMModel {
   id: string
@@ -61,7 +62,8 @@ interface ConversationHeaderProps {
   onExportJSON?: () => void
   onSearch?: () => void
   onClearConversation?: () => void
-  contextBreakdown?: { systemPrompt: number; messages: number; tools: number; total: number }
+  contextBreakdown?: ContextTokenBreakdown
+  pipelineStatus?: ContextPipelineStatus
   compactingTokens?: number
   compactingThreshold?: number
   compactingThresholdPercent?: number
@@ -98,6 +100,7 @@ export const ConversationHeader = memo(function ConversationHeader({
   onSearch,
   onClearConversation,
   contextBreakdown,
+  pipelineStatus,
   compactingTokens,
   compactingThreshold,
   compactingThresholdPercent,
@@ -274,6 +277,9 @@ export const ConversationHeader = memo(function ConversationHeader({
                     {contextBreakdown.systemPrompt > 0 && (
                       <div className="bg-purple-500" style={{ width: `${Math.max(0.5, (contextBreakdown.systemPrompt / maxTokens) * 100)}%` }} />
                     )}
+                    {(contextBreakdown.summary ?? 0) > 0 && (
+                      <div className="bg-amber-500" style={{ width: `${Math.max(0.5, (contextBreakdown.summary! / maxTokens) * 100)}%` }} />
+                    )}
                     {contextBreakdown.messages > 0 && (
                       <div className="bg-emerald-500" style={{ width: `${Math.max(0.5, (contextBreakdown.messages / maxTokens) * 100)}%` }} />
                     )}
@@ -319,6 +325,9 @@ export const ConversationHeader = memo(function ConversationHeader({
                     {contextBreakdown.systemPrompt > 0 && (
                       <div className="bg-purple-500" style={{ width: `${Math.max(0.5, (contextBreakdown.systemPrompt / maxTokens) * 100)}%` }} />
                     )}
+                    {(contextBreakdown.summary ?? 0) > 0 && (
+                      <div className="bg-amber-500" style={{ width: `${Math.max(0.5, (contextBreakdown.summary! / maxTokens) * 100)}%` }} />
+                    )}
                     {contextBreakdown.messages > 0 && (
                       <div className="bg-emerald-500" style={{ width: `${Math.max(0.5, (contextBreakdown.messages / maxTokens) * 100)}%` }} />
                     )}
@@ -353,6 +362,15 @@ export const ConversationHeader = memo(function ConversationHeader({
                     </span>
                     <span>{formatTokenCount(contextBreakdown.systemPrompt)} ({Math.round((contextBreakdown.systemPrompt / contextBreakdown.total) * 100)}%)</span>
                   </div>
+                  {(contextBreakdown.summary ?? 0) > 0 && (
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <span className="inline-block size-2 rounded-sm bg-amber-500" />
+                        {t('chat.breakdown.summary', 'Summary')}
+                      </span>
+                      <span>{formatTokenCount(contextBreakdown.summary!)} ({Math.round((contextBreakdown.summary! / contextBreakdown.total) * 100)}%)</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span className="flex items-center gap-1.5">
                       <span className="inline-block size-2 rounded-sm bg-emerald-500" />
@@ -364,6 +382,28 @@ export const ConversationHeader = memo(function ConversationHeader({
                     <span className="font-medium">{t('chat.breakdown.total', 'Total')}</span>
                     <span>{formatTokenCount(contextBreakdown.total)} / {formatTokenCount(maxTokens)} ({contextPercent}%)</span>
                   </div>
+                  {pipelineStatus && (pipelineStatus.maskedToolGroups > 0 || pipelineStatus.observationCompactedCount > 0 || pipelineStatus.emergencyTrimmedCount > 0) && (
+                    <div className="space-y-0.5 border-t border-border/40 pt-1">
+                      {pipelineStatus.maskedToolGroups > 0 && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Wrench className="size-2.5 shrink-0" />
+                          <span>{t('chat.pipeline.maskedTools', { count: pipelineStatus.maskedToolGroups, tokens: formatTokenCount(pipelineStatus.estimatedTokensSavedByMasking) })}</span>
+                        </div>
+                      )}
+                      {pipelineStatus.observationCompactedCount > 0 && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Archive className="size-2.5 shrink-0" />
+                          <span>{t('chat.pipeline.observationCompacted', { count: pipelineStatus.observationCompactedCount })}</span>
+                        </div>
+                      )}
+                      {pipelineStatus.emergencyTrimmedCount > 0 && (
+                        <div className="flex items-center gap-1 text-amber-500">
+                          <AlertTriangle className="size-2.5 shrink-0" />
+                          <span>{t('chat.pipeline.emergencyTrim', { count: pipelineStatus.emergencyTrimmedCount })}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-[10px] text-muted-foreground">

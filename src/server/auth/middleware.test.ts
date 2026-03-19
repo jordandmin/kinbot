@@ -1,5 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // We test the middleware's path-skipping logic by mounting it in a real Hono app
 // and sending test requests. The auth.api.getSession is mocked to control behavior.
@@ -31,6 +32,9 @@ mock.module('@/server/db/index', () => ({
   sqlite: {},
   initVirtualTables: () => {},
 }))
+
+mock.module('@/server/db/schema', () => ({ ...fullMockSchema }))
+mock.module('drizzle-orm', () => ({ ...fullMockDrizzleOrm }))
 
 // ─── Import after mocking ────────────────────────────────────────────────────
 

@@ -156,8 +156,21 @@ export const config = {
 
   /** Max estimated tokens for conversation history injected into the LLM context.
    *  Messages are trimmed from the oldest end when this budget is exceeded.
-   *  This prevents tool-heavy conversations from blowing up context windows. */
-  historyTokenBudget: Number(process.env.HISTORY_TOKEN_BUDGET ?? 40000),
+   *  Acts as an emergency safety net — compacting + tool masking are the primary mechanisms.
+   *  Set to 0 to disable (default). */
+  historyTokenBudget: Number(process.env.HISTORY_TOKEN_BUDGET ?? 0),
+
+  /** Number of recent tool call groups to keep fully intact in context.
+   *  Older tool results are collapsed to one-line summaries to save tokens. */
+  toolResultMaskKeepLast: Number(process.env.TOOL_RESULT_MASK_KEEP_LAST ?? 2),
+
+  /** Number of recent turns to keep at full resolution.
+   *  Older turns have tool results truncated to observationMaxChars, and
+   *  long assistant/user text is trimmed. 0 = disabled. */
+  observationCompactionWindow: Number(process.env.OBSERVATION_COMPACTION_WINDOW ?? 10),
+
+  /** Max characters for truncated tool results in the observation compaction zone. */
+  observationMaxChars: Number(process.env.OBSERVATION_MAX_CHARS ?? 200),
 
   memory: {
     extractionModel: process.env.MEMORY_EXTRACTION_MODEL ?? undefined,

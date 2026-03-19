@@ -29,7 +29,7 @@ import { getRelevantMemories, rewriteQueryWithContext } from '@/server/services/
 import { maybeCompact } from '@/server/services/compacting'
 import { resolveMCPTools, getMCPToolsSummary } from '@/server/services/mcp'
 import { resolveCustomTools } from '@/server/services/custom-tools'
-import type { KinToolConfig } from '@/shared/types'
+import type { KinToolConfig, ContextTokenBreakdown, ContextPipelineStatus } from '@/shared/types'
 import { listAvailableKins } from '@/server/services/inter-kin'
 import { listContactsForPrompt, findContactByLinkedUserId } from '@/server/services/contacts'
 import { contactNotes as contactNotesTable } from '@/server/db/schema'
@@ -59,20 +59,12 @@ const activeAbortControllers = new Map<string, AbortController>()
 // AbortController registry for quick sessions — keyed by sessionId
 const quickAbortControllers = new Map<string, AbortController>()
 
-// Token breakdown by category
-export interface ContextTokenBreakdown {
-  systemPrompt: number
-  messages: number
-  tools: number
-  total: number
-}
-
 // Cache of last computed context usage per Kin (populated after each LLM call)
-const lastContextUsage = new Map<string, { contextTokens: number; contextWindow: number; updatedAt: number; breakdown?: ContextTokenBreakdown }>()
+const lastContextUsage = new Map<string, { contextTokens: number; contextWindow: number; updatedAt: number; breakdown?: ContextTokenBreakdown; pipelineStatus?: ContextPipelineStatus }>()
 
 /** Store the latest context usage for a Kin (called after LLM estimation). */
-export function setLastContextUsage(kinId: string, contextTokens: number, contextWindow: number, breakdown?: ContextTokenBreakdown) {
-  lastContextUsage.set(kinId, { contextTokens, contextWindow, updatedAt: Date.now(), breakdown })
+export function setLastContextUsage(kinId: string, contextTokens: number, contextWindow: number, breakdown?: ContextTokenBreakdown, pipelineStatus?: ContextPipelineStatus) {
+  lastContextUsage.set(kinId, { contextTokens, contextWindow, updatedAt: Date.now(), breakdown, pipelineStatus })
 }
 
 /** Get the cached context usage for a Kin, if available. */
@@ -152,13 +144,18 @@ function isTextReadable(mimeType: string): boolean {
 
 /**
  * Estimate the total token count of a full LLM request payload.
+ * When `summaryTokens` is provided, that amount is split out of the system prompt total
+ * and reported as a separate `summary` field.
  */
 function estimateContextTokens(
   systemPrompt: string,
   messageHistory: ModelMessage[],
   tools: Record<string, unknown> | undefined,
+  summaryTokens?: number,
 ): ContextTokenBreakdown {
-  const systemPromptTokens = estimateTokens(systemPrompt)
+  const rawSystemPromptTokens = estimateTokens(systemPrompt)
+  const summary = summaryTokens ?? 0
+  const systemPromptTokens = Math.max(0, rawSystemPromptTokens - summary)
   let messagesTokens = 0
   for (const msg of messageHistory) {
     if (typeof msg.content === 'string') {
@@ -178,11 +175,246 @@ function estimateContextTokens(
     }
   }
   const toolsTokens = (tools && Object.keys(tools).length > 0) ? estimateTokens(JSON.stringify(tools)) : 0
+  const total = systemPromptTokens + summary + messagesTokens + toolsTokens
   return {
     systemPrompt: systemPromptTokens,
     messages: messagesTokens,
     tools: toolsTokens,
-    total: systemPromptTokens + messagesTokens + toolsTokens,
+    summary,
+    total,
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Tool result masking — collapse old tool results to save context tokens
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface ToolMaskingResult {
+  messages: ModelMessage[]
+  maskedGroupCount: number
+  observationCompactedCount: number
+  estimatedTokensSaved: number
+}
+
+/** Tool names that produce files or images — keep a one-line summary instead of fully collapsing. */
+const FILE_TOOL_NAMES = new Set(['generate_image', 'list_image_models', 'read_file', 'write_file', 'edit_file', 'multi_edit', 'attach_file', 'save_to_storage', 'read_from_storage'])
+
+/**
+ * Generate a compact summary for a tool result value that is being collapsed.
+ * For image/file tools, keeps a one-line summary of what was produced.
+ */
+function summarizeToolResultValue(value: unknown, toolName?: string): string {
+  // Special handling for image/file tools — keep a meaningful one-liner
+  if (toolName && FILE_TOOL_NAMES.has(toolName)) {
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      const obj = value as Record<string, unknown>
+      // Image generation: keep url/path + prompt info
+      if (obj.url || obj.path || obj.storagePath) {
+        const path = (obj.url ?? obj.path ?? obj.storagePath) as string
+        return `[${toolName}: ${path}${obj.prompt ? ` — "${String(obj.prompt).slice(0, 60)}"` : ''}]`
+      }
+      // File operations: keep path + success/status
+      if (obj.success !== undefined) {
+        return `[${toolName}: ${obj.path ?? 'done'} — ${obj.success ? 'success' : 'failed'}]`
+      }
+    }
+    // For read_file with string content
+    if (typeof value === 'string' && value.length > 100) {
+      return `[${toolName}: text content (${value.length} chars). Use tool again if needed.]`
+    }
+  }
+
+  if (Array.isArray(value)) {
+    return `[Collapsed — returned ${value.length} items. Use tool again if needed.]`
+  }
+  if (value !== null && typeof value === 'object') {
+    const keys = Object.keys(value as Record<string, unknown>)
+    const keyList = keys.slice(0, 5).join(', ')
+    const suffix = keys.length > 5 ? ', ...' : ''
+    return `[Collapsed — object with keys: ${keyList}${suffix}. Use tool again if needed.]`
+  }
+  if (typeof value === 'string' && value.length > 100) {
+    return `[Collapsed — text response (${value.length} chars). Use tool again if needed.]`
+  }
+  // Small primitives are cheap — keep as-is
+  return String(value)
+}
+
+/**
+ * Truncate a tool result value to maxChars, keeping the beginning.
+ */
+function truncateToolResultValue(value: unknown, maxChars: number): { text: string; savedChars: number } {
+  const json = JSON.stringify(value ?? null)
+  if (json.length <= maxChars) return { text: json, savedChars: 0 }
+  return { text: json.slice(0, maxChars) + ' [truncated]', savedChars: json.length - maxChars }
+}
+
+/**
+ * Compact a text string: collapse redundant whitespace and truncate if needed.
+ */
+function compactText(text: string, maxChars: number): { text: string; savedChars: number } {
+  // Collapse multiple blank lines and trim excessive whitespace
+  let compacted = text.replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ')
+  if (compacted.length <= maxChars) {
+    return { text: compacted, savedChars: text.length - compacted.length }
+  }
+  const savedChars = text.length - maxChars
+  compacted = compacted.slice(0, maxChars) + ' [truncated]'
+  return { text: compacted, savedChars }
+}
+
+/**
+ * Progressive context compaction pipeline — applies three zones of compression:
+ *
+ * 1. **Intact zone** (last `keepLastN` tool groups): fully preserved
+ * 2. **Observation zone** (next `observationWindow` turns back): tool results
+ *    truncated to `observationMaxChars`, long text trimmed
+ * 3. **Collapse zone** (everything older): tool results replaced with one-line
+ *    summaries, long text aggressively trimmed
+ *
+ * Also compacts non-tool messages (user/assistant text) in the observation
+ * and collapse zones by collapsing whitespace and truncating.
+ *
+ * Pure function — returns a new array without mutating the input.
+ */
+export function maskOldToolResults(
+  messages: ModelMessage[],
+  keepLastN: number,
+  observationWindow: number = 0,
+  observationMaxChars: number = 200,
+): ToolMaskingResult {
+  if (keepLastN < 0) keepLastN = 0
+
+  // 1. Identify all tool call group indices (index of the 'tool' message in each pair)
+  const toolGroupIndices: number[] = []
+  for (let i = 1; i < messages.length; i++) {
+    const prev = messages[i - 1]!
+    const curr = messages[i]!
+    if (
+      prev.role === 'assistant' &&
+      Array.isArray(prev.content) &&
+      prev.content.some((p: { type: string }) => p.type === 'tool-call') &&
+      curr.role === 'tool' &&
+      Array.isArray(curr.content)
+    ) {
+      toolGroupIndices.push(i)
+    }
+  }
+
+  // Determine zone boundaries for tool groups
+  const totalGroups = toolGroupIndices.length
+  const intactStart = Math.max(0, totalGroups - keepLastN)
+  const observationStart = Math.max(0, intactStart - observationWindow)
+
+  // Classify each tool group index into zones
+  const collapseSet = new Set<number>() // fully collapse
+  const truncateSet = new Set<number>() // truncate to maxChars
+  for (let g = 0; g < totalGroups; g++) {
+    if (g < observationStart) {
+      collapseSet.add(toolGroupIndices[g]!)
+    } else if (g < intactStart) {
+      truncateSet.add(toolGroupIndices[g]!)
+    }
+    // else: intact — no modification
+  }
+
+  // Determine the message index boundary for observation compaction of text.
+  // Messages before the observation zone boundary get text compaction too.
+  // The observation zone starts at the oldest tool group in that zone, or if no
+  // tool groups, we use a turn-based heuristic from the end.
+  const observationBoundaryIdx = observationStart < totalGroups
+    ? toolGroupIndices[observationStart]!
+    : Math.max(0, messages.length - (keepLastN + observationWindow) * 2)
+  const collapseBoundaryIdx = observationStart > 0
+    ? toolGroupIndices[observationStart - 1]! // last collapsed group index
+    : -1 // nothing to collapse
+
+  const hasWork = collapseSet.size > 0 || truncateSet.size > 0 || observationBoundaryIdx > 0
+  if (!hasWork) {
+    return { messages, maskedGroupCount: 0, observationCompactedCount: 0, estimatedTokensSaved: 0 }
+  }
+
+  // 2. Build a new message array with progressive compaction
+  let tokensSaved = 0
+  let maskedGroupCount = 0
+  let observationCompactedCount = 0
+  const result: ModelMessage[] = []
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i]!
+
+    // ── Tool result messages: collapse or truncate ──
+    if (msg.role === 'tool' && Array.isArray(msg.content)) {
+      if (collapseSet.has(i)) {
+        // COLLAPSE zone: one-line summary
+        maskedGroupCount++
+        const maskedContent = (msg.content as Array<{ type: string; toolCallId: string; toolName: string; output: { type: string; value: unknown } }>).map((part) => {
+          if (part.type !== 'tool-result') return part
+          const originalJson = JSON.stringify(part.output?.value ?? null)
+          const summary = summarizeToolResultValue(part.output?.value, part.toolName)
+          const savedChars = originalJson.length - summary.length
+          if (savedChars > 0) tokensSaved += Math.ceil(savedChars / 4)
+          return { ...part, output: { type: 'text' as const, value: summary } }
+        })
+        result.push({ ...msg, content: maskedContent } as ModelMessage)
+        continue
+      }
+      if (truncateSet.has(i)) {
+        // OBSERVATION zone: truncate to maxChars
+        observationCompactedCount++
+        const truncatedContent = (msg.content as Array<{ type: string; toolCallId: string; toolName: string; output: { type: string; value: unknown } }>).map((part) => {
+          if (part.type !== 'tool-result') return part
+          const { text, savedChars } = truncateToolResultValue(part.output?.value, observationMaxChars)
+          if (savedChars > 0) tokensSaved += Math.ceil(savedChars / 4)
+          return { ...part, output: { type: 'text' as const, value: text } }
+        })
+        result.push({ ...msg, content: truncatedContent } as ModelMessage)
+        continue
+      }
+    }
+
+    // ── Non-tool messages: compact text in older zones ──
+    if (i < observationBoundaryIdx) {
+      const maxTextChars = i <= collapseBoundaryIdx ? 500 : 2000 // tighter in collapse zone
+      if (typeof msg.content === 'string' && msg.content.length > maxTextChars) {
+        const { text, savedChars } = compactText(msg.content, maxTextChars)
+        if (savedChars > 0) {
+          tokensSaved += Math.ceil(savedChars / 4)
+          observationCompactedCount++
+          result.push({ ...msg, content: text } as ModelMessage)
+          continue
+        }
+      }
+      // Multi-part content (assistant with text + tool-call): compact text parts only
+      if (Array.isArray(msg.content) && msg.role === 'assistant') {
+        let modified = false
+        const compactedParts = (msg.content as Array<{ type: string; text?: string; [k: string]: unknown }>).map((part) => {
+          if (part.type === 'text' && typeof part.text === 'string' && part.text.length > maxTextChars) {
+            const { text, savedChars } = compactText(part.text, maxTextChars)
+            if (savedChars > 0) {
+              tokensSaved += Math.ceil(savedChars / 4)
+              modified = true
+              return { ...part, text }
+            }
+          }
+          return part
+        })
+        if (modified) {
+          observationCompactedCount++
+          result.push({ ...msg, content: compactedParts } as ModelMessage)
+          continue
+        }
+      }
+    }
+
+    result.push(msg)
+  }
+
+  return {
+    messages: result,
+    maskedGroupCount,
+    observationCompactedCount,
+    estimatedTokensSaved: tokensSaved,
   }
 }
 
@@ -454,7 +686,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     }
 
     // Build message history (also returns compacting summary for system prompt injection)
-    const { messages: messageHistory, compactingSummary, compactedUpTo, participants, visibleMessageCount, totalMessageCount, hasCompactedHistory, oldestVisibleMessageAt } = await buildMessageHistory(kinId)
+    const { messages: messageHistory, compactingSummary, compactedUpTo, participants, visibleMessageCount, totalMessageCount, hasCompactedHistory, oldestVisibleMessageAt, maskedToolGroups, observationCompactedCount, estimatedTokensSavedByMasking, emergencyTrimmedCount } = await buildMessageHistory(kinId)
 
     // Resolve the current message's originating platform for formatting hints
     let currentMessageSource: { platform: string; senderName?: string } | undefined
@@ -627,10 +859,17 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     const hasTools = Object.keys(tools).length > 0
 
     // Estimate total context tokens and resolve model context window
-    const contextBreakdown = estimateContextTokens(systemPrompt, messageHistory, hasTools ? tools : undefined)
+    const summaryTokens = compactingSummary ? estimateTokens(compactingSummary) : 0
+    const contextBreakdown = estimateContextTokens(systemPrompt, messageHistory, hasTools ? tools : undefined, summaryTokens)
     const contextTokens = contextBreakdown.total
     const contextWindow = getModelContextWindow(kin.model)
-    setLastContextUsage(kinId, contextTokens, contextWindow, contextBreakdown)
+    const pipelineStatus: ContextPipelineStatus = {
+      maskedToolGroups,
+      observationCompactedCount,
+      estimatedTokensSavedByMasking,
+      emergencyTrimmedCount,
+    }
+    setLastContextUsage(kinId, contextTokens, contextWindow, contextBreakdown, pipelineStatus)
     log.debug({ kinId, toolCount: Object.keys(tools).length, modelId: kin.model, contextTokens, contextWindow }, 'Starting LLM stream')
 
     // Compute compacting proximity and cache it for lightweight SSE events
@@ -650,6 +889,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       data: {
         kinId, queueSize: 0, isProcessing: true, contextTokens, contextWindow,
         contextBreakdown,
+        pipelineStatus,
         ...lastCompactingProximity.get(kinId),
       },
     })
@@ -1375,7 +1615,7 @@ export interface ConversationParticipant {
   lastSeenAt: Date
 }
 
-async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMessage[]; compactingSummary: string | null; compactedUpTo: Date | null; participants: ConversationParticipant[]; visibleMessageCount: number; totalMessageCount: number; hasCompactedHistory: boolean; oldestVisibleMessageAt?: Date }> {
+async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMessage[]; compactingSummary: string | null; compactedUpTo: Date | null; participants: ConversationParticipant[]; visibleMessageCount: number; totalMessageCount: number; hasCompactedHistory: boolean; oldestVisibleMessageAt?: Date; maskedToolGroups: number; observationCompactedCount: number; estimatedTokensSavedByMasking: number; emergencyTrimmedCount: number }> {
   const history: ModelMessage[] = []
 
   // Fetch active compacting snapshot (used to filter messages, summary is injected via system prompt)
@@ -1405,9 +1645,10 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
     : recentMessages
 
   // Token-budget trimming: drop oldest messages until we fit within the budget.
-  // This prevents tool-heavy conversations from blowing up the context window.
+  // This is an emergency safety net — compacting + tool masking are the primary mechanisms.
   const tokenBudget = config.historyTokenBudget
   let filteredMessages = postSnapshotMessages
+  let emergencyTrimmedCount = 0
   if (tokenBudget > 0) {
     // Estimate tokens per message (content + tool calls JSON)
     const msgTokens = postSnapshotMessages.map((m) => {
@@ -1422,6 +1663,8 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
       startIdx++
     }
     if (startIdx > 0) {
+      emergencyTrimmedCount = startIdx
+      log.warn({ kinId, droppedMessages: startIdx, tokenBudget }, 'Emergency token-budget trim fired — messages silently dropped from context')
       filteredMessages = postSnapshotMessages.slice(startIdx)
     }
   }
@@ -1590,6 +1833,13 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
     // tool results are reconstructed from the assistant's toolCalls JSON above
   }
 
+  // Mask old tool results to save context tokens
+  const maskResult = maskOldToolResults(history, config.toolResultMaskKeepLast, config.observationCompactionWindow, config.observationMaxChars)
+  const maskedHistory = maskResult.messages
+  if (maskResult.maskedGroupCount > 0 || maskResult.observationCompactedCount > 0) {
+    log.debug({ kinId, maskedGroups: maskResult.maskedGroupCount, observationCompacted: maskResult.observationCompactedCount, tokensSaved: maskResult.estimatedTokensSaved }, 'Context compaction pipeline applied')
+  }
+
   // Extract conversation participant info from filtered messages
   const participantMap = new Map<string, { name: string; platform: string | null; messageCount: number; lastSeenAt: Date }>()
   for (const msg of filteredMessages) {
@@ -1627,7 +1877,7 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
   const oldestVisibleMessageAt = filteredMessages.length > 0 ? (filteredMessages[0]!.createdAt ?? undefined) : undefined
 
   return {
-    messages: history,
+    messages: maskedHistory,
     compactingSummary: activeSnapshot?.summary ?? null,
     compactedUpTo: activeSnapshot?.createdAt ?? null,
     participants,
@@ -1635,6 +1885,10 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
     totalMessageCount: Math.max(totalMessageCount, visibleMessageCount),
     hasCompactedHistory,
     oldestVisibleMessageAt: oldestVisibleMessageAt ?? undefined,
+    maskedToolGroups: maskResult.maskedGroupCount,
+    observationCompactedCount: maskResult.observationCompactedCount,
+    estimatedTokensSavedByMasking: maskResult.estimatedTokensSaved,
+    emergencyTrimmedCount,
   }
 }
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test'
+import { fullMockSchema } from '../../test-helpers'
 
 // Configurable provider list for tests
 let mockProviders: Array<{
@@ -32,6 +33,7 @@ mock.module('@/server/logger', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   providers: {},
   kins: {},
 }))

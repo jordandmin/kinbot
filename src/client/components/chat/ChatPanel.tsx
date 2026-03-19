@@ -28,6 +28,7 @@ import { useFileUpload } from '@/client/hooks/useFileUpload'
 import { useExportConversation } from '@/client/hooks/useExportConversation'
 const ConversationSearch = lazy(() => import('@/client/components/chat/ConversationSearch').then(m => ({ default: m.ConversationSearch })))
 import { QueuePreview } from '@/client/components/chat/QueuePreview'
+import type { ContextTokenBreakdown, ContextPipelineStatus } from '@/shared/types'
 import { ChatEmptyState } from '@/client/components/chat/ChatEmptyState'
 import { DateSeparator } from '@/client/components/chat/DateSeparator'
 import { TimeGapIndicator } from '@/client/components/chat/TimeGapIndicator'
@@ -59,7 +60,7 @@ interface ChatPanelProps {
   kin: KinInfo
   llmModels: LLMModel[]
   modelUnavailable?: boolean
-  queueState?: { isProcessing: boolean; queueSize: number; contextTokens?: number; contextWindow?: number; contextBreakdown?: { systemPrompt: number; messages: number; tools: number; total: number }; compactingTokens?: number; compactingThreshold?: number; compactingThresholdPercent?: number }
+  queueState?: { isProcessing: boolean; queueSize: number; contextTokens?: number; contextWindow?: number; contextBreakdown?: ContextTokenBreakdown; pipelineStatus?: ContextPipelineStatus; compactingTokens?: number; compactingThreshold?: number; compactingThresholdPercent?: number }
   onModelChange: (model: string) => void
   onEditKin: () => void
 }
@@ -622,6 +623,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
         estimatedTokens={queueState?.contextTokens ?? 0}
         maxTokens={queueState?.contextWindow ?? 0}
         contextBreakdown={queueState?.contextBreakdown}
+        pipelineStatus={queueState?.pipelineStatus}
         compactingTokens={queueState?.compactingTokens}
         compactingThreshold={queueState?.compactingThreshold}
         compactingThresholdPercent={queueState?.compactingThresholdPercent}

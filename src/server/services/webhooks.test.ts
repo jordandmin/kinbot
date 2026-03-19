@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mock dependencies ──────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ mock.module('@/server/db/index', () => {
 })
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   webhooks: {},
   webhookLogs: {},
   kins: {},

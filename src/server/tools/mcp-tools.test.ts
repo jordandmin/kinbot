@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import type { ToolRegistration } from '@/server/tools/types'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -61,11 +62,13 @@ mock.module('@/server/db/index', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   mcpServers: { _name: 'mcp_servers', id: 'id' },
   kinMcpServers: { _name: 'kin_mcp_servers' },
 }))
 
 mock.module('drizzle-orm', () => ({
+  ...fullMockDrizzleOrm,
   eq: (col: any, val: any) => ({ col, val }),
 }))
 
@@ -78,6 +81,12 @@ mock.module('@/server/services/mcp', () => ({
     disconnectedIds.push(id)
     return Promise.resolve()
   },
+  disconnectAll: () => Promise.resolve(),
+  getConnectionStatus: () => Promise.resolve({ connected: false }),
+  testConnection: () => Promise.resolve({ connected: false }),
+  getMCPToolsSummary: () => Promise.resolve([]),
+  resolveMCPTools: () => Promise.resolve([]),
+  getMCPToolsForConfig: () => Promise.resolve([]),
 }))
 
 mock.module('@/server/sse/index', () => ({
@@ -93,6 +102,15 @@ mock.module('@/server/services/notifications', () => ({
     notificationsCreated.push(n)
     return Promise.resolve()
   },
+  createNotificationForUser: () => Promise.resolve(),
+  listNotifications: () => Promise.resolve([]),
+  markAsRead: () => Promise.resolve(true),
+  markAllAsRead: () => Promise.resolve(0),
+  deleteNotification: () => Promise.resolve(true),
+  getUnreadCount: () => Promise.resolve(0),
+  getUserPreferences: () => Promise.resolve({}),
+  updatePreference: () => Promise.resolve(),
+  cleanupOldNotifications: () => Promise.resolve(0),
 }))
 
 mock.module('@/server/config', () => ({

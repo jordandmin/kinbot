@@ -1,4 +1,5 @@
 import { describe, it, expect, mock, beforeEach, afterEach, spyOn } from 'bun:test'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // Mock db before importing the module under test
 mock.module('@/server/db/index', () => ({
@@ -12,6 +13,7 @@ mock.module('@/server/db/index', () => ({
 }))
 
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   providers: {},
 }))
 

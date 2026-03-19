@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import type { ToolExecutionContext } from '@/server/tools/types'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,7 @@ mock.module('@/server/services/tasks', () => mockTasks)
 mock.module('@/server/services/kin-resolver', () => mockKinResolver)
 mock.module('@/server/db/index', () => ({ db: mockDbChain }))
 mock.module('@/server/db/schema', () => ({
+  ...fullMockSchema,
   kins: { id: 'id', slug: 'slug', name: 'name' },
   messages: { role: 'role', content: 'content', sourceType: 'sourceType', createdAt: 'createdAt', kinId: 'kinId', taskId: 'taskId' },
 }))
@@ -46,6 +48,7 @@ mock.module('@/server/logger', () => ({
   createLogger: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} }),
 }))
 mock.module('drizzle-orm', () => ({
+  ...fullMockDrizzleOrm,
   eq: (...args: unknown[]) => args,
   and: (...args: unknown[]) => args,
   asc: (col: unknown) => col,

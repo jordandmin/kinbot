@@ -1,6 +1,7 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
 import * as realContacts from '@/server/services/contacts'
+import { fullMockSchema, fullMockDrizzleOrm } from '../../test-helpers'
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -60,71 +61,14 @@ mock.module('@/server/db/index', () => {
   }
 })
 
-// Include ALL schema exports to prevent mock leak breaking sibling test files
 mock.module('@/server/db/schema', () => ({
-  user: { id: 'id' },
-  session: { id: 'id' },
-  account: { id: 'id' },
-  verification: { id: 'id' },
+  ...fullMockSchema,
   userProfiles: { role: 'role', userId: 'user_id' },
-  providers: { id: 'id' },
   kins: { id: 'id', toolConfig: 'toolConfig' },
-  mcpServers: { id: 'id' },
-  kinMcpServers: { id: 'id' },
-  messages: { id: 'id' },
-  compactingSnapshots: { id: 'id' },
-  memories: { id: 'id' },
-  contacts: { id: 'id' },
-  contactIdentifiers: { id: 'id' },
-  contactPlatformIds: { id: 'id' },
-  contactNotes: { id: 'id' },
-  customTools: { id: 'id' },
-  quickSessions: { id: 'id' },
-  tasks: { id: 'id' },
-  crons: { id: 'id' },
-  webhooks: { id: 'id' },
-  webhookLogs: { id: 'id' },
-  vaultSecrets: { id: 'id' },
-  vaultTypes: { id: 'id' },
-  vaultAttachments: { id: 'id' },
-  queueItems: { id: 'id' },
-  files: { id: 'id' },
-  humanPrompts: { id: 'id' },
-  channels: { id: 'id' },
-  channelUserMappings: { id: 'id' },
-  channelMessageLinks: { id: 'id' },
-  invitations: { id: 'id' },
-  notifications: { id: 'id' },
-  notificationPreferences: { id: 'id' },
-  notificationChannels: { id: 'id' },
-  scheduledWakeups: { id: 'id' },
-  messageReactions: { id: 'id' },
-  appSettings: { id: 'id' },
-  miniApps: { id: 'id' },
-  miniAppStorage: { id: 'id' },
-  miniAppSnapshots: { id: 'id' },
-  fileStorage: { id: 'id' },
-  pluginStates: { id: 'id' },
-  pluginStorage: { id: 'id' },
 }))
 
-// Stub all commonly-used drizzle-orm operators to prevent mock leak
 mock.module('drizzle-orm', () => ({
-  eq: (...args: unknown[]) => args,
-  ne: (...args: unknown[]) => args,
-  and: (...args: unknown[]) => args,
-  or: (...args: unknown[]) => args,
-  not: (a: unknown) => a,
-  inArray: (...args: unknown[]) => args,
-  like: (...args: unknown[]) => args,
-  isNull: (a: unknown) => a,
-  isNotNull: (a: unknown) => a,
-  desc: (a: unknown) => a,
-  asc: (a: unknown) => a,
-  count: (a?: unknown) => a,
-  sql: Object.assign((...args: unknown[]) => args, { raw: (s: string) => s }),
-  gte: (...args: unknown[]) => args,
-  lt: (...args: unknown[]) => args,
+  ...fullMockDrizzleOrm,
 }))
 
 mock.module('@/server/logger', () => ({

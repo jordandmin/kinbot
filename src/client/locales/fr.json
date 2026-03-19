@@ -487,6 +487,18 @@
     "tooltipCompacting": "Compaction",
     "compactingProximity": "Compaction à {{thresholdPercent}}% (~{{tokens}} tokens restants)",
     "compactingMarker": "Seuil de compaction",
+    "breakdown": {
+      "tools": "Outils",
+      "systemPrompt": "Prompt système",
+      "summary": "Résumé",
+      "messages": "Messages",
+      "total": "Total"
+    },
+    "pipeline": {
+      "maskedTools": "{{count}} résultats d'outils réduits (~{{tokens}} économisés)",
+      "observationCompacted": "{{count}} messages compactés",
+      "emergencyTrim": "{{count}} messages supprimés"
+    },
     "moreActions": "Plus d'actions",
     "compacting": {
       "title": "Compaction de la conversation",

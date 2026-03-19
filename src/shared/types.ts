@@ -467,3 +467,27 @@ export type ToolDomain =
   | 'database'
   | 'mini-apps'
   | 'plugins'
+
+// ─── Context token breakdown ──────────────────────────────────────────────
+
+/** Breakdown of token usage by category in the LLM context. */
+export interface ContextTokenBreakdown {
+  systemPrompt: number
+  messages: number
+  tools: number
+  /** Tokens from the compacting summary (split from systemPrompt). */
+  summary: number
+  total: number
+}
+
+/** Status of the progressive compaction pipeline. */
+export interface ContextPipelineStatus {
+  /** Number of tool call groups whose results were fully collapsed. */
+  maskedToolGroups: number
+  /** Number of messages compacted by observation compaction (truncated). */
+  observationCompactedCount: number
+  /** Estimated tokens saved by tool result masking + observation compaction. */
+  estimatedTokensSavedByMasking: number
+  /** Number of messages dropped by emergency token-budget trimming. */
+  emergencyTrimmedCount: number
+}

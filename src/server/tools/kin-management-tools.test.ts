@@ -50,6 +50,8 @@ mock.module('@/server/services/kins', () => ({
   deleteKin: mockDeleteKin,
   getKinDetails: mockGetKinDetails,
   generateAndSaveAvatar: mockGenerateAndSaveAvatar,
+  validateKinFields: () => null,
+  kinAvatarUrl: () => null,
 }))
 
 mock.module('@/server/services/kin-resolver', () => ({
