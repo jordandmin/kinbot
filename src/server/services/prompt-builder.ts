@@ -15,6 +15,8 @@ interface Memory {
   subject: string | null
   sourceContext?: string | null
   importance?: number | null
+  scope?: string
+  authorKinName?: string | null
   updatedAt?: Date | null
   score?: number | null
 }
@@ -137,6 +139,10 @@ function formatMemoryLine(m: Memory): string {
     parts.push(formatRelevanceTag(m.score))
   }
   parts.push(`[${m.category}]`)
+  // Shared memory attribution
+  if (m.scope === 'shared' && m.authorKinName) {
+    parts.push(`*[shared by ${m.authorKinName}]*`)
+  }
   parts.push(m.content)
   if (m.subject) {
     parts.push(`(subject: ${m.subject})`)
@@ -288,6 +294,9 @@ function formatMemoryLineCompact(m: Memory): string {
     parts.push(formatRelevanceTag(m.score))
   }
   parts.push(`[${m.category}]`)
+  if (m.scope === 'shared' && m.authorKinName) {
+    parts.push(`*[shared by ${m.authorKinName}]*`)
+  }
   parts.push(m.content)
   const relTime = formatRelativeTime(m.updatedAt)
   if (relTime) {
@@ -691,7 +700,8 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- This prevents duplicate contacts when the same person talks from different channels.\n\n` +
       `### Memory management\n` +
       `- When you identify important information worth remembering long-term (fact, preference, decision), use memorize() to save it immediately.\n` +
-      `- If you're unsure about past information, use recall() to check your memory rather than guessing.\n\n` +
+      `- If you're unsure about past information, use recall() to check your memory rather than guessing.\n` +
+      `- When memorizing, default to \`private\` scope. Only use \`shared\` when the information is genuinely useful to other Kins — cross-domain facts, user-wide preferences, or decisions that affect all Kins. Your domain-specific knowledge and task context should stay private.\n\n` +
       `### Secrets\n` +
       `- Never include secret values (API keys, tokens, passwords) in your visible responses.\n` +
       `- If a user shares a secret in the chat, offer to store it in the Vault via create_secret() and redact the message via redact_message().\n` +

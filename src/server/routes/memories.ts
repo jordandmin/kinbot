@@ -12,12 +12,14 @@ memoryRoutes.get('/', async (c) => {
   const category = c.req.query('category')
   const subject = c.req.query('subject')
   const kinId = c.req.query('kinId')
+  const scope = c.req.query('scope')
   const limit = Number(c.req.query('limit') ?? 100)
 
   const conditions = []
   if (kinId) conditions.push(eq(memories.kinId, kinId))
   if (category) conditions.push(eq(memories.category, category))
   if (subject) conditions.push(eq(memories.subject, subject))
+  if (scope) conditions.push(eq(memories.scope, scope))
 
   const result = await db
     .select({
@@ -26,6 +28,7 @@ memoryRoutes.get('/', async (c) => {
       content: memories.content,
       category: memories.category,
       subject: memories.subject,
+      scope: memories.scope,
       importance: memories.importance,
       retrievalCount: memories.retrievalCount,
       lastRetrievedAt: memories.lastRetrievedAt,

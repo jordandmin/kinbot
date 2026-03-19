@@ -8,7 +8,7 @@ import { generateEmbedding } from '@/server/services/embeddings'
 import { sseManager } from '@/server/sse/index'
 import { config } from '@/server/config'
 import { rerankDocuments } from '@/server/services/rerank'
-import type { MemoryCategory } from '@/shared/types'
+import type { MemoryCategory, MemoryScope } from '@/shared/types'
 
 const log = createLogger('memory')
 
@@ -22,6 +22,7 @@ interface CreateMemoryInput {
   importance?: number | null
   sourceMessageId?: string | null
   sourceChannel?: 'automatic' | 'explicit'
+  scope?: MemoryScope
 }
 
 interface UpdateMemoryInput {
@@ -30,6 +31,7 @@ interface UpdateMemoryInput {
   subject?: string | null
   sourceContext?: string | null
   importance?: number | null
+  scope?: MemoryScope
 }
 
 interface MemorySearchResult {
@@ -39,6 +41,9 @@ interface MemorySearchResult {
   subject: string | null
   sourceContext: string | null
   importance: number | null
+  scope: MemoryScope
+  authorKinId?: string
+  authorKinName?: string | null
   score: number
   updatedAt: Date | null
 }
@@ -70,17 +75,17 @@ export async function isDuplicateMemory(
 
     if (rows.length === 0) return false
 
-    // Filter to only this Kin's memories
+    // Filter to this Kin's memories OR any shared memories (cross-scope dedup)
     const ids = rows.map((r) => r.memory_id)
     const placeholders = ids.map(() => '?').join(', ')
-    const kinMemories = sqlite
+    const relevantMemories = sqlite
       .query<{ id: string }, string[]>(
-        `SELECT id FROM memories WHERE id IN (${placeholders}) AND kin_id = ?`,
+        `SELECT id FROM memories WHERE id IN (${placeholders}) AND (kin_id = ? OR scope = 'shared')`,
       )
       .all(...ids, kinId)
-    const kinIds = new Set(kinMemories.map((m) => m.id))
+    const relevantIds = new Set(relevantMemories.map((m) => m.id))
 
-    return rows.some((r) => kinIds.has(r.memory_id) && r.distance < distanceThreshold)
+    return rows.some((r) => relevantIds.has(r.memory_id) && r.distance < distanceThreshold)
   } catch {
     // If embeddings unavailable, fall back to allowing the memory
     return false
@@ -99,9 +104,21 @@ export async function getMemory(memoryId: string, kinId: string) {
 
 export async function listMemories(
   kinId: string,
-  filters?: { category?: MemoryCategory; subject?: string },
+  filters?: { category?: MemoryCategory; subject?: string; scope?: MemoryScope },
 ) {
-  const conditions = [eq(memories.kinId, kinId)]
+  const conditions = []
+
+  if (filters?.scope === 'shared') {
+    // List all shared memories (from any Kin)
+    conditions.push(eq(memories.scope, 'shared'))
+  } else {
+    // Default: list own memories only (private scope)
+    conditions.push(eq(memories.kinId, kinId))
+    if (filters?.scope === 'private') {
+      conditions.push(eq(memories.scope, 'private'))
+    }
+  }
+
   if (filters?.category) conditions.push(eq(memories.category, filters.category))
   if (filters?.subject) conditions.push(eq(memories.subject, filters.subject))
 
@@ -137,6 +154,7 @@ export async function createMemory(kinId: string, input: CreateMemoryInput) {
     importance: input.importance ?? null,
     sourceMessageId: input.sourceMessageId ?? null,
     sourceChannel: input.sourceChannel ?? 'explicit',
+    scope: input.scope ?? 'private',
     createdAt: now,
     updatedAt: now,
   })
@@ -160,7 +178,7 @@ export async function createMemory(kinId: string, input: CreateMemoryInput) {
   sseManager.sendToKin(kinId, {
     type: 'memory:created',
     kinId,
-    data: { memoryId: id, kinId, category: input.category, content: input.content, subject: input.subject ?? null },
+    data: { memoryId: id, kinId, category: input.category, content: input.content, subject: input.subject ?? null, scope: input.scope ?? 'private' },
   })
 
   return created
@@ -176,6 +194,7 @@ export async function updateMemory(memoryId: string, kinId: string, updates: Upd
   if (updates.subject !== undefined) setValues.subject = updates.subject
   if (updates.sourceContext !== undefined) setValues.sourceContext = updates.sourceContext
   if (updates.importance !== undefined) setValues.importance = updates.importance
+  if (updates.scope !== undefined) setValues.scope = updates.scope
 
   // Re-generate embedding if content changed
   if (updates.content !== undefined) {
@@ -294,7 +313,7 @@ async function getDistinctSubjects(kinId: string): Promise<string[]> {
   try {
     const rows = sqlite
       .query<{ subject: string }, [string]>(
-        `SELECT DISTINCT subject FROM memories WHERE kin_id = ? AND subject IS NOT NULL AND subject != '' ORDER BY subject`,
+        `SELECT DISTINCT subject FROM memories WHERE (kin_id = ? OR scope = 'shared') AND subject IS NOT NULL AND subject != '' ORDER BY subject`,
       )
       .all(kinId)
     return rows.map((r) => r.subject)
@@ -498,7 +517,7 @@ function detectQueryIntentCategories(query: string): Set<string> {
 
 // ─── Hybrid Search (FTS5 + sqlite-vec rank fusion) ───────────────────────────
 
-type ScoreMapEntry = { score: number; content: string; category: string; subject: string | null; sourceContext: string | null; importance: number | null; retrievalCount: number; updatedAt: Date | null }
+type ScoreMapEntry = { score: number; content: string; category: string; subject: string | null; sourceContext: string | null; importance: number | null; retrievalCount: number; scope: MemoryScope; kinId: string; updatedAt: Date | null }
 
 /**
  * Run hybrid search for a single query and accumulate RRF scores into a shared score map.
@@ -523,7 +542,7 @@ async function hybridSearchSingleQuery(
     if (existing) {
       existing.score += rrfScore
     } else {
-      scoreMap.set(r.id, { score: rrfScore, content: r.content, category: r.category, subject: r.subject, sourceContext: r.sourceContext, importance: r.importance, retrievalCount: r.retrievalCount, updatedAt: r.updatedAt })
+      scoreMap.set(r.id, { score: rrfScore, content: r.content, category: r.category, subject: r.subject, sourceContext: r.sourceContext, importance: r.importance, retrievalCount: r.retrievalCount, scope: r.scope, kinId: r.kinId, updatedAt: r.updatedAt })
     }
   }
   for (let i = 0; i < ftsResults.length; i++) {
@@ -534,7 +553,7 @@ async function hybridSearchSingleQuery(
     if (existing) {
       existing.score += rrfScore
     } else {
-      scoreMap.set(r.id, { score: rrfScore, content: r.content, category: r.category, subject: r.subject, sourceContext: r.sourceContext, importance: r.importance, retrievalCount: r.retrievalCount, updatedAt: r.updatedAt })
+      scoreMap.set(r.id, { score: rrfScore, content: r.content, category: r.category, subject: r.subject, sourceContext: r.sourceContext, importance: r.importance, retrievalCount: r.retrievalCount, scope: r.scope, kinId: r.kinId, updatedAt: r.updatedAt })
     }
   }
 }
@@ -609,9 +628,31 @@ export async function searchMemories(
 
   // Sort by weighted score descending
   const sorted = Array.from(scoreMap.entries())
-    .map(([id, data]) => ({ id, content: data.content, category: data.category, subject: data.subject, sourceContext: data.sourceContext, importance: data.importance, score: data.score, updatedAt: data.updatedAt }))
+    .map(([id, data]) => ({ id, content: data.content, category: data.category, subject: data.subject, sourceContext: data.sourceContext, importance: data.importance, scope: data.scope, authorKinId: data.kinId, score: data.score, updatedAt: data.updatedAt }))
     .sort((a, b) => b.score - a.score)
     .slice(0, fetchLimit)
+
+  // Resolve author Kin names for shared memories from other Kins
+  const sharedFromOthers = sorted.filter((m) => m.scope === 'shared' && m.authorKinId !== kinId)
+  if (sharedFromOthers.length > 0) {
+    const uniqueKinIds = [...new Set(sharedFromOthers.map((m) => m.authorKinId))]
+    try {
+      const kinPlaceholders = uniqueKinIds.map(() => '?').join(', ')
+      const kinRows = sqlite
+        .query<{ id: string; name: string }, string[]>(
+          `SELECT id, name FROM kins WHERE id IN (${kinPlaceholders})`,
+        )
+        .all(...uniqueKinIds)
+      const kinNameMap = new Map(kinRows.map((k) => [k.id, k.name]))
+      for (const m of sorted) {
+        if (m.scope === 'shared' && m.authorKinId !== kinId) {
+          (m as MemorySearchResult).authorKinName = kinNameMap.get(m.authorKinId) ?? null
+        }
+      }
+    } catch {
+      // Kin name resolution failed — continue without names
+    }
+  }
 
   // Apply re-ranking if enabled: try cross-encoder API first, fall back to LLM
   if (useRerank && sorted.length > 0) {
@@ -651,15 +692,15 @@ async function searchByVector(
 
     if (matchingIds.length === 0) return []
 
-    // Fetch full memory rows and filter by kinId
+    // Fetch full memory rows: own memories + shared memories from all Kins
     const placeholders = matchingIds.map(() => '?').join(', ')
     const memRows = sqlite
       .query<
-        { id: string; content: string; category: string; subject: string | null; source_context: string | null; importance: number | null; retrieval_count: number; updated_at: string | null },
+        { id: string; kin_id: string; content: string; category: string; subject: string | null; source_context: string | null; importance: number | null; retrieval_count: number; scope: string; updated_at: string | null },
         string[]
       >(
-        `SELECT id, content, category, subject, source_context, importance, retrieval_count, updated_at FROM memories
-         WHERE id IN (${placeholders}) AND kin_id = ?`,
+        `SELECT id, kin_id, content, category, subject, source_context, importance, retrieval_count, scope, updated_at FROM memories
+         WHERE id IN (${placeholders}) AND (kin_id = ? OR scope = 'shared')`,
       )
       .all(...matchingIds, kinId)
 
@@ -669,7 +710,7 @@ async function searchByVector(
       .filter((r) => memMap.has(r.memory_id))
       .map((r) => {
         const m = memMap.get(r.memory_id)!
-        return { id: m.id, content: m.content, category: m.category, subject: m.subject, sourceContext: m.source_context, importance: m.importance, retrievalCount: m.retrieval_count, distance: r.distance, updatedAt: m.updated_at ? new Date(m.updated_at) : null }
+        return { id: m.id, kinId: m.kin_id, content: m.content, category: m.category, subject: m.subject, sourceContext: m.source_context, importance: m.importance, retrievalCount: m.retrieval_count, scope: m.scope as MemoryScope, distance: r.distance, updatedAt: m.updated_at ? new Date(m.updated_at) : null }
       })
   } catch {
     // sqlite-vec or embedding provider not available
@@ -702,13 +743,13 @@ function searchByFTS(
     const ftsQueryOr = terms.map((term) => `"${term}"*`).join(' OR ')
 
     const stmt = sqlite.query<
-      { id: string; content: string; category: string; subject: string | null; source_context: string | null; importance: number | null; retrieval_count: number; rank: number; updated_at: string | null },
+      { id: string; kin_id: string; content: string; category: string; subject: string | null; source_context: string | null; importance: number | null; retrieval_count: number; scope: string; rank: number; updated_at: string | null },
       [string, string, number]
     >(
-      `SELECT m.id, m.content, m.category, m.subject, m.source_context, m.importance, m.retrieval_count, fts.rank, m.updated_at
+      `SELECT m.id, m.kin_id, m.content, m.category, m.subject, m.source_context, m.importance, m.retrieval_count, m.scope, fts.rank, m.updated_at
        FROM memories_fts fts
        JOIN memories m ON m.rowid = fts.rowid
-       WHERE memories_fts MATCH ? AND m.kin_id = ?
+       WHERE memories_fts MATCH ? AND (m.kin_id = ? OR m.scope = 'shared')
        ORDER BY fts.rank
        LIMIT ?`,
     )
@@ -719,7 +760,7 @@ function searchByFTS(
       rows = stmt.all(ftsQueryOr, kinId, limit)
     }
 
-    return Promise.resolve(rows.map((r) => ({ ...r, sourceContext: r.source_context, retrievalCount: r.retrieval_count, updatedAt: r.updated_at ? new Date(r.updated_at) : null })))
+    return Promise.resolve(rows.map((r) => ({ ...r, kinId: r.kin_id, sourceContext: r.source_context, retrievalCount: r.retrieval_count, scope: r.scope as MemoryScope, updatedAt: r.updated_at ? new Date(r.updated_at) : null })))
   } catch {
     return Promise.resolve([])
   }
@@ -950,11 +991,11 @@ export async function rewriteQueryWithContext(
 export async function getRelevantMemories(
   kinId: string,
   query: string,
-): Promise<Array<{ id: string; category: string; content: string; subject: string | null; importance: number | null; updatedAt: Date | null; score: number }>> {
+): Promise<Array<{ id: string; category: string; content: string; subject: string | null; importance: number | null; scope: MemoryScope; authorKinName?: string | null; updatedAt: Date | null; score: number }>> {
   const results = await searchMemories(kinId, query, config.memory.maxRelevantMemories)
   // Track which memories were actually injected into the prompt (fire-and-forget)
   trackRetrievals(results.map((r) => r.id))
-  return results.map((r) => ({ id: r.id, category: r.category, content: r.content, subject: r.subject, importance: r.importance, updatedAt: r.updatedAt, score: r.score }))
+  return results.map((r) => ({ id: r.id, category: r.category, content: r.content, subject: r.subject, importance: r.importance, scope: r.scope, authorKinName: r.authorKinName, updatedAt: r.updatedAt, score: r.score }))
 }
 
 // ─── Re-embedding ────────────────────────────────────────────────────────────

@@ -77,6 +77,8 @@ export type InterKinMessageType = 'request' | 'inform' | 'reply'
 
 export type MemoryCategory = 'fact' | 'preference' | 'decision' | 'knowledge'
 
+export type MemoryScope = 'private' | 'shared'
+
 /** Memory summary as returned by memory API endpoints */
 export interface MemorySummary {
   id: string
@@ -84,12 +86,15 @@ export interface MemorySummary {
   content: string
   category: MemoryCategory
   subject: string | null
+  scope: MemoryScope
   sourceChannel: 'automatic' | 'explicit'
   sourceContext: string | null
   importance: number | null
   retrievalCount: number
   lastRetrievedAt: number | null
   consolidationGeneration: number
+  /** Author Kin name, populated when viewing shared memories from another Kin */
+  authorKinName?: string | null
   createdAt: number
   updatedAt: number
 }

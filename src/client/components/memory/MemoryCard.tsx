@@ -3,7 +3,7 @@ import { Button } from '@/client/components/ui/button'
 import { Badge } from '@/client/components/ui/badge'
 import { Card, CardContent } from '@/client/components/ui/card'
 import { KinBadge } from '@/client/components/common/KinBadge'
-import { Brain, Pencil, Trash2, Layers, Star, ArrowUpFromLine } from 'lucide-react'
+import { Brain, Pencil, Trash2, Layers, Star, ArrowUpFromLine, Share2 } from 'lucide-react'
 import { TOOL_DOMAIN_META } from '@/shared/constants'
 import type { MemorySummary } from '@/shared/types'
 
@@ -45,6 +45,14 @@ export function MemoryCard({ memory, kinName, kinAvatarUrl, showKinName, onEdit,
                   ? t('settings.memories.sourceAutomatic')
                   : t('settings.memories.sourceExplicit')}
               </Badge>
+              {memory.scope === 'shared' && (
+ <Badge variant="outline" size="xs" className="shrink-0 font-normal text-violet-500 border-violet-500/30">
+                  <Share2 className="size-3 mr-0.5" />
+                  {memory.authorKinName
+                    ? t('settings.memories.sharedBy', { name: memory.authorKinName })
+                    : t('settings.memories.shared')}
+                </Badge>
+              )}
               {memory.consolidationGeneration > 0 && (
  <Badge variant="outline" size="xs" className="shrink-0 font-normal text-blue-500 border-blue-500/30">
                   <Layers className="size-3 mr-0.5" />

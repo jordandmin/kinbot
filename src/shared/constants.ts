@@ -50,6 +50,8 @@ export const REQUIRED_CAPABILITIES = ['llm', 'embedding'] as const
 
 export const MEMORY_CATEGORIES = ['fact', 'preference', 'decision', 'knowledge'] as const
 
+export const MEMORY_SCOPES = ['private', 'shared'] as const
+
 export const MESSAGE_SOURCES = ['user', 'kin', 'task', 'cron', 'system', 'webhook', 'channel'] as const
 
 export const KNOWN_CHANNEL_PLATFORMS = ['telegram', 'discord', 'slack', 'whatsapp', 'signal', 'matrix'] as const

@@ -19,7 +19,7 @@ import { deleteMemory, createMemory, updateMemory } from '@/server/services/memo
 import { getMCPToolsForConfig } from '@/server/services/mcp'
 import { toolRegistry } from '@/server/tools/index'
 import { TOOL_DOMAIN_MAP, TOOL_DOMAIN_META } from '@/shared/constants'
-import type { KinToolConfig, ToolDomain, MemoryCategory } from '@/shared/types'
+import type { KinToolConfig, ToolDomain, MemoryCategory, MemoryScope } from '@/shared/types'
 import { sseManager } from '@/server/sse/index'
 import { resolveKinByIdOrSlug } from '@/server/services/kin-resolver'
 import {
@@ -849,11 +849,13 @@ kinRoutes.get('/:id/memories', async (c) => {
   const kinId = existing.id
   const category = c.req.query('category')
   const subject = c.req.query('subject')
+  const scope = c.req.query('scope')
   const limit = Number(c.req.query('limit') ?? 50)
 
   const conditions = [eq(memories.kinId, kinId)]
   if (category) conditions.push(eq(memories.category, category))
   if (subject) conditions.push(eq(memories.subject, subject))
+  if (scope) conditions.push(eq(memories.scope, scope))
 
   const result = await db
     .select({
@@ -861,6 +863,7 @@ kinRoutes.get('/:id/memories', async (c) => {
       content: memories.content,
       category: memories.category,
       subject: memories.subject,
+      scope: memories.scope,
       sourceChannel: memories.sourceChannel,
       sourceContext: memories.sourceContext,
       createdAt: memories.createdAt,
@@ -899,10 +902,11 @@ kinRoutes.post('/:id/memories', async (c) => {
     return c.json({ error: { code: 'KIN_NOT_FOUND', message: 'Kin not found' } }, 404)
   }
   const kinId = existing.id
-  const { content, category, subject } = (await c.req.json()) as {
+  const { content, category, subject, scope } = (await c.req.json()) as {
     content: string
     category: string
     subject?: string
+    scope?: string
   }
 
   if (!content || !category) {
@@ -917,6 +921,7 @@ kinRoutes.post('/:id/memories', async (c) => {
     category: category as MemoryCategory,
     subject: subject ?? null,
     sourceChannel: 'explicit',
+    scope: (scope === 'shared' ? 'shared' : 'private') as MemoryScope,
   })
 
   return c.json({
@@ -926,6 +931,7 @@ kinRoutes.post('/:id/memories', async (c) => {
       content: memory!.content,
       category: memory!.category,
       subject: memory!.subject,
+      scope: memory!.scope,
       sourceChannel: memory!.sourceChannel,
       sourceContext: memory!.sourceContext,
       createdAt: memory!.createdAt,
@@ -946,12 +952,14 @@ kinRoutes.patch('/:id/memories/:memoryId', async (c) => {
     content?: string
     category?: string
     subject?: string | null
+    scope?: string
   }
 
   const updated = await updateMemory(memoryId, kinId, {
     content: body.content,
     category: body.category as MemoryCategory | undefined,
     subject: body.subject,
+    scope: body.scope as MemoryScope | undefined,
   })
 
   if (!updated) {
@@ -965,6 +973,7 @@ kinRoutes.patch('/:id/memories/:memoryId', async (c) => {
       content: updated.content,
       category: updated.category,
       subject: updated.subject,
+      scope: updated.scope,
       sourceChannel: updated.sourceChannel,
       sourceContext: updated.sourceContext,
       createdAt: updated.createdAt,

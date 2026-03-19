@@ -158,12 +158,15 @@ export const memories = sqliteTable('memories', {
   lastRetrievedAt: integer('last_retrieved_at', { mode: 'timestamp_ms' }), // When it was last retrieved
   consolidationGeneration: integer('consolidation_generation').notNull().default(0), // 0 = original, 1+ = consolidated
   consolidatedFromIds: text('consolidated_from_ids'), // JSON array of source memory IDs (null for originals)
+  scope: text('scope').notNull().default('private'), // 'private' | 'shared'
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 }, (table) => [
   index('idx_memories_kin_id').on(table.kinId),
   index('idx_memories_kin_category').on(table.kinId, table.category),
   index('idx_memories_kin_subject').on(table.kinId, table.subject),
+  index('idx_memories_scope').on(table.scope),
+  index('idx_memories_scope_category').on(table.scope, table.category),
 ])
 
 export const contacts = sqliteTable('contacts', {

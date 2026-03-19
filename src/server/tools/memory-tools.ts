@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { generateText } from 'ai'
 import { z } from 'zod'
+import { eq, inArray } from 'drizzle-orm'
 import {
   searchMemories,
   createMemory,
@@ -8,11 +9,13 @@ import {
   deleteMemory,
   listMemories,
 } from '@/server/services/memory'
+import { db } from '@/server/db/index'
+import { kins } from '@/server/db/schema'
 import { createLogger } from '@/server/logger'
 import { config } from '@/server/config'
 import { getExtractionModel } from '@/server/services/app-settings'
 import type { ToolRegistration } from '@/server/tools/types'
-import type { MemoryCategory } from '@/shared/types'
+import type { MemoryCategory, MemoryScope } from '@/shared/types'
 
 const log = createLogger('tools:memory')
 
@@ -66,6 +69,8 @@ export const recallTool: ToolRegistration = {
             category: m.category,
             subject: m.subject,
             importance: m.importance,
+            scope: m.scope,
+            ...(m.scope === 'shared' && m.authorKinName ? { authorKinName: m.authorKinName } : {}),
             age: formatMemoryAge(m.updatedAt),
             ...(m.sourceContext ? { sourceContext: m.sourceContext } : {}),
           })),
@@ -99,15 +104,28 @@ export const memorizeTool: ToolRegistration = {
           .max(10)
           .optional()
           .describe('1=mundane, 5=useful, 10=critical. Default: 5'),
+        scope: z
+          .enum(['private', 'shared'])
+          .optional()
+          .describe(
+            '"private" (default) = only you can recall this memory. Use for: your own observations, ' +
+            'task-specific context, personal interaction notes, anything only relevant to your domain. ' +
+            '"shared" = all Kins can recall this memory. Use ONLY for information that would genuinely ' +
+            'help other Kins: cross-domain facts (infrastructure details, user-wide preferences, ' +
+            'project decisions affecting everyone), shared context (user availability, organizational ' +
+            'changes). Do NOT share: your internal reasoning, task-specific details, domain-specific ' +
+            'knowledge that other Kins would never need.',
+          ),
       }),
-      execute: async ({ content, category, subject, importance }) => {
-        log.debug({ kinId: ctx.kinId, category, subject }, 'Memorize invoked')
+      execute: async ({ content, category, subject, importance, scope }) => {
+        log.debug({ kinId: ctx.kinId, category, subject, scope }, 'Memorize invoked')
         const memory = await createMemory(ctx.kinId, {
           content,
           category: category as MemoryCategory,
           subject,
           importance: importance ?? null,
           sourceChannel: 'explicit',
+          scope: (scope as MemoryScope) ?? 'private',
         })
         return memory
           ? { id: memory.id, content: memory.content, category: memory.category, subject: memory.subject }
@@ -133,12 +151,17 @@ export const updateMemoryTool: ToolRegistration = {
           .enum(CATEGORIES)
           .optional(),
         subject: z.string().optional(),
+        scope: z
+          .enum(['private', 'shared'])
+          .optional()
+          .describe('Change scope: "private" = only you, "shared" = all Kins'),
       }),
-      execute: async ({ memory_id, content, category, subject }) => {
+      execute: async ({ memory_id, content, category, subject, scope }) => {
         const updated = await updateMemory(memory_id, ctx.kinId, {
           content,
           category: category as MemoryCategory | undefined,
           subject,
+          scope: scope as MemoryScope | undefined,
         })
         if (!updated) return { error: 'Memory not found' }
         return { id: updated.id, content: updated.content, category: updated.category, subject: updated.subject }
@@ -181,12 +204,26 @@ export const listMemoriesTool: ToolRegistration = {
         category: z
           .enum(CATEGORIES)
           .optional(),
+        scope: z
+          .enum(['private', 'shared'])
+          .optional()
+          .describe('Filter by scope. Omit to list own private memories. "shared" lists all shared memories from all Kins.'),
       }),
-      execute: async ({ subject, category }) => {
+      execute: async ({ subject, category, scope }) => {
         const results = await listMemories(ctx.kinId, {
           subject,
           category: category as MemoryCategory | undefined,
+          scope: scope as MemoryScope | undefined,
         })
+
+        // Resolve author Kin names for shared memories from other Kins
+        const otherKinIds = [...new Set(results.filter((m) => m.scope === 'shared' && m.kinId !== ctx.kinId).map((m) => m.kinId))]
+        const kinNameMap = new Map<string, string>()
+        if (otherKinIds.length > 0) {
+          const kinRows = await db.select({ id: kins.id, name: kins.name }).from(kins).where(inArray(kins.id, otherKinIds)).all()
+          for (const k of kinRows) kinNameMap.set(k.id, k.name)
+        }
+
         return {
           memories: results.map((m) => ({
             id: m.id,
@@ -194,6 +231,8 @@ export const listMemoriesTool: ToolRegistration = {
             category: m.category,
             subject: m.subject,
             importance: m.importance,
+            scope: m.scope,
+            ...(m.scope === 'shared' && m.kinId !== ctx.kinId ? { authorKinName: kinNameMap.get(m.kinId) ?? null } : {}),
             age: formatMemoryAge(m.updatedAt),
             ...(m.sourceContext ? { sourceContext: m.sourceContext } : {}),
           })),
@@ -218,12 +257,17 @@ export const reviewMemoriesTool: ToolRegistration = {
           .string()
           .optional()
           .describe('Only review memories about this subject'),
+        scope: z
+          .enum(['private', 'shared'])
+          .optional()
+          .describe('Review only private or shared memories. Omit to review your own memories.'),
       }),
-      execute: async ({ subject }) => {
-        log.debug({ kinId: ctx.kinId, subject }, 'Review memories invoked')
+      execute: async ({ subject, scope }) => {
+        log.debug({ kinId: ctx.kinId, subject, scope }, 'Review memories invoked')
 
         const allMemories = await listMemories(ctx.kinId, {
           subject: subject || undefined,
+          scope: scope as MemoryScope | undefined,
         })
 
         if (allMemories.length === 0) {

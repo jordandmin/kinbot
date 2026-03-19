@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
-import type { MemorySummary, MemoryCategory } from '@/shared/types'
+import type { MemorySummary, MemoryCategory, MemoryScope } from '@/shared/types'
 
 interface MemoriesResponse {
   memories: MemorySummary[]
@@ -10,18 +10,21 @@ interface MemoriesResponse {
 interface MemoryFilters {
   category?: MemoryCategory
   kinId?: string
+  scope?: MemoryScope
 }
 
 interface CreateMemoryData {
   content: string
   category: MemoryCategory
   subject?: string
+  scope?: MemoryScope
 }
 
 interface UpdateMemoryData {
   content?: string
   category?: MemoryCategory
   subject?: string | null
+  scope?: MemoryScope
 }
 
 export function useMemories(kinId?: string | null) {
@@ -37,6 +40,7 @@ export function useMemories(kinId?: string | null) {
         // Per-Kin fetch
         const params = new URLSearchParams()
         if (f.category) params.set('category', f.category)
+        if (f.scope) params.set('scope', f.scope)
         params.set('limit', '200')
         const qs = params.toString() ? `?${params.toString()}` : ''
         const data = await api.get<MemoriesResponse>(`/kins/${kinId}/memories${qs}`)
@@ -46,6 +50,7 @@ export function useMemories(kinId?: string | null) {
         const params = new URLSearchParams()
         if (f.category) params.set('category', f.category)
         if (f.kinId) params.set('kinId', f.kinId)
+        if (f.scope) params.set('scope', f.scope)
         params.set('limit', '200')
         const qs = params.toString() ? `?${params.toString()}` : ''
         const data = await api.get<MemoriesResponse>(`/memories${qs}`)

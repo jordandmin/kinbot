@@ -24,13 +24,13 @@ import { InfoTip } from '@/client/components/common/InfoTip'
 import { KinSelector } from '@/client/components/common/KinSelector'
 import type { KinOption } from '@/client/components/common/KinSelectItem'
 import { MEMORY_CATEGORIES } from '@/shared/constants'
-import type { MemorySummary, MemoryCategory } from '@/shared/types'
+import type { MemorySummary, MemoryCategory, MemoryScope } from '@/shared/types'
 
 interface MemoryFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (kinId: string, data: { content: string; category: MemoryCategory; subject?: string }) => Promise<void>
-  onUpdate?: (memoryId: string, kinId: string, data: { content?: string; category?: MemoryCategory; subject?: string | null }) => Promise<void>
+  onSave: (kinId: string, data: { content: string; category: MemoryCategory; subject?: string; scope?: MemoryScope }) => Promise<void>
+  onUpdate?: (memoryId: string, kinId: string, data: { content?: string; category?: MemoryCategory; subject?: string | null; scope?: MemoryScope }) => Promise<void>
   memory?: MemorySummary | null
   kinId?: string | null
   kins?: KinOption[]
@@ -52,6 +52,7 @@ export function MemoryFormDialog({
   const [content, setContent] = useState('')
   const [category, setCategory] = useState<MemoryCategory>('fact')
   const [subject, setSubject] = useState('')
+  const [scope, setScope] = useState<MemoryScope>('private')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -59,11 +60,13 @@ export function MemoryFormDialog({
       setContent(memory.content)
       setCategory(memory.category)
       setSubject(memory.subject ?? '')
+      setScope(memory.scope ?? 'private')
       setSelectedKinId(memory.kinId)
     } else {
       setContent('')
       setCategory('fact')
       setSubject('')
+      setScope('private')
       setSelectedKinId(kinId ?? '')
     }
   }, [memory, kinId, open])
@@ -78,6 +81,7 @@ export function MemoryFormDialog({
           content,
           category,
           subject: subject || null,
+          scope,
         })
       } else {
         const targetKinId = kinId ?? selectedKinId
@@ -86,6 +90,7 @@ export function MemoryFormDialog({
           content,
           category,
           subject: subject || undefined,
+          scope,
         })
       }
       onOpenChange(false)
@@ -160,6 +165,19 @@ export function MemoryFormDialog({
                 placeholder={t('settings.memories.subjectPlaceholder')}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="inline-flex items-center gap-1.5">{t('settings.memories.scopeLabel')} <InfoTip content={t('settings.memories.scopeTip')} /></Label>
+            <Select value={scope} onValueChange={(v) => setScope(v as MemoryScope)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">{t('settings.memories.scopePrivate')}</SelectItem>
+                <SelectItem value="shared">{t('settings.memories.scopeShared')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>

@@ -29,7 +29,7 @@ import { MemoryFormDialog } from '@/client/components/memory/MemoryFormDialog'
 import { KinSelector } from '@/client/components/common/KinSelector'
 import type { KinOption } from '@/client/components/common/KinSelectItem'
 import { MEMORY_CATEGORIES } from '@/shared/constants'
-import type { MemorySummary, MemoryCategory } from '@/shared/types'
+import type { MemorySummary, MemoryCategory, MemoryScope } from '@/shared/types'
 
 interface MemoryListProps {
   kinId?: string | null
@@ -50,6 +50,7 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
   // Local UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [scopeFilter, setScopeFilter] = useState<string>('all')
   const [kinFilter, setKinFilter] = useState<string>('all')
   const [kinNames, setKinNames] = useState<Map<string, string>>(new Map())
   const [kinAvatars, setKinAvatars] = useState<Map<string, string | null>>(new Map())
@@ -76,11 +77,12 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
 
   // Apply server-side filters when dropdowns change
   useEffect(() => {
-    const newFilters: { category?: MemoryCategory; kinId?: string } = {}
+    const newFilters: { category?: MemoryCategory; kinId?: string; scope?: MemoryScope } = {}
     if (categoryFilter !== 'all') newFilters.category = categoryFilter as MemoryCategory
+    if (scopeFilter !== 'all') newFilters.scope = scopeFilter as MemoryScope
     if (!kinId && kinFilter !== 'all') newFilters.kinId = kinFilter
     applyFilters(newFilters)
-  }, [categoryFilter, kinFilter, applyFilters, kinId])
+  }, [categoryFilter, scopeFilter, kinFilter, applyFilters, kinId])
 
   // Client-side text search
   const filteredMemories = useMemo(() => {
@@ -94,12 +96,12 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
   }, [memories, searchQuery])
 
   // CRUD handlers
-  const handleSave = async (targetKinId: string, data: { content: string; category: MemoryCategory; subject?: string }) => {
+  const handleSave = async (targetKinId: string, data: { content: string; category: MemoryCategory; subject?: string; scope?: MemoryScope }) => {
     await createMemory(targetKinId, data)
     toast.success(t('settings.memories.added'))
   }
 
-  const handleUpdate = async (memoryId: string, targetKinId: string, updates: { content?: string; category?: MemoryCategory; subject?: string | null }) => {
+  const handleUpdate = async (memoryId: string, targetKinId: string, updates: { content?: string; category?: MemoryCategory; subject?: string | null; scope?: MemoryScope }) => {
     await updateMemory(memoryId, targetKinId, updates)
     toast.success(t('settings.memories.saved'))
   }
@@ -153,6 +155,16 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
             ))}
           </SelectContent>
         </Select>
+        <Select value={scopeFilter} onValueChange={setScopeFilter}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('settings.memories.scopeAll')}</SelectItem>
+            <SelectItem value="private">{t('settings.memories.scopePrivate')}</SelectItem>
+            <SelectItem value="shared">{t('settings.memories.scopeShared')}</SelectItem>
+          </SelectContent>
+        </Select>
         {!kinId && (
           <KinSelector
             value={kinFilter}
@@ -177,7 +189,7 @@ export function MemoryList({ kinId, compact }: MemoryListProps) {
       {isLoading ? (
         <EmptyState minimal title={t('common.loading')} />
       ) : filteredMemories.length === 0 ? (
-        searchQuery || categoryFilter !== 'all' || kinFilter !== 'all' ? (
+        searchQuery || categoryFilter !== 'all' || scopeFilter !== 'all' || kinFilter !== 'all' ? (
           <EmptyState minimal title={t('settings.memories.noResults')} />
         ) : (
           <EmptyState
