@@ -145,6 +145,7 @@ Tous les messages de toutes les sessions (principales et tâches).
 | `id` | text PK | UUID | |
 | `kin_id` | text | FK → kins.id, NOT NULL | Kin propriétaire de la session |
 | `task_id` | text | FK → tasks.id | NULL = session principale, sinon session de tâche |
+| `session_id` | text | FK → quick_sessions.id, ON DELETE CASCADE | NULL = main conversation, sinon quick session |
 | `role` | text | NOT NULL | 'user', 'assistant', 'system', 'tool' |
 | `content` | text | | Contenu textuel du message |
 | `source_type` | text | NOT NULL | 'user', 'kin', 'task', 'cron', 'system' |
@@ -153,6 +154,7 @@ Tous les messages de toutes les sessions (principales et tâches).
 | `tool_call_id` | text | | ID de l'appel d'outil (messages tool) |
 | `request_id` | text | | Pour corrélation inter-Kins (request/reply) |
 | `in_reply_to` | text | | request_id auquel ce message répond |
+| `channel_origin_id` | text | | ID de la chaîne causale canal — propage l'origine pour auto-delivery |
 | `is_redacted` | integer | NOT NULL, DEFAULT 0 | Message caviardé (secret retiré) |
 | `redact_pending` | integer | NOT NULL, DEFAULT 0 | Caviardage en attente — bloque le compacting |
 | `metadata` | text | | JSON pour données additionnelles |
@@ -163,6 +165,7 @@ Tous les messages de toutes les sessions (principales et tâches).
 - `idx_messages_task_id` sur `task_id`
 - `idx_messages_kin_created` sur (`kin_id`, `created_at`)
 - `idx_messages_source` sur (`source_type`, `source_id`)
+- `idx_messages_session_id` sur `session_id`
 
 ---
 
@@ -260,14 +263,19 @@ Sous-Kins éphémères (tâches déléguées).
 | `spawn_type` | text | NOT NULL | 'self' ou 'other' |
 | `mode` | text | NOT NULL, DEFAULT 'await' | 'await' ou 'async' |
 | `model` | text | | Override du modèle LLM (NULL = héritage) |
+| `title` | text | | Titre optionnel de la tâche |
 | `description` | text | NOT NULL | Instructions de la tâche |
-| `status` | text | NOT NULL, DEFAULT 'pending' | 'pending', 'in_progress', 'completed', 'failed', 'cancelled' |
+| `status` | text | NOT NULL, DEFAULT 'pending' | 'pending', 'in_progress', 'awaiting_human_input', 'awaiting_kin_response', 'completed', 'failed', 'cancelled' |
 | `result` | text | | Résultat final de la tâche |
 | `error` | text | | Détail de l'erreur si failed |
 | `depth` | integer | NOT NULL, DEFAULT 1 | Profondeur de nesting |
 | `parent_task_id` | text | FK → tasks.id | Tâche parente (si sous-tâche d'une tâche) |
 | `cron_id` | text | FK → crons.id | Si spawné par un cron |
 | `request_input_count` | integer | NOT NULL, DEFAULT 0 | Nombre d'appels request_input (max 3) |
+| `inter_kin_request_count` | integer | NOT NULL, DEFAULT 0 | Nombre d'appels send_message(request) depuis cette tâche |
+| `pending_request_id` | text | | request_id en attente de réponse inter-Kin |
+| `channel_origin_id` | text | | ID de la chaîne causale canal pour auto-delivery |
+| `allow_human_prompt` | integer | NOT NULL, DEFAULT 1 | Si la tâche peut utiliser prompt_human |
 | `created_at` | integer | NOT NULL | |
 | `updated_at` | integer | NOT NULL | |
 
@@ -297,6 +305,51 @@ Tâches planifiées récurrentes.
 | `created_by` | text | | 'user' ou 'kin' — qui a créé le cron |
 | `created_at` | integer | NOT NULL | |
 | `updated_at` | integer | NOT NULL | |
+
+---
+
+### `webhooks`
+
+Webhooks entrants pour recevoir des événements externes.
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| `id` | text PK | UUID | |
+| `kin_id` | text | FK → kins.id, NOT NULL | Kin destinataire |
+| `name` | text | NOT NULL | Nom d'affichage |
+| `token` | text | UNIQUE, NOT NULL | Token secret pour l'URL |
+| `description` | text | | Description du webhook |
+| `is_active` | integer | NOT NULL, DEFAULT 1 | Actif / Inactif |
+| `last_triggered_at` | integer | | Dernier déclenchement |
+| `trigger_count` | integer | NOT NULL, DEFAULT 0 | Nombre de déclenchements |
+| `filter_mode` | text | | Mode de filtrage : NULL (désactivé), 'simple', ou 'advanced' |
+| `filter_field` | text | | Chemin dot-notation dans le payload JSON (mode simple) |
+| `filter_allowed_values` | text | | JSON array de valeurs autorisées (mode simple, case-insensitive) |
+| `filter_expression` | text | | Expression régulière appliquée au body brut (mode advanced) |
+| `created_by` | text | | 'user' ou 'kin' |
+| `created_at` | integer | NOT NULL | |
+| `updated_at` | integer | NOT NULL | |
+
+**Index** :
+- `idx_webhooks_kin_id` sur `kin_id`
+
+---
+
+### `webhook_logs`
+
+Journal des appels webhook reçus.
+
+| Colonne | Type | Contraintes | Description |
+|---|---|---|---|
+| `id` | text PK | UUID | |
+| `webhook_id` | text | FK → webhooks.id, ON DELETE CASCADE | |
+| `payload` | text | | Payload reçu (JSON sérialisé) |
+| `source_ip` | text | | IP de l'appelant |
+| `filtered` | integer | NOT NULL, DEFAULT 0 | 1 si le payload a été filtré (non transmis au Kin) |
+| `created_at` | integer | NOT NULL | |
+
+**Index** :
+- `idx_webhook_logs_webhook_created` sur (`webhook_id`, `created_at`)
 
 ---
 
@@ -330,7 +383,10 @@ Queue FIFO par Kin pour sérialiser le traitement des messages.
 | `request_id` | text | | Pour corrélation inter-Kins |
 | `in_reply_to` | text | | Pour réponses inter-Kins |
 | `task_id` | text | FK → tasks.id | Pour messages liés à une tâche |
+| `session_id` | text | | ID de quick session (si applicable) |
+| `channel_origin_id` | text | | ID de la chaîne causale canal pour auto-delivery |
 | `status` | text | NOT NULL, DEFAULT 'pending' | 'pending', 'processing', 'done' |
+| `created_message_id` | text | | ID du message utilisateur déjà inséré (idempotence en cas de recovery) |
 | `created_at` | integer | NOT NULL | |
 | `processed_at` | integer | | |
 
@@ -421,6 +477,7 @@ kins
  ├── 1:N  custom_tools
  ├── 1:N  tasks               (en tant que parent_kin_id)
  ├── 1:N  crons
+ ├── 1:N  webhooks
  ├── 1:N  queue_items
  └── 1:N  files
 
@@ -428,6 +485,9 @@ tasks
  ├── 1:N  messages            (session de tâche: task_id = tasks.id)
  ├── 1:N  tasks               (sous-tâches: parent_task_id)
  └── N:1  crons               (si spawné par un cron)
+
+webhooks
+ └── 1:N  webhook_logs
 
 vault_secrets (standalone)
 ```

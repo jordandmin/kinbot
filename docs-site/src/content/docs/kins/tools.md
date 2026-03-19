@@ -212,7 +212,7 @@ Plugin management tools are **opt-in** (disabled by default). Enable them via `e
 
 | Tool | Description |
 |---|---|
-| `read_file` | Read a file's contents (text or binary as base64) |
+| `read_file` | Read a text file or extract text from a PDF. Supports offset/limit for large files |
 | `write_file` | Create or overwrite a file |
 | `edit_file` | Replace exact text in a file. Supports `replaceAll` flag for bulk find-and-replace |
 | `multi_edit` | Apply multiple text replacements to a single file atomically (all succeed or none applied) |

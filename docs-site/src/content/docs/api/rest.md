@@ -294,6 +294,8 @@ Webhooks are managed globally.
 | `DELETE` | `/api/webhooks/:id` | Delete a webhook |
 | `GET` | `/api/webhooks/:id/logs` | Get webhook execution logs |
 | `POST` | `/api/webhooks/:id/regenerate-token` | Regenerate webhook token |
+| `POST` | `/api/webhooks/:id/test-filter` | Test a payload filter against a sample payload |
+| `POST` | `/api/webhooks/:id/suggest-fields` | Extract field path suggestions from the last received payload |
 
 ### Incoming webhook endpoint
 

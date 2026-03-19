@@ -30,6 +30,9 @@ kinbot/
 │   │   │   ├── crons.ts            # CRUD /api/crons
 │   │   │   ├── mcp-servers.ts      # CRUD /api/mcp-servers
 │   │   │   ├── vault.ts            # CRUD /api/vault
+│   │   │   ├── webhooks.ts         # CRUD /api/webhooks + filter testing
+│   │   │   ├── webhooks-incoming.ts # POST /api/webhooks/incoming/:id
+│   │   │   ├── channel-telegram.ts # Telegram webhook endpoint
 │   │   │   ├── files.ts            # POST /api/files/upload
 │   │   │   └── sse.ts              # GET /api/sse (connexion SSE globale)
 │   │   │
@@ -45,8 +48,20 @@ kinbot/
 │   │   │   ├── crons.ts            # Scheduler (croner) + spawn des sous-Kins
 │   │   │   ├── inter-kin.ts        # Communication inter-Kins (send_message, reply, garde-fous)
 │   │   │   ├── vault.ts            # Gestion des secrets (chiffrement, get_secret, redact)
+│   │   │   ├── webhooks.ts         # Gestion des webhooks (CRUD, filtrage payload, logs)
+│   │   │   ├── channels.ts         # Gestion des canaux de messagerie (enqueue, delivery)
 │   │   │   ├── files.ts            # Upload, stockage, référencement des fichiers
 │   │   │   └── events.ts           # Event bus (emit, on, listeners)
+│   │   │
+│   │   ├── channels/               # Adaptateurs de canaux de messagerie
+│   │   │   ├── adapter.ts          # Interface commune ChannelAdapter
+│   │   │   ├── telegram.ts         # Adaptateur Telegram (webhook + long polling)
+│   │   │   ├── telegram-utils.ts   # Utilitaires Telegram partagés (attachments, file types)
+│   │   │   ├── discord.ts          # Adaptateur Discord (Gateway WebSocket)
+│   │   │   ├── slack.ts            # Adaptateur Slack (Events API)
+│   │   │   ├── whatsapp.ts         # Adaptateur WhatsApp (Cloud API)
+│   │   │   ├── signal.ts           # Adaptateur Signal (signal-cli REST)
+│   │   │   └── matrix.ts           # Adaptateur Matrix (long-poll sync)
 │   │   │
 │   │   ├── providers/              # Implémentations des providers IA
 │   │   │   ├── index.ts            # Registry des providers + résolution par capacité
@@ -58,6 +73,7 @@ kinbot/
 │   │   │
 │   │   ├── tools/                  # Outils natifs exposés aux Kins
 │   │   │   ├── index.ts            # Registry de tous les outils + résolution par contexte
+│   │   │   ├── register.ts         # Enregistrement de tous les outils natifs
 │   │   │   ├── types.ts            # Types communs (ToolDefinition, ToolResult)
 │   │   │   ├── memory-tools.ts     # recall, memorize, update_memory, forget, list_memories
 │   │   │   ├── contact-tools.ts    # get_contact, search_contacts, create_contact, update_contact
@@ -66,7 +82,12 @@ kinbot/
 │   │   │   ├── task-tools.ts       # spawn_self, spawn_kin, respond_to_task, cancel_task, list_tasks
 │   │   │   ├── subtask-tools.ts    # report_to_parent, update_task_status, request_input
 │   │   │   ├── cron-tools.ts       # create_cron, update_cron, delete_cron, list_crons
+│   │   │   ├── webhook-tools.ts    # create_webhook, update_webhook, delete_webhook, list_webhooks
 │   │   │   ├── vault-tools.ts      # get_secret, redact_message
+│   │   │   ├── filesystem-tools.ts # read_file, write_file, edit_file, list_directory
+│   │   │   ├── grep-tools.ts       # grep — regex search across files (rg/grep fallback)
+│   │   │   ├── multi-edit-tools.ts # multi_edit — atomic multi-replacement in a single file
+│   │   │   ├── shell-tools.ts      # run_shell
 │   │   │   ├── custom-tool-tools.ts # register_tool, run_custom_tool, list_custom_tools
 │   │   │   └── image-tools.ts      # generate_image
 │   │   │
@@ -97,7 +118,6 @@ kinbot/
 │   │   ├── pages/                  # Pages / vues
 │   │   │   ├── onboarding/         # Wizard d'onboarding
 │   │   │   │   ├── OnboardingPage.tsx
-│   │   │   │   ├── StepIdentity.tsx
 │   │   │   │   └── StepProviders.tsx
 │   │   │   ├── chat/               # Vue principale (sidebar + chat)
 │   │   │   │   └── ChatPage.tsx
@@ -105,6 +125,7 @@ kinbot/
 │   │   │   │   ├── SettingsPage.tsx
 │   │   │   │   ├── ProvidersSettings.tsx
 │   │   │   │   ├── McpSettings.tsx
+│   │   │   │   ├── WebhooksSettings.tsx
 │   │   │   │   └── VaultSettings.tsx
 │   │   │   ├── account/            # Mon compte
 │   │   │   │   └── AccountPage.tsx
@@ -121,7 +142,12 @@ kinbot/
 │   │   │   │   ├── ChatPanel.tsx
 │   │   │   │   ├── MessageBubble.tsx
 │   │   │   │   ├── MessageInput.tsx
+│   │   │   │   ├── WebhookMessageCard.tsx  # Carte dédiée pour les messages webhook
 │   │   │   │   └── TypingIndicator.tsx
+│   │   │   ├── webhook/
+│   │   │   │   ├── WebhookCard.tsx
+│   │   │   │   ├── WebhookFormDialog.tsx
+│   │   │   │   └── WebhookLogDialog.tsx
 │   │   │   ├── kin/
 │   │   │   │   ├── KinCard.tsx
 │   │   │   │   ├── KinCreateModal.tsx
@@ -162,9 +188,13 @@ kinbot/
 │       │   └── ...                 # Fichiers de travail
 │       └── ...
 │
-├── docs/                           # Documentation
-│   ├── idea.md                     # Spec fonctionnelle
-│   └── schema.md                   # Schéma de BDD
+├── docs-site/                      # Site de documentation (Astro Starlight)
+│   └── src/content/docs/           # Fichiers Markdown de la doc publique
+│
+├── plugins/                        # Plugins intégrés
+│   └── home-automation/            # Plugin Home Assistant
+│
+├── store/                          # Custom tool scripts (RSS reader, etc.)
 │
 └── public/                         # Assets statiques (favicon, etc.)
 ```

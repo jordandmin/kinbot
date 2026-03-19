@@ -9,7 +9,7 @@ Channels let your Kins communicate with users on external messaging platforms. E
 
 | Platform | Transport | Max Message | Attachments |
 |----------|-----------|-------------|-------------|
-| **Telegram** | Webhook | 4,096 chars | ✅ Images, files, audio, video |
+| **Telegram** | Webhook / Polling | 4,096 chars | ✅ Images, files, audio, video |
 | **Discord** | Gateway (WebSocket) | 2,000 chars | ✅ Images, files |
 | **Slack** | Events API (webhook) | 4,000 chars | ✅ Images, files |
 | **WhatsApp** | Cloud API (webhook) | 4,096 chars | ✅ Images, files |
@@ -40,6 +40,15 @@ ChannelAdapter
 
 Adapters handle platform-specific details: webhook verification, gateway heartbeats, API authentication, file uploads, and message formatting. The rest of KinBot treats all channels identically.
 
+## File Attachments
+
+KinBot handles file attachments intelligently when received from channels:
+
+- **Images** are passed as native image parts to the LLM for vision-capable models
+- **Text-based files** (`.md`, `.txt`, `.json`, `.csv`, etc.) are read and inlined directly into the LLM context so the Kin can access their content
+- **PDFs** are passed as native file parts for providers with document support
+- **Other binary files** include the stored path so the Kin can use `read_file` to access them
+
 ## Channel Tools
 
 Kins have built-in tools for interacting with their channels:
@@ -47,6 +56,7 @@ Kins have built-in tools for interacting with their channels:
 - **`list_channels`** — List all connected channels with status and message counts
 - **`list_channel_conversations`** — Discover known users and chat IDs for proactive messaging
 - **`send_channel_message`** — Send a message (with optional attachments) to any connected platform
+- **`attach_file`** — Attach a file to the current response for channel delivery
 
 These tools are available to main agents only.
 
