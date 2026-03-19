@@ -60,7 +60,7 @@ interface ChatPanelProps {
   kin: KinInfo
   llmModels: LLMModel[]
   modelUnavailable?: boolean
-  queueState?: { isProcessing: boolean; queueSize: number; contextTokens?: number; contextWindow?: number; contextBreakdown?: ContextTokenBreakdown; pipelineStatus?: ContextPipelineStatus; compactingTokens?: number; compactingThreshold?: number; compactingThresholdPercent?: number }
+  queueState?: { isProcessing: boolean; queueSize: number; contextTokens?: number; contextWindow?: number; contextBreakdown?: ContextTokenBreakdown; pipelineStatus?: ContextPipelineStatus; compactingMessages?: number; compactingMessageThreshold?: number }
   onModelChange: (model: string) => void
   onEditKin: () => void
 }
@@ -624,9 +624,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
         maxTokens={queueState?.contextWindow ?? 0}
         contextBreakdown={queueState?.contextBreakdown}
         pipelineStatus={queueState?.pipelineStatus}
-        compactingTokens={queueState?.compactingTokens}
-        compactingThreshold={queueState?.compactingThreshold}
-        compactingThresholdPercent={queueState?.compactingThresholdPercent}
+        compactingMessages={queueState?.compactingMessages}
+        compactingMessageThreshold={queueState?.compactingMessageThreshold}
         toolCallCount={toolCallCount}
         isToolCallsOpen={isToolCallsOpen}
         queueState={queueState}
@@ -792,6 +791,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                     status={liveCompacting.status}
                     summary={liveCompacting.summary}
                     memoriesExtracted={liveCompacting.memoriesExtracted}
+                    error={liveCompacting.error}
                   />
                 )}
                 {pendingPrompts.map((prompt) => (

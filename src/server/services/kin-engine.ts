@@ -73,7 +73,7 @@ export function getLastContextUsage(kinId: string) {
 }
 
 // Cache of last computed compacting proximity per Kin
-const lastCompactingProximity = new Map<string, { compactingTokens: number; compactingThreshold: number; compactingThresholdPercent: number }>()
+const lastCompactingProximity = new Map<string, { compactingMessages: number; compactingMessageThreshold: number }>()
 
 /**
  * Extract a human-readable message from a raw API error object.
@@ -876,9 +876,8 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     const { getCompactingProximity } = await import('@/server/services/compacting')
     const compactingData = await getCompactingProximity(kinId)
     lastCompactingProximity.set(kinId, {
-      compactingTokens: compactingData.currentTokens,
-      compactingThreshold: compactingData.tokenThreshold,
-      compactingThresholdPercent: compactingData.thresholdPercent,
+      compactingMessages: compactingData.currentMessages,
+      compactingMessageThreshold: compactingData.messageThreshold,
     })
 
     // Update the queue event with real context usage (the initial queue:update

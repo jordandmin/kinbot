@@ -64,9 +64,8 @@ interface ConversationHeaderProps {
   onClearConversation?: () => void
   contextBreakdown?: ContextTokenBreakdown
   pipelineStatus?: ContextPipelineStatus
-  compactingTokens?: number
-  compactingThreshold?: number
-  compactingThresholdPercent?: number
+  compactingMessages?: number
+  compactingMessageThreshold?: number
   messages?: ChatMessage[]
   scrollViewportRef?: React.RefObject<HTMLElement | null>
 }
@@ -101,9 +100,8 @@ export const ConversationHeader = memo(function ConversationHeader({
   onClearConversation,
   contextBreakdown,
   pipelineStatus,
-  compactingTokens,
-  compactingThreshold,
-  compactingThresholdPercent,
+  compactingMessages,
+  compactingMessageThreshold,
   messages,
   scrollViewportRef,
 }: ConversationHeaderProps) {
@@ -120,11 +118,8 @@ export const ConversationHeader = memo(function ConversationHeader({
     ? `${formatTokenCount(estimatedTokens)} / ${formatTokenCount(maxTokens)}`
     : '— / —'
 
-  const hasCompactingData = (compactingThreshold ?? 0) > 0
-  const compactingRemaining = hasCompactingData ? Math.max(0, compactingThreshold! - (compactingTokens ?? 0)) : 0
-  const compactingPercent = hasCompactingData ? Math.min(100, Math.round(((compactingTokens ?? 0) / compactingThreshold!) * 100)) : 0
-  // Position of the compacting threshold marker on the context bar (as % of context window)
-  const compactingMarkerPercent = (hasCompactingData && hasContextData) ? Math.min(100, Math.round((compactingThreshold! / maxTokens) * 100)) : null
+  const hasCompactingData = (compactingMessageThreshold ?? 0) > 0
+  const compactingPercent = hasCompactingData ? Math.min(100, Math.round(((compactingMessages ?? 0) / compactingMessageThreshold!) * 100)) : 0
 
   const selectedModelName = llmModels.find((m) => m.id === model)?.name ?? model
 
@@ -217,13 +212,7 @@ export const ConversationHeader = memo(function ConversationHeader({
                   variant={contextPercent > 80 ? 'glow' : 'default'}
                   className="h-2"
                 />
-                {compactingMarkerPercent != null && (
-                  <div
-                    className="absolute top-0 h-full w-px bg-foreground/50"
-                    style={{ left: `${compactingMarkerPercent}%` }}
-                  />
-                )}
-              </div>
+                              </div>
               <p className="text-[10px] text-muted-foreground/70">
                 {hasContextData
                   ? t('chat.contextUsage', {
@@ -238,8 +227,8 @@ export const ConversationHeader = memo(function ConversationHeader({
             {hasCompactingData && (
               <p className="text-[10px] text-muted-foreground/70">
                 {t('chat.compactingProximity', {
-                  tokens: formatTokenCount(compactingRemaining),
-                  thresholdPercent: compactingThresholdPercent ?? 75,
+                  current: compactingMessages ?? 0,
+                  threshold: compactingMessageThreshold ?? 0,
                 })}
               </p>
             )}
@@ -291,19 +280,12 @@ export const ConversationHeader = memo(function ConversationHeader({
                     className="h-1.5"
                   />
                 )}
-                {compactingMarkerPercent != null && (
-                  <div
-                    className="absolute top-0 h-full w-px bg-foreground/50"
-                    style={{ left: `${compactingMarkerPercent}%` }}
-                    title={t('chat.compactingMarker')}
-                  />
-                )}
               </div>
               {hasCompactingData && (
                 <p className="truncate text-[9px] text-muted-foreground">
                   {t('chat.compactingProximity', {
-                    tokens: formatTokenCount(compactingRemaining),
-                    thresholdPercent: compactingThresholdPercent ?? 75,
+                    current: compactingMessages ?? 0,
+                    threshold: compactingMessageThreshold ?? 0,
                   })}
                 </p>
               )}
@@ -337,12 +319,6 @@ export const ConversationHeader = memo(function ConversationHeader({
                     value={contextPercent}
                     variant={contextPercent > 80 ? 'glow' : 'default'}
                     className="h-2.5"
-                  />
-                )}
-                {compactingMarkerPercent != null && (
-                  <div
-                    className="absolute top-0 h-full w-0.5 rounded-full bg-foreground/60"
-                    style={{ left: `${compactingMarkerPercent}%` }}
                   />
                 )}
               </div>
@@ -432,8 +408,8 @@ export const ConversationHeader = memo(function ConversationHeader({
                 />
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span>{t('chat.compactingProximity', {
-                    tokens: formatTokenCount(compactingRemaining),
-                    thresholdPercent: compactingThresholdPercent ?? 75,
+                    current: compactingMessages ?? 0,
+                    threshold: compactingMessageThreshold ?? 0,
                   })}</span>
                 </div>
               </div>

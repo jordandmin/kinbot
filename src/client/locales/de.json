@@ -481,7 +481,7 @@
     "forceCompact": "Komprimierung erzwingen",
     "tooltipContext": "Kontextfenster",
     "tooltipCompacting": "Komprimierung",
-    "compactingProximity": "Komprimierung bei {{thresholdPercent}}% (~{{tokens}} Tokens verbleibend)",
+    "compactingProximity": "{{current}} / {{threshold}} Nachrichten",
     "compactingMarker": "Komprimierungsschwelle",
     "moreActions": "Weitere Aktionen",
     "compacting": {
@@ -491,7 +491,8 @@
       "memories": "{{count}} Speicher extrahiert",
       "showSummary": "Zusammenfassung anzeigen",
       "inputDisabled": "Bitte warten – Konversationsverlauf wird komprimiert...",
-      "nothingToCompact": "Nichts zum Komprimieren – noch nicht genügend Nachrichten"
+      "nothingToCompact": "Nichts zum Komprimieren – noch nicht genügend Nachrichten",
+      "error": "Komprimierung fehlgeschlagen"
     },
     "taskResult": {
       "showResult": "Ergebnis anzeigen",

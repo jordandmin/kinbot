@@ -485,7 +485,7 @@
     "forceCompact": "Force compaction",
     "tooltipContext": "Context window",
     "tooltipCompacting": "Compaction",
-    "compactingProximity": "Compaction at {{thresholdPercent}}% (~{{tokens}} tokens remaining)",
+    "compactingProximity": "{{current}} / {{threshold}} messages",
     "compactingMarker": "Compaction threshold",
     "breakdown": {
       "tools": "Tools",
@@ -507,7 +507,8 @@
       "memories": "{{count}} memories extracted",
       "showSummary": "Show summary",
       "inputDisabled": "Please wait - compacting conversation history...",
-      "nothingToCompact": "Nothing to compact - not enough messages yet"
+      "nothingToCompact": "Nothing to compact - not enough messages yet",
+      "error": "Compaction failed"
     },
     "taskResult": {
       "showResult": "Show result",

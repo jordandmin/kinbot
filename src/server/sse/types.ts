@@ -26,6 +26,7 @@ export type SSEEventType =
   | 'webhook:triggered'
   | 'compacting:start'
   | 'compacting:done'
+  | 'compacting:error'
   | 'channel:created'
   | 'channel:updated'
   | 'channel:deleted'

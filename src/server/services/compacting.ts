@@ -14,48 +14,13 @@ import { config } from '@/server/config'
 import { getExtractionModel } from '@/server/services/app-settings'
 import { createMemory, updateMemory, isDuplicateMemory, pruneStaleMemories } from '@/server/services/memory'
 import { sseManager } from '@/server/sse/index'
-import { getModelContextWindow } from '@/shared/model-context-windows'
-import type { MemoryCategory, KinCompactingConfig } from '@/shared/types'
+import type { MemoryCategory } from '@/shared/types'
 
 const log = createLogger('compacting')
 
 // Rough token estimation: ~4 characters per token
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
-}
-
-// ─── Per-Kin Threshold Resolution ────────────────────────────────────────────
-
-/** Resolve effective compacting threshold percentage: per-Kin override > DB setting > env var default */
-async function getEffectiveThresholdPercent(kinId: string): Promise<number> {
-  const kin = await db
-    .select({ compactingConfig: kins.compactingConfig })
-    .from(kins)
-    .where(eq(kins.id, kinId))
-    .get()
-
-  let kinConfig: KinCompactingConfig | null = null
-  if (kin?.compactingConfig) {
-    try { kinConfig = JSON.parse(kin.compactingConfig) as KinCompactingConfig } catch { /* use defaults */ }
-  }
-
-  if (kinConfig?.thresholdPercent != null) return kinConfig.thresholdPercent
-
-  // Check DB-stored global setting
-  const { getCompactingThresholdPercent } = await import('@/server/services/app-settings')
-  const dbPercent = await getCompactingThresholdPercent()
-  return dbPercent ?? config.compacting.thresholdPercent
-}
-
-/** Get the model context window for a Kin */
-async function getKinContextWindow(kinId: string): Promise<number> {
-  const kin = await db
-    .select({ model: kins.model })
-    .from(kins)
-    .where(eq(kins.id, kinId))
-    .get()
-
-  return getModelContextWindow(kin?.model ?? 'unknown')
 }
 
 /** Get non-compacted stats for a Kin (shared by shouldCompact + getCompactingProximity) */
@@ -98,53 +63,34 @@ async function getNonCompactedStats(kinId: string): Promise<{ currentTokens: num
 /**
  * Evaluate whether compacting should trigger for a Kin.
  *
- * Primary trigger (incremental): enough non-compacted messages to form a batch
- * while still keeping minKeepMessages as raw context.
- *
- * Fallback trigger (legacy): token count exceeds the configured % of model context window.
+ * Uses message count only: trigger when non-compacted messages exceed
+ * batchSize + minKeepMessages. Token-based threshold was removed because
+ * the pipeline (tool masking + observation compaction) already handles
+ * context size — raw DB tokens are not representative of actual LLM context.
  */
 async function shouldCompact(kinId: string): Promise<boolean> {
-  const [stats, thresholdPercent, contextWindow] = await Promise.all([
-    getNonCompactedStats(kinId),
-    getEffectiveThresholdPercent(kinId),
-    getKinContextWindow(kinId),
-  ])
-
+  const stats = await getNonCompactedStats(kinId)
   if (stats.messageCount === 0) return false
 
-  // Primary: incremental batch trigger
   const { batchSize, minKeepMessages } = config.compacting
-  if (stats.messageCount > batchSize + minKeepMessages) return true
-
-  // Fallback: token-based threshold (safety net for very token-heavy conversations)
-  const tokenThreshold = Math.floor((contextWindow * thresholdPercent) / 100)
-  return stats.currentTokens > tokenThreshold
+  return stats.messageCount > batchSize + minKeepMessages
 }
 
 // ─── Public: compacting proximity for UI ─────────────────────────────────────
 
 export interface CompactingProximity {
-  currentTokens: number
-  tokenThreshold: number
-  thresholdPercent: number
-  contextWindow: number
+  currentMessages: number
+  messageThreshold: number
 }
 
-/** Get compacting proximity data for display in the chat UI */
+/** Get compacting proximity data for display in the chat UI (message-count based) */
 export async function getCompactingProximity(kinId: string): Promise<CompactingProximity> {
-  const [stats, thresholdPercent, contextWindow] = await Promise.all([
-    getNonCompactedStats(kinId),
-    getEffectiveThresholdPercent(kinId),
-    getKinContextWindow(kinId),
-  ])
-
-  const tokenThreshold = Math.floor((contextWindow * thresholdPercent) / 100)
+  const stats = await getNonCompactedStats(kinId)
+  const { batchSize, minKeepMessages } = config.compacting
 
   return {
-    currentTokens: stats.currentTokens,
-    tokenThreshold,
-    thresholdPercent,
-    contextWindow,
+    currentMessages: stats.messageCount,
+    messageThreshold: batchSize + minKeepMessages,
   }
 }
 
@@ -292,8 +238,10 @@ export async function runCompacting(kinId: string): Promise<CompactingResult | n
     data: { kinId },
   })
 
+  let result
+  try {
   // Generate summary
-  const result = await generateText({
+  result = await generateText({
     model,
     messages: [{ role: 'user', content: systemPrompt }],
   })
@@ -392,6 +340,15 @@ export async function runCompacting(kinId: string): Promise<CompactingResult | n
   })
 
   return { summary, memoriesExtracted }
+  } catch (err) {
+    // Emit SSE: compaction failed (so UI can clear the spinner)
+    sseManager.sendToKin(kinId, {
+      type: 'compacting:error',
+      kinId,
+      data: { kinId, error: err instanceof Error ? err.message : 'Unknown compacting error' },
+    })
+    throw err // re-throw for maybeCompact to log
+  }
 }
 
 // ─── Snapshot Cleanup ────────────────────────────────────────────────────────
@@ -589,5 +546,12 @@ export async function maybeCompact(kinId: string): Promise<void> {
     }
   } catch (err) {
     log.error({ kinId, err }, 'Compacting error')
+    // runCompacting already emits compacting:error after compacting:start,
+    // but if shouldCompact itself fails, emit here as a safety net
+    sseManager.sendToKin(kinId, {
+      type: 'compacting:error',
+      kinId,
+      data: { kinId, error: err instanceof Error ? err.message : 'Unknown compacting error' },
+    })
   }
 }

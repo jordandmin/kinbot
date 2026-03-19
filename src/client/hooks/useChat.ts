@@ -46,10 +46,11 @@ export interface LiveTask {
 /** Live compacting card rendered in the conversation while compacting is active */
 export interface LiveCompacting {
   kinId: string
-  status: 'running' | 'done'
+  status: 'running' | 'done' | 'error'
   summary: string | null
   memoriesExtracted: number | null
   startedAt: string
+  error?: string
 }
 
 interface MessagesResponse {
@@ -483,6 +484,17 @@ export function useChat(kinId: string | null) {
       )
       // Refresh messages — the persisted compacting trace will appear, then clear live card
       fetchMessages().then(() => setLiveCompacting(null))
+    },
+
+    'compacting:error': (data) => {
+      if (data.kinId !== kinId) return
+      setLiveCompacting((prev) =>
+        prev
+          ? { ...prev, status: 'error', error: data.error as string }
+          : null,
+      )
+      // Auto-clear error card after 10 seconds
+      setTimeout(() => setLiveCompacting(null), 10_000)
     },
 
     'chat:cleared': (data) => {

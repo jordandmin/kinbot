@@ -5,24 +5,27 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/client/components/ui/collapsible'
-import { Loader2, Archive, CheckCircle2, ChevronRight, Brain } from 'lucide-react'
+import { Loader2, Archive, CheckCircle2, ChevronRight, Brain, AlertTriangle } from 'lucide-react'
 import { MarkdownContent } from '@/client/components/chat/MarkdownContent'
 import { cn } from '@/client/lib/utils'
 
 interface CompactingCardProps {
-  status: 'running' | 'done'
+  status: 'running' | 'done' | 'error'
   summary: string | null
   memoriesExtracted: number | null
+  error?: string
 }
 
 export const CompactingCard = memo(function CompactingCard({
   status,
   summary,
   memoriesExtracted,
+  error,
 }: CompactingCardProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const isRunning = status === 'running'
+  const isError = status === 'error'
 
   return (
     <div className="flex justify-center py-2 animate-fade-in-up">
@@ -30,14 +33,21 @@ export const CompactingCard = memo(function CompactingCard({
         <div
           className={cn(
             'surface-card rounded-xl border p-4 space-y-2 transition-colors duration-300',
-            isRunning ? 'border-primary/30' : 'border-border',
+            isRunning && 'border-primary/30',
+            isError && 'border-destructive/30',
+            !isRunning && !isError && 'border-border',
           )}
         >
           <div className="flex items-center gap-3">
             {/* Icon */}
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <div className={cn(
+              'flex size-8 shrink-0 items-center justify-center rounded-lg',
+              isError ? 'bg-destructive/10' : 'bg-primary/10',
+            )}>
               {isRunning ? (
                 <Loader2 className="size-4 text-primary animate-spin" />
+              ) : isError ? (
+                <AlertTriangle className="size-4 text-destructive" />
               ) : (
                 <Archive className="size-4 text-primary" />
               )}
@@ -51,6 +61,10 @@ export const CompactingCard = memo(function CompactingCard({
                 {isRunning ? (
                   <span className="text-xs font-medium text-primary">
                     {t('chat.compacting.running')}
+                  </span>
+                ) : isError ? (
+                  <span className="text-xs font-medium text-destructive">
+                    {t('chat.compacting.error')}
                   </span>
                 ) : (
                   <>
@@ -70,6 +84,11 @@ export const CompactingCard = memo(function CompactingCard({
                   </>
                 )}
               </div>
+              {isError && error && (
+                <p className="mt-1 text-[10px] text-muted-foreground truncate">
+                  {error}
+                </p>
+              )}
             </div>
           </div>
 
@@ -81,7 +100,7 @@ export const CompactingCard = memo(function CompactingCard({
           )}
 
           {/* Collapsible summary when done */}
-          {!isRunning && summary && (
+          {!isRunning && !isError && summary && (
             <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
               <ChevronRight
                 className={cn(
