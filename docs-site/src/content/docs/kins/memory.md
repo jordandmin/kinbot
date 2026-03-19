@@ -59,12 +59,21 @@ Kins can also search memory explicitly:
 
 | Tool | Purpose |
 |---|---|
-| `recall` | Search memories (semantic + keyword) |
-| `memorize` | Save new information |
-| `update_memory` | Update an existing memory |
+| `recall` | Search memories (semantic + keyword, includes shared) |
+| `memorize` | Save new information (private or shared) |
+| `update_memory` | Update an existing memory (content, category, scope) |
 | `forget` | Delete a memory |
-| `list_memories` | Browse memories by category |
+| `list_memories` | Browse memories by category or scope |
+| `review_memories` | LLM-powered audit for contradictions, duplicates, stale entries |
 | `search_history` | Search conversation message history |
+
+## Shared memories
+
+Memories default to **private** (only the owning Kin can see them), but Kins can mark memories as **shared** to make them searchable by all other Kins. This is useful for cross-domain facts like infrastructure details, user-wide preferences, or organizational decisions.
+
+- Use `memorize(..., scope: "shared")` or `update_memory(..., scope: "shared")`
+- `recall` automatically searches both private and shared memories
+- Shared memories include author attribution (e.g. *[shared by Assistant]*)
 
 ## Session compacting
 
@@ -72,11 +81,10 @@ When a conversation grows beyond the model's context window, KinBot **compacts**
 
 - Original messages are **never deleted** — they're preserved in the database
 - The compacting summary is injected at the start of the context window
-- Compacting is **rollback-able** — you can restore the original messages
 - The Kin is informed about compacting: it knows how many messages are visible vs. total, and whether older history was compacted
 
 ## Memory and privacy
 
-- Memories are per-Kin — each Kin has its own memory store
+- Memories are **per-Kin** by default — each Kin has its own memory store
+- **Shared** memories are readable by all Kins but still owned by the creator
 - Vault secrets are **never** stored in memories (redaction prevents leaking into compacted summaries)
-- Memory search respects the Kin boundary — a Kin cannot access another Kin's memories

@@ -3,7 +3,7 @@ title: How Memory Works
 description: Understanding KinBot's memory system — extraction, retrieval, and the advanced search pipeline.
 ---
 
-KinBot gives each Kin persistent memory across conversations. The system uses two complementary channels: **automatic extraction** and **explicit remembering**, backed by a sophisticated hybrid search pipeline.
+KinBot gives each Kin persistent memory across conversations. The system uses two complementary channels: **automatic extraction** and **explicit remembering**, backed by a sophisticated hybrid search pipeline. Memories can be **private** (default, only the owning Kin can access them) or **shared** (visible and searchable by all Kins).
 
 :::note
 For Kin-specific memory features (importance, categories, retrieval), see [Kin Memory](/kinbot/docs/kins/memory/).
@@ -26,20 +26,36 @@ The extraction uses a dedicated model (configurable via `MEMORY_EXTRACTION_MODEL
 
 Kins have a `memorize` tool that lets them (or users) explicitly store information. This is useful for direct instructions like "Remember that I prefer dark mode" or important context the extraction pipeline might miss.
 
+## Shared Memories
+
+By default, memories are **private** to the Kin that created them. However, Kins can mark memories as **shared** to make them searchable by all other Kins in the instance.
+
+### When to share
+
+Shared memories are for information that genuinely helps other Kins: cross-domain facts (infrastructure details, user-wide preferences, project decisions affecting everyone), organizational changes, or user availability. Kins should **not** share internal reasoning, task-specific details, or domain-specific knowledge that other Kins would never need.
+
+### How it works
+
+- The `memorize` and `update_memory` tools accept an optional `scope` parameter: `"private"` (default) or `"shared"`
+- `recall` automatically searches both private and shared memories, with shared results attributed to their author Kin (e.g. *[shared by Assistant]*)
+- `list_memories` can filter by scope; `"shared"` lists shared memories from all Kins
+- Deduplication checks span both scopes to prevent redundant entries
+- The prompt builder adds `*[shared by Kin Name]*` attribution to shared memories injected in context
+
 ## Memory Tools
 
 Kins have six memory tools available (main agent only):
 
 | Tool | Description |
 |------|-------------|
-| `recall` | Semantic + keyword search across all memories |
-| `memorize` | Explicitly save a new memory |
-| `update_memory` | Update an existing memory's content, category, or subject |
+| `recall` | Semantic + keyword search across private + shared memories |
+| `memorize` | Save a new memory (private or shared) |
+| `update_memory` | Update content, category, subject, or scope |
 | `forget` | Delete an outdated or incorrect memory |
-| `list_memories` | List all memories, optionally filtered by subject or category |
+| `list_memories` | List memories, filtered by subject, category, or scope |
 | `review_memories` | LLM-powered audit that detects contradictions, duplicates, stale entries, and clutter |
 
-Both `recall` and `list_memories` include conversational provenance: when a memory has a `sourceContext` (the context in which it was learned), it's included in the result. This helps Kins reason about the relevance and reliability of each memory.
+Both `recall` and `list_memories` include conversational provenance: when a memory has a `sourceContext` (the context in which it was learned), it's included in the result. Shared memories also include `authorKinName` attribution.
 
 ## Storage
 
