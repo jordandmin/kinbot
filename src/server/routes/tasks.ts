@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq, and, asc } from 'drizzle-orm'
 import { db } from '@/server/db/index'
 import { tasks, messages, kins } from '@/server/db/schema'
-import { getTask, listTasksPaginated, cancelTask } from '@/server/services/tasks'
+import { getTask, listTasksPaginated, cancelTask, forceStartTask, listActiveQueues } from '@/server/services/tasks'
 import type { AppVariables } from '@/server/app'
 import type { TaskStatus } from '@/shared/types'
 import { createLogger } from '@/server/logger'
@@ -57,6 +57,9 @@ taskRoutes.get('/', async (c) => {
         model: t.model ?? parentKin?.model ?? null,
         cronId: t.cronId ?? null,
         depth: t.depth,
+        concurrencyGroup: t.concurrencyGroup ?? null,
+        concurrencyMax: t.concurrencyMax ?? null,
+        queuedAt: t.queuedAt,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
       }
@@ -64,6 +67,12 @@ taskRoutes.get('/', async (c) => {
     total,
     hasMore: offset + allTasks.length < total,
   })
+})
+
+// GET /api/tasks/queues/active — list active concurrency queues (must be before /:id)
+taskRoutes.get('/queues/active', async (c) => {
+  const queues = await listActiveQueues()
+  return c.json({ queues })
 })
 
 // GET /api/tasks/:id — get detailed task info including messages
@@ -140,5 +149,33 @@ taskRoutes.post('/:id/cancel', async (c) => {
   }
 
   log.info({ taskId, parentKinId: task.parentKinId }, 'Task cancelled')
+  return c.json({ success: true })
+})
+
+// POST /api/tasks/:id/force-start — force-start a queued task (admin override)
+taskRoutes.post('/:id/force-start', async (c) => {
+  const taskId = c.req.param('id')
+  const task = await getTask(taskId)
+
+  if (!task) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Task not found' } }, 404)
+  }
+
+  if (task.status !== 'queued') {
+    return c.json(
+      { error: { code: 'TASK_NOT_QUEUED', message: 'Task is not in queued status' } },
+      409,
+    )
+  }
+
+  const success = await forceStartTask(taskId)
+  if (!success) {
+    return c.json(
+      { error: { code: 'FORCE_START_FAILED', message: 'Failed to force-start task' } },
+      500,
+    )
+  }
+
+  log.info({ taskId, parentKinId: task.parentKinId }, 'Task force-started')
   return c.json({ success: true })
 })

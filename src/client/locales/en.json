@@ -191,6 +191,7 @@
         "pending": "{{count}} pending"
       },
       "status": {
+        "queued": "Queued",
         "pending": "Pending",
         "in_progress": "Running",
         "awaiting_human_input": "Waiting for you",
@@ -201,6 +202,8 @@
       },
       "emptyDescription": "Tasks will appear here when Kins are working",
       "activeLabel": "Active",
+      "queuedLabel": "Queued",
+      "forceStart": "Force start",
       "toast": {
         "completed": "Task completed: {{title}}",
         "failed": "Task failed: {{title}}",

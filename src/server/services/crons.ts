@@ -286,6 +286,8 @@ export async function triggerCronManually(cronId: string): Promise<{ taskId: str
     sourceKinId: cron.targetKinId ?? undefined,
     model: cron.model ?? undefined,
     cronId: cron.id,
+    concurrencyGroup: `cron:${cron.id}`,
+    concurrencyMax: config.crons.maxConcurrentExecutions,
   })
 
   sseManager.sendToKin(cron.kinId, {
@@ -335,6 +337,8 @@ async function triggerCron(cronId: string) {
     sourceKinId: cron.targetKinId ?? undefined,
     model: cron.model ?? undefined,
     cronId: cron.id,
+    concurrencyGroup: `cron:${cronId}`,
+    concurrencyMax: config.crons.maxConcurrentExecutions,
   })
 
   // Emit SSE event

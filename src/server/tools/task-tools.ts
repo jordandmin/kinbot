@@ -8,6 +8,7 @@ import {
   listKinTasks,
   listSourceKinTasks,
   getTask,
+  listActiveQueues,
 } from '@/server/services/tasks'
 import { resolveKinId } from '@/server/services/kin-resolver'
 import { db } from '@/server/db/index'
@@ -37,10 +38,12 @@ export const spawnSelfTool: ToolRegistration = {
           ),
         model: z.string().optional(),
         allow_human_prompt: z.boolean().optional().describe('Default: true'),
+        concurrency_group: z.string().optional().describe('Concurrency group ID. Tasks in the same group share a concurrency limit.'),
+        concurrency_max: z.number().int().min(1).optional().describe('Max concurrent tasks in this group. Required when concurrency_group is set.'),
       }),
-      execute: async ({ title, task_description, mode, model, allow_human_prompt }) => {
-        log.debug({ kinId: ctx.kinId, mode, spawnType: 'self' }, 'Task spawn requested (spawn_self)')
-        const { taskId } = await spawnTask({
+      execute: async ({ title, task_description, mode, model, allow_human_prompt, concurrency_group, concurrency_max }) => {
+        log.debug({ kinId: ctx.kinId, mode, spawnType: 'self', concurrencyGroup: concurrency_group }, 'Task spawn requested (spawn_self)')
+        const { taskId, status } = await spawnTask({
           parentKinId: ctx.kinId,
           title,
           description: task_description,
@@ -49,8 +52,10 @@ export const spawnSelfTool: ToolRegistration = {
           model,
           allowHumanPrompt: allow_human_prompt,
           channelOriginId: ctx.channelOriginId,
+          concurrencyGroup: concurrency_group,
+          concurrencyMax: concurrency_max,
         })
-        return { taskId, status: 'pending' }
+        return { taskId, status }
       },
     }),
 }
@@ -76,14 +81,16 @@ export const spawnKinTool: ToolRegistration = {
           ),
         model: z.string().optional(),
         allow_human_prompt: z.boolean().optional().describe('Default: true'),
+        concurrency_group: z.string().optional().describe('Concurrency group ID. Tasks in the same group share a concurrency limit.'),
+        concurrency_max: z.number().int().min(1).optional().describe('Max concurrent tasks in this group. Required when concurrency_group is set.'),
       }),
-      execute: async ({ kin_slug, title, task_description, mode, model, allow_human_prompt }) => {
+      execute: async ({ kin_slug, title, task_description, mode, model, allow_human_prompt, concurrency_group, concurrency_max }) => {
         const kinId = resolveKinId(kin_slug)
         if (!kinId) {
           return { error: `Kin not found for slug "${kin_slug}"` }
         }
-        log.debug({ kinId: ctx.kinId, targetKinId: kinId, mode, spawnType: 'other' }, 'Task spawn requested (spawn_kin)')
-        const { taskId } = await spawnTask({
+        log.debug({ kinId: ctx.kinId, targetKinId: kinId, mode, spawnType: 'other', concurrencyGroup: concurrency_group }, 'Task spawn requested (spawn_kin)')
+        const { taskId, status } = await spawnTask({
           parentKinId: ctx.kinId,
           title,
           description: task_description,
@@ -93,8 +100,10 @@ export const spawnKinTool: ToolRegistration = {
           model,
           allowHumanPrompt: allow_human_prompt,
           channelOriginId: ctx.channelOriginId,
+          concurrencyGroup: concurrency_group,
+          concurrencyMax: concurrency_max,
         })
-        return { taskId, status: 'pending' }
+        return { taskId, status }
       },
     }),
 }
@@ -256,6 +265,24 @@ export const getTaskDetailTool: ToolRegistration = {
           },
           messages: taskMessages,
         }
+      },
+    }),
+}
+
+/**
+ * list_active_queues — show all concurrency groups with active/queued task counts.
+ * Available to main agents only.
+ */
+export const listActiveQueuesTool: ToolRegistration = {
+  availability: ['main'],
+  create: () =>
+    tool({
+      description:
+        'List all active concurrency queues, showing how many tasks are running vs queued in each group.',
+      inputSchema: z.object({}),
+      execute: async () => {
+        const queues = await listActiveQueues()
+        return { queues }
       },
     }),
 }

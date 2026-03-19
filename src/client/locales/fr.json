@@ -191,6 +191,7 @@
         "pending": "{{count}} en file"
       },
       "status": {
+        "queued": "En file d'attente",
         "pending": "En attente",
         "in_progress": "En cours",
         "awaiting_human_input": "En attente de votre réponse",
@@ -201,6 +202,8 @@
       },
       "emptyDescription": "Les tâches apparaîtront ici quand vos Kins travaillent",
       "activeLabel": "En cours",
+      "queuedLabel": "En file d'attente",
+      "forceStart": "Forcer le démarrage",
       "toast": {
         "completed": "Tâche terminée : {{title}}",
         "failed": "Tâche échouée : {{title}}",

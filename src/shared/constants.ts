@@ -57,7 +57,7 @@ export const KNOWN_CHANNEL_PLATFORMS = ['telegram', 'discord', 'slack', 'whatsap
 /** @deprecated Use KNOWN_CHANNEL_PLATFORMS for built-in platforms or fetch from /api/channels/platforms for all registered platforms */
 export const CHANNEL_PLATFORMS = KNOWN_CHANNEL_PLATFORMS
 
-export const TASK_STATUSES = ['pending', 'in_progress', 'awaiting_human_input', 'completed', 'failed', 'cancelled'] as const
+export const TASK_STATUSES = ['queued', 'pending', 'in_progress', 'awaiting_human_input', 'completed', 'failed', 'cancelled'] as const
 
 export const NOTIFICATION_TYPES = [
   'prompt:pending',
@@ -164,6 +164,7 @@ export const TOOL_DOMAIN_MAP: Record<string, ToolDomain> = {
   respond_to_task: 'tasks',
   cancel_task: 'tasks',
   list_tasks: 'tasks',
+  list_active_queues: 'tasks',
   report_to_parent: 'tasks',
   update_task_status: 'tasks',
   request_input: 'tasks',

@@ -7,7 +7,9 @@ import {
 import { Input } from '@/client/components/ui/input'
 import { cn } from '@/client/lib/utils'
 import { formatDurationBetween, formatElapsed } from '@/client/lib/time'
-import { Loader2, CheckCircle2, XCircle, Clock, Ban, UserCheck, MessageSquare, Search, ListTodo } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle, Clock, Ban, UserCheck, MessageSquare, Search, ListTodo, Hourglass, Play } from 'lucide-react'
+import { Button } from '@/client/components/ui/button'
+import { api } from '@/client/lib/api'
 import { EmptyState } from '@/client/components/common/EmptyState'
 const TaskDetailModal = lazy(() => import('@/client/components/sidebar/TaskDetailModal').then(m => ({ default: m.TaskDetailModal })))
 import type { TaskStatus, TaskSummary } from '@/shared/types'
@@ -26,6 +28,12 @@ const STATUS_CONFIG: Record<TaskStatus, {
   dotClass: string
   ringClass: string
 }> = {
+  queued: {
+    icon: Hourglass,
+    iconClass: 'text-muted-foreground',
+    dotClass: 'bg-muted-foreground/40',
+    ringClass: 'ring-muted-foreground/15',
+  },
   pending: {
     icon: Clock,
     iconClass: 'text-muted-foreground',
@@ -113,6 +121,7 @@ function TimelineTaskCard({ task, onClick, isLast }: { task: TaskSummary; onClic
   const Icon = config.icon
   const kinName = task.sourceKinName ?? task.parentKinName
   const isCancelled = task.status === 'cancelled'
+  const isQueued = task.status === 'queued'
   const isActive = task.status === 'in_progress' || task.status === 'awaiting_human_input' || task.status === 'awaiting_kin_response' || task.status === 'pending'
   const isFinished = task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled'
   const duration = isFinished
@@ -146,6 +155,7 @@ function TimelineTaskCard({ task, onClick, isLast }: { task: TaskSummary; onClic
           'flex-1 min-w-0 rounded-lg px-2.5 py-2 mb-1 text-xs transition-colors cursor-pointer',
           'hover:bg-sidebar-accent/40',
           isActive && 'bg-sidebar-accent/30',
+          isQueued && 'opacity-70',
           isCancelled && 'opacity-50',
         )}
       >
@@ -169,8 +179,87 @@ function TimelineTaskCard({ task, onClick, isLast }: { task: TaskSummary; onClic
   )
 }
 
+function QueuedTaskCard({ task, position, onClick, isLast }: { task: TaskSummary; position: number; onClick: () => void; isLast: boolean }) {
+  const { t } = useTranslation()
+  const config = STATUS_CONFIG[task.status]
+  const Icon = config.icon
+  const kinName = task.sourceKinName ?? task.parentKinName
+  const waitingSince = task.queuedAt ? formatElapsed(task.queuedAt) : formatElapsed(task.createdAt)
+
+  const handleForceStart = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await api.post(`/tasks/${task.id}/force-start`)
+    } catch {
+      // handled by SSE updates
+    }
+  }
+
+  return (
+    <div className="relative flex gap-3 group">
+      {/* Timeline rail */}
+      <div className="flex flex-col items-center shrink-0 w-4">
+        <div className={cn(
+          'relative z-10 mt-2.5 size-2.5 rounded-full ring-2',
+          config.dotClass,
+          config.ringClass,
+        )} />
+        {!isLast && (
+          <div className="flex-1 w-px bg-border/60 mt-1" />
+        )}
+      </div>
+
+      {/* Card */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
+        className={cn(
+          'flex-1 min-w-0 rounded-lg px-2.5 py-2 mb-1 text-xs transition-colors cursor-pointer opacity-70',
+          'hover:bg-sidebar-accent/40',
+        )}
+      >
+        {/* Title */}
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center justify-center rounded bg-muted/80 px-1 py-0.5 text-[9px] font-mono text-muted-foreground tabular-nums shrink-0">
+            #{position}
+          </span>
+          <p className="truncate font-medium text-foreground text-[11px] leading-tight">
+            {task.title ?? (task.description.length > 45
+              ? task.description.slice(0, 45) + '…'
+              : task.description)}
+          </p>
+        </div>
+
+        {/* Meta row */}
+        <div className="flex items-center gap-1.5 mt-1">
+          <Icon className={cn('size-3 shrink-0', config.iconClass)} />
+          <span className="text-[10px] text-muted-foreground truncate">{kinName}</span>
+          {task.concurrencyGroup && (
+            <span className="text-[9px] text-muted-foreground/70 truncate max-w-[80px]" title={task.concurrencyGroup}>
+              {task.concurrencyGroup}
+            </span>
+          )}
+          <span className="text-[10px] text-muted-foreground ml-auto shrink-0 tabular-nums">
+            {waitingSince}
+          </span>
+          <button
+            onClick={handleForceStart}
+            className="hidden group-hover:inline-flex items-center justify-center size-5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+            title={t('sidebar.tasks.forceStart')}
+          >
+            <Play className="size-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface TaskData {
   activeTasks: TaskSummary[]
+  queuedTasks: TaskSummary[]
   historyTasks: TaskSummary[]
   hasMore: boolean
   isLoading: boolean
@@ -189,6 +278,7 @@ export const TaskList = memo(function TaskList({ llmModels, taskData }: TaskList
   const { t } = useTranslation()
   const {
     activeTasks,
+    queuedTasks,
     historyTasks,
     hasMore,
     isLoading,
@@ -216,11 +306,11 @@ export const TaskList = memo(function TaskList({ llmModels, taskData }: TaskList
     return () => observer.disconnect()
   }, [loadMore])
 
-  // Deduplicate history vs active
-  const activeIds = useMemo(() => new Set(activeTasks.map((t) => t.id)), [activeTasks])
+  // Deduplicate history vs active/queued
+  const nonHistoryIds = useMemo(() => new Set([...activeTasks, ...queuedTasks].map((t) => t.id)), [activeTasks, queuedTasks])
   const deduplicatedHistory = useMemo(
-    () => historyTasks.filter((t) => !activeIds.has(t.id)),
-    [historyTasks, activeIds],
+    () => historyTasks.filter((t) => !nonHistoryIds.has(t.id)),
+    [historyTasks, nonHistoryIds],
   )
 
   // Group history by day
@@ -229,18 +319,18 @@ export const TaskList = memo(function TaskList({ llmModels, taskData }: TaskList
     [deduplicatedHistory, t],
   )
 
-  // Find selected task across both lists
+  // Find selected task across all lists
   const allVisible = useMemo(
-    () => [...activeTasks, ...deduplicatedHistory],
-    [activeTasks, deduplicatedHistory],
+    () => [...activeTasks, ...queuedTasks, ...deduplicatedHistory],
+    [activeTasks, queuedTasks, deduplicatedHistory],
   )
   const selectedTask = useMemo(
     () => allVisible.find((t) => t.id === selectedTaskId) ?? null,
     [allVisible, selectedTaskId],
   )
 
-  const isEmpty = activeTasks.length === 0 && deduplicatedHistory.length === 0 && !isLoading
-  const totalItems = activeTasks.length + deduplicatedHistory.length
+  const isEmpty = activeTasks.length === 0 && queuedTasks.length === 0 && deduplicatedHistory.length === 0 && !isLoading
+  const totalItems = activeTasks.length + queuedTasks.length + deduplicatedHistory.length
 
   return (
     <>
@@ -291,7 +381,34 @@ export const TaskList = memo(function TaskList({ llmModels, taskData }: TaskList
                       key={task.id}
                       task={task}
                       onClick={() => setSelectedTaskId(task.id)}
-                      isLast={i === activeTasks.length - 1 && deduplicatedHistory.length === 0}
+                      isLast={i === activeTasks.length - 1 && queuedTasks.length === 0 && deduplicatedHistory.length === 0}
+                    />
+                  ))}
+                </>
+              )}
+
+              {/* Queued tasks — between active and history */}
+              {queuedTasks.length > 0 && !searchQuery && (
+                <>
+                  <div className="relative flex gap-3 items-center mb-0.5 mt-1">
+                    <div className="flex flex-col items-center shrink-0 w-4">
+                      <div className="size-2 rounded-full bg-muted-foreground/40" />
+                    </div>
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {t('sidebar.tasks.queuedLabel')}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground ml-auto tabular-nums">
+                      {queuedTasks.length}
+                    </span>
+                  </div>
+
+                  {queuedTasks.map((task, i) => (
+                    <QueuedTaskCard
+                      key={task.id}
+                      task={task}
+                      position={i + 1}
+                      onClick={() => setSelectedTaskId(task.id)}
+                      isLast={i === queuedTasks.length - 1 && deduplicatedHistory.length === 0}
                     />
                   ))}
                 </>
