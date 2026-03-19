@@ -699,7 +699,11 @@
     "result": "Résultat",
     "error": "Erreur",
     "cancel": "Annuler la tâche",
-    "close": "Fermer"
+    "close": "Fermer",
+    "viewPrompt": "Prompt",
+    "viewPromptTooltip": "Voir le prompt complet de la tâche",
+    "prompt": "Prompt de la tâche",
+    "promptDescription": "Contenu complet du prompt de la tâche"
   },
   "settings": {
     "title": "Paramètres",

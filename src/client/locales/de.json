@@ -692,7 +692,11 @@
     "result": "Ergebnis",
     "error": "Fehler",
     "cancel": "Aufgabe abbrechen",
-    "close": "Schließen"
+    "close": "Schließen",
+    "viewPrompt": "Prompt",
+    "viewPromptTooltip": "Vollständigen Aufgaben-Prompt anzeigen",
+    "prompt": "Aufgaben-Prompt",
+    "promptDescription": "Vollständiger Inhalt des Aufgaben-Prompts"
   },
   "settings": {
     "title": "Einstellungen",

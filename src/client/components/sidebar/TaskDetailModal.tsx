@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/client/components/ui/dialog'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
 import { Button } from '@/client/components/ui/button'
 import { Badge } from '@/client/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
@@ -33,6 +34,7 @@ import {
   Layers,
   Wrench,
   Cpu,
+  FileText,
 } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
@@ -96,6 +98,7 @@ export function TaskDetailModal({
   )
   const bottomRef = useRef<HTMLDivElement>(null)
   const [isToolCallsOpen, setIsToolCallsOpen] = useState(false)
+  const [isPromptOpen, setIsPromptOpen] = useState(false)
   const toggleToolCalls = useCallback(() => setIsToolCallsOpen((prev) => !prev), [])
 
   // Filter out messages already represented elsewhere in the modal:
@@ -119,9 +122,12 @@ export function TaskDetailModal({
     bottomRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
   }, [visibleMessages, streamingMessage, isStreaming, pendingPrompts])
 
-  // Reset tool calls panel when modal closes
+  // Reset panels when modal closes
   useEffect(() => {
-    if (!open) setIsToolCallsOpen(false)
+    if (!open) {
+      setIsToolCallsOpen(false)
+      setIsPromptOpen(false)
+    }
   }, [open])
 
   const statusConfig = task ? STATUS_CONFIG[task.status] : null
@@ -160,6 +166,9 @@ export function TaskDetailModal({
                       : task?.description) ??
                     t('common.loading')}
                 </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {task?.description ?? t('taskDetail.promptDescription')}
+                </DialogDescription>
                 {statusConfig && StatusIcon && (
                   <Badge variant={statusConfig.badgeVariant} className="shrink-0 gap-1">
                     <StatusIcon className={cn('size-3', statusConfig.iconClass)} />
@@ -167,12 +176,6 @@ export function TaskDetailModal({
                   </Badge>
                 )}
               </div>
-
-              {task?.title && task.description && (
-                <DialogDescription className="mt-1 line-clamp-2">
-                  {task.description}
-                </DialogDescription>
-              )}
 
               {task && (
                 <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
@@ -211,6 +214,22 @@ export function TaskDetailModal({
                       <Wrench className="size-3" />
                       {toolCallCount}
                     </Button>
+                  )}
+                  {task.description && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 gap-1 px-1.5 text-[10px]"
+                          onClick={() => setIsPromptOpen(true)}
+                        >
+                          <FileText className="size-3" />
+                          {t('taskDetail.viewPrompt')}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{t('taskDetail.viewPromptTooltip')}</TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               )}
@@ -319,6 +338,34 @@ export function TaskDetailModal({
             />
           </div>
         </div>
+
+        {/* Prompt viewer dialog */}
+        {task?.description && (
+          <Dialog open={isPromptOpen} onOpenChange={setIsPromptOpen}>
+            <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col gap-0">
+              <DialogHeader className="pb-3 border-b border-border">
+                <DialogTitle className="text-base">
+                  {task.title ?? t('taskDetail.prompt')}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {t('taskDetail.promptDescription')}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="overflow-y-auto max-h-[60vh] py-4 px-1">
+                <div className="text-sm text-foreground">
+                  <MarkdownContent content={task.description} isUser={false} />
+                </div>
+              </div>
+              <DialogFooter className="pt-3 border-t border-border">
+                <DialogClose asChild>
+                  <Button variant="outline" size="sm">
+                    {t('taskDetail.close')}
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Footer */}
         <DialogFooter className="pt-3 border-t border-border">

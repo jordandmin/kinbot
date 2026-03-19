@@ -699,7 +699,11 @@
     "result": "Result",
     "error": "Error",
     "cancel": "Cancel task",
-    "close": "Close"
+    "close": "Close",
+    "viewPrompt": "Prompt",
+    "viewPromptTooltip": "View full task prompt",
+    "prompt": "Task prompt",
+    "promptDescription": "Full task prompt content"
   },
   "settings": {
     "title": "Settings",
