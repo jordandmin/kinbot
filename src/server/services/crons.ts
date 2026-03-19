@@ -279,6 +279,7 @@ export async function triggerCronManually(cronId: string): Promise<{ taskId: str
 
   const { taskId } = await spawnTask({
     parentKinId: cron.kinId,
+    title: cron.name,
     description: cron.taskDescription,
     mode: 'async',
     spawnType: cron.targetKinId ? 'other' : 'self',
@@ -327,6 +328,7 @@ async function triggerCron(cronId: string) {
   // Spawn sub-Kin task — async mode (result is informational, no LLM turn)
   const { taskId } = await spawnTask({
     parentKinId: cron.kinId,
+    title: cron.name,
     description: cron.taskDescription,
     mode: 'async',
     spawnType: cron.targetKinId ? 'other' : 'self',
