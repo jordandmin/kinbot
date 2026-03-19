@@ -692,7 +692,11 @@
     "result": "Resultado",
     "error": "Error",
     "cancel": "Cancelar tarea",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "viewPrompt": "Prompt",
+    "viewPromptTooltip": "Ver el prompt completo de la tarea",
+    "prompt": "Prompt de la tarea",
+    "promptDescription": "Contenido completo del prompt de la tarea"
   },
   "settings": {
     "title": "Ajustes",
