@@ -42,16 +42,28 @@ function getAttr(tag: string, attr: string): string {
 
 /** Strip HTML tags and decode basic entities */
 function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  // Loop tag stripping until stable to handle nested/split tags like <scr<script>ipt>
+  let result = html
+  let prev = ''
+  while (result !== prev) {
+    prev = result
+    result = result.replace(/<[^>]+>/g, '')
+  }
+
+  // Decode entities in a loop to handle double-encoded values like &amp;amp;
+  prev = ''
+  while (result !== prev) {
+    prev = result
+    result = result
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+  }
+
+  return result.replace(/\s+/g, ' ').trim()
 }
 
 /** Parse RSS 2.0 feed */
