@@ -255,7 +255,10 @@
       "commandPalette": "Paleta de comandos",
       "shortcuts": "Atajos de teclado",
       "settings": "Ajustes",
-      "whatsNew": "Novedades"
+      "whatsNew": "Novedades",
+      "checkForUpdates": "Buscar actualizaciones",
+      "upToDate": "¡Todo actualizado!",
+      "checkFailed": "Error al buscar actualizaciones"
     },
     "health": {
       "providers": "{{healthy}}/{{total}} proveedores conectados",
@@ -658,7 +661,23 @@
     "quickChat": "Chat rápido",
     "react": "Reaccionar",
     "messageRedacted": "Este mensaje fue censurado",
-    "reactionFailed": "Error al cambiar la reacción"
+    "reactionFailed": "Error al cambiar la reacción",
+    "breakdown": {
+      "tools": "Herramientas",
+      "systemPrompt": "Prompt del sistema",
+      "summary": "Resumen",
+      "messages": "Mensajes",
+      "total": "Total"
+    },
+    "pipeline": {
+      "maskedTools": "{{count}} resultados de herramientas colapsados (~{{tokens}} ahorrados)",
+      "observationCompacted": "{{count}} mensajes compactados",
+      "emergencyTrim": "{{count}} mensajes recortados"
+    },
+    "webhook": {
+      "received": "Webhook recibido",
+      "showPayload": "Mostrar payload"
+    }
   },
   "quickChat": {
     "title": "Sesión rápida",
@@ -1128,7 +1147,37 @@
         "bullet2": "Cada webhook está vinculado a un Kin específico que procesará los eventos entrantes",
         "bullet3": "El token del webhook debe incluirse como un Bearer token en el header Authorization",
         "bullet4": "El cuerpo de la solicitud (JSON o texto) se reenvía como mensaje al Kin destino"
-      }
+      },
+      "filtering": "Filtrado",
+      "filteringOptional": "Filtrado (opcional)",
+      "filterMode": "Modo de filtro",
+      "filterModeNone": "Ninguno",
+      "filterModeSimple": "Simple",
+      "filterModeAdvanced": "Avanzado",
+      "filterField": "Ruta del campo",
+      "filterFieldPlaceholder": "ej. action, event.type",
+      "filterFieldTip": "Ruta en notación de punto para extraer un valor del payload JSON.",
+      "filterAllowedValues": "Valores permitidos",
+      "filterAllowedValuesPlaceholder": "Escribe un valor y presiona Enter",
+      "filterAllowedValuesTip": "Solo los payloads donde el valor extraído coincida con uno de estos valores serán reenviados al Kin.",
+      "filterAllowedValuesEmpty": "Sin valores permitidos — todos los payloads serán bloqueados.",
+      "filterExpression": "Patrón regex",
+      "filterExpressionPlaceholder": "ej. \"completed|success\"",
+      "filterExpressionTip": "Una expresión regular que se evalúa contra el cuerpo del payload.",
+      "filterExpressionInvalid": "Expresión regular inválida",
+      "filterTest": "Probar filtro",
+      "filterTestPayload": "Payload de prueba",
+      "filterTestPayloadPlaceholder": "Pega un payload de ejemplo aquí...",
+      "filterTestRun": "Ejecutar prueba",
+      "filterTestPassed": "Este payload PASARÍA el filtro",
+      "filterTestFiltered": "Este payload sería DESCARTADO",
+      "filterTestExtracted": "Valor extraído",
+      "filterTestError": "Error de parseo",
+      "filterTestNoPayload": "No hay payload reciente disponible",
+      "filtered": "Filtrado",
+      "statsReceived": "{{count}} recibidos",
+      "statsTransmitted": "{{count}} transmitidos",
+      "statsFiltered": "{{count}} filtrados"
     },
     "users": {
       "title": "Usuarios",

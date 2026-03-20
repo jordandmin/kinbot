@@ -255,7 +255,10 @@
       "commandPalette": "Befehlspalette",
       "shortcuts": "Tastaturkürzel",
       "settings": "Einstellungen",
-      "whatsNew": "Was ist neu"
+      "whatsNew": "Was ist neu",
+      "checkForUpdates": "Nach Updates suchen",
+      "upToDate": "Alles aktuell!",
+      "checkFailed": "Update-Prüfung fehlgeschlagen"
     },
     "health": {
       "providers": "{{healthy}}/{{total}} Provider verbunden",
@@ -658,7 +661,23 @@
     "react": "Reagieren",
     "messageRedacted": "Diese Nachricht wurde redigiert",
     "reactionFailed": "Die Reaktion konnte nicht umgeschaltet werden",
-    "stepLimitReached": "Antwort abgeschnitten: Tool-Schrittlimit erreicht. Bitte mich fortzufahren."
+    "stepLimitReached": "Antwort abgeschnitten: Tool-Schrittlimit erreicht. Bitte mich fortzufahren.",
+    "breakdown": {
+      "tools": "Tools",
+      "systemPrompt": "System-Prompt",
+      "summary": "Zusammenfassung",
+      "messages": "Nachrichten",
+      "total": "Gesamt"
+    },
+    "pipeline": {
+      "maskedTools": "{{count}} Tool-Ergebnisse eingeklappt (~{{tokens}} gespart)",
+      "observationCompacted": "{{count}} Nachrichten komprimiert",
+      "emergencyTrim": "{{count}} Nachrichten gekürzt"
+    },
+    "webhook": {
+      "received": "Webhook empfangen",
+      "showPayload": "Payload anzeigen"
+    }
   },
   "quickChat": {
     "title": "Schnelle Sitzung",
@@ -1128,7 +1147,37 @@
         "bullet2": "Jeder Webhook ist mit einem bestimmten Kin verknüpft, der die eingehenden Ereignisse verarbeitet",
         "bullet3": "Das Webhook-Token muss als Bearer-Token im Authorization-Header enthalten sein",
         "bullet4": "Der Anfragetext (JSON oder Text) wird als Nachricht an den Ziel-Kin weitergeleitet"
-      }
+      },
+      "filtering": "Filterung",
+      "filteringOptional": "Filterung (optional)",
+      "filterMode": "Filtermodus",
+      "filterModeNone": "Keiner",
+      "filterModeSimple": "Einfach",
+      "filterModeAdvanced": "Erweitert",
+      "filterField": "Feldpfad",
+      "filterFieldPlaceholder": "z.B. action, event.type",
+      "filterFieldTip": "Punkt-Notation-Pfad, um einen Wert aus dem JSON-Payload zu extrahieren.",
+      "filterAllowedValues": "Erlaubte Werte",
+      "filterAllowedValuesPlaceholder": "Wert eingeben und Enter drücken",
+      "filterAllowedValuesTip": "Nur Payloads, bei denen der extrahierte Wert einem dieser Werte entspricht, werden an den Kin weitergeleitet.",
+      "filterAllowedValuesEmpty": "Keine erlaubten Werte gesetzt — alle Payloads werden blockiert.",
+      "filterExpression": "Regex-Muster",
+      "filterExpressionPlaceholder": "z.B. \"completed|success\"",
+      "filterExpressionTip": "Ein regulärer Ausdruck, der gegen den rohen Payload-Body getestet wird.",
+      "filterExpressionInvalid": "Ungültiger regulärer Ausdruck",
+      "filterTest": "Filter testen",
+      "filterTestPayload": "Test-Payload",
+      "filterTestPayloadPlaceholder": "Beispiel-Payload hier einfügen...",
+      "filterTestRun": "Test ausführen",
+      "filterTestPassed": "Dieser Payload würde den Filter PASSIEREN",
+      "filterTestFiltered": "Dieser Payload würde VERWORFEN werden",
+      "filterTestExtracted": "Extrahierter Wert",
+      "filterTestError": "Parsing-Fehler",
+      "filterTestNoPayload": "Kein aktueller Payload verfügbar",
+      "filtered": "Gefiltert",
+      "statsReceived": "{{count}} empfangen",
+      "statsTransmitted": "{{count}} übermittelt",
+      "statsFiltered": "{{count}} gefiltert"
     },
     "users": {
       "title": "Benutzer",
