@@ -1,4 +1,4 @@
-import { generateText } from 'ai'
+import { safeGenerateText } from '@/server/services/llm-helpers'
 import { eq, and, desc, asc, isNull, inArray, ne } from 'drizzle-orm'
 import { v4 as uuid } from 'uuid'
 import { db } from '@/server/db/index'
@@ -323,9 +323,10 @@ export async function runCompacting(kinId: string): Promise<CompactingResult | n
   let result
   try {
   // Generate summary
-  result = await generateText({
+  result = await safeGenerateText({
     model,
-    messages: [{ role: 'user', content: systemPrompt }],
+    providerId: effectiveConfig.providerId,
+    prompt: systemPrompt,
   })
 
   const summary = result.text
@@ -569,9 +570,10 @@ async function extractMemories(
     `Return a JSON array. If nothing new to remember or update, return [].`
 
   try {
-    const result = await generateText({
+    const result = await safeGenerateText({
       model,
-      messages: [{ role: 'user', content: extractionPrompt }],
+      providerId: extractionProviderId,
+      prompt: extractionPrompt,
     })
 
     // Parse JSON array from response
