@@ -50,18 +50,14 @@ function stripHtml(html: string): string {
     result = result.replace(/<[^>]+>/g, '')
   }
 
-  // Decode entities in a loop to handle double-encoded values like &amp;amp;
-  prev = ''
-  while (result !== prev) {
-    prev = result
-    result = result
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&nbsp;/g, ' ')
-  }
+  // Decode entities once only (no loop to avoid double-unescaping attacks)
+  result = result
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
 
   return result.replace(/\s+/g, ' ').trim()
 }
