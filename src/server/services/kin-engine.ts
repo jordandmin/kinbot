@@ -763,6 +763,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         hasCompactedHistory,
         oldestVisibleMessageAt,
       },
+      workspacePath: kin.workspacePath,
     })
 
     // ── E2E Mock LLM: stream a fake response without calling any provider ──
@@ -1351,6 +1352,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
       isQuickSession: true,
       globalPrompt,
       userLanguage,
+      workspacePath: kin.workspacePath,
     })
 
     // Build quick session message history (only messages from this session, no compacting)

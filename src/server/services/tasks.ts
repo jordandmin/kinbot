@@ -404,6 +404,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       previousCronRuns,
       globalPrompt,
       userLanguage: 'en',
+      workspacePath: kinIdentity.workspacePath,
     })
 
     // Resolve model — only use Kin's provider preference when using the Kin's own model
