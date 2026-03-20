@@ -100,13 +100,14 @@ interface KinFormModalProps {
   hubMode?: boolean
 }
 
-type TabId = 'general' | 'tools' | 'memory'
+type TabId = 'general' | 'tools' | 'memory' | 'compaction'
 type WizardStep = 'describe' | 'form'
 
 const TABS: Array<{ id: TabId; icon: typeof Settings; labelKey: string }> = [
   { id: 'general', icon: Settings, labelKey: 'kin.tabs.general' },
   { id: 'tools', icon: Wrench, labelKey: 'kin.tabs.tools' },
   { id: 'memory', icon: Brain, labelKey: 'kin.tabs.memory' },
+  { id: 'compaction', icon: Archive, labelKey: 'kin.tabs.compaction' },
 ]
 
 /** Convert AI domain-level suggestions into KinToolConfig */
@@ -867,74 +868,84 @@ export function KinFormModal({
                       {activeTab === 'memory' && isEdit && (
                         <div className="space-y-6">
                           <MemoryList kinId={kin.id} compact />
+                        </div>
+                      )}
 
-                          {/* Compaction settings */}
-                          <div className="space-y-3 border-t border-border/40 pt-4">
-                            <Label className="inline-flex items-center gap-1.5 text-sm font-medium">
-                              <Archive className="size-4" />
-                              {t('kin.compacting.title')}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">{t('kin.compacting.overrideHint')}</p>
+                      {activeTab === 'compaction' && isEdit && (
+                        <div className="space-y-3">
+                          <Label className="inline-flex items-center gap-1.5 text-sm font-medium">
+                            <Archive className="size-4" />
+                            {t('kin.compacting.title')}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">{t('kin.compacting.overrideHint')}</p>
 
-                            {/* Compacting model */}
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">{t('kin.compacting.modelLabel')}</Label>
-                              <ModelPicker
-                                models={llmModels}
-                                value={compactingConfig?.compactingModel ?? ''}
-                                onValueChange={(v) => {
-                                  setCompactingConfig({ ...compactingConfig, compactingModel: v || null, compactingProviderId: null })
-                                  markDirty()
-                                }}
-                                placeholder={t('kin.compacting.sameAsKinModel')}
-                                allowClear
-                              />
-                              <p className="text-[10px] text-muted-foreground">{t('kin.compacting.modelHint')}</p>
-                            </div>
+                          {/* Compacting model */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">{t('kin.compacting.modelLabel')}</Label>
+                            <ModelPicker
+                              models={llmModels}
+                              value={compactingConfig?.compactingModel ?? ''}
+                              onValueChange={(v) => {
+                                setCompactingConfig({ ...compactingConfig, compactingModel: v || null, compactingProviderId: null })
+                                markDirty()
+                              }}
+                              placeholder={t('kin.compacting.sameAsKinModel')}
+                              allowClear
+                            />
+                            <p className="text-[10px] text-muted-foreground">{t('kin.compacting.modelHint')}</p>
+                          </div>
 
-                            {/* Compacting provider selector (only if model has multiple providers) */}
-                            {compactingConfig?.compactingModel && (() => {
-                              const seen = new Set<string>()
-                              const providers = llmModels
-                                .filter((m) => m.id === compactingConfig.compactingModel)
-                                .filter((m) => { if (seen.has(m.providerId)) return false; seen.add(m.providerId); return true })
-                              return providers.length > 1 ? (
-                                <div className="space-y-1.5">
-                                  <Label className="text-xs">{t('kin.create.provider')}</Label>
-                                  <ProviderSelector
-                                    value={compactingConfig.compactingProviderId ?? '__auto__'}
-                                    onValueChange={(v) => {
-                                      setCompactingConfig({ ...compactingConfig, compactingProviderId: v === '__auto__' ? null : v })
-                                      markDirty()
-                                    }}
-                                    providers={providers.map((p) => ({ id: p.providerId, type: p.providerType, name: p.providerName }))}
-                                    noneLabel={t('kin.create.providerAuto')}
-                                    noneValue="__auto__"
-                                  />
-                                </div>
-                              ) : null
-                            })()}
+                          {/* Compacting provider selector (only if model has multiple providers) */}
+                          {compactingConfig?.compactingModel && (() => {
+                            const seen = new Set<string>()
+                            const providers = llmModels
+                              .filter((m) => m.id === compactingConfig.compactingModel)
+                              .filter((m) => { if (seen.has(m.providerId)) return false; seen.add(m.providerId); return true })
+                            return providers.length > 1 ? (
+                              <div className="space-y-1.5">
+                                <Label className="text-xs">{t('kin.create.provider')}</Label>
+                                <ProviderSelector
+                                  value={compactingConfig.compactingProviderId ?? '__auto__'}
+                                  onValueChange={(v) => {
+                                    setCompactingConfig({ ...compactingConfig, compactingProviderId: v === '__auto__' ? null : v })
+                                    markDirty()
+                                  }}
+                                  providers={providers.map((p) => ({ id: p.providerId, type: p.providerType, name: p.providerName }))}
+                                  noneLabel={t('kin.create.providerAuto')}
+                                  noneValue="__auto__"
+                                />
+                              </div>
+                            ) : null
+                          })()}
 
-                            {/* Turn threshold */}
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">{t('kin.compacting.turnThresholdLabel')}</Label>
-                              <Input
-                                type="number"
-                                min={10}
-                                max={100}
-                                step={1}
-                                placeholder={t('kin.compacting.turnThresholdPlaceholder', { default: 25 })}
-                                value={compactingConfig?.turnThreshold ?? ''}
-                                onChange={(e) => {
-                                  const val = e.target.value ? Number(e.target.value) : null
-                                  setCompactingConfig({ ...compactingConfig, turnThreshold: val })
-                                  markDirty()
-                                }}
-                              />
-                              <p className="text-[10px] text-muted-foreground">{t('kin.compacting.turnThresholdHint')}</p>
-                            </div>
+                          {/* Turn threshold */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">{t('kin.compacting.turnThresholdLabel')}</Label>
+                            <Input
+                              type="number"
+                              min={10}
+                              max={100}
+                              step={1}
+                              placeholder={t('kin.compacting.turnThresholdPlaceholder', { default: 25 })}
+                              value={compactingConfig?.turnThreshold ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value ? Number(e.target.value) : null
+                                setCompactingConfig({ ...compactingConfig, turnThreshold: val })
+                                markDirty()
+                              }}
+                            />
+                            <p className="text-[10px] text-muted-foreground">{t('kin.compacting.turnThresholdHint')}</p>
                           </div>
                         </div>
+                      )}
+
+                      {activeTab === 'compaction' && !isEdit && (
+                        <EmptyState
+                          minimal
+                          icon={Archive}
+                          title={t('kin.create.compactionEmptyTitle')}
+                          description={t('kin.create.compactionEmptyDescription')}
+                        />
                       )}
 
                       {activeTab === 'memory' && !isEdit && (

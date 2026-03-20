@@ -303,6 +303,8 @@
       "totalPromptTokens": "Prompt système total : ~{{tokens}} tokens",
       "memoryEmptyTitle": "La mémoire se configure après la création",
       "memoryEmptyDescription": "Une fois votre Kin créé, il construira automatiquement des souvenirs à partir des conversations. Vous pouvez aussi ajouter des souvenirs manuellement depuis le dialogue d'édition.",
+      "compactionEmptyTitle": "La compaction se configure après la création",
+      "compactionEmptyDescription": "Une fois votre Kin créé, vous pourrez personnaliser les paramètres de compaction ici.",
       "nameHint": "Un nom court et mémorable pour ce Kin.",
       "roleHint": "Une brève description de ce que fait ce Kin (affiché dans la barre latérale).",
       "nameTip": "Un nom court et reconnaissable. C'est ainsi que le Kin apparaît dans la barre latérale et les conversations.",
@@ -322,7 +324,8 @@
     "tabs": {
       "general": "Général",
       "tools": "Outils",
-      "memory": "Mémoire"
+      "memory": "Mémoire",
+      "compaction": "Compaction"
     },
     "tools": {
       "native": "Outils natifs",
