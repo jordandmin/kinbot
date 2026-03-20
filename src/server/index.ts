@@ -84,6 +84,13 @@ new Cron(`*/${config.fileStorage.cleanupIntervalMin} * * * *`, async () => {
   if (count > 0) log.info({ count }, 'File storage cleanup completed')
 })
 
+// Tool output spill cleanup (delete old temp files from workspaces)
+import { cleanupSpilledOutputs } from '@/server/services/tool-output-spill'
+new Cron('0 * * * *', async () => {
+  const count = cleanupSpilledOutputs(config.workspace.baseDir)
+  if (count > 0) log.info({ count }, 'Tool output spill cleanup completed')
+})
+
 // Channel file cleanup (old downloads from platforms)
 import { startChannelFileCleanup } from '@/server/services/files'
 startChannelFileCleanup()

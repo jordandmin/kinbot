@@ -38,6 +38,7 @@ import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getAc
 import { popStagedAttachments, clearStagedAttachments } from '@/server/tools/attach-file-tool'
 import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
 import { getGlobalPrompt, getHubKinId } from '@/server/services/app-settings'
+import { wrapToolsWithSpill } from '@/server/services/tool-output-spill'
 import { channelAdapters } from '@/server/channels/index'
 import { getModelContextWindow } from '@/shared/model-context-windows'
 
@@ -848,14 +849,17 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
     const mcpTools = await resolveMCPTools(kinId, toolConfig)
     const customToolDefs = await resolveCustomTools(kinId)
-    const tools = { ...nativeTools, ...mcpTools, ...customToolDefs }
+    const mergedTools = { ...nativeTools, ...mcpTools, ...customToolDefs }
 
     // When processing a kin_reply, remove inter-kin tools to prevent ping-pong
     if (queueItem.messageType === 'kin_reply') {
-      delete tools['send_message']
-      delete tools['reply']
-      delete tools['list_kins']
+      delete mergedTools['send_message']
+      delete mergedTools['reply']
+      delete mergedTools['list_kins']
     }
+
+    // Wrap tools to spill large results to temp files
+    const tools = wrapToolsWithSpill(mergedTools, kin.workspacePath)
 
     const hasTools = Object.keys(tools).length > 0
 
@@ -1430,7 +1434,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     // Apply quick session exclusion list
     for (const name of QUICK_SESSION_EXCLUDED_TOOLS) delete nativeTools[name]
 
-    const tools = { ...nativeTools }
+    const tools = wrapToolsWithSpill({ ...nativeTools }, kin.workspacePath)
     const hasTools = Object.keys(tools).length > 0
 
     // Stream LLM response

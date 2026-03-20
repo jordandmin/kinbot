@@ -46,6 +46,16 @@ Toutes les valeurs configurables de la plateforme, regroupées par domaine. Ces 
 
 ---
 
+## Tool output spill (résultats d'outils volumineux)
+
+| Clé | Env var | Default | Description |
+|---|---|---|---|
+| `toolOutputs.spillThreshold` | `TOOL_OUTPUT_SPILL_THRESHOLD` | `10000` | Seuil en octets au-delà duquel le résultat d'un outil est sauvegardé dans un fichier temporaire au lieu d'être inclus en intégralité dans le contexte |
+| `toolOutputs.previewLines` | `TOOL_OUTPUT_PREVIEW_LINES` | `200` | Nombre de lignes d'aperçu incluses dans la référence compacte quand un résultat est "spillé" |
+| `toolOutputs.ttlHours` | `TOOL_OUTPUT_TTL_HOURS` | `24` | Durée de rétention des fichiers temporaires (heures). Les fichiers plus anciens sont supprimés automatiquement |
+
+---
+
 ## Mémoire long terme
 
 | Clé | Env var | Default | Description |

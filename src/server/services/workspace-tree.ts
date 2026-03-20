@@ -16,6 +16,7 @@ const IGNORED_DIRS = new Set([
   '.tox',
   'build',
   '.DS_Store',
+  '.tool-outputs',
 ])
 
 interface TreeOptions {

@@ -13,6 +13,7 @@ import { resolveCustomTools } from '@/server/services/custom-tools'
 import { sseManager } from '@/server/sse/index'
 import { config } from '@/server/config'
 import { getGlobalPrompt } from '@/server/services/app-settings'
+import { wrapToolsWithSpill } from '@/server/services/tool-output-spill'
 import type { TaskStatus, TaskMode, KinToolConfig } from '@/shared/types'
 
 const log = createLogger('tasks')
@@ -470,7 +471,10 @@ async function executeSubKin(taskId: string, isNudge = false) {
     const mcpTools = await resolveMCPTools(kinIdentity.id, kinToolConfig)
     const customToolDefs = await resolveCustomTools(kinIdentity.id)
 
-    const tools = { ...nativeTools, ...subKinTools, ...mcpTools, ...customToolDefs }
+    const tools = wrapToolsWithSpill(
+      { ...nativeTools, ...subKinTools, ...mcpTools, ...customToolDefs },
+      kinIdentity.workspacePath,
+    )
 
     // Build task message history (only messages for this task)
     const taskMessages = await db
