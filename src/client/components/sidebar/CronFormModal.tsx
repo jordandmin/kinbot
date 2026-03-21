@@ -49,6 +49,7 @@ interface CronFormModalProps {
     taskDescription: string
     targetKinId?: string
     model?: string
+    providerId?: string
     runOnce?: boolean
   }) => Promise<CronSummary>
   onUpdate?: (id: string, updates: Record<string, unknown>) => Promise<CronSummary>

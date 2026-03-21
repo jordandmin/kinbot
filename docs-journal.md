@@ -626,3 +626,10 @@ All sections migrated and accuracy-reviewed:
 1. Task concurrency groups (#274) + concurrency in Kin tools
 2. Progressive context compaction pipeline (#276) + incremental compacting + message-count triggers (#281)
 3. These are large features — one per future run
+
+## 2026-03-20 — Pre-flight STOP: CI failing
+
+- CI run `23363207292` failed on "Type check" step (source code type error, not docs-related)
+- Commit: `fix: inject OAuth system block for all standalone generateText calls`
+- Docker build passed, Install Test passed — only `Build & Test` workflow failed
+- **Skipping docs work until CI is green again**

@@ -45,7 +45,7 @@ interface QuickChatPanelProps {
   expiresAt?: number | null
   onHide: () => void
   onEnd: (saveMemory?: boolean, memorySummary?: string) => void
-  onModelChange?: (model: string) => void
+  onModelChange?: (modelId: string, providerId: string) => void
   onShowHistory?: () => void
 }
 
