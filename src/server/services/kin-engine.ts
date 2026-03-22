@@ -1057,35 +1057,53 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
     log.info({ kinId, messageId: assistantMessageId, contentLength: fullContent.length, toolCalls: toolCallsLog.length, wasAborted }, 'LLM turn completed')
 
+    // Use only the final step's text for persistence. In multi-step tool calling,
+    // intermediate steps may contain hallucinated text (the model "narrating" tool
+    // results before tools actually execute). `result.text` resolves to
+    // `finalStep.text` — the text from only the last step.
+    // On abort, result.text may not resolve properly, so fall back to fullContent.
+    let persistedContent = fullContent
+    if (!wasAborted && toolCallsLog.length > 0) {
+      try {
+        const finalText = await result.text
+        if (finalText !== undefined) {
+          persistedContent = finalText
+        }
+      } catch {
+        // If result.text fails (e.g. stream error), keep fullContent as fallback
+        log.debug({ kinId }, 'Could not resolve result.text, using accumulated fullContent')
+      }
+    }
+
     // Detect truncated turns: tool calls executed but no text response generated.
     // This typically happens when the step limit (maxSteps) is reached before the
     // LLM can produce a final text response. Add a fallback message so the user
     // knows work was done even though no text was returned.
-    const stepLimitReached = !fullContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
+    const stepLimitReached = !persistedContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
     if (stepLimitReached) {
       log.warn(
         { kinId, messageId: assistantMessageId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },
         'LLM turn produced tool calls but no text content (step limit truncation)',
       )
-      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated due to the tool step limit of ${config.tools.maxSteps}. You can ask me to continue or summarize the results.)*`
+      persistedContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated due to the tool step limit of ${config.tools.maxSteps}. You can ask me to continue or summarize the results.)*`
       sseManager.sendToKin(kinId, {
         type: 'chat:token',
         kinId,
         data: {
           messageId: assistantMessageId,
-          token: fullContent,
+          token: persistedContent,
           isFirst: true,
         },
       })
     }
 
     // Save assistant message (partial if aborted) with tool call metadata
-    if (fullContent || toolCallsLog.length > 0 || wasAborted) {
+    if (persistedContent || toolCallsLog.length > 0 || wasAborted) {
       await db.insert(messages).values({
         id: assistantMessageId,
         kinId,
         role: 'assistant',
-        content: fullContent || '',
+        content: persistedContent || '',
         sourceType: 'kin',
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
@@ -1111,7 +1129,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       kinId,
       data: {
         messageId: assistantMessageId,
-        content: fullContent,
+        content: persistedContent,
         sourceType: 'kin',
         sourceId: kinId,
         sourceName: kin.name,
@@ -1126,7 +1144,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         kinId,
         userId: effectiveUserId,
         message: queueItem.content,
-        response: fullContent,
+        response: persistedContent,
       })
 
       // Emit event
@@ -1137,18 +1155,18 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       })
 
       // Channel response delivery (fire-and-forget)
-      if (queueItem.sourceType === 'channel' && fullContent) {
+      if (queueItem.sourceType === 'channel' && persistedContent) {
         // Direct channel response: one-shot pop of channel queue meta
         const channelMeta = popChannelQueueMeta(queueItem.id)
         if (channelMeta) {
           const stagedFiles = popStagedAttachments(kinId)
-          deliverChannelResponse(channelMeta, assistantMessageId, fullContent, stagedFiles.length > 0 ? stagedFiles : undefined).catch((err) => {
+          deliverChannelResponse(channelMeta, assistantMessageId, persistedContent, stagedFiles.length > 0 ? stagedFiles : undefined).catch((err) => {
             log.error({ kinId, channelId: channelMeta.channelId, err }, 'Channel response delivery failed')
           })
         } else {
           clearStagedAttachments(kinId)
         }
-      } else if (queueItem.channelOriginId && fullContent && shouldAutoDeliverToChannel(queueItem)) {
+      } else if (queueItem.channelOriginId && persistedContent && shouldAutoDeliverToChannel(queueItem)) {
         // Follow-up auto-delivery: this turn is part of a causal chain from an external channel
         const originMeta = getChannelOriginMeta(queueItem.channelOriginId)
         if (originMeta) {
@@ -1156,7 +1174,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
           deliverChannelResponse(
             { channelId: originMeta.channelId, platformChatId: originMeta.platformChatId, platformMessageId: originMeta.platformMessageId, platformUserId: originMeta.platformUserId },
             assistantMessageId,
-            fullContent,
+            persistedContent,
             stagedFiles.length > 0 ? stagedFiles : undefined,
           ).catch((err) => {
             log.error({ kinId, channelOriginId: queueItem!.channelOriginId, err }, 'Follow-up channel delivery failed')
@@ -1169,8 +1187,8 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       }
 
       // Mention notifications (fire-and-forget)
-      if (fullContent) {
-        parseMentions(fullContent).then((mentions) => {
+      if (persistedContent) {
+        parseMentions(persistedContent).then((mentions) => {
           if (mentions.length > 0) {
             notifyMentionedUsers(mentions, kinId, assistantMessageId, kin.name).catch(() => {})
           }
@@ -1535,24 +1553,37 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
       quickAbortControllers.delete(sessionId)
     }
 
+    // Use only the final step's text for persistence (same rationale as main path)
+    let persistedContent = fullContent
+    if (!wasAborted && toolCallsLog.length > 0) {
+      try {
+        const finalText = await result.text
+        if (finalText !== undefined) {
+          persistedContent = finalText
+        }
+      } catch {
+        log.debug({ kinId, sessionId }, 'Could not resolve result.text, using accumulated fullContent')
+      }
+    }
+
     // Detect truncated turns (same as main path)
-    const stepLimitReached = !fullContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
+    const stepLimitReached = !persistedContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
     if (stepLimitReached) {
       log.warn(
         { kinId, sessionId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },
         'Quick session LLM turn produced tool calls but no text content (step limit truncation)',
       )
-      fullContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated due to the tool step limit of ${config.tools.maxSteps}. You can ask me to continue or summarize.)*`
+      persistedContent = `*(Completed ${toolCallsLog.length} tool call${toolCallsLog.length > 1 ? 's' : ''} but the response was truncated due to the tool step limit of ${config.tools.maxSteps}. You can ask me to continue or summarize.)*`
     }
 
     // Save assistant message (with sessionId)
-    if (fullContent || toolCallsLog.length > 0 || wasAborted) {
+    if (persistedContent || toolCallsLog.length > 0 || wasAborted) {
       await db.insert(messages).values({
         id: assistantMessageId,
         kinId,
         sessionId,
         role: 'assistant',
-        content: fullContent || '',
+        content: persistedContent || '',
         sourceType: 'kin',
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
@@ -1574,7 +1605,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     sseManager.sendToKin(kinId, {
       type: 'chat:done',
       kinId,
-      data: { messageId: assistantMessageId, content: fullContent, sessionId },
+      data: { messageId: assistantMessageId, content: persistedContent, sessionId },
     })
 
     // No compacting, no memory extraction for quick sessions
