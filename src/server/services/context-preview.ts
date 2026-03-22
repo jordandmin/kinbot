@@ -157,7 +157,7 @@ export async function buildContextPreview(kinId: string): Promise<ContextPreview
     .limit(1)
     .get()
   const compactingSummary = activeSnapshot?.summary ?? null
-  const compactedUpTo = activeSnapshot?.createdAt ?? null
+  const compactedUpTo = activeSnapshot?.createdAt ? new Date(activeSnapshot.createdAt as unknown as number) : null
 
   // Resolve cutoff timestamp from the message referenced by the snapshot
   let cutoffTimestamp: number | null = null
