@@ -348,7 +348,7 @@ kinRoutes.get('/:id/context-usage', async (c) => {
   const compacting = await getCompactingProximity(kin.id)
 
   // Use cached context usage from the last LLM call if available
-  const cached = getLastContextUsage(kin.id)
+  const cached = await getLastContextUsage(kin.id)
   if (cached) {
     return c.json({
       contextTokens: cached.contextTokens,

@@ -38,7 +38,7 @@ import { linkFilesToMessage, getFilesForMessage } from '@/server/services/files'
 import { popChannelQueueMeta, getChannelQueueMeta, deliverChannelResponse, getActiveChannelsForKin, getChannel, findContactByPlatformId, getChannelOriginMeta } from '@/server/services/channels'
 import { popStagedAttachments, clearStagedAttachments } from '@/server/tools/attach-file-tool'
 import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
-import { getGlobalPrompt, getHubKinId } from '@/server/services/app-settings'
+import { getGlobalPrompt, getHubKinId, getSetting, setSetting } from '@/server/services/app-settings'
 import { wrapToolsWithSpill } from '@/server/services/tool-output-spill'
 import { channelAdapters } from '@/server/channels/index'
 import { getModelContextWindow } from '@/shared/model-context-windows'
@@ -66,12 +66,29 @@ const lastContextUsage = new Map<string, { contextTokens: number; contextWindow:
 
 /** Store the latest context usage for a Kin (called after LLM estimation). */
 export function setLastContextUsage(kinId: string, contextTokens: number, contextWindow: number, breakdown?: ContextTokenBreakdown, pipelineStatus?: ContextPipelineStatus) {
-  lastContextUsage.set(kinId, { contextTokens, contextWindow, updatedAt: Date.now(), breakdown, pipelineStatus })
+  const data = { contextTokens, contextWindow, updatedAt: Date.now(), breakdown, pipelineStatus }
+  lastContextUsage.set(kinId, data)
+  // Persist to DB so the value survives server restarts
+  setSetting(`context_usage:${kinId}`, JSON.stringify(data)).catch(() => {})
 }
 
 /** Get the cached context usage for a Kin, if available. */
-export function getLastContextUsage(kinId: string) {
-  return lastContextUsage.get(kinId) ?? null
+export async function getLastContextUsage(kinId: string) {
+  // Check in-memory cache first
+  const mem = lastContextUsage.get(kinId)
+  if (mem) return mem
+
+  // Fall back to DB (survives restarts)
+  const persisted = await getSetting(`context_usage:${kinId}`)
+  if (persisted) {
+    try {
+      const data = JSON.parse(persisted)
+      lastContextUsage.set(kinId, data)
+      return data as { contextTokens: number; contextWindow: number; updatedAt: number; breakdown?: ContextTokenBreakdown; pipelineStatus?: ContextPipelineStatus }
+    } catch { /* ignore corrupt data */ }
+  }
+
+  return null
 }
 
 // Cache of last computed compacting proximity per Kin
