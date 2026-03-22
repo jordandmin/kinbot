@@ -652,3 +652,9 @@ All sections migrated and accuracy-reviewed:
 - Commit: `c7445a5` — pushed to main (--no-verify)
 
 ### Status: docs fully caught up with v0.27.1
+
+## 2026-03-22 — Maintenance check: no changes needed
+
+- Checked source commits since last run (c7445a5): `981b43c` (knowledge-tools tests), `4a98d4c` (CodeQL security fixes), `8d87ee9` (contacts service tests) — all tests and security patches, no documentation impact
+- All 34 pages remain accurate and complete
+- **Status: docs fully caught up with source code**

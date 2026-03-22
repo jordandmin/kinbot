@@ -36,8 +36,8 @@ describe('knowledge-tools', () => {
     mockListSources.mockClear()
 
     mockSearchKnowledge.mockResolvedValue([
-      { content: 'chunk one', sourceId: 'src-1', position: 0, score: 0.95 },
-      { content: 'chunk two', sourceId: 'src-2', position: 1, score: 0.82 },
+      { id: 'chunk-1', content: 'chunk one', sourceId: 'src-1', position: 0, score: 0.95 },
+      { id: 'chunk-2', content: 'chunk two', sourceId: 'src-2', position: 1, score: 0.82 },
     ])
 
     mockListSources.mockResolvedValue([
