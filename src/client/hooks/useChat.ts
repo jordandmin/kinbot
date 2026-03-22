@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
+import { useChatStreaming } from '@/client/hooks/useChatStreaming'
 import type { ToolCallEntry, TaskStatus, MessageFile } from '@/shared/types'
 
 export interface MessageReaction {
@@ -60,26 +61,19 @@ interface MessagesResponse {
   hasMore: boolean
 }
 
-const STREAMING_BATCH_MS = 50
-/** After this many ms without a text token, consider the output "stalled" (e.g. tool call being generated) */
-const TOKEN_STALL_MS = 1500
-
 export function useChat(kinId: string | null) {
   const { t } = useTranslation()
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null)
   const [liveTasks, setLiveTasks] = useState<LiveTask[]>([])
   const [liveCompacting, setLiveCompacting] = useState<LiveCompacting | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isStreaming, setIsStreaming] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  /** True when text tokens haven't arrived for TOKEN_STALL_MS while still streaming */
-  const [tokenStalled, setTokenStalled] = useState(false)
-  const streamingContentRef = useRef('')
-  const streamingMessageIdRef = useRef<string | null>(null)
-  const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const tokenStallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const {
+    streamingMessage, isStreaming, tokenStalled,
+    handleToken, handleDone, resetStreaming, cleanup,
+  } = useChatStreaming({ trackTokenStall: true })
 
   // Map task title → taskId, populated from SSE events so we can enrich
   // persisted messages that may lack resolvedTaskId in their server metadata.
@@ -191,24 +185,12 @@ export function useChat(kinId: string | null) {
 
   useEffect(() => {
     fetchMessages()
-    setIsStreaming(false)
-    setStreamingMessage(null)
+    resetStreaming()
     setLiveTasks([])
     setLiveCompacting(null)
     setHasMore(false)
     setIsLoadingMore(false)
-    streamingContentRef.current = ''
-    streamingMessageIdRef.current = null
     taskIdByTitleRef.current.clear()
-    setTokenStalled(false)
-    if (batchTimerRef.current) {
-      clearTimeout(batchTimerRef.current)
-      batchTimerRef.current = null
-    }
-    if (tokenStallTimerRef.current) {
-      clearTimeout(tokenStallTimerRef.current)
-      tokenStallTimerRef.current = null
-    }
     // Restore live task cards for active tasks after clearing
     fetchActiveTasks()
     // Restore compacting state if a compaction is in progress
@@ -265,51 +247,12 @@ export function useChat(kinId: string | null) {
       if (data.taskId) return // Ignore tokens from sub-Kin tasks
       if (data.sessionId) return // Ignore tokens from quick sessions
 
-      const token = data.token as string
-      const messageId = data.messageId as string
-
-      // Reset token stall timer on every text token
-      setTokenStalled(false)
-      if (tokenStallTimerRef.current) clearTimeout(tokenStallTimerRef.current)
-      tokenStallTimerRef.current = setTimeout(() => setTokenStalled(true), TOKEN_STALL_MS)
-
-      if (!streamingMessageIdRef.current) {
-        // First token: create streaming message in separate state
-        streamingMessageIdRef.current = messageId
-        streamingContentRef.current = token
-        setIsStreaming(true)
-
-        setStreamingMessage({
-          id: messageId,
-          role: 'assistant',
-          content: token,
-          sourceType: 'kin',
-          sourceId: null,
-          sourceName: (data.sourceName as string) ?? null,
-          sourceAvatarUrl: (data.sourceAvatarUrl as string) ?? null,
-          isRedacted: false,
-          toolCalls: null,
-          resolvedTaskId: null,
-          injectedMemories: null,
-          memoriesExtracted: null,
-          files: [],
-          reactions: [],
-          stepLimitReached: false,
-          createdAt: new Date().toISOString(),
-        })
-      } else {
-        // Accumulate token in ref, batch UI updates
-        streamingContentRef.current += token
-
-        if (!batchTimerRef.current) {
-          batchTimerRef.current = setTimeout(() => {
-            batchTimerRef.current = null
-            setStreamingMessage((prev) =>
-              prev ? { ...prev, content: streamingContentRef.current } : prev,
-            )
-          }, STREAMING_BATCH_MS)
-        }
-      }
+      handleToken({
+        messageId: data.messageId as string,
+        token: data.token as string,
+        sourceName: (data.sourceName as string) ?? null,
+        sourceAvatarUrl: (data.sourceAvatarUrl as string) ?? null,
+      })
     },
 
     'chat:done': (data) => {
@@ -317,49 +260,22 @@ export function useChat(kinId: string | null) {
       if (data.taskId) return // Ignore done events from sub-Kin tasks
       if (data.sessionId) return // Ignore done events from quick sessions
 
-      // Flush any pending timers
-      if (batchTimerRef.current) {
-        clearTimeout(batchTimerRef.current)
-        batchTimerRef.current = null
-      }
-      if (tokenStallTimerRef.current) {
-        clearTimeout(tokenStallTimerRef.current)
-        tokenStallTimerRef.current = null
-      }
-
       // Promote the streaming message into the messages array before clearing
       // it. This keeps the same React key in the children list so React
       // reconciles in-place instead of re-mounting (which would replay the
       // entrance animation).
-      if (streamingMessageIdRef.current) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: streamingMessageIdRef.current!,
-            role: 'assistant' as const,
-            content: (data.content as string) ?? streamingContentRef.current,
-            sourceType: (data.sourceType as string) ?? 'kin',
-            sourceId: (data.sourceId as string) ?? null,
-            sourceName: (data.sourceName as string) ?? null,
-            sourceAvatarUrl: (data.sourceAvatarUrl as string) ?? null,
-            isRedacted: false,
-            toolCalls: null,
-            resolvedTaskId: null,
-            injectedMemories: null,
-            memoriesExtracted: null,
-            files: [],
-            reactions: [],
-            stepLimitReached: (data.stepLimitReached as boolean) ?? false,
-            createdAt: new Date().toISOString(),
-          },
-        ])
-      }
+      const promoted = handleDone({
+        content: (data.content as string) ?? undefined,
+        sourceType: (data.sourceType as string) ?? undefined,
+        sourceId: (data.sourceId as string) ?? undefined,
+        sourceName: (data.sourceName as string) ?? undefined,
+        sourceAvatarUrl: (data.sourceAvatarUrl as string) ?? undefined,
+        stepLimitReached: (data.stepLimitReached as boolean) ?? undefined,
+      })
 
-      setIsStreaming(false)
-      setStreamingMessage(null)
-      setTokenStalled(false)
-      streamingContentRef.current = ''
-      streamingMessageIdRef.current = null
+      if (promoted) {
+        setMessages((prev) => [...prev, promoted])
+      }
 
       // Refresh to get the final message from DB (with tool calls, memoriesExtracted, etc.)
       // Use a smart merge to preserve object references for unchanged messages,
@@ -509,10 +425,7 @@ export function useChat(kinId: string | null) {
     'chat:cleared': (data) => {
       if (data.kinId !== kinId) return
       setMessages([])
-      setIsStreaming(false)
-      setStreamingMessage(null)
-      streamingContentRef.current = ''
-      streamingMessageIdRef.current = null
+      resetStreaming()
     },
 
     'reaction:added': (data) => {
@@ -597,12 +510,7 @@ export function useChat(kinId: string | null) {
   }, [kinId])
 
   // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (batchTimerRef.current) clearTimeout(batchTimerRef.current)
-      if (tokenStallTimerRef.current) clearTimeout(tokenStallTimerRef.current)
-    }
-  }, [])
+  useEffect(() => cleanup, [])
 
   const clearConversation = useCallback(async () => {
     if (!kinId) return
