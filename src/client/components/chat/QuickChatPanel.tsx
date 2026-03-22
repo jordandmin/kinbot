@@ -26,6 +26,9 @@ import { useAuth } from '@/client/hooks/useAuth'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/client/components/ui/tooltip'
 // ModelPicker removed from quick chat to avoid changing Kin model globally (#71)
 import { X, Zap, MessageSquare, LogOut, History } from 'lucide-react'
+import { ContextBar } from '@/client/components/chat/ContextBar'
+import { api } from '@/client/lib/api'
+import type { ContextTokenBreakdown, ContextPipelineStatus } from '@/shared/types'
 
 interface LLMModel {
   id: string
@@ -61,6 +64,21 @@ export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, sessionId, expire
   const [memorySummary, setMemorySummary] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const [timeLeft, setTimeLeft] = useState<string | null>(null)
+
+  // Fetch context-usage for the kin
+  const [contextData, setContextData] = useState<{
+    contextTokens: number
+    contextWindow: number
+    contextBreakdown: ContextTokenBreakdown | null
+    pipelineStatus: ContextPipelineStatus | null
+    compactingTurns: number
+    compactingTurnThreshold: number
+  } | null>(null)
+  useEffect(() => {
+    api.get(`/kins/${kinId}/context-usage`)
+      .then((data) => setContextData(data as typeof contextData))
+      .catch(() => {})
+  }, [kinId])
 
   // Update remaining time display
   useEffect(() => {
@@ -133,6 +151,16 @@ export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, sessionId, expire
               {timeLeft && <span className="ml-1.5 opacity-60">· {timeLeft}</span>}
             </p>
           </div>
+          {contextData && contextData.contextWindow > 0 && (
+            <ContextBar
+              kinId={kinId}
+              estimatedTokens={contextData.contextTokens}
+              maxTokens={contextData.contextWindow}
+              contextBreakdown={contextData.contextBreakdown ?? undefined}
+              pipelineStatus={contextData.pipelineStatus ?? undefined}
+              compact
+            />
+          )}
         </div>
         <div className="flex items-center gap-1">
           {onShowHistory && (

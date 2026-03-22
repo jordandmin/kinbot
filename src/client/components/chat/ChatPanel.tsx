@@ -628,6 +628,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
 
       {/* Conversation header */}
       <ConversationHeader
+        kinId={kin.id}
         name={kin.name}
         role={kin.role}
         model={kin.model}
@@ -726,6 +727,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                           status="done"
                           summary={msg.content}
                           memoriesExtracted={msg.memoriesExtracted}
+                          timestamp={msg.createdAt}
                         />
                       </React.Fragment>
                     )
@@ -810,6 +812,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                     cycle={liveCompacting.cycle}
                     estimatedTotal={liveCompacting.estimatedTotal}
                     error={liveCompacting.error}
+                    timestamp={liveCompacting.startedAt}
                   />
                 )}
                 {pendingPrompts.map((prompt) => (
@@ -928,7 +931,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
 
       {/* Quick session side panel */}
       <Sheet open={isQuickOpen} onOpenChange={(open) => { setQuickOpen(open); if (!open) setShowQuickHistory(false) }}>
-        <SheetContent side="right" className="w-full sm:w-[400px] md:w-[500px] p-0" showCloseButton={false}>
+        <SheetContent side="right" className="w-full sm:w-[520px] md:w-[680px] lg:w-[780px] p-0" showCloseButton={false}>
           <SheetTitle className="sr-only">{t('chat.quickChat')}</SheetTitle>
           {showQuickHistory ? (
             <Suspense fallback={null}>
