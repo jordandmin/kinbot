@@ -137,7 +137,7 @@ async function getNonCompactedStats(kinId: string): Promise<{ currentTokens: num
  * until the next user message. This avoids false triggers in tool-heavy
  * conversations where a single turn can produce 10-30 messages.
  */
-async function shouldCompact(kinId: string): Promise<boolean> {
+export async function shouldCompact(kinId: string): Promise<boolean> {
   const stats = await getNonCompactedStats(kinId)
   if (stats.turnCount === 0) return false
 

@@ -153,6 +153,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       const code = (err as { error?: { code?: string } })?.error?.code
       if (code === 'NOTHING_TO_COMPACT') {
         toast.info(t('chat.compacting.nothingToCompact'))
+      } else {
+        toast.error(t('chat.compacting.error'))
       }
     }
   }, [kin.id, t])

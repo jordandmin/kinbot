@@ -752,7 +752,19 @@ kinRoutes.post('/:id/compacting/run', async (c) => {
     return c.json({ error: { code: 'KIN_NOT_FOUND', message: 'Kin not found' } }, 404)
   }
 
-  const { runCompacting } = await import('@/server/services/compacting')
+  const { runCompacting, shouldCompact } = await import('@/server/services/compacting')
+
+  const canCompact = await shouldCompact(existing.id)
+  if (!canCompact) {
+    return c.json({ error: { code: 'NOTHING_TO_COMPACT', message: 'Not enough turns to compact' } }, 422)
+  }
+
+  sseManager.sendToKin(existing.id, {
+    type: 'compacting:start',
+    kinId: existing.id,
+    data: { kinId: existing.id, cycle: 1, estimatedTotal: 1 },
+  })
+
   const result = await runCompacting(existing.id)
   if (!result) {
     return c.json({ error: { code: 'NOTHING_TO_COMPACT', message: 'Not enough turns to compact' } }, 422)
