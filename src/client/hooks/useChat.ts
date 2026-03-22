@@ -337,7 +337,7 @@ export function useChat(kinId: string | null) {
           {
             id: streamingMessageIdRef.current!,
             role: 'assistant' as const,
-            content: streamingContentRef.current,
+            content: (data.content as string) ?? streamingContentRef.current,
             sourceType: (data.sourceType as string) ?? 'kin',
             sourceId: (data.sourceId as string) ?? null,
             sourceName: (data.sourceName as string) ?? null,

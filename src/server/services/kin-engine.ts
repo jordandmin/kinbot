@@ -1075,6 +1075,14 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       }
     }
 
+    // When content was cleaned (multi-step), reset tool call offsets to 0.
+    // All tool calls happened in intermediate steps, before the final text.
+    if (persistedContent !== fullContent && toolCallsLog.length > 0) {
+      for (const tc of toolCallsLog) {
+        tc.offset = 0
+      }
+    }
+
     // Detect truncated turns: tool calls executed but no text response generated.
     // This typically happens when the step limit (maxSteps) is reached before the
     // LLM can produce a final text response. Add a fallback message so the user
@@ -1563,6 +1571,13 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
         }
       } catch {
         log.debug({ kinId, sessionId }, 'Could not resolve result.text, using accumulated fullContent')
+      }
+    }
+
+    // When content was cleaned (multi-step), reset tool call offsets to 0.
+    if (persistedContent !== fullContent && toolCallsLog.length > 0) {
+      for (const tc of toolCallsLog) {
+        tc.offset = 0
       }
     }
 
