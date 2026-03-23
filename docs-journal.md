@@ -670,3 +670,10 @@ All sections migrated and accuracy-reviewed:
 - Checked source commits since last run: `537ac12` (compactedUpTo Date fix), `a0c2a45` (dockerignore optimization), `327d0bf` (context viewer UI dialog), `5cc209e` (UI timestamp improvements) — all bug fixes and UI changes, no documentation impact
 - All 34 pages remain accurate and complete
 - **Status: docs fully caught up with source code**
+
+## 2026-03-23 — Maintenance check: no changes needed
+
+- Checked source commits since last run (c7445a5): ~20 commits including context viewer dialog UI, bug fixes (compactedUpTo, tool call offsets, persistence, SSE), tests (version-check, knowledge-tools, contacts, context-preview), refactors (useChatStreaming hook) — no documentation impact
+- v0.27.2 released — all features already documented
+- All 34 pages remain accurate and complete
+- **Status: docs fully caught up with source code**
