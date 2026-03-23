@@ -29,7 +29,7 @@ import {
   getKinDetails,
 } from '@/server/services/kins'
 import { kinAvatarUrl, validateKinFields } from '@/server/services/field-validator'
-import { getHubKinId } from '@/server/services/app-settings'
+import { getHubKinId, getDefaultLlmModel, getDefaultLlmProviderId } from '@/server/services/app-settings'
 import { listModelsForProvider } from '@/server/providers/index'
 import type { AppVariables } from '@/server/app'
 
@@ -491,7 +491,7 @@ kinRoutes.get('/:id', async (c) => {
 kinRoutes.post('/', async (c) => {
   const user = c.get('user') as { id: string }
   const body = await c.req.json()
-  const { name, slug, role, character, expertise, model, providerId, mcpServerIds } = body as {
+  let { name, slug, role, character, expertise, model, providerId, mcpServerIds } = body as {
     name: string
     slug?: string
     role: string
@@ -500,6 +500,16 @@ kinRoutes.post('/', async (c) => {
     model: string
     providerId?: string | null
     mcpServerIds?: string[]
+  }
+
+  // Fall back to default LLM if no model specified
+  if (!model || !model.trim()) {
+    const defaultModel = await getDefaultLlmModel()
+    const defaultProviderId = await getDefaultLlmProviderId()
+    if (defaultModel) {
+      model = defaultModel
+      providerId = providerId ?? defaultProviderId
+    }
   }
 
   const validationError = validateKinFields({ name, role, character, expertise, model, providerId }, 'create')

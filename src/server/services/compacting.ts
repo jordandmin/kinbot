@@ -11,7 +11,7 @@ import {
   userProfiles,
 } from '@/server/db/schema'
 import { config } from '@/server/config'
-import { getExtractionModel, getExtractionProviderId } from '@/server/services/app-settings'
+import { getExtractionModel, getExtractionProviderId, getDefaultCompactingModel, getDefaultCompactingProviderId } from '@/server/services/app-settings'
 import { createMemory, updateMemory, isDuplicateMemory, pruneStaleMemories } from '@/server/services/memory'
 import { sseManager } from '@/server/sse/index'
 import type { KinCompactingConfig, MemoryCategory } from '@/shared/types'
@@ -54,13 +54,23 @@ async function getEffectiveCompactingConfig(kinId: string): Promise<EffectiveCom
   const batchTurns = Math.max(1, Math.floor(turnThreshold * 0.4))
   const minKeepTurns = turnThreshold - batchTurns
 
-  // Model: per-Kin compacting model > global COMPACTING_MODEL > Kin's own model
+  // Model: per-Kin override > app_setting default > env COMPACTING_MODEL > Kin's own model
+  // Sentinel '__kin_own__' means "use this kin's own model" (skips defaults)
   let model: string
   let providerId: string | null
 
-  if (perKin?.compactingModel) {
+  const defaultCompactingModel = await getDefaultCompactingModel()
+  const defaultCompactingProviderId = await getDefaultCompactingProviderId()
+
+  if (perKin?.compactingModel === '__kin_own__') {
+    model = kin.model
+    providerId = kin.providerId
+  } else if (perKin?.compactingModel) {
     model = perKin.compactingModel
     providerId = perKin.compactingProviderId ?? null
+  } else if (defaultCompactingModel) {
+    model = defaultCompactingModel
+    providerId = defaultCompactingProviderId
   } else if (config.compacting.model) {
     model = config.compacting.model
     providerId = null
