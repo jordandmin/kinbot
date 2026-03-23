@@ -664,3 +664,9 @@ All sections migrated and accuracy-reviewed:
 - Checked source commits since last run: `c906831` (tool call offset fix), `903734a` (persistence fix), `dd13489` (test mock fix), `9d8851d` (message filtering fix), `36d6aac` (context usage persistence fix), `69c14f2` (self-update exit code fix), plus previously noted test/security commits — all bug fixes, no documentation impact
 - All 34 pages remain accurate and complete
 - **Status: docs fully caught up with source code**
+
+## 2026-03-22 — Maintenance check: no changes needed (run 3)
+
+- Checked source commits since last run: `537ac12` (compactedUpTo Date fix), `a0c2a45` (dockerignore optimization), `327d0bf` (context viewer UI dialog), `5cc209e` (UI timestamp improvements) — all bug fixes and UI changes, no documentation impact
+- All 34 pages remain accurate and complete
+- **Status: docs fully caught up with source code**
