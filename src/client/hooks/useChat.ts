@@ -206,7 +206,6 @@ export function useChat(kinId: string | null) {
           status: 'running',
           summary: null,
           memoriesExtracted: null,
-          compactingError: null,
           startedAt: new Date().toISOString(),
         })
       }
@@ -322,6 +321,7 @@ export function useChat(kinId: string | null) {
         resolvedTaskId,
         injectedMemories: null,
         memoriesExtracted: null,
+        compactingError: null,
         files: [],
         reactions: [],
           stepLimitReached: false,
@@ -492,6 +492,7 @@ export function useChat(kinId: string | null) {
         resolvedTaskId: null,
         injectedMemories: null,
         memoriesExtracted: null,
+        compactingError: null,
         files: optimisticFiles ?? [],
         reactions: [],
           stepLimitReached: false,

@@ -95,20 +95,20 @@ function interpolate(progress: number): AnimState {
   const p = ((progress % 1) + 1) % 1
 
   let i = 0
-  while (i < FRAMES.length - 1 && FRAMES[i + 1].t <= p) i++
+  while (i < FRAMES.length - 1 && FRAMES[i + 1]!.t <= p) i++
   if (i >= FRAMES.length - 1) {
-    const f = FRAMES[FRAMES.length - 1]
+    const f = FRAMES[FRAMES.length - 1]!
     return { slots: [...f.slots], depths: [...f.depths], msg: f.msg, op: f.op }
   }
 
-  const from = FRAMES[i]
-  const to = FRAMES[i + 1]
+  const from = FRAMES[i]!
+  const to = FRAMES[i + 1]!
   const segT = easeInOut(Math.min(1, Math.max(0, (p - from.t) / (to.t - from.t))))
 
   return {
-    slots: from.slots.map((v, j) => lerp(v, to.slots[j], segT)),
+    slots: from.slots.map((v, j) => lerp(v, to.slots[j]!, segT)),
     depths: from.depths.map((d, j) =>
-      to.slots[j] < from.slots[j] ? d : to.depths[j],
+      to.slots[j]! < from.slots[j]! ? d : to.depths[j]!,
     ),
     msg: lerp(from.msg, to.msg, segT),
     op: lerp(from.op, to.op, segT),
@@ -228,14 +228,14 @@ export const CompactingAnimation = memo(function CompactingAnimation() {
                 style={{
                   left: `${left}%`,
                   width: `${width}%`,
-                  background: summaryGradient(anim.depths[i]),
+                  background: summaryGradient(anim.depths[i]!),
                   transition: 'background 300ms',
                 }}
               >
                 {/* Depth indicator: small lines inside merged summaries */}
-                {anim.depths[i] > 0 && width > 2 && (
+                {anim.depths[i]! > 0 && width > 2 && (
                   <div className="flex h-full items-center justify-center gap-0.5 opacity-30">
-                    {Array.from({ length: Math.min(anim.depths[i] + 1, 3) }, (_, k) => (
+                    {Array.from({ length: Math.min(anim.depths[i]! + 1, 3) }, (_, k) => (
                       <div key={k} className="h-3.5 w-px rounded-full bg-white" />
                     ))}
                   </div>
