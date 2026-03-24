@@ -662,6 +662,143 @@ Liste les snapshots pour le rollback.
 
 ---
 
+## Settings
+
+Routes d'administration pour les paramètres globaux de la plateforme (admin uniquement).
+
+### `GET /api/settings/global-prompt`
+
+```typescript
+// Response 200
+{ globalPrompt: string }
+```
+
+### `PUT /api/settings/global-prompt`
+
+```typescript
+// Request
+{ globalPrompt: string }
+
+// Response 200
+{ globalPrompt: string }
+```
+
+### `GET /api/settings/models`
+
+Endpoint legacy (extraction + embedding uniquement).
+
+```typescript
+// Response 200
+{ extractionModel: string | null, embeddingModel: string | null, extractionProviderId: string | null, embeddingProviderId: string | null }
+```
+
+### `GET /api/settings/default-models`
+
+Retourne tous les modèles/services par défaut en un seul payload.
+
+```typescript
+// Response 200
+{
+  defaultLlmModel: string | null
+  defaultLlmProviderId: string | null
+  defaultImageModel: string | null
+  defaultImageProviderId: string | null
+  defaultCompactingModel: string | null
+  defaultCompactingProviderId: string | null
+  extractionModel: string | null
+  extractionProviderId: string | null
+  embeddingModel: string | null
+  embeddingProviderId: string | null
+  searchProviderId: string | null
+}
+```
+
+### `PUT /api/settings/default-llm`
+
+```typescript
+// Request
+{ model: string | null, providerId?: string | null }
+
+// Response 200
+{ defaultLlmModel: string | null, defaultLlmProviderId: string | null }
+```
+
+### `PUT /api/settings/default-image`
+
+```typescript
+// Request
+{ model: string | null, providerId?: string | null }
+
+// Response 200
+{ defaultImageModel: string | null, defaultImageProviderId: string | null }
+```
+
+### `PUT /api/settings/default-compacting`
+
+```typescript
+// Request
+{ model: string | null, providerId?: string | null }
+
+// Response 200
+{ defaultCompactingModel: string | null, defaultCompactingProviderId: string | null }
+```
+
+### `PUT /api/settings/extraction-model`
+
+```typescript
+// Request
+{ model: string | null, providerId?: string | null }
+
+// Response 200
+{ extractionModel: string | null, extractionProviderId: string | null }
+```
+
+### `PUT /api/settings/embedding-model`
+
+```typescript
+// Request
+{ model: string, providerId?: string | null }
+
+// Response 200
+{ embeddingModel: string, embeddingProviderId: string | null }
+```
+
+### `GET /api/settings/search-provider`
+
+```typescript
+// Response 200
+{ searchProviderId: string | null }
+```
+
+### `PUT /api/settings/search-provider`
+
+```typescript
+// Request
+{ searchProviderId: string | null }
+
+// Response 200
+{ searchProviderId: string | null }
+```
+
+### `GET /api/settings/hub`
+
+```typescript
+// Response 200
+{ hubKinId: string | null, hubKinName: string | null, hubKinSlug: string | null }
+```
+
+### `PUT /api/settings/hub`
+
+```typescript
+// Request
+{ kinId: string | null }
+
+// Response 200
+{ hubKinId: string | null }
+```
+
+---
+
 ## SSE
 
 ### `GET /api/sse`
