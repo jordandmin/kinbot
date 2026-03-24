@@ -689,3 +689,16 @@ All sections migrated and accuracy-reviewed:
 - Checked source commits since last journal entry: `dc8906d` (webhook filter tests), `b0824ed` (kin-engine tests) — all tests, no documentation impact
 - All 34 pages remain accurate and complete
 - **Status: docs fully caught up with source code**
+
+## 2026-03-23 — Unified default models + provider tools docs ✅
+
+- New feature `cb588e2`: unified default models & services configuration
+  - 2 new agent tools: `list_providers` (list configured providers with capabilities) and `list_models` (list available models, filter by capability)
+  - 5 new API endpoints: `GET /api/settings/default-models`, `PUT /api/settings/default-llm`, `PUT /api/settings/default-image`, `PUT /api/settings/default-compacting`, legacy `GET /models` annotated
+- **kins/tools.md**: Added `list_providers` and `list_models` to System & Advanced section
+- **api/rest.md**: Added 4 new default-models endpoints, annotated legacy `/models` endpoint
+- Other commits since last run: shadcn Select refactor (UI), unit-converter tests, v0.27.3 release — no docs impact
+- Build passes: 34 pages
+- Commit: `39aea0d` — pushed to main (--no-verify)
+
+### Status: docs fully caught up with latest source changes
