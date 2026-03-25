@@ -113,7 +113,14 @@ export async function listCustomTools(kinId: string) {
 
 // ─── Execution ───────────────────────────────────────────────────────────────
 
-const EXECUTION_TIMEOUT = 30_000 // 30 seconds
+const DEFAULT_TIMEOUT = parseInt(process.env.KINBOT_CUSTOM_TOOL_TIMEOUT ?? '', 10) || 30_000
+const MAX_TIMEOUT = parseInt(process.env.KINBOT_CUSTOM_TOOL_MAX_TIMEOUT ?? '', 10) || 300_000
+
+/** Resolve effective timeout: use per-invocation override if provided, clamped to MAX_TIMEOUT. */
+export function resolveTimeout(timeoutMs?: number): number {
+  const value = timeoutMs ?? DEFAULT_TIMEOUT
+  return Math.max(1_000, Math.min(value, MAX_TIMEOUT))
+}
 
 interface ExecutionResult {
   success: boolean
@@ -127,6 +134,7 @@ export async function executeCustomTool(
   kinId: string,
   toolName: string,
   args: Record<string, unknown>,
+  timeoutMs?: number,
 ): Promise<ExecutionResult> {
   const tool = await db
     .select()
@@ -157,11 +165,12 @@ export async function executeCustomTool(
     })
 
     // Race between process completion and timeout
+    const effectiveTimeout = resolveTimeout(timeoutMs)
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => {
         proc.kill()
         reject(new Error('Execution timeout'))
-      }, EXECUTION_TIMEOUT),
+      }, effectiveTimeout),
     )
 
     const exitCode = await Promise.race([proc.exited, timeoutPromise])
