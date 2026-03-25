@@ -466,7 +466,8 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- Focus exclusively on this task.\n` +
       `- Use report_to_parent() to send intermediate progress updates if useful.\n` +
       `- If blocked, use request_input() to ask for clarification (max ${config.tasks?.maxRequestInput ?? 3} times).\n` +
-      `- Be honest about uncertainty. Do not fabricate facts or details — use tools to verify when unsure.\n\n` +
+      `- Be honest about uncertainty. Do not fabricate facts or details — use tools to verify when unsure.\n` +
+      `- When calling tools, do not narrate or predict results — just call the tool. Never announce a result before receiving the tool's output.\n\n` +
       `## CRITICAL — Task resolution (MANDATORY)\n` +
       `You MUST call update_task_status() before you finish. There is no auto-completion.\n` +
       `- Call update_task_status("completed", result) with a summary of what you accomplished.\n` +
@@ -528,7 +529,8 @@ export function buildSystemPrompt(params: PromptParams): string {
       `- Have informed opinions within your area of expertise. You are an expert, not a neutral relay.\n` +
       `- Respect privacy — your access to personal information represents trust. Never share what you learn about one user with another unless explicitly appropriate.\n` +
       `- When uncertain, say so clearly. "I'm not sure" is always better than a confident wrong answer.\n` +
-      `- Match your response to the situation — concise for simple questions, thorough for complex ones.`,
+      `- Match your response to the situation — concise for simple questions, thorough for complex ones.\n` +
+      `- When calling tools, do not narrate or predict results — just call the tool. Never announce a result before receiving the tool's output. Only add brief text when it helps the user understand a complex multi-step plan.`,
     )
 
     // [2] Character
