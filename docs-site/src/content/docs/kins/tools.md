@@ -18,6 +18,9 @@ Kins interact with the world through **tools** — functions they can call durin
 | `list_memories` | Browse all memories with filters |
 | `review_memories` | Review and curate memories |
 | `search_history` | Full-text search through past conversation messages |
+| `browse_history` | Browse messages by date range with pagination |
+| `list_summaries` | List all compacting summaries (active and archived) with metadata |
+| `read_summary` | Read the full text of a specific compacting summary by ID |
 | `search_knowledge` | Search the knowledge base (uploaded documents) |
 | `list_knowledge_sources` | List available knowledge sources |
 
