@@ -969,7 +969,8 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     const maxSteps = hasTools ? (config.tools.maxSteps > 0 ? config.tools.maxSteps : 100) : 1
     let wasAborted = false
 
-    for (let step = 0; step < maxSteps; step++) {
+    let step = 0
+    for (; step < maxSteps; step++) {
       if (abortController.signal.aborted) { wasAborted = true; break }
 
       const result = streamText({
@@ -1119,19 +1120,16 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       messageHistory.push({ role: 'assistant', content: assistantContent })
       messageHistory.push({ role: 'tool' as const, content: toolResults })
 
-      // Reset text for next step (tool results are captured, text continues accumulating)
-      fullContent = ''
+      // Text accumulates across steps so tool call offsets remain valid
     }
 
     activeAbortControllers.delete(kinId)
 
     log.info({ kinId, messageId: assistantMessageId, contentLength: fullContent.length, toolCalls: toolCallsLog.length, wasAborted }, 'LLM turn completed')
 
-    // Detect truncated turns: tool calls executed but no text response generated.
-    // This typically happens when the step limit (maxSteps) is reached before the
-    // LLM can produce a final text response. Add a fallback message so the user
-    // knows work was done even though no text was returned.
-    const stepLimitReached = !fullContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
+    // Detect truncated turns: tool calls executed but the step limit was hit before
+    // the LLM could produce a final text-only response.
+    const stepLimitReached = step >= maxSteps && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
     if (stepLimitReached) {
       log.warn(
         { kinId, messageId: assistantMessageId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },
@@ -1539,7 +1537,8 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     const maxSteps = hasTools ? (config.tools.maxSteps > 0 ? config.tools.maxSteps : 100) : 1
     let wasAborted = false
 
-    for (let step = 0; step < maxSteps; step++) {
+    let step = 0
+    for (; step < maxSteps; step++) {
       if (abortController.signal.aborted) { wasAborted = true; break }
 
       const result = streamText({
@@ -1649,14 +1648,13 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
       messageHistory.push({ role: 'assistant', content: assistantContent })
       messageHistory.push({ role: 'tool' as const, content: toolResults })
 
-      // Reset text for next step (tool results are captured, text continues accumulating)
-      fullContent = ''
+      // Text accumulates across steps so tool call offsets remain valid
     }
 
     quickAbortControllers.delete(sessionId)
 
     // Detect truncated turns (same as main path)
-    const stepLimitReached = !fullContent && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
+    const stepLimitReached = step >= maxSteps && toolCallsLog.length > 0 && !wasAborted && config.tools.maxSteps > 0
     if (stepLimitReached) {
       log.warn(
         { kinId, sessionId, toolCalls: toolCallsLog.length, maxSteps: config.tools.maxSteps },

@@ -588,7 +588,8 @@ async function executeSubKin(taskId: string, isNudge = false) {
 
     const maxSteps = hasTools ? (config.tools.maxSteps > 0 ? config.tools.maxSteps : 100) : 1
 
-    for (let step = 0; step < maxSteps; step++) {
+    let step = 0
+    for (; step < maxSteps; step++) {
       if (abortController.signal.aborted) break
 
       const result = streamText({
@@ -739,8 +740,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       messageHistory.push({ role: 'assistant', content: assistantContent })
       messageHistory.push({ role: 'tool' as const, content: toolResultMsgs })
 
-      // Reset text for next step (tool results are captured, text continues accumulating)
-      fullContent = ''
+      // Text accumulates across steps so tool call offsets remain valid
     }
 
     activeTaskAbortControllers.delete(taskId)
