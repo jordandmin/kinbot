@@ -288,8 +288,15 @@ The system prompt includes a tool selection table that steers Kins toward struct
 | Tool | Description |
 |---|---|
 | `register_tool` | Create a custom tool with a script |
-| `run_custom_tool` | Execute a custom tool |
+| `run_custom_tool` | Execute a custom tool. Accepts an optional `timeout` parameter (ms), capped at the server max |
 | `list_custom_tools` | List registered custom tools |
+
+Custom tool execution timeout is configurable via environment variables:
+
+- `KINBOT_CUSTOM_TOOL_TIMEOUT` — default timeout (default: 30s)
+- `KINBOT_CUSTOM_TOOL_MAX_TIMEOUT` — maximum allowed timeout (default: 300s / 5min)
+
+Per-invocation timeout values passed by the Kin are clamped between 1 second and the server maximum.
 
 ## Tool configuration
 

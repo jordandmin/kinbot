@@ -59,6 +59,15 @@ Toutes les valeurs configurables de la plateforme, regroupées par domaine. Ces 
 
 ---
 
+## Custom tools
+
+| Clé | Env var | Default | Description |
+|---|---|---|---|
+| — | `KINBOT_CUSTOM_TOOL_TIMEOUT` | `30000` | Timeout par défaut pour l'exécution d'un custom tool (ms) |
+| — | `KINBOT_CUSTOM_TOOL_MAX_TIMEOUT` | `300000` | Timeout maximum autorisé pour un custom tool (ms). Les valeurs passées par le Kin sont plafonnées à cette limite |
+
+---
+
 ## Mémoire long terme
 
 | Clé | Env var | Default | Description |
