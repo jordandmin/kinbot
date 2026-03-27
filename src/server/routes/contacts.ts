@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import {
   listContactsWithDetails,
   getContactWithDetails,
+  getContact,
   createContact,
   updateContact,
   deleteContact,
@@ -240,6 +241,15 @@ contactRoutes.post('/:id/platform-ids', async (c) => {
     return c.json(
       { error: { code: 'INVALID_INPUT', message: 'platform and platformId are required' } },
       400,
+    )
+  }
+
+  // Verify the contact exists before inserting
+  const contact = await getContact(contactId)
+  if (!contact) {
+    return c.json(
+      { error: { code: 'CONTACT_NOT_FOUND', message: 'Contact not found' } },
+      404,
     )
   }
 
