@@ -149,3 +149,34 @@ registerPreviewRenderer('send_message', ({ args }) => {
 registerPreviewRenderer('store_file', ({ args }) => {
   return (args.name as string) || null
 })
+
+// --- History ---
+
+registerPreviewRenderer('search_history', ({ args }) => {
+  return (args.query as string) ? `"${truncate(args.query as string, 40)}"` : null
+})
+
+registerPreviewRenderer('browse_history', ({ args }) => {
+  const start = args.startDate as string | undefined
+  const end = args.endDate as string | undefined
+  return start && end ? `${start} → ${end}` : null
+})
+
+// --- Links ---
+
+registerPreviewRenderer('extract_links', ({ args }) => {
+  const url = args.url as string
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    return parsed.hostname + parsed.pathname
+  } catch {
+    return truncate(url, 50)
+  }
+})
+
+// --- Webhooks ---
+
+registerPreviewRenderer('create_webhook', ({ args }) => {
+  return (args.name as string) ? truncate(args.name as string, 50) : null
+})
