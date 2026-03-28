@@ -212,3 +212,30 @@ registerPreviewRenderer('wake_me_in', ({ args }) => {
 registerPreviewRenderer('write_mini_app_file', ({ args }) => {
   return (args.path as string) || null
 })
+
+registerPreviewRenderer('create_mini_app', ({ args }) => {
+  const name = args.name as string | undefined
+  const slug = args.slug as string | undefined
+  return name ? `${truncate(name, 40)}${slug ? ` (${slug})` : ''}` : null
+})
+
+// --- Plugins ---
+
+registerPreviewRenderer('install_plugin', ({ args }) => {
+  const name = args.name as string | undefined
+  const source = args.source as string | undefined
+  return name ? `${source ? `${source}: ` : ''}${truncate(name, 45)}` : null
+})
+
+// --- Channels ---
+
+registerPreviewRenderer('send_channel_message', ({ args }) => {
+  const message = args.message as string | undefined
+  return message ? truncate(message, 50) : null
+})
+
+// --- Vault ---
+
+registerPreviewRenderer('create_secret', ({ args }) => {
+  return (args.key as string) || null
+})
