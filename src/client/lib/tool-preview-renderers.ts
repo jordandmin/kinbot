@@ -380,3 +380,29 @@ registerPreviewRenderer('uninstall_plugin', ({ args }) => {
 registerPreviewRenderer('read_mini_app_file', ({ args }) => {
   return (args.path as string) || null
 })
+
+// --- Secret retrieval ---
+
+registerPreviewRenderer('get_secret', ({ args }) => {
+  return (args.key as string) ? truncate(args.key as string, 50) : null
+})
+
+// --- Stored file search ---
+
+registerPreviewRenderer('search_stored_files', ({ args }) => {
+  return (args.query as string) ? `"${truncate(args.query as string, 40)}"` : null
+})
+
+// --- Cancel wakeup ---
+
+registerPreviewRenderer('cancel_wakeup', ({ args }) => {
+  return (args.wakeup_id as string) ? truncate(args.wakeup_id as string, 50) : null
+})
+
+// --- Stored file retrieval ---
+
+registerPreviewRenderer('get_stored_file', ({ args }) => {
+  const name = args.name as string | undefined
+  const id = args.id as string | undefined
+  return name ? truncate(name, 50) : id ? truncate(id, 50) : null
+})
