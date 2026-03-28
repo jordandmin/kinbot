@@ -285,6 +285,7 @@ export const tasks = sqliteTable('tasks', {
   channelOriginId: text('channel_origin_id'),
   webhookId: text('webhook_id').references(() => webhooks.id, { onDelete: 'set null' }),
   allowHumanPrompt: integer('allow_human_prompt', { mode: 'boolean' }).notNull().default(true),
+  thinkingConfig: text('thinking_config'), // JSON: KinThinkingConfig — overrides parent Kin if set
   concurrencyGroup: text('concurrency_group'),
   concurrencyMax: integer('concurrency_max'),
   queuedAt: integer('queued_at', { mode: 'timestamp_ms' }),
@@ -307,6 +308,7 @@ export const crons = sqliteTable('crons', {
   targetKinId: text('target_kin_id').references(() => kins.id),
   model: text('model'),
   providerId: text('provider_id'),
+  thinkingConfig: text('thinking_config'), // JSON: KinThinkingConfig — overrides parent Kin if set
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   requiresApproval: integer('requires_approval', { mode: 'boolean' }).notNull().default(false),
   runOnce: integer('run_once', { mode: 'boolean' }).notNull().default(false),

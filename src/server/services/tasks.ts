@@ -244,6 +244,7 @@ interface SpawnParams {
   allowHumanPrompt?: boolean
   channelOriginId?: string
   webhookId?: string
+  thinkingConfig?: KinThinkingConfig
   concurrencyGroup?: string
   concurrencyMax?: number
 }
@@ -299,6 +300,7 @@ export async function spawnTask(params: SpawnParams) {
     channelOriginId: params.channelOriginId ?? null,
     webhookId: params.webhookId ?? null,
     allowHumanPrompt: params.allowHumanPrompt ?? true,
+    thinkingConfig: params.thinkingConfig ? JSON.stringify(params.thinkingConfig) : null,
     concurrencyGroup,
     concurrencyMax,
     queuedAt: initialStatus === 'queued' ? now : null,
@@ -434,10 +436,12 @@ async function executeSubKin(taskId: string, isNudge = false) {
       throw new Error('No LLM provider available')
     }
 
-    // Resolve thinking config for this task's Kin
-    const taskThinkingConfig: KinThinkingConfig | null = kinIdentity.thinkingConfig
-      ? JSON.parse(kinIdentity.thinkingConfig as string)
-      : null
+    // Resolve thinking config: task-level override takes precedence over parent Kin
+    const taskThinkingConfig: KinThinkingConfig | null = task.thinkingConfig
+      ? JSON.parse(task.thinkingConfig as string)
+      : kinIdentity.thinkingConfig
+        ? JSON.parse(kinIdentity.thinkingConfig as string)
+        : null
     const taskProviderType = guessProviderType(modelId) ?? kinIdentity.providerId ?? ''
     const taskThinkingProviderOptions = buildThinkingProviderOptions(taskProviderType, taskThinkingConfig)
 

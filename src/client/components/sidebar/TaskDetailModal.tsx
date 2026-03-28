@@ -35,6 +35,7 @@ import {
   Layers,
   Wrench,
   Cpu,
+  Sparkles,
   FileText,
   ListOrdered,
   Play,
@@ -242,6 +243,14 @@ export function TaskDetailModal({
                       )}
                       <span className="truncate max-w-[140px]">{resolvedModel?.name ?? task.model}</span>
                     </span>
+                  )}
+                  {task.thinkingEnabled && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Sparkles className="size-3 text-chart-4" />
+                      </TooltipTrigger>
+                      <TooltipContent>{t('chat.thinkingToggle')}</TooltipContent>
+                    </Tooltip>
                   )}
                   {toolCallCount > 0 && (
                     <Button

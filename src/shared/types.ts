@@ -202,6 +202,7 @@ export interface CronSummary {
   targetKinAvatarUrl: string | null
   model: string | null
   providerId: string | null
+  thinkingEnabled: boolean
   runOnce: boolean
   isActive: boolean
   requiresApproval: boolean
