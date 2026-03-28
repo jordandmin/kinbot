@@ -82,6 +82,7 @@ export const kins = sqliteTable('kins', {
   workspacePath: text('workspace_path').notNull(),
   toolConfig: text('tool_config'), // JSON: KinToolConfig
   compactingConfig: text('compacting_config'), // JSON: KinCompactingConfig
+  thinkingConfig: text('thinking_config'), // JSON: KinThinkingConfig
   createdBy: text('created_by').references(() => user.id),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
@@ -122,6 +123,7 @@ export const messages = sqliteTable('messages', {
   channelOriginId: text('channel_origin_id'),
   isRedacted: integer('is_redacted', { mode: 'boolean' }).notNull().default(false),
   redactPending: integer('redact_pending', { mode: 'boolean' }).notNull().default(false),
+  reasoning: text('reasoning'), // LLM thinking/reasoning (ephemeral for LLM, persisted for display)
   metadata: text('metadata'), // JSON
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
 }, (table) => [

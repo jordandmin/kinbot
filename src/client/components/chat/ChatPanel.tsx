@@ -47,6 +47,7 @@ interface KinInfo {
   model: string
   providerId: string | null
   avatarUrl: string | null
+  thinkingEnabled?: boolean
 }
 
 interface LLMModel {
@@ -70,7 +71,7 @@ interface ChatPanelProps {
 export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState, onModelChange, onEditKin }: ChatPanelProps) {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const { messages, streamingMessage, liveTasks, liveCompacting, isLoading, isStreaming, hasMore, isLoadingMore, tokenStalled, sendMessage, stopStreaming, clearConversation, fetchOlderMessages } = useChat(kin.id)
+  const { messages, streamingMessage, streamingReasoning, liveTasks, liveCompacting, isLoading, isStreaming, hasMore, isLoadingMore, tokenStalled, sendMessage, stopStreaming, clearConversation, fetchOlderMessages } = useChat(kin.id)
   const { toolCalls, toolCallCount, toolCallsByMessage } = useToolCalls(kin.id, messages)
   const { prompts: pendingPrompts, respond: respondToPrompt, isResponding } = useHumanPrompts(kin.id)
   const { content: draftContent, setContent: setDraftContent, clearDraft } = useDraftMessage(kin.id)
@@ -81,6 +82,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
   const { exportAsMarkdown, exportAsJSON } = useExportConversation(messages, kin.name)
   const { users: mentionableUsers, kins: mentionableKins } = useMentionables()
   const { toggleReaction } = useReactions(kin.id)
+  const [thinkingEnabled, setThinkingEnabled] = useState(kin.thinkingEnabled ?? false)
   const [isToolCallsOpen, setIsToolCallsOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
@@ -95,6 +97,21 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
       return true
     }
   })
+
+  // Sync thinking state from prop when kin changes
+  useEffect(() => {
+    setThinkingEnabled(kin.thinkingEnabled ?? false)
+  }, [kin.id, kin.thinkingEnabled])
+
+  const toggleThinking = useCallback(async () => {
+    const next = !thinkingEnabled
+    setThinkingEnabled(next) // optimistic
+    try {
+      await api.patch(`/kins/${kin.id}`, { thinkingConfig: { enabled: next } })
+    } catch {
+      setThinkingEnabled(!next) // revert on error
+    }
+  }, [thinkingEnabled, kin.id])
 
   const toggleAutoScroll = useCallback(() => {
     setAutoScroll((prev) => {
@@ -687,6 +704,8 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
         onClearConversation={clearConversation}
         messages={messages}
         scrollViewportRef={scrollAreaRef}
+        thinkingEnabled={thinkingEnabled}
+        onToggleThinking={toggleThinking}
       />
 
       {/* Search bar */}
@@ -835,6 +854,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                       onQuoteReply={handleQuoteReply}
                       onEditResend={handleEditResend}
                       onRegenerate={msg.id === lastAssistantMsgId && !isStreaming && !isProcessing ? handleRegenerate : undefined}
+                      reasoning={streamingMessage && msg.id === streamingMessage.id ? streamingReasoning : msg.reasoning ?? undefined}
                     />
                     </div>
                     </React.Fragment>

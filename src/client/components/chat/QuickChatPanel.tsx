@@ -216,6 +216,7 @@ export function QuickChatPanel({ kinId, kinName, kinAvatarUrl, sessionId, expire
                     toolCalls={toolCallsByMessage.get(msg.id)}
                     injectedMemories={msg.injectedMemories}
                     stepLimitReached={msg.stepLimitReached}
+                    reasoning={msg.reasoning ?? undefined}
                   />
                 )
               })}

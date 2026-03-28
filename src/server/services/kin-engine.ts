@@ -30,7 +30,7 @@ import { getRelevantMemories, rewriteQueryWithContext } from '@/server/services/
 import { maybeCompact } from '@/server/services/compacting'
 import { resolveMCPTools, getMCPToolsSummary } from '@/server/services/mcp'
 import { resolveCustomTools } from '@/server/services/custom-tools'
-import type { KinToolConfig, ContextTokenBreakdown, ContextPipelineStatus } from '@/shared/types'
+import type { KinToolConfig, KinThinkingConfig, ContextTokenBreakdown, ContextPipelineStatus } from '@/shared/types'
 import { listAvailableKins } from '@/server/services/inter-kin'
 import { listContactsForPrompt, findContactByLinkedUserId } from '@/server/services/contacts'
 import { contactNotes as contactNotesTable } from '@/server/db/schema'
@@ -854,6 +854,13 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
       ? JSON.parse(kin.toolConfig)
       : null
 
+    // Resolve thinking config for this Kin
+    const thinkingConfig: KinThinkingConfig | null = kin.thinkingConfig
+      ? JSON.parse(kin.thinkingConfig)
+      : null
+    const providerType = guessProviderType(kin.model) ?? kin.providerId ?? ''
+    const thinkingProviderOptions = buildThinkingProviderOptions(providerType, thinkingConfig)
+
     const nativeTools = toolRegistry.resolve({
       kinId,
       userId: effectiveUserId,
@@ -956,6 +963,8 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     // results back to the LLM.
     const assistantMessageId = uuid()
     let fullContent = ''
+    const reasoningSegments: Array<{ offset: number; text: string }> = []
+    let currentReasoning = ''
     const toolCallsLog: Array<{ id: string; name: string; args: unknown; result?: unknown; offset: number }> = []
 
     // Create an AbortController so the stream can be cancelled from outside
@@ -979,6 +988,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         messages: messageHistory,
         tools: toolSchemas,
         abortSignal: abortController.signal,
+        ...(thinkingProviderOptions ? { providerOptions: thinkingProviderOptions as any } : {}),
       })
 
       // Collect tool call intents from this step
@@ -998,6 +1008,34 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
                 toolName: p.toolName,
                 contentOffset: fullContent.length,
               },
+            })
+            continue
+          }
+
+          // Handle reasoning/thinking stream parts
+          if ((part.type as string) === 'reasoning-start') {
+            currentReasoning = ''
+            continue
+          }
+          if ((part.type as string) === 'reasoning-delta') {
+            const p = part as unknown as { text: string }
+            currentReasoning += p.text
+            sseManager.sendToKin(kinId, {
+              type: 'chat:reasoning-token',
+              kinId,
+              data: { messageId: assistantMessageId, token: p.text },
+            })
+            continue
+          }
+          if ((part.type as string) === 'reasoning-end') {
+            if (currentReasoning) {
+              reasoningSegments.push({ offset: fullContent.length, text: currentReasoning })
+              currentReasoning = ''
+            }
+            sseManager.sendToKin(kinId, {
+              type: 'chat:reasoning-done',
+              kinId,
+              data: { messageId: assistantMessageId },
             })
             continue
           }
@@ -1158,6 +1196,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
         channelOriginId: queueItem.channelOriginId ?? null,
+        reasoning: reasoningSegments.length > 0 ? JSON.stringify(reasoningSegments) : null,
         metadata: (() => {
           const meta: Record<string, unknown> = {}
           if (relevantMemories.length > 0) meta.injectedMemories = relevantMemories
@@ -1502,6 +1541,13 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
       return true
     }
 
+    // Resolve thinking config for quick session
+    const qsThinkingConfig: KinThinkingConfig | null = kin.thinkingConfig
+      ? JSON.parse(kin.thinkingConfig)
+      : null
+    const qsProviderType = guessProviderType(kin.model) ?? kin.providerId ?? ''
+    const qsThinkingProviderOptions = buildThinkingProviderOptions(qsProviderType, qsThinkingConfig)
+
     // Resolve tools (with exclusion list for quick sessions)
     const toolConfig: KinToolConfig | null = kin.toolConfig ? JSON.parse(kin.toolConfig) : null
     const quickEffectiveUserId = queueItem.sourceType === 'user' ? (queueItem.sourceId ?? undefined) : undefined
@@ -1526,6 +1572,8 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     // Stream LLM response — custom single-step loop (same pattern as processKinQueue)
     const assistantMessageId = uuid()
     let fullContent = ''
+    const reasoningSegments: Array<{ offset: number; text: string }> = []
+    let currentReasoning = ''
     const toolCallsLog: Array<{ id: string; name: string; args: unknown; result?: unknown; offset: number }> = []
 
     const abortController = new AbortController()
@@ -1547,6 +1595,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
         messages: messageHistory,
         tools: toolSchemas,
         abortSignal: abortController.signal,
+        ...(qsThinkingProviderOptions ? { providerOptions: qsThinkingProviderOptions as any } : {}),
       })
 
       // Collect tool call intents from this step
@@ -1561,6 +1610,34 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
               type: 'chat:tool-call-start',
               kinId,
               data: { messageId: assistantMessageId, toolCallId: p.toolCallId, toolName: p.toolName, contentOffset: fullContent.length, sessionId },
+            })
+            continue
+          }
+
+          // Handle reasoning/thinking stream parts
+          if ((part.type as string) === 'reasoning-start') {
+            currentReasoning = ''
+            continue
+          }
+          if ((part.type as string) === 'reasoning-delta') {
+            const p = part as unknown as { text: string }
+            currentReasoning += p.text
+            sseManager.sendToKin(kinId, {
+              type: 'chat:reasoning-token',
+              kinId,
+              data: { messageId: assistantMessageId, token: p.text, sessionId },
+            })
+            continue
+          }
+          if ((part.type as string) === 'reasoning-end') {
+            if (currentReasoning) {
+              reasoningSegments.push({ offset: fullContent.length, text: currentReasoning })
+              currentReasoning = ''
+            }
+            sseManager.sendToKin(kinId, {
+              type: 'chat:reasoning-done',
+              kinId,
+              data: { messageId: assistantMessageId, sessionId },
             })
             continue
           }
@@ -1674,6 +1751,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
         sourceType: 'kin',
         sourceId: kinId,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
+        reasoning: reasoningSegments.length > 0 ? JSON.stringify(reasoningSegments) : null,
         metadata: (() => {
           const meta: Record<string, unknown> = {}
           if (relevantMemories.length > 0) meta.injectedMemories = relevantMemories
@@ -2053,6 +2131,41 @@ async function buildMessageHistory(kinId: string): Promise<{ messages: ModelMess
  */
 function getProviderTypeForModel(modelId: string): string | null {
   return guessProviderType(modelId)
+}
+
+/**
+ * Build provider-specific options to enable thinking/reasoning on the LLM call.
+ * Returns undefined when thinking is disabled or the provider doesn't support it.
+ */
+export function buildThinkingProviderOptions(
+  providerType: string,
+  config: KinThinkingConfig | null,
+): Record<string, Record<string, unknown>> | undefined {
+  if (!config?.enabled) return undefined
+  const budget = config.budgetTokens
+
+  if (providerType === 'anthropic' || providerType === 'anthropic-oauth') {
+    return {
+      anthropic: {
+        thinking: budget != null
+          ? { type: 'enabled', budgetTokens: budget }
+          : { type: 'adaptive' },
+      },
+    }
+  }
+  if (providerType === 'gemini') {
+    return {
+      google: {
+        thinkingConfig: {
+          includeThoughts: true,
+          ...(budget != null ? { thinkingBudget: budget } : {}),
+        },
+      },
+    }
+  }
+  // OpenAI o1/o3/o4: reasoning is native, no providerOptions needed
+  // Other providers: thinking not supported, silently ignored
+  return undefined
 }
 
 /**

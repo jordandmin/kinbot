@@ -19,7 +19,7 @@ import { deleteMemory, createMemory, updateMemory } from '@/server/services/memo
 import { getMCPToolsForConfig } from '@/server/services/mcp'
 import { toolRegistry } from '@/server/tools/index'
 import { TOOL_DOMAIN_MAP, TOOL_DOMAIN_META } from '@/shared/constants'
-import type { KinToolConfig, ToolDomain, MemoryCategory, MemoryScope } from '@/shared/types'
+import type { KinToolConfig, KinThinkingConfig, ToolDomain, MemoryCategory, MemoryScope } from '@/shared/types'
 import { sseManager } from '@/server/sse/index'
 import { resolveKinByIdOrSlug } from '@/server/services/kin-resolver'
 import {
@@ -79,6 +79,7 @@ kinRoutes.get('/', async (c) => {
         providerId: k.providerId ?? null,
         createdAt: k.createdAt,
         isHub: k.id === hubKinId,
+        thinkingEnabled: k.thinkingConfig ? (JSON.parse(k.thinkingConfig) as { enabled?: boolean }).enabled === true : false,
         isProcessing: qs?.isProcessing ?? false,
         queueSize: qs?.queueSize ?? 0,
         processingStartedAt: qs?.processingStartedAt ?? undefined,
@@ -500,6 +501,7 @@ kinRoutes.get('/:id', async (c) => {
     workspacePath: details.workspacePath,
     toolConfig: details.toolConfig ? JSON.parse(details.toolConfig) : null,
     compactingConfig: details.compactingConfig ? JSON.parse(details.compactingConfig) : null,
+    thinkingConfig: details.thinkingConfig ? JSON.parse(details.thinkingConfig) : null,
     mcpServers: details.mcpServers,
     queueSize,
     isProcessing,
@@ -607,6 +609,7 @@ kinRoutes.patch('/:id', async (c) => {
     slug: body.slug,
     toolConfig: body.toolConfig,
     compactingConfig: body.compactingConfig,
+    thinkingConfig: body.thinkingConfig,
     mcpServerIds: body.mcpServerIds,
   })
 
@@ -630,6 +633,7 @@ kinRoutes.patch('/:id', async (c) => {
       workspacePath: details.workspacePath,
       toolConfig: details.toolConfig ? JSON.parse(details.toolConfig) : null,
       compactingConfig: details.compactingConfig ? JSON.parse(details.compactingConfig) : null,
+      thinkingConfig: details.thinkingConfig ? JSON.parse(details.thinkingConfig) : null,
       mcpServers: details.mcpServers,
       queueSize: 0,
       isProcessing: false,
@@ -1169,6 +1173,7 @@ kinRoutes.get('/:id/export', async (c) => {
     model: details.model,
     toolConfig: details.toolConfig ? JSON.parse(details.toolConfig) : null,
     compactingConfig: details.compactingConfig ? JSON.parse(details.compactingConfig) : null,
+    thinkingConfig: details.thinkingConfig ? JSON.parse(details.thinkingConfig) : null,
     mcpServers: mcpServerDetails,
   }
 
@@ -1185,13 +1190,14 @@ kinRoutes.post('/import', async (c) => {
   const body = await c.req.json()
 
   // Validate required fields
-  const { name, role, character, expertise, model, toolConfig } = body as {
+  const { name, role, character, expertise, model, toolConfig, thinkingConfig } = body as {
     name?: string
     role?: string
     character?: string
     expertise?: string
     model?: string
     toolConfig?: KinToolConfig | null
+    thinkingConfig?: KinThinkingConfig | null
     _kinbot?: { version?: number }
   }
 
@@ -1237,9 +1243,12 @@ kinRoutes.post('/import', async (c) => {
     createdBy: user.id,
   })
 
-  // Apply toolConfig if present
-  if (toolConfig) {
-    await updateKin(newKin.id, { toolConfig })
+  // Apply toolConfig and thinkingConfig if present
+  if (toolConfig || thinkingConfig) {
+    await updateKin(newKin.id, {
+      ...(toolConfig ? { toolConfig } : {}),
+      ...(thinkingConfig ? { thinkingConfig } : {}),
+    })
   }
 
   return c.json(
