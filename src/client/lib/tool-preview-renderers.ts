@@ -294,3 +294,31 @@ registerPreviewRenderer('create_invitation', ({ args }) => {
   const label = args.label as string | undefined
   return label ? `for ${truncate(label, 50)}` : null
 })
+
+// --- Webhook updates ---
+
+registerPreviewRenderer('update_webhook', ({ args }) => {
+  const name = args.name as string | undefined
+  const id = args.webhook_id as string | undefined
+  return name ? truncate(name, 50) : id ? truncate(id, 50) : null
+})
+
+// --- Kin creation ---
+
+registerPreviewRenderer('create_kin', ({ args }) => {
+  return (args.name as string) ? truncate(args.name as string, 50) : null
+})
+
+// --- Contact updates ---
+
+registerPreviewRenderer('update_contact', ({ args }) => {
+  const name = args.name as string | undefined
+  const id = args.contact_id as string | undefined
+  return name ? truncate(name, 50) : id ? truncate(id, 50) : null
+})
+
+// --- Secret search ---
+
+registerPreviewRenderer('search_secrets', ({ args }) => {
+  return (args.query as string) ? truncate(args.query as string, 50) : null
+})
