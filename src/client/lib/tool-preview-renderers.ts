@@ -239,3 +239,31 @@ registerPreviewRenderer('send_channel_message', ({ args }) => {
 registerPreviewRenderer('create_secret', ({ args }) => {
   return (args.key as string) || null
 })
+
+// --- Vault entries ---
+
+registerPreviewRenderer('create_vault_entry', ({ args }) => {
+  const key = args.key as string | undefined
+  const entryType = args.entry_type as string | undefined
+  return key ? `${truncate(key, 40)}${entryType ? ` (${entryType})` : ''}` : null
+})
+
+// --- Contact notes ---
+
+registerPreviewRenderer('set_contact_note', ({ args }) => {
+  const scope = args.scope as string | undefined
+  const content = args.content as string | undefined
+  return content ? `${scope ? `${scope}: ` : ''}${truncate(content, 45)}` : null
+})
+
+// --- Custom tools ---
+
+registerPreviewRenderer('run_custom_tool', ({ args }) => {
+  return (args.tool_name as string) ? truncate(args.tool_name as string, 50) : null
+})
+
+// --- Plugin config ---
+
+registerPreviewRenderer('configure_plugin', ({ args }) => {
+  return (args.name as string) ? truncate(args.name as string, 50) : null
+})
