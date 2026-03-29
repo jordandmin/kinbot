@@ -480,3 +480,29 @@ registerPreviewRenderer('get_user', ({ args }) => {
 registerPreviewRenderer('update_secret', ({ args }) => {
   return (args.key as string) ? truncate(args.key as string, 50) : null
 })
+
+// --- Cron deletion ---
+
+registerPreviewRenderer('delete_cron', ({ args }) => {
+  return (args.cron_id as string) ? truncate(args.cron_id as string, 50) : null
+})
+
+// --- Mini app deletion ---
+
+registerPreviewRenderer('delete_mini_app', ({ args }) => {
+  return (args.app_id as string) ? truncate(args.app_id as string, 50) : null
+})
+
+// --- Memory update ---
+
+registerPreviewRenderer('update_memory', ({ args }) => {
+  const memoryId = args.memory_id as string | undefined
+  const content = args.content as string | undefined
+  return content ? truncate(content, 50) : memoryId ? truncate(memoryId, 50) : null
+})
+
+// --- Mini app file deletion ---
+
+registerPreviewRenderer('delete_mini_app_file', ({ args }) => {
+  return (args.path as string) || null
+})
