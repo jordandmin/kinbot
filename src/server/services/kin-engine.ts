@@ -2237,7 +2237,7 @@ async function tryCreateModel(
       return anthropic(modelId)
     } else if (provider.type === 'openai') {
       const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
-      return openai(modelId)
+      return openai.chat(modelId)
     } else if (provider.type === 'gemini') {
       const google = createGoogleGenerativeAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
       return google(modelId)

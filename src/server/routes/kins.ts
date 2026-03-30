@@ -122,10 +122,23 @@ kinRoutes.post('/generate-config', async (c) => {
     baseUrl?: string
   }
 
+  // Helper: pick the first available LLM model ID for a provider, with a fallback default
+  async function pickFirstLlmModelId(fallback: string): Promise<string> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const providerModels = await listModelsForProvider(llmProvider!.type, providerConfig)
+      const first = providerModels.find((m) => m.capability === 'llm')
+      return first?.id ?? fallback
+    } catch {
+      return fallback
+    }
+  }
+
   let model
   if (llmProvider.type === 'anthropic') {
     const anthropic = createAnthropic({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
-    model = anthropic('claude-haiku-4-5-20251001')
+    const modelId = await pickFirstLlmModelId('claude-haiku-4-5-20251001')
+    model = anthropic(modelId)
   } else if (llmProvider.type === 'anthropic-oauth') {
     const { getOAuthAccessToken, OAUTH_HEADERS, REQUIRED_SYSTEM_BLOCK } = await import('@/server/providers/anthropic-oauth')
     const accessToken = await getOAuthAccessToken(providerConfig.apiKey || undefined)
@@ -155,10 +168,12 @@ kinRoutes.post('/generate-config', async (c) => {
     model = anthropic('claude-haiku-4-5-20251001')
   } else if (llmProvider.type === 'openai') {
     const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
-    model = openai('gpt-4o-mini')
+    const modelId = await pickFirstLlmModelId('gpt-4o-mini')
+    model = openai.chat(modelId)
   } else if (OPENAI_COMPATIBLE_PROVIDERS.has(llmProvider.type)) {
     const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
-    model = openai.chat('gpt-4o-mini')
+    const modelId = await pickFirstLlmModelId('gpt-4o-mini')
+    model = openai.chat(modelId)
   } else if (llmProvider.type === 'gemini') {
     const google = createGoogleGenerativeAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = google('gemini-2.0-flash')
