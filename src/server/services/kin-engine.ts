@@ -2271,6 +2271,9 @@ async function tryCreateModel(
     } else if (provider.type === 'ollama') {
       const openai = createOpenAI({ apiKey: providerConfig.apiKey || 'ollama', baseURL: providerConfig.baseUrl ?? 'http://localhost:11434/v1' })
       return openai(modelId)
+    } else if (provider.type === 'openai-compatible') {
+      const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
+      return openai(modelId)
     }
   } catch {
     return null
