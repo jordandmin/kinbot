@@ -13,7 +13,7 @@ import { getDefaultImageModel, getDefaultImageProviderId } from '@/server/servic
 /** Provider types that use the OpenAI-compatible SDK (createOpenAI) */
 const OPENAI_COMPATIBLE_PROVIDERS = new Set([
   'openrouter', 'deepseek', 'fireworks', 'together', 'groq',
-  'mistral', 'perplexity', 'xai', 'ollama', 'cohere',
+  'mistral', 'perplexity', 'xai', 'ollama', 'cohere', 'openai-compatible',
 ])
 import { config } from '@/server/config'
 
@@ -265,9 +265,12 @@ export async function buildAvatarPrompt(kin: {
   if (llmProvider.type === 'anthropic') {
     const anthropic = createAnthropic({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = anthropic('claude-haiku-4-5-20251001')
-  } else if (llmProvider.type === 'openai' || OPENAI_COMPATIBLE_PROVIDERS.has(llmProvider.type)) {
+  } else if (llmProvider.type === 'openai') {
     const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = openai('gpt-4o-mini')
+  } else if (OPENAI_COMPATIBLE_PROVIDERS.has(llmProvider.type)) {
+    const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
+    model = openai.chat('gpt-4o-mini')
   } else if (llmProvider.type === 'gemini') {
     const google = createGoogleGenerativeAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = google('gemini-2.0-flash')
@@ -327,9 +330,12 @@ export async function buildMiniAppIconPrompt(app: {
   if (llmProvider.type === 'anthropic') {
     const anthropic = createAnthropic({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = anthropic('claude-haiku-4-5-20251001')
-  } else if (llmProvider.type === 'openai' || OPENAI_COMPATIBLE_PROVIDERS.has(llmProvider.type)) {
+  } else if (llmProvider.type === 'openai') {
     const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = openai('gpt-4o-mini')
+  } else if (OPENAI_COMPATIBLE_PROVIDERS.has(llmProvider.type)) {
+    const openai = createOpenAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
+    model = openai.chat('gpt-4o-mini')
   } else if (llmProvider.type === 'gemini') {
     const google = createGoogleGenerativeAI({ apiKey: providerConfig.apiKey, baseURL: providerConfig.baseUrl })
     model = google('gemini-2.0-flash')
