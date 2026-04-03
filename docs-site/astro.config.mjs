@@ -53,6 +53,20 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Guides',
+					items: [
+						{ label: 'Autonomy Quickstart', slug: 'guides/autonomy-quickstart' },
+						{ label: 'Model Selection', slug: 'guides/model-selection' },
+						{
+							label: 'Blueprints',
+							items: [
+								{ label: 'GitHub Issue Processor', slug: 'guides/blueprints/github-issue-processor' },
+								{ label: 'Daily Digest', slug: 'guides/blueprints/daily-digest' },
+							],
+						},
+					],
+				},
+				{
 					label: 'Kins',
 					items: [
 						{ label: 'Overview', slug: 'kins/overview' },
