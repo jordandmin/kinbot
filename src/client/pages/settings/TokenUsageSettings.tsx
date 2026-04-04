@@ -317,12 +317,12 @@ export function TokenUsageSettings() {
         </Select>
 
         {kinOptions.length > 0 && (
-          <Select value={kinFilter} onValueChange={setKinFilter}>
+          <Select value={kinFilter || '__all__'} onValueChange={(v) => setKinFilter(v === '__all__' ? '' : v)}>
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder={t('settings.tokenUsage.filterKin')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="" className="text-xs">{t('settings.tokenUsage.filterKin')}</SelectItem>
+              <SelectItem value="__all__" className="text-xs">{t('settings.tokenUsage.filterKin')}</SelectItem>
               {kinOptions.map((k) => (
                 <SelectItem key={k.group} value={k.group} className="text-xs">{k.group}</SelectItem>
               ))}
@@ -331,12 +331,12 @@ export function TokenUsageSettings() {
         )}
 
         {providerOptions.length > 0 && (
-          <Select value={providerFilter} onValueChange={setProviderFilter}>
+          <Select value={providerFilter || '__all__'} onValueChange={(v) => setProviderFilter(v === '__all__' ? '' : v)}>
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder={t('settings.tokenUsage.filterProvider')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="" className="text-xs">{t('settings.tokenUsage.filterProvider')}</SelectItem>
+              <SelectItem value="__all__" className="text-xs">{t('settings.tokenUsage.filterProvider')}</SelectItem>
               {providerOptions.map((p) => (
                 <SelectItem key={p.group} value={p.group} className="text-xs">{p.group}</SelectItem>
               ))}
