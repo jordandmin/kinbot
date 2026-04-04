@@ -76,6 +76,7 @@ See [`.env.example`](https://github.com/MarlBurroW/kinbot/blob/main/.env.example
 - Compacting threshold (`COMPACTING_THRESHOLD_PERCENT`, default 75%)
 - Memory tuning (extraction, vector dimensions, search pipeline)
 - Tool step limit (`TOOLS_MAX_STEPS`, default 0 = unlimited)
+- Read-only tool concurrency (`TOOLS_CONCURRENCY_CAP`, default 5)
 - Queue settings
 - Cron limits
 - Web browsing configuration

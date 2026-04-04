@@ -1,9 +1,9 @@
 ---
 title: Supported Providers
-description: All 23 AI providers supported by KinBot.
+description: All 24 AI providers supported by KinBot.
 ---
 
-KinBot supports 23 AI providers out of the box. Each provider offers different capabilities: language models (LLM), embeddings, image generation, and web search.
+KinBot supports 24 AI providers out of the box. Each provider offers different capabilities: language models (LLM), embeddings, image generation, and web search.
 
 ## Provider Table
 
@@ -12,6 +12,7 @@ KinBot supports 23 AI providers out of the box. Each provider offers different c
 | [Anthropic](https://console.anthropic.com/settings/keys) | ✅ | | | | | ✅ |
 | [Anthropic (Claude Max)](https://claude.ai) | ✅ | | | | | ❌ (OAuth) |
 | [OpenAI](https://platform.openai.com/api-keys) | ✅ | ✅ | ✅ | | | ✅ |
+| [OpenAI (Codex CLI)](https://openai.com/index/introducing-codex/) | ✅ | | | | | ❌ (OAuth) |
 | [Gemini](https://aistudio.google.com/apikey) | ✅ | | ✅ | | | ✅ |
 | [Mistral AI](https://console.mistral.ai/api-keys) | ✅ | ✅ | | | | ✅ |
 | [DeepSeek](https://platform.deepseek.com/api_keys) | ✅ | ✅ | | | | ✅ |
