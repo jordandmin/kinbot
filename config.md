@@ -61,6 +61,15 @@ Toutes les valeurs configurables de la plateforme, regroupées par domaine. Ces 
 
 ---
 
+## Tools
+
+| Clé | Env var | Default | Description |
+|---|---|---|---|
+| `tools.maxSteps` | `TOOLS_MAX_STEPS` | `0` | Nombre max d'étapes de tool-calling par tour LLM. 0 = illimité (plafonné a 100 en interne) |
+| `tools.concurrencyCap` | `TOOLS_CONCURRENCY_CAP` | `5` | Nombre max d'exécutions parallèles d'outils en lecture seule. Quand toutes les tool calls d'un step sont read-only, elles s'exécutent en parallèle (limité a cette valeur). Les batches mixtes avec au moins un outil mutant restent séquentiels |
+
+---
+
 ## Custom tools
 
 | Clé | Env var | Default | Description |
