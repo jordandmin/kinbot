@@ -82,7 +82,7 @@ describe('memory-tools', () => {
   // ── Availability ──────────────────────────────────────────────────────────
 
   describe('availability', () => {
-    it('all memory tools are main-only', () => {
+    itMocked('all memory tools are main-only', () => {
       const tools = [recallTool, memorizeTool, updateMemoryTool, forgetTool, listMemoriesTool, reviewMemoriesTool]
       for (const t of tools) {
         expect(t.availability).toEqual(['main'])
