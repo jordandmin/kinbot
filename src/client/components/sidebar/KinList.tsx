@@ -116,12 +116,12 @@ export const KinList = memo(function KinList({ kins, llmModels, selectedKinSlug,
   const regularKinIds = regularKins.map((k) => k.id)
 
   return (
-    <SidebarGroup>
+    <SidebarGroup className="flex-1 min-h-0">
       <SidebarGroupLabel>{t('sidebar.kins.title')}</SidebarGroupLabel>
       <SidebarGroupAction onClick={onCreateKin} title={t('sidebar.kins.create')}>
         <Plus className="size-4" />
       </SidebarGroupAction>
-      <SidebarGroupContent>
+      <SidebarGroupContent className="flex-1 flex flex-col min-h-0">
         {kins.length === 0 ? (
           <EmptyState
             compact
@@ -151,7 +151,7 @@ export const KinList = memo(function KinList({ kins, llmModels, selectedKinSlug,
                 {t('sidebar.kins.noResults')}
               </p>
             ) : (
-          <div className="max-h-[40vh] overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {/* Hub kin pinned at top (outside drag-and-drop) */}
             {hubKin && (!searchQuery.trim() || hubKin.name.toLowerCase().includes(searchQuery.toLowerCase()) || hubKin.role.toLowerCase().includes(searchQuery.toLowerCase())) && (
               <div className="px-1 pb-1">

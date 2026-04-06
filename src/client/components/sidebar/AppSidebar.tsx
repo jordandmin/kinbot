@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Sidebar,
@@ -21,6 +21,10 @@ import { useTranslation } from 'react-i18next'
 import { ListTodo, CalendarClock, Blocks } from 'lucide-react'
 
 const TAB_STORAGE_KEY = 'sidebar.activeTab'
+const SPLIT_STORAGE_KEY = 'sidebar.splitPercent'
+const SPLIT_DEFAULT = 50
+const SPLIT_MIN = 20
+const SPLIT_MAX = 80
 
 interface KinSummary {
   id: string
@@ -78,6 +82,51 @@ export function AppSidebar({
     }
   })
 
+  const [splitPercent, setSplitPercent] = useState(() => {
+    try {
+      const stored = localStorage.getItem(SPLIT_STORAGE_KEY)
+      return stored ? Number(stored) : SPLIT_DEFAULT
+    } catch {
+      return SPLIT_DEFAULT
+    }
+  })
+
+  const contentRef = useRef<HTMLDivElement>(null)
+  const splitRef = useRef(splitPercent)
+  splitRef.current = splitPercent
+
+  const handleSplitMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    const startY = e.clientY
+    const container = contentRef.current
+    if (!container) return
+    const containerRect = container.getBoundingClientRect()
+    const startPercent = splitRef.current
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const deltaY = ev.clientY - startY
+      const deltaPercent = (deltaY / containerRect.height) * 100
+      const newPercent = Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, startPercent + deltaPercent))
+      setSplitPercent(newPercent)
+      splitRef.current = newPercent
+    }
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      try {
+        localStorage.setItem(SPLIT_STORAGE_KEY, String(splitRef.current))
+      } catch { /* ignore */ }
+    }
+
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }, [])
+
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value)
     try {
@@ -112,24 +161,32 @@ export function AppSidebar({
       <SidebarSeparator />
 
       {/* Main content — disable native SidebarContent scroll, we manage it per-section */}
-      <SidebarContent className="!overflow-hidden flex flex-col">
-        {/* KinList — own scroll via internal max-h */}
-        <KinList
-          kins={kins}
-          llmModels={llmModels}
-          selectedKinSlug={selectedKinSlug}
-          unavailableKinIds={unavailableKinIds}
-          kinQueueState={kinQueueState}
-          onSelectKin={onSelectKin}
-          onCreateKin={onCreateKin}
-          onEditKin={onEditKin}
-          onDeleteKin={onDeleteKin}
-          onSetAsHub={onSetAsHub}
-          onViewUsage={onOpenSettings ? (kinId: string) => onOpenSettings('tokenUsage', { kinId }) : undefined}
-          onReorderKins={onReorderKins}
-        />
+      <SidebarContent ref={contentRef} className="!overflow-hidden flex flex-col">
+        {/* KinList — height controlled by split handle */}
+        <div className="flex flex-col min-h-0 overflow-hidden" style={{ flexBasis: `${splitPercent}%`, flexShrink: 0, flexGrow: 0 }}>
+          <KinList
+            kins={kins}
+            llmModels={llmModels}
+            selectedKinSlug={selectedKinSlug}
+            unavailableKinIds={unavailableKinIds}
+            kinQueueState={kinQueueState}
+            onSelectKin={onSelectKin}
+            onCreateKin={onCreateKin}
+            onEditKin={onEditKin}
+            onDeleteKin={onDeleteKin}
+            onSetAsHub={onSetAsHub}
+            onViewUsage={onOpenSettings ? (kinId: string) => onOpenSettings('tokenUsage', { kinId }) : undefined}
+            onReorderKins={onReorderKins}
+          />
+        </div>
 
-        <SidebarSeparator />
+        {/* Draggable horizontal resize handle */}
+        <div
+          onMouseDown={handleSplitMouseDown}
+          className="relative shrink-0 cursor-row-resize group py-0.5"
+        >
+          <div className="mx-2 h-px bg-sidebar-border transition-colors group-hover:bg-primary/30 group-active:bg-primary/50" />
+        </div>
 
         {/* Tabbed section: Tasks / Jobs / Apps — takes remaining space */}
         <SidebarGroup className="flex-1 flex flex-col min-h-0">
