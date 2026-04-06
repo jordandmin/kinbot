@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/client/components/ui/popover'
@@ -65,29 +65,38 @@ export function DateNavigator({ messages, scrollViewportRef }: DateNavigatorProp
     })
   }, [messages, t])
 
+  const [open, setOpen] = useState(false)
+
   if (dates.length < 2) return null
 
   const handleJumpToDate = (dateKey: string) => {
     // Find the date separator element in the DOM
-    const el = document.querySelector(`[data-date-separator="${dateKey}"]`)
-    if (!el) return
+    const separator = document.querySelector(`[data-date-separator="${dateKey}"]`)
+    if (!separator) return
 
-    // Scroll to the element
+    // The date separator is sticky (top-0), so getBoundingClientRect() returns
+    // the stuck position instead of the natural layout position. Target the next
+    // sibling element (first message of that date) which is not sticky.
+    const scrollTarget = (separator.nextElementSibling ?? separator) as HTMLElement
+
     if (scrollViewportRef?.current) {
       const viewport = scrollViewportRef.current
       const viewportEl = viewport.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null
       const target = viewportEl ?? viewport
-      const rect = el.getBoundingClientRect()
+      const rect = scrollTarget.getBoundingClientRect()
       const containerRect = target.getBoundingClientRect()
-      const offset = rect.top - containerRect.top + target.scrollTop
-      target.scrollTo({ top: offset, behavior: 'smooth' })
+      // Subtract height to keep the date separator header visible above
+      const offset = rect.top - containerRect.top + target.scrollTop - 40
+      target.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' })
     } else {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
+
+    setOpen(false)
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
