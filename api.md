@@ -368,6 +368,25 @@ Historique paginé des messages.
 }
 ```
 
+### `POST /api/kins/:id/messages/inject`
+
+Injecte un message dans la conversation en cours. Si le Kin est en train de streamer une réponse, le stream est interrompu (la réponse partielle est sauvegardée) et le message injecté est mis en file d'attente en priorité haute. Utilisé pour la commande `/btw` et la promotion de messages depuis la queue.
+
+```typescript
+// Request
+{
+  content: string
+  queueItemId?: string    // Si promotion depuis la queue, supprime l'item original
+}
+
+// Response 202
+{
+  messageId: string
+  queuePosition: number
+  injected: boolean       // true si un stream actif a été interrompu
+}
+```
+
 ---
 
 ## Tâches

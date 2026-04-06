@@ -39,6 +39,7 @@ Auth routes (`/api/auth/*`) are handled by [Better Auth](https://www.better-auth
 |--------|----------|-------------|
 | `GET` | `/api/kins/:kinId/messages` | Get conversation history |
 | `POST` | `/api/kins/:kinId/messages` | Send a message to a Kin |
+| `POST` | `/api/kins/:kinId/messages/inject` | Inject a message with high priority (aborts current stream if active, used by `/btw` command) |
 
 ## Reactions
 
@@ -446,15 +447,6 @@ Public access to shared files (no auth required, token-based).
 | `GET` | `/api/version-check` | Get cached version info (current version, latest, update available, release notes). Returns `isUpdateAvailable: false` if disabled |
 | `POST` | `/api/version-check/check` | Force a fresh version check (admin only). Returns 400 if version check is disabled |
 | `POST` | `/api/version-check/update` | Self-update: runs `git pull` + `bun install` and restarts (admin only, non-Docker). Returns 400 in Docker mode |
-
-## Usage (admin only)
-
-Token usage tracking for all LLM calls. All routes require admin role.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/usage` | Paginated list of LLM usage records with filters (kinId, providerId, providerType, modelId, taskId, cronId, callSite, from/to timestamps) |
-| `GET` | `/api/usage/summary` | Aggregated usage grouped by dimension (groupBy: `provider_type`, `model_id`, `kin_id`, `call_site`, `day`) |
 
 ## Usage (admin only)
 
