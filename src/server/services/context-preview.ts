@@ -10,6 +10,7 @@ import { resolveCustomTools } from '@/server/services/custom-tools'
 import { toolRegistry } from '@/server/tools/index'
 import { getGlobalPrompt, getHubKinId } from '@/server/services/app-settings'
 import { fetchPreviousCronRuns } from '@/server/services/tasks'
+import { fetchCronLearnings } from '@/server/services/cron-learnings'
 import { getActiveChannelsForKin } from '@/server/services/channels'
 import type { KinToolConfig, KinCompactingConfig } from '@/shared/types'
 import { getModelContextWindow } from '@/shared/model-context-windows'
@@ -45,6 +46,13 @@ interface CronRunPreview {
   durationSec: number
 }
 
+interface CronLearningPreview {
+  id: string
+  content: string
+  category: string | null
+  createdAt: string
+}
+
 interface ContextPreviewResult {
   /** System prompt with tools block appended (for structured/markdown view) */
   systemPrompt: string
@@ -54,6 +62,8 @@ interface ContextPreviewResult {
   summaries: SummaryPreview[]
   /** Previous cron run results (only for cron-spawned tasks) */
   cronRuns: CronRunPreview[]
+  /** Accumulated cron learnings (only for cron-spawned tasks) */
+  cronLearnings: CronLearningPreview[]
   /** Full raw payload as JSON (system + messages + tools) */
   rawPayload: {
     system: string
@@ -65,6 +75,7 @@ interface ContextPreviewResult {
     systemPrompt: number
     summary: number
     cronRuns: number
+    cronLearnings: number
     messages: number
     tools: number
     total: number
@@ -348,6 +359,18 @@ function buildToolDefs(tools: Record<string, unknown>): ToolDefinition[] {
 }
 
 const CRON_RUNS_HEADER = '## Previous runs'
+const CRON_LEARNINGS_HEADER = '## Learnings from previous runs'
+
+/** Extract token count for a prompt section identified by its header */
+function extractSectionTokens(systemPrompt: string, header: string): number {
+  const idx = systemPrompt.indexOf(header)
+  if (idx === -1) return 0
+  const afterHeader = systemPrompt.indexOf('\n## ', idx + header.length)
+  const section = afterHeader === -1
+    ? systemPrompt.slice(idx)
+    : systemPrompt.slice(idx, afterHeader)
+  return estimateTokens(section)
+}
 
 /** Format a ContextPreviewResult from the assembled parts */
 function formatResult(
@@ -360,6 +383,7 @@ function formatResult(
   summaries: SummaryPreview[] = [],
   compactingThresholdPercent: number | null = null,
   cronRuns: CronRunPreview[] = [],
+  cronLearnings: CronLearningPreview[] = [],
 ): ContextPreviewResult {
   let fullPrompt = systemPrompt
   if (toolDefinitions.length > 0) {
@@ -369,34 +393,27 @@ function formatResult(
     fullPrompt += `\n\n## Available tools (${toolDefinitions.length})\n\n${toolLines}`
   }
 
-  // Estimate cron runs tokens from the raw system prompt section
-  let cronRunsTokens = 0
-  const cronIdx = systemPrompt.indexOf(CRON_RUNS_HEADER)
-  if (cronIdx !== -1) {
-    // Find the end of the cron section (next ## heading or end of string)
-    const afterHeader = systemPrompt.indexOf('\n## ', cronIdx + CRON_RUNS_HEADER.length)
-    const cronSection = afterHeader === -1
-      ? systemPrompt.slice(cronIdx)
-      : systemPrompt.slice(cronIdx, afterHeader)
-    cronRunsTokens = estimateTokens(cronSection)
-  }
+  // Estimate tokens from dedicated prompt sections
+  const cronRunsTokens = extractSectionTokens(systemPrompt, CRON_RUNS_HEADER)
+  const cronLearningsTokens = extractSectionTokens(systemPrompt, CRON_LEARNINGS_HEADER)
 
   // Estimate tokens per section
   const summaryTokens = compactingSummary ? estimateTokens(compactingSummary) : 0
   const rawSystemTokens = estimateTokens(systemPrompt)
-  const systemPromptTokens = Math.max(0, rawSystemTokens - summaryTokens - cronRunsTokens)
+  const systemPromptTokens = Math.max(0, rawSystemTokens - summaryTokens - cronRunsTokens - cronLearningsTokens)
   let messagesTokens = 0
   for (const m of messagesPreviews) {
     if (m.content) messagesTokens += estimateTokens(m.content)
   }
   const toolsTokens = toolDefinitions.length > 0 ? estimateTokens(JSON.stringify(toolDefinitions)) : 0
-  const total = systemPromptTokens + summaryTokens + cronRunsTokens + messagesTokens + toolsTokens
+  const total = systemPromptTokens + summaryTokens + cronRunsTokens + cronLearningsTokens + messagesTokens + toolsTokens
 
   return {
     systemPrompt: fullPrompt,
     compactingSummary,
     summaries,
     cronRuns,
+    cronLearnings,
     rawPayload: {
       system: systemPrompt,
       messages: messagesPreviews,
@@ -406,6 +423,7 @@ function formatResult(
       systemPrompt: systemPromptTokens,
       summary: summaryTokens,
       cronRuns: cronRunsTokens,
+      cronLearnings: cronLearningsTokens,
       messages: messagesTokens,
       tools: toolsTokens,
       total,
@@ -457,6 +475,10 @@ export async function buildTaskContextPreview(taskId: string): Promise<ContextPr
     ? await fetchPreviousCronRuns(task.cronId, 5)
     : undefined
 
+  const cronLearningsData = task.cronId
+    ? fetchCronLearnings(task.cronId)
+    : undefined
+
   const systemPrompt = buildSystemPrompt({
     kin: { name: kinIdentity.name, slug: kinIdentity.slug, role: kinIdentity.role, character: kinIdentity.character, expertise: kinIdentity.expertise },
     contacts: [],
@@ -465,6 +487,7 @@ export async function buildTaskContextPreview(taskId: string): Promise<ContextPr
     isSubKin: true,
     taskDescription: task.description,
     previousCronRuns,
+    cronLearnings: cronLearningsData,
     globalPrompt,
     userLanguage: 'en',
     workspacePath: kinIdentity.workspacePath,
@@ -521,8 +544,18 @@ export async function buildTaskContextPreview(taskId: string): Promise<ContextPr
       }))
     : []
 
+  // Build cron learning previews
+  const cronLearningPreviews: CronLearningPreview[] = cronLearningsData
+    ? cronLearningsData.map((l) => ({
+        id: l.id,
+        content: l.content,
+        category: l.category,
+        createdAt: l.createdAt.toISOString(),
+      }))
+    : []
+
   const modelId = task.model ?? kinIdentity.model
-  return formatResult(systemPrompt, buildToolDefs(allTools), messagesPreviews, taskMessages.length, getModelContextWindow(modelId), null, [], null, cronRunPreviews)
+  return formatResult(systemPrompt, buildToolDefs(allTools), messagesPreviews, taskMessages.length, getModelContextWindow(modelId), null, [], null, cronRunPreviews, cronLearningPreviews)
 }
 
 // ---------------------------------------------------------------------------

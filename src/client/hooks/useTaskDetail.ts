@@ -34,9 +34,17 @@ export interface TaskMessage {
   createdAt: number
 }
 
+interface LearningEntry {
+  id: string
+  content: string
+  category: string | null
+  createdAt: string
+}
+
 interface TaskDetailResponse {
   task: TaskDetail
   messages: TaskMessage[]
+  learningsSaved: LearningEntry[]
 }
 
 const STREAMING_BATCH_MS = 50
@@ -59,6 +67,7 @@ function deriveStatus(entry: ToolCallEntry): ToolCallStatus {
 export function useTaskDetail(taskId: string | null) {
   const [task, setTask] = useState<TaskDetail | null>(null)
   const [messages, setMessages] = useState<TaskMessage[]>([])
+  const [learningsSaved, setLearningsSaved] = useState<LearningEntry[]>([])
   const messagesRef = useRef<TaskMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -114,6 +123,7 @@ export function useTaskDetail(taskId: string | null) {
     try {
       const data = await api.get<TaskDetailResponse>(`/tasks/${taskId}`)
       setTask(data.task)
+      setLearningsSaved(data.learningsSaved ?? [])
       // Smart merge: preserve object references for unchanged messages to
       // avoid unnecessary re-renders (same pattern as useChat.fetchMessages)
       // Smart merge: preserve object references for unchanged messages
@@ -316,8 +326,8 @@ export function useTaskDetail(taskId: string | null) {
       setTask((prev) =>
         prev ? { ...prev, status } : prev,
       )
-      // Terminal status → clear streaming state (safety net if chat:done was missed)
-      if (status === 'completed' || status === 'failed' || status === 'cancelled') {
+      // Terminal or paused status → clear streaming state (safety net if chat:done was missed)
+      if (status === 'completed' || status === 'failed' || status === 'cancelled' || status === 'paused') {
         if (batchTimerRef.current) {
           clearTimeout(batchTimerRef.current)
           batchTimerRef.current = null
@@ -412,7 +422,7 @@ export function useTaskDetail(taskId: string | null) {
     // overwrite the streaming state with stale DB content
     if (isStreaming) return
     const status = task?.status
-    if (!status || status === 'completed' || status === 'failed' || status === 'cancelled') return
+    if (!status || status === 'completed' || status === 'failed' || status === 'cancelled' || status === 'paused') return
 
     const interval = setInterval(fetchDetail, 1000)
     return () => clearInterval(interval)
@@ -475,6 +485,36 @@ export function useTaskDetail(taskId: string | null) {
     }
   }, [taskId])
 
+  const pauseTask = useCallback(async () => {
+    if (!taskId) return false
+    try {
+      await api.post(`/tasks/${taskId}/pause`)
+      return true
+    } catch {
+      return false
+    }
+  }, [taskId])
+
+  const resumeTask = useCallback(async (message?: string) => {
+    if (!taskId) return false
+    try {
+      await api.post(`/tasks/${taskId}/resume`, message ? { message } : {})
+      return true
+    } catch {
+      return false
+    }
+  }, [taskId])
+
+  const injectIntoTask = useCallback(async (content: string) => {
+    if (!taskId) return false
+    try {
+      await api.post(`/tasks/${taskId}/inject`, { content })
+      return true
+    } catch {
+      return false
+    }
+  }, [taskId])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -491,9 +531,13 @@ export function useTaskDetail(taskId: string | null) {
     isStreaming,
     streamingMessage,
     cancelTask,
+    pauseTask,
+    resumeTask,
+    injectIntoTask,
     refetch: fetchDetail,
     allToolCalls,
     toolCallCount: allToolCalls.length,
     toolCallsByMessage,
+    learningsSaved,
   }
 }

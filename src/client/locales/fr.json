@@ -231,6 +231,7 @@
         "completed": "Terminée",
         "failed": "Échouée",
         "queued": "En file d'attente",
+        "paused": "En pause",
         "cancelled": "Annulée"
       },
       "emptyDescription": "Les tâches apparaîtront ici quand vos Kins travaillent",
@@ -565,6 +566,7 @@
       "systemPrompt": "Prompt système",
       "summary": "Résumé",
       "cronRuns": "Exécutions précédentes",
+      "cronLearnings": "Apprentissages",
       "messages": "Messages",
       "total": "Total"
     },
@@ -592,11 +594,14 @@
         "summaries": "Résumés ({{count}})",
         "messages": "Messages",
         "tools": "Outils",
-        "cronRuns": "Exécutions précédentes ({{count}})"
+        "cronRuns": "Exécutions précédentes ({{count}})",
+        "cronLearnings": "Apprentissages ({{count}})"
       },
       "summariesTitle": "Résumés de conversation ({{count}})",
       "cronRunsTitle": "Exécutions précédentes ({{count}})",
+      "cronLearningsTitle": "Apprentissages des runs ({{count}})",
       "cronRunLabel": "Exécution #{{n}}",
+      "cronLearningLabel": "Apprentissage #{{n}}",
       "summaryLabel": "Résumé #{{n}}",
       "compressed": "compressé",
       "messagesCount": "{{count}} messages",
@@ -629,7 +634,8 @@
       "showError": "Voir les détails de l'erreur",
       "showInstructions": "Voir les instructions",
       "openDetail": "Voir les détails de la tâche",
-      "assigned": "Assignée"
+      "assigned": "Assignée",
+      "learningsSaved": "Apprentissages sauvegardés ({{count}})"
     },
     "webhook": {
       "received": "Webhook reçu",
@@ -855,6 +861,12 @@
     "prompt": "Prompt de la tâche",
     "promptDescription": "Contenu complet du prompt de la tâche",
     "forceStart": "Démarrer immédiatement",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "resumeWithMessage": "Reprendre",
+    "inject": "Envoyer",
+    "injectPlaceholder": "Envoyer un message à la tâche...",
+    "resumeMessagePlaceholder": "Ajouter du contexte avant de reprendre (optionnel)...",
     "concurrencySlots": "Max {{max}} concurrent"
   },
   "settings": {

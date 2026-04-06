@@ -153,6 +153,10 @@ import {
 import { getMiniAppTemplatesTool } from '@/server/tools/mini-app-templates'
 import { getMiniAppDocsTool } from '@/server/tools/mini-app-docs'
 import { browseMiniAppsTool } from '@/server/tools/mini-app-gallery'
+import {
+  saveRunLearningTool,
+  deleteRunLearningTool,
+} from '@/server/tools/cron-learning-tools'
 import { attachFileTool } from '@/server/tools/attach-file-tool'
 import {
   readFileTool,
@@ -241,6 +245,10 @@ export function registerAllTools(): void {
   toolRegistry.register('report_to_parent', reportToParentTool)
   toolRegistry.register('update_task_status', updateTaskStatusTool)
   toolRegistry.register('request_input', requestInputTool)
+
+  // Cron learning tools (sub-kin only, active during cron tasks)
+  toolRegistry.register('save_run_learning', saveRunLearningTool)
+  toolRegistry.register('delete_run_learning', deleteRunLearningTool)
 
   // Human-in-the-loop (main + sub-kin)
   toolRegistry.register('prompt_human', promptHumanTool)

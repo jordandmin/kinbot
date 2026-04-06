@@ -75,7 +75,7 @@ export type ProviderCapability = 'llm' | 'embedding' | 'image' | 'search' | 'rer
 
 export type MessageSource = 'user' | 'kin' | 'task' | 'cron' | 'system' | 'webhook' | 'channel'
 
-export type TaskStatus = 'queued' | 'pending' | 'in_progress' | 'awaiting_human_input' | 'awaiting_kin_response' | 'completed' | 'failed' | 'cancelled'
+export type TaskStatus = 'queued' | 'pending' | 'in_progress' | 'paused' | 'awaiting_human_input' | 'awaiting_kin_response' | 'completed' | 'failed' | 'cancelled'
 
 export type TaskMode = 'await' | 'async'
 
@@ -509,6 +509,8 @@ export interface ContextTokenBreakdown {
   summary: number
   /** Tokens from previous cron run results (only for cron-spawned tasks). */
   cronRuns?: number
+  /** Tokens from accumulated cron learnings (only for cron-spawned tasks). */
+  cronLearnings?: number
   total: number
 }
 

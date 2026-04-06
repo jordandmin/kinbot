@@ -231,6 +231,7 @@
         "completed": "Done",
         "failed": "Failed",
         "queued": "Queued",
+        "paused": "Paused",
         "cancelled": "Cancelled"
       },
       "emptyDescription": "Tasks will appear here when Kins are working",
@@ -565,6 +566,7 @@
       "systemPrompt": "System prompt",
       "summary": "Summary",
       "cronRuns": "Previous runs",
+      "cronLearnings": "Learnings",
       "messages": "Messages",
       "total": "Total"
     },
@@ -592,11 +594,14 @@
         "summaries": "Summaries ({{count}})",
         "messages": "Messages",
         "tools": "Tools",
-        "cronRuns": "Previous runs ({{count}})"
+        "cronRuns": "Previous runs ({{count}})",
+        "cronLearnings": "Learnings ({{count}})"
       },
       "summariesTitle": "Conversation summaries ({{count}})",
       "cronRunsTitle": "Previous runs ({{count}})",
+      "cronLearningsTitle": "Run learnings ({{count}})",
       "cronRunLabel": "Run #{{n}}",
+      "cronLearningLabel": "Learning #{{n}}",
       "summaryLabel": "Summary #{{n}}",
       "compressed": "compressed",
       "messagesCount": "{{count}} messages",
@@ -629,7 +634,8 @@
       "showError": "Show error details",
       "showInstructions": "Show instructions",
       "openDetail": "View task details",
-      "assigned": "Assigned"
+      "assigned": "Assigned",
+      "learningsSaved": "Learnings saved ({{count}})"
     },
     "webhook": {
       "received": "Webhook received",
@@ -855,6 +861,12 @@
     "prompt": "Task prompt",
     "promptDescription": "Full task prompt content",
     "forceStart": "Force start",
+    "pause": "Pause",
+    "resume": "Resume",
+    "resumeWithMessage": "Resume",
+    "inject": "Send",
+    "injectPlaceholder": "Send a message to the task...",
+    "resumeMessagePlaceholder": "Add context before resuming (optional)...",
     "concurrencySlots": "Max {{max}} concurrent"
   },
   "settings": {

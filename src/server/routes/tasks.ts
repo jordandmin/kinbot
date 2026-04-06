@@ -2,7 +2,8 @@ import { Hono } from 'hono'
 import { eq, and, asc } from 'drizzle-orm'
 import { db } from '@/server/db/index'
 import { tasks, messages, kins } from '@/server/db/schema'
-import { getTask, listTasksPaginated, cancelTask, forcePromoteTask } from '@/server/services/tasks'
+import { getTask, listTasksPaginated, cancelTask, forcePromoteTask, pauseTask, resumeTask, injectIntoTask } from '@/server/services/tasks'
+import { fetchCronLearningsByTask } from '@/server/services/cron-learnings'
 import type { AppVariables } from '@/server/app'
 import type { TaskStatus } from '@/shared/types'
 import { createLogger } from '@/server/logger'
@@ -95,6 +96,16 @@ taskRoutes.get('/:id', async (c) => {
     effectiveModel = parentKin?.model ?? null
   }
 
+  // Fetch learnings saved during this task run (if cron task)
+  const learningsSaved = task.cronId
+    ? fetchCronLearningsByTask(taskId).map((l) => ({
+        id: l.id,
+        content: l.content,
+        category: l.category,
+        createdAt: l.createdAt,
+      }))
+    : []
+
   return c.json({
     task: {
       id: task.id,
@@ -127,6 +138,7 @@ taskRoutes.get('/:id', async (c) => {
         createdAt: m.createdAt,
       }
     }),
+    learningsSaved,
   })
 })
 
@@ -170,4 +182,79 @@ taskRoutes.post('/:id/force-promote', async (c) => {
 
   log.info({ taskId }, 'Task force-promoted')
   return c.json({ success: true })
+})
+
+// POST /api/tasks/:id/pause — pause a running task
+taskRoutes.post('/:id/pause', async (c) => {
+  const taskId = c.req.param('id')
+  const task = await getTask(taskId)
+
+  if (!task) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Task not found' } }, 404)
+  }
+
+  const success = await pauseTask(taskId)
+  if (!success) {
+    return c.json(
+      { error: { code: 'TASK_NOT_PAUSABLE', message: 'Task is not currently running' } },
+      409,
+    )
+  }
+
+  log.info({ taskId }, 'Task paused')
+  return c.json({ success: true })
+})
+
+// POST /api/tasks/:id/resume — resume a paused task, optionally with a message
+taskRoutes.post('/:id/resume', async (c) => {
+  const taskId = c.req.param('id')
+  const task = await getTask(taskId)
+
+  if (!task) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Task not found' } }, 404)
+  }
+
+  const body = await c.req.json().catch(() => ({}))
+  const { message } = body as { message?: string }
+
+  const success = await resumeTask(taskId, message)
+  if (!success) {
+    return c.json(
+      { error: { code: 'TASK_NOT_PAUSED', message: 'Task is not paused' } },
+      409,
+    )
+  }
+
+  log.info({ taskId, withMessage: !!message?.trim() }, 'Task resumed')
+  return c.json({ success: true })
+})
+
+// POST /api/tasks/:id/inject — inject a message into a running task
+taskRoutes.post('/:id/inject', async (c) => {
+  const taskId = c.req.param('id')
+  const task = await getTask(taskId)
+
+  if (!task) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'Task not found' } }, 404)
+  }
+
+  const body = await c.req.json()
+  const { content } = body as { content: string }
+  if (!content?.trim()) {
+    return c.json(
+      { error: { code: 'EMPTY_CONTENT', message: 'Message content is required' } },
+      400,
+    )
+  }
+
+  const result = await injectIntoTask(taskId, content.trim())
+  if (!result.success) {
+    return c.json(
+      { error: { code: 'INJECT_FAILED', message: result.error ?? 'Injection failed' } },
+      409,
+    )
+  }
+
+  log.info({ taskId, wasStreaming: result.wasStreaming }, 'Message injected into task')
+  return c.json({ success: true, injected: result.wasStreaming }, 202)
 })

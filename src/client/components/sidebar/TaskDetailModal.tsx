@@ -39,8 +39,10 @@ import {
   FileText,
   ListOrdered,
   Play,
+  Pause,
   Pin,
   PinOff,
+  Lightbulb,
 } from 'lucide-react'
 import { useAutoScroll } from '@/client/hooks/useAutoScroll'
 import { api } from '@/client/lib/api'
@@ -75,6 +77,7 @@ const STATUS_CONFIG: Record<
   queued: { icon: ListOrdered, iconClass: 'text-orange-500', badgeVariant: 'outline' },
   pending: { icon: Clock, iconClass: 'text-muted-foreground', badgeVariant: 'secondary' },
   in_progress: { icon: Loader2, iconClass: 'animate-spin', badgeVariant: 'default' },
+  paused: { icon: Pause, iconClass: 'text-amber-500', badgeVariant: 'outline' },
   awaiting_human_input: { icon: UserCheck, iconClass: 'text-warning animate-pulse', badgeVariant: 'outline' },
   awaiting_kin_response: { icon: MessageSquare, iconClass: 'text-info animate-pulse', badgeVariant: 'outline' },
   completed: { icon: CheckCircle2, iconClass: 'text-success', badgeVariant: 'outline' },
@@ -101,6 +104,7 @@ export function TaskDetailModal({
     allToolCalls,
     toolCallCount,
     toolCallsByMessage,
+    learningsSaved,
   } = useTaskDetail(open ? taskId : null)
   const { prompts: pendingPrompts, respond: respondToPrompt, isResponding } = useHumanPrompts(
     task ? task.parentKinId : null,
@@ -160,7 +164,7 @@ export function TaskDetailModal({
   const statusConfig = task ? STATUS_CONFIG[task.status] : null
   const StatusIcon = statusConfig?.icon
   const isQueued = task?.status === 'queued'
-  const isActive = task?.status === 'pending' || task?.status === 'in_progress' || task?.status === 'awaiting_human_input' || task?.status === 'awaiting_kin_response'
+  const isActive = task?.status === 'pending' || task?.status === 'in_progress' || task?.status === 'paused' || task?.status === 'awaiting_human_input' || task?.status === 'awaiting_kin_response'
   const initials = kinName?.slice(0, 2).toUpperCase() ?? 'K'
   const resolvedModel = task?.model ? llmModels.find((m) => m.id === task.model) : null
 
@@ -394,6 +398,28 @@ export function TaskDetailModal({
                 </p>
                 <div className="text-sm text-foreground">
                   <MarkdownContent content={task.error} isUser={false} />
+                </div>
+              </div>
+            )}
+
+            {/* Learnings saved during this run */}
+            {learningsSaved.length > 0 && (
+              <div className="mx-4 mt-4 rounded-xl border border-teal-500/30 bg-teal-500/5 p-3">
+                <p className="text-xs font-medium text-teal-600 dark:text-teal-400 mb-2 flex items-center gap-1.5">
+                  <Lightbulb className="size-3.5" />
+                  {t('chat.taskResult.learningsSaved', { count: learningsSaved.length })}
+                </p>
+                <div className="space-y-1.5">
+                  {learningsSaved.map((l) => (
+                    <div key={l.id} className="flex items-start gap-2 text-xs">
+                      {l.category && (
+                        <span className="shrink-0 rounded bg-teal-500/20 px-1.5 py-0.5 text-[9px] font-medium text-teal-600 dark:text-teal-400">
+                          {l.category}
+                        </span>
+                      )}
+                      <span className="text-foreground">{l.content}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

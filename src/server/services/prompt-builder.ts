@@ -65,6 +65,7 @@ interface PromptParams {
   isQuickSession?: boolean
   taskDescription?: string
   previousCronRuns?: CronRunSummary[]
+  cronLearnings?: Array<{ id: string; content: string; category: string | null; createdAt: Date }>
   activeChannels?: Array<{ platform: string; name: string }>
   globalPrompt?: string | null
   userLanguage: 'fr' | 'en'
@@ -459,7 +460,8 @@ export function buildSystemPrompt(params: PromptParams): string {
     blocks.push(`## Your mission\n\n${params.taskDescription}`)
     const isCronTask = params.previousCronRuns !== undefined
     const cronJournalInstruction = isCronTask
-      ? `\n- This is a recurring scheduled task. End your final result with a concise summary of what you did and found, so the next run can pick up where you left off.`
+      ? `\n- This is a recurring scheduled task. End your final result with a concise summary of what you did and found, so the next run can pick up where you left off.` +
+        `\n- When you encounter errors, unexpected behavior, or discover a useful approach, use save_run_learning() to record it for future runs. Use delete_run_learning() to remove stale or incorrect learnings.`
       : ''
     blocks.push(
       `## Constraints\n` +
@@ -496,6 +498,22 @@ export function buildSystemPrompt(params: PromptParams): string {
       blocks.push(
         `## Previous runs\n\n` +
         `This is a recurring scheduled task. Here are your most recent executions (newest first):\n\n${runLines}`,
+      )
+    }
+
+    // Cron learnings: inject accumulated lessons from previous runs
+    if (params.cronLearnings && params.cronLearnings.length > 0) {
+      const learningLines = params.cronLearnings
+        .map((l) => {
+          const catTag = l.category ? ` [${l.category}]` : ''
+          return `- [id:${l.id}] ${l.content}${catTag}`
+        })
+        .join('\n')
+      blocks.push(
+        `## Learnings from previous runs\n\n` +
+        `Lessons discovered during previous executions of this task. Apply these proactively.\n` +
+        `If any learning is wrong or outdated, use delete_run_learning() to remove it and save_run_learning() to record the correction.\n\n` +
+        learningLines,
       )
     }
 

@@ -69,7 +69,7 @@ export function ContextBar({
       <Tooltip>
         <TooltipTrigger asChild>
           <div
-            className={`flex cursor-pointer flex-col gap-1 rounded-md px-1 transition-colors hover:bg-muted/50 ${compact ? 'w-40' : 'w-56'}`}
+            className={`flex cursor-pointer flex-col gap-1 rounded-md px-1 transition-colors hover:bg-muted/50 min-w-0 ${compact ? 'w-40' : 'w-56'}`}
             onClick={() => setContextViewerOpen(true)}
           >
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
@@ -95,6 +95,9 @@ export function ContextBar({
                   )}
                   {(contextBreakdown.cronRuns ?? 0) > 0 && (
                     <div className="bg-orange-500" style={{ width: `${Math.max(0.5, (contextBreakdown.cronRuns! / maxTokens) * 100)}%` }} />
+                  )}
+                  {(contextBreakdown.cronLearnings ?? 0) > 0 && (
+                    <div className="bg-teal-500" style={{ width: `${Math.max(0.5, (contextBreakdown.cronLearnings! / maxTokens) * 100)}%` }} />
                   )}
                   {contextBreakdown.messages > 0 && (
                     <div className="bg-emerald-500" style={{ width: `${Math.max(0.5, (contextBreakdown.messages / maxTokens) * 100)}%` }} />
@@ -146,6 +149,9 @@ export function ContextBar({
                   )}
                   {(contextBreakdown.cronRuns ?? 0) > 0 && (
                     <div className="bg-orange-500" style={{ width: `${Math.max(0.5, (contextBreakdown.cronRuns! / maxTokens) * 100)}%` }} />
+                  )}
+                  {(contextBreakdown.cronLearnings ?? 0) > 0 && (
+                    <div className="bg-teal-500" style={{ width: `${Math.max(0.5, (contextBreakdown.cronLearnings! / maxTokens) * 100)}%` }} />
                   )}
                   {contextBreakdown.messages > 0 && (
                     <div className="bg-emerald-500" style={{ width: `${Math.max(0.5, (contextBreakdown.messages / maxTokens) * 100)}%` }} />
@@ -204,6 +210,15 @@ export function ContextBar({
                       {t('chat.breakdown.cronRuns', 'Previous runs')}
                     </span>
                     <span>{formatTokenCount(contextBreakdown.cronRuns!)} ({Math.round((contextBreakdown.cronRuns! / contextBreakdown.total) * 100)}%)</span>
+                  </div>
+                )}
+                {(contextBreakdown.cronLearnings ?? 0) > 0 && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block size-2 rounded-sm bg-teal-500" />
+                      {t('chat.breakdown.cronLearnings', 'Learnings')}
+                    </span>
+                    <span>{formatTokenCount(contextBreakdown.cronLearnings!)} ({Math.round((contextBreakdown.cronLearnings! / contextBreakdown.total) * 100)}%)</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-muted-foreground">

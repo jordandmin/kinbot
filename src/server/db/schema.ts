@@ -273,7 +273,7 @@ export const tasks = sqliteTable('tasks', {
   providerId: text('provider_id'),
   title: text('title'),
   description: text('description').notNull(),
-  status: text('status').notNull().default('pending'), // 'queued' | 'pending' | 'in_progress' | 'awaiting_human_input' | 'awaiting_kin_response' | 'completed' | 'failed' | 'cancelled'
+  status: text('status').notNull().default('pending'), // 'queued' | 'pending' | 'in_progress' | 'paused' | 'awaiting_human_input' | 'awaiting_kin_response' | 'completed' | 'failed' | 'cancelled'
   result: text('result'),
   error: text('error'),
   depth: integer('depth').notNull().default(1),
@@ -317,6 +317,17 @@ export const crons = sqliteTable('crons', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
+
+export const cronLearnings = sqliteTable('cron_learnings', {
+  id: text('id').primaryKey(),
+  cronId: text('cron_id').notNull().references(() => crons.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  category: text('category'), // 'error_recovery' | 'optimization' | 'environment' | 'general'
+  taskId: text('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+}, (table) => [
+  index('idx_cron_learnings_cron').on(table.cronId),
+])
 
 export const webhooks = sqliteTable('webhooks', {
   id: text('id').primaryKey(),

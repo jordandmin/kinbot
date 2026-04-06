@@ -13,6 +13,8 @@ export interface ToolExecutionContext {
   isSubKin: boolean
   /** ID of the originating channel queue item (causal chain tracking) */
   channelOriginId?: string
+  /** Cron ID when executing a cron-triggered task */
+  cronId?: string
 }
 
 /** Factory function that creates an AI SDK Tool bound to an execution context */

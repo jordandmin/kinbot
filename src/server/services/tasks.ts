@@ -39,6 +39,20 @@ function stripToolExecute(tools: Record<string, Tool>): Record<string, Tool> {
 // AbortController registry — one per actively-streaming task
 const activeTaskAbortControllers = new Map<string, AbortController>()
 
+/** Abort a running task stream. Returns true if a stream was actually aborted. */
+export function abortTaskStream(taskId: string): boolean {
+  const controller = activeTaskAbortControllers.get(taskId)
+  if (!controller) return false
+  controller.abort()
+  activeTaskAbortControllers.delete(taskId)
+  return true
+}
+
+/** Check whether a task currently has an active LLM stream. */
+export function isTaskStreaming(taskId: string): boolean {
+  return activeTaskAbortControllers.has(taskId)
+}
+
 /** Build a public avatar URL from a Kin's stored avatar path */
 function kinAvatarUrl(kinId: string, avatarPath: string | null, updatedAt?: Date | null): string | null {
   if (!avatarPath) return null
@@ -58,8 +72,9 @@ export function recoverStaleTasks() {
   // Note: 'awaiting_human_input' is NOT recovered — the human can still respond after restart
   // Note: 'awaiting_kin_response' IS recovered — the timeout timer is lost on restart
   // Note: 'queued' IS recovered — the promotion mechanism is lost on restart
+  // Note: 'paused' IS recovered — the user context is lost on restart
   const result = sqlite.run(
-    `UPDATE tasks SET status = 'failed', error = 'Interrupted by server restart', updated_at = ? WHERE status IN ('queued', 'pending', 'in_progress', 'awaiting_kin_response')`,
+    `UPDATE tasks SET status = 'failed', error = 'Interrupted by server restart', updated_at = ? WHERE status IN ('queued', 'pending', 'in_progress', 'paused', 'awaiting_kin_response')`,
     [Date.now()],
   )
   if (result.changes > 0) {
@@ -69,7 +84,7 @@ export function recoverStaleTasks() {
 
 // ─── Concurrency Group Helpers ───────────────────────────────────────────────
 
-const ACTIVE_STATUSES: TaskStatus[] = ['pending', 'in_progress', 'awaiting_human_input', 'awaiting_kin_response']
+const ACTIVE_STATUSES: TaskStatus[] = ['pending', 'in_progress', 'paused', 'awaiting_human_input', 'awaiting_kin_response']
 
 async function countActiveTasksInGroup(group: string): Promise<number> {
   const result = await db
@@ -406,6 +421,11 @@ async function executeSubKin(taskId: string, isNudge = false) {
       ? await fetchPreviousCronRuns(task.cronId, 5)
       : undefined
 
+    // Fetch accumulated cron learnings
+    const cronLearnings = task.cronId
+      ? (await import('@/server/services/cron-learnings')).fetchCronLearnings(task.cronId)
+      : undefined
+
     // Build sub-Kin system prompt
     const globalPrompt = await getGlobalPrompt()
     const { listAvailableKins } = await import('@/server/services/inter-kin')
@@ -425,6 +445,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       isSubKin: true,
       taskDescription: task.description,
       previousCronRuns,
+      cronLearnings,
       globalPrompt,
       userLanguage: 'en',
       workspacePath: kinIdentity.workspacePath,
@@ -459,6 +480,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       taskDepth: task.depth,
       isSubKin: false,
       channelOriginId: task.channelOriginId ?? undefined,
+      cronId: task.cronId ?? undefined,
     })
 
     // Filter disabled native tools per Kin config (deny-list)
@@ -498,6 +520,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
       taskDepth: task.depth,
       isSubKin: true,
       channelOriginId: task.channelOriginId ?? undefined,
+      cronId: task.cronId ?? undefined,
     })
 
     // MCP + custom tools for the spawned Kin
@@ -762,6 +785,16 @@ async function executeSubKin(taskId: string, isNudge = false) {
       }
 
       if (batch.wasAborted) break
+
+      // Nudge: if this is a cron task and a tool returned an error, hint about save_run_learning
+      if (task.cronId) {
+        for (const tr of batch.toolResults) {
+          const val = tr.output.value as Record<string, unknown> | null
+          if (val && typeof val === 'object' && 'error' in val) {
+            (val as Record<string, unknown>)._hint = 'If this error reveals something useful for future runs, use save_run_learning() to record it.'
+          }
+        }
+      }
 
       // Append assistant message (with tool calls) + tool results to history for next step
       messageHistory.push({ role: 'assistant', content: assistantContent })
@@ -1519,4 +1552,148 @@ export async function resumeTaskFromKinResponse(
   )
 
   return true
+}
+
+// ─── User Task Control (Pause / Resume / Inject) ────────────────────────────
+
+/**
+ * Pause a running task: abort the LLM stream and set status to 'paused'.
+ * Only works on tasks with status 'in_progress'.
+ */
+export async function pauseTask(taskId: string): Promise<boolean> {
+  // Atomically check and update status
+  const result = sqlite.run(
+    `UPDATE tasks SET status = 'paused', updated_at = ? WHERE id = ? AND status = 'in_progress'`,
+    [Date.now(), taskId],
+  )
+  if (result.changes === 0) return false
+
+  // Abort the running LLM stream
+  abortTaskStream(taskId)
+
+  // Fetch task for SSE notification
+  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
+  if (task) {
+    sseManager.sendToKin(task.parentKinId, {
+      type: 'task:status',
+      kinId: task.parentKinId,
+      data: {
+        taskId,
+        kinId: task.parentKinId,
+        status: 'paused',
+        title: task.title ?? task.description,
+      },
+    })
+  }
+
+  log.info({ taskId }, 'Task paused by user')
+  return true
+}
+
+/**
+ * Resume a paused task, optionally injecting a user message before restarting.
+ * Only works on tasks with status 'paused'.
+ */
+export async function resumeTask(taskId: string, message?: string): Promise<boolean> {
+  // Atomically check and update status
+  const result = sqlite.run(
+    `UPDATE tasks SET status = 'in_progress', updated_at = ? WHERE id = ? AND status = 'paused'`,
+    [Date.now(), taskId],
+  )
+  if (result.changes === 0) return false
+
+  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
+  if (!task) return false
+
+  // If a message was provided, inject it into the task's message history
+  if (message?.trim()) {
+    const msgId = uuid()
+    await db.insert(messages).values({
+      id: msgId,
+      kinId: task.parentKinId,
+      taskId,
+      role: 'user',
+      content: message.trim() + '\n\n[The user sent this message while the task was paused. Take it into account and continue.]',
+      sourceType: 'user',
+      createdAt: new Date(),
+    })
+
+    sseManager.sendToKin(task.parentKinId, {
+      type: 'chat:message',
+      kinId: task.parentKinId,
+      data: {
+        id: msgId,
+        role: 'user',
+        content: message.trim(),
+        sourceType: 'user',
+        taskId,
+        createdAt: new Date().toISOString(),
+      },
+    })
+  }
+
+  sseManager.sendToKin(task.parentKinId, {
+    type: 'task:status',
+    kinId: task.parentKinId,
+    data: {
+      taskId,
+      kinId: task.parentKinId,
+      status: 'in_progress',
+      title: task.title ?? task.description,
+    },
+  })
+
+  executeSubKin(taskId).catch((err) =>
+    log.error({ taskId, err }, 'Sub-Kin resume error after user resume'),
+  )
+
+  log.info({ taskId, withMessage: !!message?.trim() }, 'Task resumed by user')
+  return true
+}
+
+/**
+ * Inject a message into a running task: abort the stream, insert the user message,
+ * and restart execution. Like /btw but for tasks.
+ * Only works on tasks with status 'in_progress'.
+ */
+export async function injectIntoTask(taskId: string, content: string): Promise<{ success: boolean; wasStreaming: boolean; error?: string }> {
+  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get()
+  if (!task) return { success: false, wasStreaming: false, error: 'Task not found' }
+  if (task.status !== 'in_progress') return { success: false, wasStreaming: false, error: 'Task is not running' }
+
+  // Abort the running LLM stream
+  const wasStreaming = abortTaskStream(taskId)
+
+  // Insert the user message into the task's message history
+  const msgId = uuid()
+  await db.insert(messages).values({
+    id: msgId,
+    kinId: task.parentKinId,
+    taskId,
+    role: 'user',
+    content: content + '\n\n[The user sent this additional context while you were in the middle of working. Take it into account and continue.]',
+    sourceType: 'user',
+    createdAt: new Date(),
+  })
+
+  sseManager.sendToKin(task.parentKinId, {
+    type: 'chat:message',
+    kinId: task.parentKinId,
+    data: {
+      id: msgId,
+      role: 'user',
+      content,
+      sourceType: 'user',
+      taskId,
+      createdAt: new Date().toISOString(),
+    },
+  })
+
+  // Restart execution with the new context
+  executeSubKin(taskId).catch((err) =>
+    log.error({ taskId, err }, 'Sub-Kin resume error after inject'),
+  )
+
+  log.info({ taskId, wasStreaming }, 'Message injected into task by user')
+  return { success: true, wasStreaming }
 }
