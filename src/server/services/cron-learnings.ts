@@ -74,7 +74,7 @@ export async function saveCronLearning(
  * Delete a cron learning by ID.
  */
 export async function deleteCronLearning(learningId: string): Promise<boolean> {
-  const result = db.delete(cronLearnings).where(eq(cronLearnings.id, learningId)).run()
+  const result = db.delete(cronLearnings).where(eq(cronLearnings.id, learningId)).run() as unknown as { changes: number }
   return result.changes > 0
 }
 

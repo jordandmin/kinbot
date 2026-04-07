@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@/client/components/ui/collapsible'
-import { CheckCircle2, AlertCircle, ChevronRight, Loader2, Clock, XCircle, ExternalLink, UserCheck, MessageSquare, ArrowDownToLine } from 'lucide-react'
+import { CheckCircle2, AlertCircle, ChevronRight, Loader2, Clock, XCircle, ExternalLink, UserCheck, MessageSquare, ArrowDownToLine, Pause } from 'lucide-react'
 import { MarkdownContent } from '@/client/components/chat/MarkdownContent'
 import { cn } from '@/client/lib/utils'
 import { RelativeTimestamp } from '@/client/components/chat/RelativeTimestamp'
@@ -173,6 +173,13 @@ function getStatusConfig(status: DisplayTaskStatus, t: (key: string) => string) 
         colorClass: 'text-muted-foreground',
         label: t('sidebar.tasks.status.pending'),
         animate: true,
+      }
+    case 'paused':
+      return {
+        icon: Pause,
+        colorClass: 'text-amber-500',
+        label: t('sidebar.tasks.status.paused'),
+        animate: false,
       }
   }
 }
