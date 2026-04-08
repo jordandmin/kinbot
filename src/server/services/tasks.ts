@@ -540,10 +540,13 @@ async function executeSubKin(taskId: string, isNudge = false) {
       .orderBy(asc(messages.createdAt))
       .all()
 
-    const messageHistory: ModelMessage[] = taskMessages.map((m) => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content ?? '',
-    }))
+    const messageHistory: ModelMessage[] = taskMessages
+      // Filter out empty assistant messages left by aborted/paused streams
+      .filter((m) => !(m.role === 'assistant' && !m.content?.trim() && !m.toolCalls))
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant' | 'system',
+        content: m.content ?? '',
+      }))
 
     // Add initial task instruction as user message if no history yet
     if (messageHistory.length === 0) {
@@ -842,14 +845,21 @@ async function executeSubKin(taskId: string, isNudge = false) {
       }).catch(() => {})
     }
 
-    // If the stream was aborted (cancel), persist partial content and stop
+    // If the stream was aborted (cancel/pause), persist partial content and stop
     if (abortController.signal.aborted) {
-      await db.update(messages)
-        .set({
-          content: fullContent || '',
-          toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
-        })
-        .where(eq(messages.id, assistantMessageId))
+      if (fullContent || toolCallsLog.length > 0) {
+        // Save the partial response so it's visible in the task history
+        await db.update(messages)
+          .set({
+            content: fullContent || '',
+            toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
+          })
+          .where(eq(messages.id, assistantMessageId))
+      } else {
+        // No content was generated — delete the pre-inserted empty assistant message
+        // to avoid polluting the message history on resume
+        await db.delete(messages).where(eq(messages.id, assistantMessageId))
+      }
 
       sseManager.sendToKin(task.parentKinId, {
         type: 'chat:done',
