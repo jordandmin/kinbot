@@ -553,6 +553,15 @@
     "contextUsage": "Context: ~{{tokens}} / {{max}} tokens ({{percent}}%), includes system prompt, history & tools",
     "contextNoData": "Context usage will appear after the first message is processed",
     "stepLimitReached": "Response truncated: tool step limit reached. Ask me to continue.",
+    "tokenUsage": {
+      "label": "{{count}} tokens",
+      "input": "Input",
+      "output": "Output",
+      "cacheRead": "Cache read",
+      "cacheWrite": "Cache write",
+      "reasoning": "Reasoning",
+      "steps": "{{count}} steps"
+    },
     "forceCompact": "Force compaction",
     "tooltipContext": "Context window",
     "tooltipCompacting": "Compaction",
@@ -1679,7 +1688,14 @@
       "dailyTrend": "Daily trend",
       "legendInput": "Input",
       "legendOutput": "Output",
-      "filters": "Filters"
+      "filters": "Filters",
+      "detailTitle": "Request log",
+      "detailDate": "Date",
+      "detailKin": "Kin",
+      "detailModel": "Model",
+      "detailCallSite": "Type",
+      "detailSteps": "Steps",
+      "detailShowing": "{{from}}–{{to}} of {{total}}"
     }
   },
   "notifications": {

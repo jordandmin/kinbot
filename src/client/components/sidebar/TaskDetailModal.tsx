@@ -348,6 +348,7 @@ export function TaskDetailModal({
                     senderName={msg.role === 'assistant' ? kinName : undefined}
                     timestamp={msg.createdAt ? String(msg.createdAt) : undefined}
                     toolCalls={toolCallsByMessage.get(msg.id)}
+                    tokenUsage={msg.tokenUsage}
                   />
                 ))}
                 {streamingMessage && (

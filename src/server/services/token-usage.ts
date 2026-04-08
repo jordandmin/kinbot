@@ -3,9 +3,57 @@ import { db } from '@/server/db/index'
 import { llmUsage } from '@/server/db/schema'
 import { and, eq, gte, lte, sql, desc } from 'drizzle-orm'
 import { createLogger } from '@/server/logger'
-import type { LlmUsageCallSite, LlmUsageCallType } from '@/shared/types'
+import type { LlmUsageCallSite, LlmUsageCallType, MessageTokenUsage } from '@/shared/types'
 
 const log = createLogger('token-usage')
+
+// ─── Step Usage Aggregation ────────────────────────────────────────────────
+
+/**
+ * Aggregate token usage across all steps of a multi-step LLM turn.
+ * Returns null on timeout or if no usage data is available.
+ */
+export async function aggregateStepUsage(
+  stepResults: Array<{ usage: Promise<Record<string, unknown>> }>,
+  timeoutMs = 5000,
+): Promise<MessageTokenUsage | null> {
+  if (stepResults.length === 0) return null
+  try {
+    const settled = await Promise.race([
+      Promise.allSettled(stepResults.map(r => Promise.resolve(r.usage))),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
+    ])
+    const turn = { inputTokens: 0, outputTokens: 0, totalTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0 }
+    let hasData = false
+    for (const s of settled) {
+      if (s.status === 'fulfilled' && s.value) {
+        const v = s.value as Record<string, unknown>
+        turn.inputTokens += (v.inputTokens as number) ?? 0
+        turn.outputTokens += (v.outputTokens as number) ?? 0
+        turn.totalTokens += (v.totalTokens as number) ?? 0
+        const inputDetails = v.inputTokenDetails as Record<string, number> | undefined
+        const outputDetails = v.outputTokenDetails as Record<string, number> | undefined
+        turn.cacheReadTokens += inputDetails?.cacheReadTokens ?? 0
+        turn.cacheWriteTokens += inputDetails?.cacheWriteTokens ?? 0
+        turn.reasoningTokens += outputDetails?.reasoningTokens ?? 0
+        hasData = true
+      }
+    }
+    if (!hasData) return null
+    return {
+      inputTokens: turn.inputTokens,
+      outputTokens: turn.outputTokens,
+      totalTokens: turn.totalTokens,
+      ...(turn.cacheReadTokens > 0 ? { cacheReadTokens: turn.cacheReadTokens } : {}),
+      ...(turn.cacheWriteTokens > 0 ? { cacheWriteTokens: turn.cacheWriteTokens } : {}),
+      ...(turn.reasoningTokens > 0 ? { reasoningTokens: turn.reasoningTokens } : {}),
+      stepCount: stepResults.length,
+    }
+  } catch {
+    log.warn('aggregateStepUsage timed out or failed')
+    return null
+  }
+}
 
 // ─── Record ─────────────────────────────────────────────────────────────────
 

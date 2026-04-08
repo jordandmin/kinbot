@@ -8,6 +8,7 @@ import { InlineToolCall } from '@/client/components/chat/InlineToolCall'
 import { TaskResultCard } from '@/client/components/chat/TaskResultCard'
 import { WebhookMessageCard } from '@/client/components/chat/WebhookMessageCard'
 import { ImageLightbox } from '@/client/components/chat/ImageLightbox'
+import { TokenUsageIndicator } from '@/client/components/chat/TokenUsageIndicator'
 import { ChatAvatar } from '@/client/components/chat/ChatAvatar'
 import { cn } from '@/client/lib/utils'
 import { PlatformIcon } from '@/client/components/common/PlatformIcon'
@@ -21,7 +22,7 @@ import {
 import { FileIcon, Download, Brain, ChevronDown, Copy, Check, RefreshCw, Quote, Pencil, Volume2, VolumeX, BookOpen, SmilePlus, EyeOff } from 'lucide-react'
 import type { ToolCallViewItem } from '@/client/hooks/useToolCalls'
 import { RelativeTimestamp } from '@/client/components/chat/RelativeTimestamp'
-import type { MessageFile } from '@/shared/types'
+import type { MessageFile, MessageTokenUsage } from '@/shared/types'
 import type { MessageReaction } from '@/client/hooks/useChat'
 import { PRESET_EMOJIS } from '@/client/hooks/useReactions'
 
@@ -60,6 +61,8 @@ interface MessageBubbleProps {
   onQuoteReply?: (text: string) => void
   onEditResend?: (text: string) => void
   onToggleReaction?: (messageId: string, emoji: string) => void
+  /** Token usage data for this message (assistant messages only). */
+  tokenUsage?: MessageTokenUsage | null
   /** Reasoning/thinking segments with offsets into content */
   reasoning?: Array<{ offset: number; text: string }> | string
 }
@@ -697,6 +700,7 @@ export const MessageBubble = memo(function MessageBubble({
   onQuoteReply,
   onEditResend,
   onToggleReaction,
+  tokenUsage,
   reasoning,
 }: MessageBubbleProps) {
   const handleToggleReaction = useCallback((emoji: string) => {
@@ -842,6 +846,7 @@ export const MessageBubble = memo(function MessageBubble({
               <RelativeTimestamp timestamp={timestamp} className="text-[10px] text-muted-foreground/70" />
             )}
             <ReadingTime content={content} />
+            {tokenUsage && <TokenUsageIndicator tokenUsage={tokenUsage} />}
             {onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
             <ReadAloudButton content={content} />
             {onToggleReaction && <ReactionPicker onSelect={handleToggleReaction} isUser={false} />}
@@ -922,6 +927,7 @@ export const MessageBubble = memo(function MessageBubble({
             />
           )}
           {!isUser && <ReadingTime content={content} />}
+          {!isUser && tokenUsage && <TokenUsageIndicator tokenUsage={tokenUsage} />}
           {!isUser && onRegenerate && <RegenerateButton onRegenerate={onRegenerate} />}
           {!isUser && <ReadAloudButton content={content} />}
           {onToggleReaction && <ReactionPicker onSelect={handleToggleReaction} isUser={isUser} />}

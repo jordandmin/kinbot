@@ -570,6 +570,17 @@ export interface LlmUsageRow {
   stepCount: number
 }
 
+/** Per-message token usage stored in message metadata and sent via SSE. */
+export interface MessageTokenUsage {
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
+  reasoningTokens?: number
+  stepCount?: number
+}
+
 export interface UsageSummaryRow {
   group: string
   inputTokens: number

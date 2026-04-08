@@ -906,6 +906,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                       onQuoteReply={handleQuoteReply}
                       onEditResend={handleEditResend}
                       onRegenerate={msg.id === lastAssistantMsgId && !isStreaming && !isProcessing ? handleRegenerate : undefined}
+                      tokenUsage={msg.tokenUsage}
                       reasoning={streamingMessage && msg.id === streamingMessage.id ? streamingReasoning : msg.reasoning ?? undefined}
                     />
                     </div>

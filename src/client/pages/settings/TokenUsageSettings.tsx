@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/client/components/ui/button'
 import {
@@ -12,9 +12,9 @@ import { Card, CardContent } from '@/client/components/ui/card'
 import { Skeleton } from '@/client/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { ProviderIcon } from '@/client/components/common/ProviderIcon'
-import { ArrowDownRight, ArrowUpRight, Activity, Hash, X } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Activity, Hash, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/client/lib/api'
-import type { UsageSummaryRow } from '@/shared/types'
+import type { LlmUsageRow, UsageSummaryRow } from '@/shared/types'
 
 type Period = '24h' | '7d' | '30d' | 'all'
 type GroupBy = 'provider_type' | 'model_id' | 'kin_id' | 'call_site' | 'day'
@@ -354,6 +354,132 @@ function ProviderFilter({ value, onValueChange, providers, t }: {
   )
 }
 
+// ─── Detail Table (individual requests) ────────────────────────────────────
+
+const PAGE_SIZE = 25
+
+function DetailTable({ rows, loading, page, totalCount, onPageChange, kinMap, t }: {
+  rows: LlmUsageRow[]
+  loading: boolean
+  page: number
+  totalCount: number
+  onPageChange: (page: number) => void
+  kinMap: Map<string, KinInfo>
+  t: (key: string, opts?: Record<string, unknown>) => string
+}) {
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
+  if (loading && rows.length === 0) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+        {t('settings.tokenUsage.noData')}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="glass-strong rounded-lg overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-[140px_1fr_1fr_80px_70px_70px_70px_50px] gap-2 px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground/60 border-b border-border/30">
+          <span>{t('settings.tokenUsage.detailDate')}</span>
+          <span>{t('settings.tokenUsage.detailKin')}</span>
+          <span>{t('settings.tokenUsage.detailModel')}</span>
+          <span>{t('settings.tokenUsage.detailCallSite')}</span>
+          <span className="text-right">{t('settings.tokenUsage.columnInput')}</span>
+          <span className="text-right">{t('settings.tokenUsage.columnOutput')}</span>
+          <span className="text-right">{t('settings.tokenUsage.columnTotal')}</span>
+          <span className="text-right">{t('settings.tokenUsage.detailSteps')}</span>
+        </div>
+        {/* Rows */}
+        <div className="max-h-[400px] overflow-y-auto">
+          {rows.map((row) => {
+            const kin = row.kinId ? kinMap.get(row.kinId) : null
+            const date = new Date(row.createdAt)
+            return (
+              <div
+                key={row.id}
+                className="grid grid-cols-[140px_1fr_1fr_80px_70px_70px_70px_50px] gap-2 px-3 py-1.5 text-xs hover:bg-muted/30 border-b border-border/20 items-center"
+              >
+                <span className="text-muted-foreground tabular-nums" title={date.toISOString()}>
+                  {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{' '}
+                  {date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </span>
+                <div className="min-w-0">
+                  {kin ? (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Avatar className="size-4 shrink-0">
+                        {kin.avatarUrl && <AvatarImage src={kin.avatarUrl} alt={kin.name} />}
+                        <AvatarFallback className="text-[7px] bg-secondary">{kin.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">{kin.name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {row.providerType && <ProviderIcon providerType={row.providerType} className="size-3.5 shrink-0" variant="color" />}
+                  <span className="truncate" title={row.modelId ?? undefined}>{row.modelId ?? '—'}</span>
+                </div>
+                <span className="truncate text-muted-foreground">{row.callSite}</span>
+                <span className="text-right font-mono tabular-nums text-muted-foreground">
+                  {formatTokens(row.inputTokens ?? 0)}
+                </span>
+                <span className="text-right font-mono tabular-nums text-muted-foreground">
+                  {formatTokens(row.outputTokens ?? 0)}
+                </span>
+                <span className="text-right font-mono tabular-nums font-semibold">
+                  {formatTokens(row.totalTokens ?? 0)}
+                </span>
+                <span className="text-right font-mono tabular-nums text-muted-foreground">
+                  {row.stepCount}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{t('settings.tokenUsage.detailShowing', { from: page * PAGE_SIZE + 1, to: Math.min((page + 1) * PAGE_SIZE, totalCount), total: totalCount })}</span>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0"
+            disabled={page === 0}
+            onClick={() => onPageChange(page - 1)}
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <span className="px-2 tabular-nums">{page + 1} / {totalPages}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0"
+            disabled={page >= totalPages - 1}
+            onClick={() => onPageChange(page + 1)}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function TokenUsageSettings({ initialKinFilter }: { initialKinFilter?: string } = {}) {
@@ -366,6 +492,12 @@ export function TokenUsageSettings({ initialKinFilter }: { initialKinFilter?: st
   const [loading, setLoading] = useState(true)
   const [summaryRows, setSummaryRows] = useState<UsageSummaryRow[]>([])
   const [dailyData, setDailyData] = useState<UsageSummaryRow[]>([])
+
+  // Detail rows (individual requests)
+  const [detailRows, setDetailRows] = useState<LlmUsageRow[]>([])
+  const [detailCount, setDetailCount] = useState(0)
+  const [detailPage, setDetailPage] = useState(0)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   // Kin info for resolving UUIDs to names/avatars
   const [kins, setKins] = useState<KinInfo[]>([])
@@ -426,6 +558,42 @@ export function TokenUsageSettings({ initialKinFilter }: { initialKinFilter?: st
       })
       .finally(() => setLoading(false))
   }, [period, groupBy, kinFilter, providerFilter])
+
+  // Reset detail page when filters change
+  useEffect(() => {
+    setDetailPage(0)
+  }, [period, kinFilter, providerFilter])
+
+  // Fetch detail rows (individual requests)
+  const fetchDetail = useCallback((page: number) => {
+    setDetailLoading(true)
+    const from = periodToFrom(period)
+    const query = buildQuery({
+      from,
+      kinId: kinFilter || undefined,
+      providerType: providerFilter || undefined,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    })
+    api.get<{ rows: LlmUsageRow[]; count: number }>(`/usage${query}`)
+      .then((res) => {
+        setDetailRows(res.rows)
+        setDetailCount(res.count)
+      })
+      .catch(() => {
+        setDetailRows([])
+        setDetailCount(0)
+      })
+      .finally(() => setDetailLoading(false))
+  }, [period, kinFilter, providerFilter])
+
+  useEffect(() => {
+    fetchDetail(detailPage)
+  }, [detailPage, fetchDetail])
+
+  const handleDetailPageChange = useCallback((page: number) => {
+    setDetailPage(page)
+  }, [])
 
   // Derive totals from summary rows
   const totals = useMemo(() => {
@@ -506,6 +674,20 @@ export function TokenUsageSettings({ initialKinFilter }: { initialKinFilter?: st
 
       {/* Breakdown Table */}
       <BreakdownTable rows={summaryRows} loading={loading} groupBy={groupBy} kinMap={kinMap} t={t} />
+
+      {/* Detail Table — individual requests */}
+      <div className="space-y-1.5">
+        <h4 className="text-sm font-medium">{t('settings.tokenUsage.detailTitle')}</h4>
+        <DetailTable
+          rows={detailRows}
+          loading={detailLoading}
+          page={detailPage}
+          totalCount={detailCount}
+          onPageChange={handleDetailPageChange}
+          kinMap={kinMap}
+          t={t}
+        />
+      </div>
     </div>
   )
 }

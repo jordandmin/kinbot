@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import { TOOL_DOMAIN_MAP } from '@/shared/constants'
-import type { TaskStatus, ToolCallEntry, ToolDomain } from '@/shared/types'
+import type { TaskStatus, ToolCallEntry, ToolDomain, MessageTokenUsage } from '@/shared/types'
 import type { ToolCallViewItem, ToolCallStatus } from '@/client/hooks/useToolCalls'
 
 interface TaskDetail {
@@ -31,6 +31,7 @@ export interface TaskMessage {
   sourceId: string | null
   isRedacted: boolean
   toolCalls: ToolCallEntry[] | null
+  tokenUsage: MessageTokenUsage | null
   createdAt: number
 }
 

@@ -15,7 +15,7 @@ import { config } from '@/server/config'
 import { getGlobalPrompt } from '@/server/services/app-settings'
 import { wrapToolsWithSpill } from '@/server/services/tool-output-spill'
 import { executeToolBatch } from '@/server/services/tool-executor'
-import { recordUsage } from '@/server/services/token-usage'
+import { recordUsage, aggregateStepUsage } from '@/server/services/token-usage'
 import type { TaskStatus, TaskMode, KinToolConfig, KinThinkingConfig } from '@/shared/types'
 import { guessProviderType } from '@/shared/model-ref'
 
@@ -808,41 +808,31 @@ async function executeSubKin(taskId: string, isNudge = false) {
 
     activeTaskAbortControllers.delete(taskId)
 
-    // Fire-and-forget: record token usage for this task turn
+    // Aggregate token usage (awaited so we can persist in metadata + SSE)
     const taskModelId = task.model ?? kinIdentity.model
     const taskProviderId = task.providerId ?? (task.model ? null : kinIdentity.providerId)
-    if (stepResults.length > 0) {
-      Promise.allSettled(stepResults.map(r => Promise.resolve(r.usage))).then(settled => {
-        const turn = { inputTokens: 0, outputTokens: 0, totalTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0 }
-        for (const s of settled) {
-          if (s.status === 'fulfilled' && s.value) {
-            turn.inputTokens += s.value.inputTokens ?? 0
-            turn.outputTokens += s.value.outputTokens ?? 0
-            turn.totalTokens += s.value.totalTokens ?? 0
-            turn.cacheReadTokens += s.value.inputTokenDetails?.cacheReadTokens ?? 0
-            turn.cacheWriteTokens += s.value.inputTokenDetails?.cacheWriteTokens ?? 0
-            turn.reasoningTokens += s.value.outputTokenDetails?.reasoningTokens ?? 0
-          }
-        }
-        recordUsage({
-          callSite: 'task',
-          callType: 'stream-text',
-          providerType: guessProviderType(taskModelId),
-          providerId: taskProviderId,
-          modelId: taskModelId,
-          kinId: task.parentKinId,
-          taskId,
-          cronId: task.cronId ?? null,
-          usage: {
-            inputTokens: turn.inputTokens,
-            outputTokens: turn.outputTokens,
-            totalTokens: turn.totalTokens,
-            inputTokenDetails: { cacheReadTokens: turn.cacheReadTokens, cacheWriteTokens: turn.cacheWriteTokens },
-            outputTokenDetails: { reasoningTokens: turn.reasoningTokens },
-          },
-          stepCount: stepResults.length,
-        })
-      }).catch(() => {})
+    const tokenUsage = await aggregateStepUsage(stepResults)
+
+    // Fire-and-forget: record to llm_usage table for analytics
+    if (tokenUsage) {
+      recordUsage({
+        callSite: 'task',
+        callType: 'stream-text',
+        providerType: guessProviderType(taskModelId),
+        providerId: taskProviderId,
+        modelId: taskModelId,
+        kinId: task.parentKinId,
+        taskId,
+        cronId: task.cronId ?? null,
+        usage: {
+          inputTokens: tokenUsage.inputTokens,
+          outputTokens: tokenUsage.outputTokens,
+          totalTokens: tokenUsage.totalTokens,
+          inputTokenDetails: { cacheReadTokens: tokenUsage.cacheReadTokens ?? 0, cacheWriteTokens: tokenUsage.cacheWriteTokens ?? 0 },
+          outputTokenDetails: { reasoningTokens: tokenUsage.reasoningTokens ?? 0 },
+        },
+        stepCount: stepResults.length,
+      })
     }
 
     // If the stream was aborted (cancel/pause), persist partial content and stop
@@ -913,12 +903,13 @@ async function executeSubKin(taskId: string, isNudge = false) {
 
     const responseText = fullContent
 
-    // Update the pre-inserted assistant message with final content and tool calls
+    // Update the pre-inserted assistant message with final content, tool calls, and token usage
     await db.update(messages)
       .set({
         content: responseText,
         toolCalls: toolCallsLog.length > 0 ? JSON.stringify(toolCallsLog) : null,
         reasoning: reasoningSegments.length > 0 ? JSON.stringify(reasoningSegments) : null,
+        ...(tokenUsage ? { metadata: JSON.stringify({ tokenUsage }) } : {}),
       })
       .where(eq(messages.id, assistantMessageId))
 
@@ -926,7 +917,7 @@ async function executeSubKin(taskId: string, isNudge = false) {
     sseManager.sendToKin(task.parentKinId, {
       type: 'chat:done',
       kinId: task.parentKinId,
-      data: { messageId: assistantMessageId, content: responseText, taskId },
+      data: { messageId: assistantMessageId, content: responseText, taskId, ...(tokenUsage ? { tokenUsage } : {}) },
     })
 
     // If the task was suspended for an inter-Kin response, don't nudge — just return

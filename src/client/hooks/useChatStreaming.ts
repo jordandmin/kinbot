@@ -24,6 +24,7 @@ export interface StreamingDoneData {
   sourceName?: string | null
   sourceAvatarUrl?: string | null
   stepLimitReached?: boolean
+  tokenUsage?: ChatMessage['tokenUsage']
 }
 
 interface UseChatStreamingOptions {
@@ -90,6 +91,7 @@ export function useChatStreaming(options?: UseChatStreamingOptions) {
         files: [],
         reactions: [],
         stepLimitReached: false,
+        tokenUsage: null,
         reasoning: null,
         createdAt: new Date().toISOString(),
       })
@@ -136,6 +138,7 @@ export function useChatStreaming(options?: UseChatStreamingOptions) {
         files: [],
         reactions: [],
         stepLimitReached: false,
+        tokenUsage: null,
         reasoning: null,
         createdAt: new Date().toISOString(),
       })
@@ -201,6 +204,7 @@ export function useChatStreaming(options?: UseChatStreamingOptions) {
         files: [],
         reactions: [],
         stepLimitReached: (data?.stepLimitReached as boolean) ?? false,
+        tokenUsage: data?.tokenUsage ?? null,
         reasoning: streamingReasoningRef.current ? [{ offset: 0, text: streamingReasoningRef.current }] : null,
         createdAt: new Date().toISOString(),
       }

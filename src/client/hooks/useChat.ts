@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { api } from '@/client/lib/api'
 import { useSSE } from '@/client/hooks/useSSE'
 import { useChatStreaming } from '@/client/hooks/useChatStreaming'
-import type { ToolCallEntry, TaskStatus, MessageFile } from '@/shared/types'
+import type { ToolCallEntry, TaskStatus, MessageFile, MessageTokenUsage } from '@/shared/types'
 
 export interface MessageReaction {
   id: string
@@ -28,6 +28,7 @@ export interface ChatMessage {
   memoriesExtracted: number | null
   compactingError: string | null
   stepLimitReached: boolean
+  tokenUsage: MessageTokenUsage | null
   reasoning: Array<{ offset: number; text: string }> | null
   files: MessageFile[]
   reactions: MessageReaction[]
@@ -291,6 +292,7 @@ export function useChat(kinId: string | null) {
         sourceName: (data.sourceName as string) ?? undefined,
         sourceAvatarUrl: (data.sourceAvatarUrl as string) ?? undefined,
         stepLimitReached: (data.stepLimitReached as boolean) ?? undefined,
+        tokenUsage: (data.tokenUsage as ChatMessage['tokenUsage']) ?? undefined,
       })
 
       if (promoted) {
@@ -337,6 +339,7 @@ export function useChat(kinId: string | null) {
         files: [],
         reactions: [],
           stepLimitReached: false,
+        tokenUsage: null,
         reasoning: null,
         createdAt: new Date(data.createdAt as number).toISOString(),
       }
@@ -509,6 +512,7 @@ export function useChat(kinId: string | null) {
         files: optimisticFiles ?? [],
         reactions: [],
           stepLimitReached: false,
+        tokenUsage: null,
         reasoning: null,
         createdAt: new Date().toISOString(),
       }

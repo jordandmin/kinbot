@@ -125,6 +125,7 @@ export function QuickSessionHistory({ kinId, kinName, kinAvatarUrl, onBack }: Qu
                       avatarUrl={isFromUser ? user?.avatarUrl : kinAvatarUrl}
                       senderName={isFromUser ? (user?.pseudonym ?? user?.firstName) : kinName}
                       timestamp={msg.createdAt}
+                      tokenUsage={msg.tokenUsage}
                     />
                   )
                 })}

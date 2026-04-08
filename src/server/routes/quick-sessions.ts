@@ -225,6 +225,7 @@ sessionRoutes.get('/:id', async (c) => {
         resolvedTaskId: null,
         injectedMemories: meta?.injectedMemories ?? null,
         stepLimitReached: meta?.stepLimitReached ?? false,
+        tokenUsage: meta?.tokenUsage ?? null,
         reasoning,
         files: (fileMap.get(m.id) ?? []).map(serializeFile),
         createdAt: m.createdAt,

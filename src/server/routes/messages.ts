@@ -160,6 +160,7 @@ messageRoutes.get('/', async (c) => {
         memoriesExtracted: meta?.memoriesExtracted ?? null,
         compactingError: meta?.error ?? null,
         stepLimitReached: meta?.stepLimitReached ?? false,
+        tokenUsage: meta?.tokenUsage ?? null,
         reasoning,
         files: (fileMap.get(m.id) ?? []).map(serializeFile),
         reactions: reactionMap.get(m.id) ?? [],

@@ -59,7 +59,9 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
       if (data.kinId !== kinId) return
       if (data.sessionId !== sessionId) return
 
-      const promoted = handleDone()
+      const promoted = handleDone({
+        tokenUsage: (data.tokenUsage as ChatMessage['tokenUsage']) ?? undefined,
+      })
 
       if (promoted) {
         setMessages((prev) => [...prev, promoted])
@@ -92,6 +94,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
         files: [],
           reactions: [],
           stepLimitReached: false,
+        tokenUsage: null,
         reasoning: null,
         createdAt: new Date(data.createdAt as number).toISOString(),
       }
@@ -124,6 +127,7 @@ export function useQuickChat(sessionId: string | null, kinId: string | null) {
         files: optimisticFiles ?? [],
         reactions: [],
           stepLimitReached: false,
+        tokenUsage: null,
         reasoning: null,
         createdAt: new Date().toISOString(),
       }

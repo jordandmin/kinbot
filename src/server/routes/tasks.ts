@@ -126,7 +126,9 @@ taskRoutes.get('/:id', async (c) => {
     },
     messages: taskMessages.map((m) => {
       let toolCalls: unknown = null
+      let meta: Record<string, unknown> | null = null
       try { toolCalls = m.toolCalls ? JSON.parse(m.toolCalls) : null } catch { /* corrupted */ }
+      try { meta = m.metadata ? JSON.parse(m.metadata as string) : null } catch { /* corrupted */ }
       return {
         id: m.id,
         role: m.role,
@@ -135,6 +137,7 @@ taskRoutes.get('/:id', async (c) => {
         sourceId: m.sourceId,
         isRedacted: m.isRedacted,
         toolCalls,
+        tokenUsage: meta?.tokenUsage ?? null,
         createdAt: m.createdAt,
       }
     }),

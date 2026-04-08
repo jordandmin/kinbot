@@ -42,7 +42,7 @@ import { parseMentions, notifyMentionedUsers } from '@/server/services/mentions'
 import { getGlobalPrompt, getHubKinId, getSetting, setSetting } from '@/server/services/app-settings'
 import { wrapToolsWithSpill } from '@/server/services/tool-output-spill'
 import { executeToolBatch } from '@/server/services/tool-executor'
-import { recordUsage } from '@/server/services/token-usage'
+import { recordUsage, aggregateStepUsage } from '@/server/services/token-usage'
 import { channelAdapters } from '@/server/channels/index'
 import { getModelContextWindow } from '@/shared/model-context-windows'
 
@@ -1180,37 +1180,27 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
 
     activeAbortControllers.delete(kinId)
 
-    // Fire-and-forget: record token usage for this turn
-    if (stepResults.length > 0) {
-      Promise.allSettled(stepResults.map(r => Promise.resolve(r.usage))).then(settled => {
-        const turn = { inputTokens: 0, outputTokens: 0, totalTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0 }
-        for (const s of settled) {
-          if (s.status === 'fulfilled' && s.value) {
-            turn.inputTokens += s.value.inputTokens ?? 0
-            turn.outputTokens += s.value.outputTokens ?? 0
-            turn.totalTokens += s.value.totalTokens ?? 0
-            turn.cacheReadTokens += s.value.inputTokenDetails?.cacheReadTokens ?? 0
-            turn.cacheWriteTokens += s.value.inputTokenDetails?.cacheWriteTokens ?? 0
-            turn.reasoningTokens += s.value.outputTokenDetails?.reasoningTokens ?? 0
-          }
-        }
-        recordUsage({
-          callSite: 'chat',
-          callType: 'stream-text',
-          providerType: guessProviderType(kin.model),
-          providerId: kin.providerId,
-          modelId: kin.model,
-          kinId,
-          usage: {
-            inputTokens: turn.inputTokens,
-            outputTokens: turn.outputTokens,
-            totalTokens: turn.totalTokens,
-            inputTokenDetails: { cacheReadTokens: turn.cacheReadTokens, cacheWriteTokens: turn.cacheWriteTokens },
-            outputTokenDetails: { reasoningTokens: turn.reasoningTokens },
-          },
-          stepCount: stepResults.length,
-        })
-      }).catch(() => {})
+    // Aggregate token usage (awaited so we can persist in metadata + SSE)
+    const tokenUsage = await aggregateStepUsage(stepResults)
+
+    // Fire-and-forget: record to llm_usage table for analytics
+    if (tokenUsage) {
+      recordUsage({
+        callSite: 'chat',
+        callType: 'stream-text',
+        providerType: guessProviderType(kin.model),
+        providerId: kin.providerId,
+        modelId: kin.model,
+        kinId,
+        usage: {
+          inputTokens: tokenUsage.inputTokens,
+          outputTokens: tokenUsage.outputTokens,
+          totalTokens: tokenUsage.totalTokens,
+          inputTokenDetails: { cacheReadTokens: tokenUsage.cacheReadTokens ?? 0, cacheWriteTokens: tokenUsage.cacheWriteTokens ?? 0 },
+          outputTokenDetails: { reasoningTokens: tokenUsage.reasoningTokens ?? 0 },
+        },
+        stepCount: stepResults.length,
+      })
     }
 
     log.info({ kinId, messageId: assistantMessageId, contentLength: fullContent.length, toolCalls: toolCallsLog.length, wasAborted }, 'LLM turn completed')
@@ -1255,6 +1245,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
             meta.maxSteps = config.tools.maxSteps
             meta.toolCallCount = toolCallsLog.length
           }
+          if (tokenUsage) meta.tokenUsage = tokenUsage
           return Object.keys(meta).length > 0 ? JSON.stringify(meta) : null
         })(),
         createdAt: new Date(),
@@ -1274,6 +1265,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
         sourceName: kin.name,
         sourceAvatarUrl: kin.avatarPath ? `/api/uploads/kins/${kin.id}/avatar.${kin.avatarPath.split('.').pop()}` : null,
         ...(stepLimitReached ? { stepLimitReached: true } : {}),
+        ...(tokenUsage ? { tokenUsage } : {}),
       },
     })
 
@@ -1765,38 +1757,28 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
 
     quickAbortControllers.delete(sessionId)
 
-    // Fire-and-forget: record token usage for this quick session turn
-    if (stepResults.length > 0) {
-      Promise.allSettled(stepResults.map(r => Promise.resolve(r.usage))).then(settled => {
-        const turn = { inputTokens: 0, outputTokens: 0, totalTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 0 }
-        for (const s of settled) {
-          if (s.status === 'fulfilled' && s.value) {
-            turn.inputTokens += s.value.inputTokens ?? 0
-            turn.outputTokens += s.value.outputTokens ?? 0
-            turn.totalTokens += s.value.totalTokens ?? 0
-            turn.cacheReadTokens += s.value.inputTokenDetails?.cacheReadTokens ?? 0
-            turn.cacheWriteTokens += s.value.inputTokenDetails?.cacheWriteTokens ?? 0
-            turn.reasoningTokens += s.value.outputTokenDetails?.reasoningTokens ?? 0
-          }
-        }
-        recordUsage({
-          callSite: 'quick-session',
-          callType: 'stream-text',
-          providerType: guessProviderType(kin.model),
-          providerId: kin.providerId,
-          modelId: kin.model,
-          kinId,
-          sessionId,
-          usage: {
-            inputTokens: turn.inputTokens,
-            outputTokens: turn.outputTokens,
-            totalTokens: turn.totalTokens,
-            inputTokenDetails: { cacheReadTokens: turn.cacheReadTokens, cacheWriteTokens: turn.cacheWriteTokens },
-            outputTokenDetails: { reasoningTokens: turn.reasoningTokens },
-          },
-          stepCount: stepResults.length,
-        })
-      }).catch(() => {})
+    // Aggregate token usage (awaited so we can persist in metadata + SSE)
+    const tokenUsage = await aggregateStepUsage(stepResults)
+
+    // Fire-and-forget: record to llm_usage table for analytics
+    if (tokenUsage) {
+      recordUsage({
+        callSite: 'quick-session',
+        callType: 'stream-text',
+        providerType: guessProviderType(kin.model),
+        providerId: kin.providerId,
+        modelId: kin.model,
+        kinId,
+        sessionId,
+        usage: {
+          inputTokens: tokenUsage.inputTokens,
+          outputTokens: tokenUsage.outputTokens,
+          totalTokens: tokenUsage.totalTokens,
+          inputTokenDetails: { cacheReadTokens: tokenUsage.cacheReadTokens ?? 0, cacheWriteTokens: tokenUsage.cacheWriteTokens ?? 0 },
+          outputTokenDetails: { reasoningTokens: tokenUsage.reasoningTokens ?? 0 },
+        },
+        stepCount: stepResults.length,
+      })
     }
 
     // Detect truncated turns (same as main path)
@@ -1829,6 +1811,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
             meta.maxSteps = config.tools.maxSteps
             meta.toolCallCount = toolCallsLog.length
           }
+          if (tokenUsage) meta.tokenUsage = tokenUsage
           return Object.keys(meta).length > 0 ? JSON.stringify(meta) : null
         })(),
         createdAt: new Date(),
@@ -1839,7 +1822,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     sseManager.sendToKin(kinId, {
       type: 'chat:done',
       kinId,
-      data: { messageId: assistantMessageId, content: fullContent, sessionId },
+      data: { messageId: assistantMessageId, content: fullContent, sessionId, ...(tokenUsage ? { tokenUsage } : {}) },
     })
 
     // No compacting, no memory extraction for quick sessions
