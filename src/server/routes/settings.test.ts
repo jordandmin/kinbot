@@ -136,7 +136,7 @@ describe('settings routes', () => {
   // ─── Admin Guard ────────────────────────────────────────────────────────
 
   describe('admin guard', () => {
-    it('rejects non-admin users with 403', async () => {
+    itMocked('rejects non-admin users with 403', async () => {
       const app = createApp('user')
       const res = await app.request('/api/settings/global-prompt')
       expect(res.status).toBe(403)
@@ -144,7 +144,7 @@ describe('settings routes', () => {
       expect(body.error.code).toBe('FORBIDDEN')
     })
 
-    it('rejects users with no profile (null) with 403', async () => {
+    itMocked('rejects users with no profile (null) with 403', async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const app = new Hono<{ Variables: any }>()
       app.use('*', async (c, next) => {
@@ -158,7 +158,7 @@ describe('settings routes', () => {
       expect(res.status).toBe(403)
     })
 
-    it('allows admin users', async () => {
+    itMocked('allows admin users', async () => {
       const app = createApp('admin')
       const res = await app.request('/api/settings/global-prompt')
       expect(res.status).toBe(200)
@@ -168,7 +168,7 @@ describe('settings routes', () => {
   // ─── Global Prompt ──────────────────────────────────────────────────────
 
   describe('GET /global-prompt', () => {
-    it('returns empty string when no prompt is set', async () => {
+    itMocked('returns empty string when no prompt is set', async () => {
       const app = createApp()
       mockGetGlobalPrompt.mockImplementation(() => Promise.resolve(null))
 
@@ -178,7 +178,7 @@ describe('settings routes', () => {
       expect(body.globalPrompt).toBe('')
     })
 
-    it('returns the current global prompt', async () => {
+    itMocked('returns the current global prompt', async () => {
       const app = createApp()
       mockGetGlobalPrompt.mockImplementation(() => Promise.resolve('Be helpful'))
 
@@ -190,7 +190,7 @@ describe('settings routes', () => {
   })
 
   describe('PUT /global-prompt', () => {
-    it('sets a new global prompt', async () => {
+    itMocked('sets a new global prompt', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/global-prompt', json({ globalPrompt: 'Be nice' }))
       expect(res.status).toBe(200)
@@ -199,14 +199,14 @@ describe('settings routes', () => {
       expect(body.globalPrompt).toBe('Be nice')
     })
 
-    it('trims whitespace from prompt', async () => {
+    itMocked('trims whitespace from prompt', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/global-prompt', json({ globalPrompt: '  Hello world  ' }))
       expect(res.status).toBe(200)
       expect(mockSetGlobalPrompt).toHaveBeenCalledWith('Hello world')
     })
 
-    it('deletes prompt when set to empty string', async () => {
+    itMocked('deletes prompt when set to empty string', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/global-prompt', json({ globalPrompt: '' }))
       expect(res.status).toBe(200)
@@ -214,14 +214,14 @@ describe('settings routes', () => {
       expect(mockSetGlobalPrompt).not.toHaveBeenCalled()
     })
 
-    it('deletes prompt when set to whitespace only', async () => {
+    itMocked('deletes prompt when set to whitespace only', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/global-prompt', json({ globalPrompt: '   ' }))
       expect(res.status).toBe(200)
       expect(mockDeleteSetting).toHaveBeenCalledWith('global_prompt')
     })
 
-    it('returns 400 for non-string globalPrompt', async () => {
+    itMocked('returns 400 for non-string globalPrompt', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/global-prompt', json({ globalPrompt: 42 }))
       expect(res.status).toBe(400)
@@ -233,7 +233,7 @@ describe('settings routes', () => {
   // ─── Models ─────────────────────────────────────────────────────────────
 
   describe('GET /models', () => {
-    it('returns both model settings', async () => {
+    itMocked('returns both model settings', async () => {
       const app = createApp()
       mockGetExtractionModel.mockImplementation(() => Promise.resolve('gpt-4'))
       mockGetEmbeddingModel.mockImplementation(() => Promise.resolve('text-embedding-3-small'))
@@ -245,7 +245,7 @@ describe('settings routes', () => {
       expect(body.embeddingModel).toBe('text-embedding-3-small')
     })
 
-    it('returns null when models are not configured', async () => {
+    itMocked('returns null when models are not configured', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/models')
       expect(res.status).toBe(200)
@@ -256,7 +256,7 @@ describe('settings routes', () => {
   })
 
   describe('PUT /extraction-model', () => {
-    it('sets extraction model', async () => {
+    itMocked('sets extraction model', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/extraction-model', json({ model: 'gpt-4o-mini' }))
       expect(res.status).toBe(200)
@@ -265,14 +265,14 @@ describe('settings routes', () => {
       expect(body.extractionModel).toBe('gpt-4o-mini')
     })
 
-    it('trims model name', async () => {
+    itMocked('trims model name', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/extraction-model', json({ model: '  gpt-4  ' }))
       expect(res.status).toBe(200)
       expect(mockSetExtractionModel).toHaveBeenCalledWith('gpt-4')
     })
 
-    it('clears extraction model when set to null', async () => {
+    itMocked('clears extraction model when set to null', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/extraction-model', json({ model: null }))
       expect(res.status).toBe(200)
@@ -281,14 +281,14 @@ describe('settings routes', () => {
       expect(body.extractionModel).toBeNull()
     })
 
-    it('clears extraction model when set to empty string', async () => {
+    itMocked('clears extraction model when set to empty string', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/extraction-model', json({ model: '' }))
       expect(res.status).toBe(200)
       expect(mockDeleteSetting).toHaveBeenCalledWith('extraction_model')
     })
 
-    it('returns 400 for non-string non-null model', async () => {
+    itMocked('returns 400 for non-string non-null model', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/extraction-model', json({ model: 123 }))
       expect(res.status).toBe(400)
@@ -298,32 +298,32 @@ describe('settings routes', () => {
   })
 
   describe('PUT /embedding-model', () => {
-    it('sets embedding model', async () => {
+    itMocked('sets embedding model', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/embedding-model', json({ model: 'text-embedding-ada-002' }))
       expect(res.status).toBe(200)
       expect(mockSetEmbeddingModel).toHaveBeenCalledWith('text-embedding-ada-002')
     })
 
-    it('returns 400 for null model', async () => {
+    itMocked('returns 400 for null model', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/embedding-model', json({ model: null }))
       expect(res.status).toBe(400)
     })
 
-    it('returns 400 for empty string', async () => {
+    itMocked('returns 400 for empty string', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/embedding-model', json({ model: '' }))
       expect(res.status).toBe(400)
     })
 
-    it('returns 400 for whitespace-only string', async () => {
+    itMocked('returns 400 for whitespace-only string', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/embedding-model', json({ model: '   ' }))
       expect(res.status).toBe(400)
     })
 
-    it('returns 400 for non-string', async () => {
+    itMocked('returns 400 for non-string', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/embedding-model', json({ model: true }))
       expect(res.status).toBe(400)
@@ -333,7 +333,7 @@ describe('settings routes', () => {
   // ─── Search Provider ────────────────────────────────────────────────────
 
   describe('GET /search-provider', () => {
-    it('returns null when not configured', async () => {
+    itMocked('returns null when not configured', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/search-provider')
       expect(res.status).toBe(200)
@@ -341,7 +341,7 @@ describe('settings routes', () => {
       expect(body.searchProviderId).toBeNull()
     })
 
-    it('returns configured provider', async () => {
+    itMocked('returns configured provider', async () => {
       const app = createApp()
       mockGetDefaultSearchProvider.mockImplementation(() => Promise.resolve('provider-123'))
 
@@ -353,7 +353,7 @@ describe('settings routes', () => {
   })
 
   describe('PUT /search-provider', () => {
-    it('sets search provider', async () => {
+    itMocked('sets search provider', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/search-provider', json({ searchProviderId: 'p-abc' }))
       expect(res.status).toBe(200)
@@ -362,7 +362,7 @@ describe('settings routes', () => {
       expect(body.searchProviderId).toBe('p-abc')
     })
 
-    it('clears search provider when set to null', async () => {
+    itMocked('clears search provider when set to null', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/search-provider', json({ searchProviderId: null }))
       expect(res.status).toBe(200)
@@ -371,7 +371,7 @@ describe('settings routes', () => {
       expect(body.searchProviderId).toBeNull()
     })
 
-    it('returns 400 for non-string non-null value', async () => {
+    itMocked('returns 400 for non-string non-null value', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/search-provider', json({ searchProviderId: 42 }))
       expect(res.status).toBe(400)
@@ -383,7 +383,7 @@ describe('settings routes', () => {
   // ─── Hub ────────────────────────────────────────────────────────────────
 
   describe('GET /hub', () => {
-    it('returns null hub when not configured', async () => {
+    itMocked('returns null hub when not configured', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/hub')
       expect(res.status).toBe(200)
@@ -393,7 +393,7 @@ describe('settings routes', () => {
       expect(body.hubKinSlug).toBeNull()
     })
 
-    it('returns hub kin info when configured and kin exists', async () => {
+    itMocked('returns hub kin info when configured and kin exists', async () => {
       const app = createApp()
       mockGetHubKinId.mockImplementation(() => Promise.resolve('kin-123'))
 
@@ -413,7 +413,7 @@ describe('settings routes', () => {
       expect(body.hubKinSlug).toBe('hub-bot')
     })
 
-    it('clears hub setting when kin no longer exists', async () => {
+    itMocked('clears hub setting when kin no longer exists', async () => {
       const app = createApp()
       mockGetHubKinId.mockImplementation(() => Promise.resolve('kin-deleted'))
 
@@ -431,7 +431,7 @@ describe('settings routes', () => {
   })
 
   describe('PUT /hub', () => {
-    it('sets hub kin', async () => {
+    itMocked('sets hub kin', async () => {
       const app = createApp()
 
       let callCount = 0
@@ -449,7 +449,7 @@ describe('settings routes', () => {
       expect(body.hubKinId).toBe('kin-abc')
     })
 
-    it('clears hub kin when set to null', async () => {
+    itMocked('clears hub kin when set to null', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/hub', json({ kinId: null }))
       expect(res.status).toBe(200)
@@ -457,7 +457,7 @@ describe('settings routes', () => {
       expect(mockSseBroadcast).toHaveBeenCalled()
     })
 
-    it('returns 404 when kin not found', async () => {
+    itMocked('returns 404 when kin not found', async () => {
       const app = createApp()
 
       let callCount = 0
@@ -473,7 +473,7 @@ describe('settings routes', () => {
       expect(body.error.code).toBe('KIN_NOT_FOUND')
     })
 
-    it('returns 400 for non-string non-null kinId', async () => {
+    itMocked('returns 400 for non-string non-null kinId', async () => {
       const app = createApp()
       const res = await app.request('/api/settings/hub', json({ kinId: 123 }))
       expect(res.status).toBe(400)
@@ -481,7 +481,7 @@ describe('settings routes', () => {
       expect(body.error.code).toBe('INVALID_BODY')
     })
 
-    it('broadcasts SSE event on hub change', async () => {
+    itMocked('broadcasts SSE event on hub change', async () => {
       const app = createApp()
       await app.request('/api/settings/hub', json({ kinId: null }))
       expect(mockSseBroadcast).toHaveBeenCalledWith({
