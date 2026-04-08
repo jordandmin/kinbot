@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avat
 import { AlertCircle, Camera, Loader2, ArrowLeft } from 'lucide-react'
 import { LanguageSelector } from '@/client/components/common/LanguageSelector'
 import { getErrorMessage } from '@/client/lib/api'
+import { getUserInitials } from '@/client/lib/utils'
 
 export function InvitePage() {
   const { t } = useTranslation()
@@ -143,7 +144,7 @@ export function InvitePage() {
     }
   }
 
-  const initials = `${(firstName ?? '?').charAt(0)}${(lastName ?? '?').charAt(0)}`.toUpperCase()
+  const initials = getUserInitials({ pseudonym, firstName, lastName })
 
   // Loading state
   if (validating) {

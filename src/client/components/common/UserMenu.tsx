@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
 import { Button } from '@/client/components/ui/button'
 import {
   DropdownMenu,
@@ -10,11 +9,13 @@ import {
   DropdownMenuTrigger,
 } from '@/client/components/ui/dropdown-menu'
 import { User, Settings, LogOut } from 'lucide-react'
+import { UserAvatar } from '@/client/components/common/UserAvatar'
 
 interface UserMenuProps {
   user: {
     firstName: string
     lastName: string
+    pseudonym: string
     email: string
     avatarUrl: string | null
   }
@@ -26,19 +27,11 @@ interface UserMenuProps {
 export function UserMenu({ user, onLogout, onOpenSettings, onOpenAccount }: UserMenuProps) {
   const { t } = useTranslation()
 
-  const initials = `${(user.firstName ?? '?').charAt(0)}${(user.lastName ?? '?').charAt(0)}`.toUpperCase()
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon-sm" className="rounded-full">
-          <Avatar className="size-7">
-            {user.avatarUrl ? (
-              <AvatarImage src={user.avatarUrl} alt={user.firstName} />
-            ) : (
-              <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-            )}
-          </Avatar>
+          <UserAvatar user={user} className="size-7" fallbackClassName="text-[10px]" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

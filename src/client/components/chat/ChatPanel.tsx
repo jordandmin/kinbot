@@ -35,7 +35,7 @@ import { TimeGapIndicator } from '@/client/components/chat/TimeGapIndicator'
 import { SearchHighlightProvider } from '@/client/components/chat/SearchHighlightContext'
 import { MentionLookupProvider } from '@/client/components/chat/MentionContext'
 import { useMentionables } from '@/client/hooks/useMentionables'
-import { cn } from '@/client/lib/utils'
+import { cn, getUserInitials } from '@/client/lib/utils'
 import { useMiniAppPanel } from '@/client/contexts/MiniAppContext'
 import { ArrowDown, ArrowUp, Upload, Pin, PinOff } from 'lucide-react'
 import { toast } from 'sonner'
@@ -73,6 +73,7 @@ interface ChatPanelProps {
 export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState, onModelChange, onEditKin, onOpenSettings }: ChatPanelProps) {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const userInitials = user ? getUserInitials(user) : 'U'
   const { messages, streamingMessage, streamingReasoning, liveTasks, liveCompacting, isLoading, isStreaming, hasMore, isLoadingMore, tokenStalled, sendMessage, stopStreaming, clearConversation, fetchOlderMessages } = useChat(kin.id)
   const { toolCalls, toolCallCount, toolCallsByMessage } = useToolCalls(kin.id, messages)
   const { prompts: pendingPrompts, respond: respondToPrompt, isResponding } = useHumanPrompts(kin.id)
@@ -885,6 +886,7 @@ export function ChatPanel({ kin, llmModels, modelUnavailable = false, queueState
                             ? msg.sourceName ?? kin.name
                             : kin.name
                       }
+                      userInitials={isFromUser ? userInitials : undefined}
                       timestamp={msg.createdAt}
                       toolCalls={toolCallsByMessage.get(msg.id)}
                       injectedMemories={msg.injectedMemories}

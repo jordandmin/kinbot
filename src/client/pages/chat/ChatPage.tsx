@@ -239,6 +239,7 @@ export function ChatPage() {
                     user={{
                       firstName: user.firstName,
                       lastName: user.lastName,
+                      pseudonym: user.pseudonym,
                       email: user.email,
                       avatarUrl: user.avatarUrl,
                     }}

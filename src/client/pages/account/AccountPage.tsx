@@ -10,6 +10,7 @@ import { Badge } from '@/client/components/ui/badge'
 import { Slider } from '@/client/components/ui/slider'
 import { LanguageSelector } from '@/client/components/common/LanguageSelector'
 import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avatar'
+import { getUserInitials } from '@/client/lib/utils'
 import { Separator } from '@/client/components/ui/separator'
 import {
   Dialog,
@@ -192,7 +193,7 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
     }
   }
 
-  const initials = `${(firstName ?? '?').charAt(0)}${(lastName ?? '?').charAt(0)}`.toUpperCase()
+  const initials = getUserInitials({ pseudonym, firstName, lastName })
   const displayName = [firstName, lastName].filter(Boolean).join(' ')
 
   return (

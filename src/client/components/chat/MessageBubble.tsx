@@ -38,6 +38,8 @@ interface MessageBubbleProps {
   sourceType: string
   avatarUrl?: string | null
   senderName?: string
+  /** Pre-computed initials for user messages (via getUserInitials). */
+  userInitials?: string
   timestamp?: string
   toolCalls?: ToolCallViewItem[]
   injectedMemories?: InjectedMemory[] | null
@@ -677,6 +679,7 @@ export const MessageBubble = memo(function MessageBubble({
   sourceType,
   avatarUrl,
   senderName,
+  userInitials,
   timestamp,
   toolCalls,
   injectedMemories,
@@ -770,7 +773,7 @@ export const MessageBubble = memo(function MessageBubble({
     </div>
   ) : null
 
-  const initials = senderName?.slice(0, 2).toUpperCase() ?? (isUser ? 'U' : 'K')
+  const initials = (isUser && userInitials) ? userInitials : (senderName?.slice(0, 2).toUpperCase() ?? 'K')
 
   const bubbleClass = isFromOtherKin
     ? 'bg-accent text-accent-foreground border border-border'

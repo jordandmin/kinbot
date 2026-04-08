@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/client/components/ui/avat
 import { AlertCircle, Camera, Loader2 } from 'lucide-react'
 import { useAuth } from '@/client/hooks/useAuth'
 import { api, getErrorMessage } from '@/client/lib/api'
+import { getUserInitials } from '@/client/lib/utils'
 
 interface StepIdentityProps {
   onComplete: () => void
@@ -105,7 +106,7 @@ export function StepIdentity({ onComplete }: StepIdentityProps) {
     }
   }
 
-  const initials = `${(firstName ?? '?').charAt(0)}${(lastName ?? '?').charAt(0)}`.toUpperCase()
+  const initials = getUserInitials({ pseudonym, firstName, lastName })
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
