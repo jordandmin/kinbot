@@ -554,7 +554,7 @@
     "contextNoData": "L'utilisation du contexte apparaîtra après le premier message traité",
     "stepLimitReached": "Réponse tronquée : limite d'étapes atteinte. Demandez-moi de continuer.",
     "tokenUsage": {
-      "label": "{{count}} tokens",
+      "label": "{{total}} tokens",
       "input": "Entrée",
       "output": "Sortie",
       "cacheRead": "Cache lu",

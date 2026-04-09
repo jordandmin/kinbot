@@ -182,6 +182,7 @@ export function useTaskDetail(taskId: string | null) {
       sourceId: null,
       isRedacted: false,
       toolCalls: null,
+      tokenUsage: null,
       createdAt: existing?.createdAt ?? Date.now(),
     })
   }
@@ -272,6 +273,7 @@ export function useTaskDetail(taskId: string | null) {
             sourceId: null,
             isRedacted: false,
             toolCalls: null,
+            tokenUsage: null,
             createdAt: Date.now(),
           },
         ]
@@ -370,6 +372,7 @@ export function useTaskDetail(taskId: string | null) {
         sourceId: (data.sourceId as string) ?? null,
         isRedacted: false,
         toolCalls: null,
+        tokenUsage: null,
         createdAt: data.createdAt as number,
       }
 

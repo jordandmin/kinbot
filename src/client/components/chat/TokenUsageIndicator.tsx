@@ -48,7 +48,7 @@ export const TokenUsageIndicator = memo(function TokenUsageIndicator({ tokenUsag
         <div className="flex flex-col gap-2 text-xs">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
             <Zap className="size-3 text-primary" />
-            {t('chat.tokenUsage.label', { count: formatTokenCount(tokenUsage.totalTokens) })}
+            {t('chat.tokenUsage.label', { total: formatTokenCount(tokenUsage.totalTokens) })}
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground tabular-nums">
             <span>{t('chat.tokenUsage.input')}</span>

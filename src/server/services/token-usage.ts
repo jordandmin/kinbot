@@ -14,7 +14,7 @@ const log = createLogger('token-usage')
  * Returns null on timeout or if no usage data is available.
  */
 export async function aggregateStepUsage(
-  stepResults: Array<{ usage: Promise<Record<string, unknown>> }>,
+  stepResults: Array<{ usage: PromiseLike<Record<string, unknown>> }>,
   timeoutMs = 5000,
 ): Promise<MessageTokenUsage | null> {
   if (stepResults.length === 0) return null

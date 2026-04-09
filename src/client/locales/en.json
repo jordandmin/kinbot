@@ -554,7 +554,7 @@
     "contextNoData": "Context usage will appear after the first message is processed",
     "stepLimitReached": "Response truncated: tool step limit reached. Ask me to continue.",
     "tokenUsage": {
-      "label": "{{count}} tokens",
+      "label": "{{total}} tokens",
       "input": "Input",
       "output": "Output",
       "cacheRead": "Cache read",
