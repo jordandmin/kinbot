@@ -49,34 +49,139 @@ import { getModelContextWindow } from '@/shared/model-context-windows'
 const log = createLogger('kin-engine')
 
 /**
- * Maximum number of tools to send to the LLM in a single request.
- * OpenAI enforces a hard limit of 128; other providers may vary.
+ * Default maximum number of tools to send to the LLM in a single request.
+ * Used as a safe fallback when the provider type is unknown.
+ * OpenAI enforces a hard limit of 128 tools; assume that for unknown providers.
  */
-const MAX_LLM_TOOLS = 128
+const DEFAULT_MAX_LLM_TOOLS = 128
 
 /**
- * Cap the number of tools to MAX_LLM_TOOLS. Native tools (which appear first
- * in insertion order) are kept preferentially; MCP/custom tools are truncated
- * last. Logs a warning when truncation occurs.
+ * Core file tools that must always be preserved when truncation is needed.
+ * These are the primary interface for Kins to read/write/search files in their
+ * workspace; silently dropping them breaks most workflows.
+ */
+const PROTECTED_CORE_TOOLS = new Set<string>([
+  'read_file',
+  'write_file',
+  'edit_file',
+  'multi_edit',
+  'list_directory',
+  'grep',
+])
+
+/**
+ * Tool key prefixes that should be preserved when truncation is needed.
+ * - `mcp_`    : tools registered by MCP servers (see resolveMCPTools)
+ * - `custom_` : user-defined custom tools (see resolveCustomTools)
+ */
+const PROTECTED_PREFIXES = ['mcp_', 'custom_'] as const
+
+function isProtectedToolName(name: string): boolean {
+  if (PROTECTED_CORE_TOOLS.has(name)) return true
+  for (const prefix of PROTECTED_PREFIXES) {
+    if (name.startsWith(prefix)) return true
+  }
+  return false
+}
+
+/**
+ * Return the max number of tools the given provider type accepts in a single
+ * LLM call.
+ *
+ * - OpenAI / openai-codex: hard limit of 128 tools (rejected above that).
+ * - Anthropic: no documented hard limit — supports hundreds of tools in
+ *   practice. We use a high soft cap (512) purely as a safety net, not as
+ *   a real provider restriction.
+ * - Gemini: no documented hard limit — we use the same high soft cap (512).
+ * - DeepSeek: exposes an OpenAI-compatible API, so 128 is the safe bound.
+ * - Unknown / null: fall back to the OpenAI-compatible 128 limit.
+ */
+function getMaxToolsForProvider(providerType: string | null): number {
+  switch (providerType) {
+    case 'openai':
+    case 'openai-codex':
+    case 'deepseek':
+      return 128
+    case 'anthropic':
+      // No documented hard limit; high soft cap only as a safety net.
+      return 512
+    case 'gemini':
+      return 512
+    default:
+      return DEFAULT_MAX_LLM_TOOLS
+  }
+}
+
+/**
+ * Cap the number of tools to the provider-specific limit. When truncation IS
+ * required, protected tools (core file tools, MCP tools, custom tools) are
+ * preserved first; remaining slots are filled with the other tools in
+ * insertion order. Logs a warning when truncation occurs, including the
+ * effective cap, the kept list, and the dropped list.
  */
 function capTools(
   tools: Record<string, Tool<any, any>>,
   kinId: string,
+  providerType: string | null,
 ): Record<string, Tool<any, any>> {
+  const cap = getMaxToolsForProvider(providerType)
   const names = Object.keys(tools)
-  if (names.length <= MAX_LLM_TOOLS) return tools
+  if (names.length <= cap) return tools
 
-  const droppedCount = names.length - MAX_LLM_TOOLS
-  const droppedNames = names.slice(MAX_LLM_TOOLS)
-  log.warn(
-    { kinId, total: names.length, max: MAX_LLM_TOOLS, droppedCount, droppedNames },
-    `Tool array exceeds maximum (${names.length}/${MAX_LLM_TOOLS}). Dropping ${droppedCount} tool(s) to comply with LLM provider limit.`,
-  )
+  // Partition into protected and droppable buckets, preserving insertion order
+  const protectedNames: string[] = []
+  const droppableNames: string[] = []
+  for (const name of names) {
+    if (isProtectedToolName(name)) protectedNames.push(name)
+    else droppableNames.push(name)
+  }
 
   const capped: Record<string, Tool<any, any>> = {}
-  for (const name of names.slice(0, MAX_LLM_TOOLS)) {
-    capped[name] = tools[name]!
+
+  if (protectedNames.length > cap) {
+    // Extremely unlikely: protected tools alone exceed the provider cap.
+    // Keep the first `cap` protected tools and log an error with details.
+    const keptProtected = protectedNames.slice(0, cap)
+    const droppedProtected = protectedNames.slice(cap)
+    log.error(
+      {
+        kinId,
+        providerType,
+        total: names.length,
+        cap,
+        protectedCount: protectedNames.length,
+        keptProtected,
+        droppedProtected,
+        droppedOther: droppableNames,
+      },
+      `Protected tool set (${protectedNames.length}) exceeds provider cap (${cap}). Dropping ${droppedProtected.length} protected tool(s) and all ${droppableNames.length} other tool(s).`,
+    )
+    for (const name of keptProtected) capped[name] = tools[name]!
+    return capped
   }
+
+  // Fill with protected first, then remaining droppable tools up to the cap
+  for (const name of protectedNames) capped[name] = tools[name]!
+  const remainingSlots = cap - protectedNames.length
+  const keptDroppable = droppableNames.slice(0, remainingSlots)
+  const droppedNames = droppableNames.slice(remainingSlots)
+  for (const name of keptDroppable) capped[name] = tools[name]!
+
+  log.warn(
+    {
+      kinId,
+      providerType,
+      total: names.length,
+      cap,
+      keptCount: Object.keys(capped).length,
+      droppedCount: droppedNames.length,
+      protectedCount: protectedNames.length,
+      keptNames: Object.keys(capped),
+      droppedNames,
+    },
+    `Tool array exceeds provider cap (${names.length}/${cap} for ${providerType ?? 'unknown'}). Dropping ${droppedNames.length} non-critical tool(s) after protecting core/MCP/custom tools.`,
+  )
+
   return capped
 }
 
@@ -941,7 +1046,7 @@ export async function processNextMessage(kinId: string): Promise<boolean> {
     }
 
     // Wrap tools to spill large results to temp files, then enforce sequential execution
-    const tools = capTools(wrapToolsWithSpill(mergedTools, kin.workspacePath), kinId)
+    const tools = capTools(wrapToolsWithSpill(mergedTools, kin.workspacePath), kinId, providerType)
 
     const hasTools = Object.keys(tools).length > 0
 
@@ -1608,7 +1713,7 @@ export async function processQuickMessage(kinId: string): Promise<boolean> {
     // Apply quick session exclusion list
     for (const name of QUICK_SESSION_EXCLUDED_TOOLS) delete nativeTools[name]
 
-    const tools = capTools(wrapToolsWithSpill({ ...nativeTools }, kin.workspacePath), kinId)
+    const tools = capTools(wrapToolsWithSpill({ ...nativeTools }, kin.workspacePath), kinId, qsProviderType)
     const hasTools = Object.keys(tools).length > 0
 
     // Stream LLM response — custom single-step loop (same pattern as processKinQueue)
