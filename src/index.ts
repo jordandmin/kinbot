@@ -74,7 +74,10 @@ async function main(): Promise<void> {
 
   try {
     await client.login(token);
+    // client.user is guaranteed to be set after a successful login, but the
+    // nullish coalesce is kept as a safety net in case something weird happens.
     logger.info(`KinBot is online and ready. Logged in as ${client.user?.tag ?? 'unknown'}.`);
+    logger.info(`Serving ${client.guilds.cache.size} guild(s).`);
   } catch (error) {
     logger.error('Failed to log in to Discord:', error);
     process.exit(1);
