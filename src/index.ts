@@ -74,7 +74,7 @@ async function main(): Promise<void> {
 
   try {
     await client.login(token);
-    logger.info('KinBot is online and ready.');
+    logger.info(`KinBot is online and ready. Logged in as ${client.user?.tag ?? 'unknown'}.`);
   } catch (error) {
     logger.error('Failed to log in to Discord:', error);
     process.exit(1);
