@@ -78,6 +78,12 @@ async function main(): Promise<void> {
     // nullish coalesce is kept as a safety net in case something weird happens.
     logger.info(`KinBot is online and ready. Logged in as ${client.user?.tag ?? 'unknown'}.`);
     logger.info(`Serving ${client.guilds.cache.size} guild(s).`);
+    // Log the invite link on startup so I don't have to look it up manually.
+    // Requires the APPLICATION_ID env var to be set.
+    const appId = process.env.APPLICATION_ID;
+    if (appId) {
+      logger.info(`Invite URL: https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=8&scope=bot%20applications.commands`);
+    }
   } catch (error) {
     logger.error('Failed to log in to Discord:', error);
     process.exit(1);
