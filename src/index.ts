@@ -82,10 +82,12 @@ async function main(): Promise<void> {
     // Requires the APPLICATION_ID env var to be set.
     const appId = process.env.APPLICATION_ID;
     if (appId) {
-      logger.info(`Invite URL: https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=8&scope=bot%20applications.commands`);
+      // Using permissions=0 instead of permissions=8 (Administrator) — I only
+      // need specific permissions for my personal server, not full admin access.
+      logger.info(`Invite URL: https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=0&scope=bot%20applications.commands`);
     }
   } catch (error) {
-    logger.error('Failed to log in to Discord:', error);
+    logger.error('Failed to log in:', error);
     process.exit(1);
   }
 }
