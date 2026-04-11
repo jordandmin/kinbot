@@ -54,6 +54,8 @@ async function main(): Promise<void> {
     process.exit(0);
   });
 
+  // NOTE: unhandledRejection won't catch errors thrown inside async event handlers
+  // in newer Node versions — keep an eye on this if things go silently wrong.
   process.on('unhandledRejection', (reason: unknown) => {
     logger.error('Unhandled promise rejection:', reason);
   });
