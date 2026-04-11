@@ -35,6 +35,8 @@ async function main(): Promise<void> {
       Partials.User,
       Partials.GuildMember,
     ],
+    // Set a REST request timeout — default is 15s which feels too long locally
+    rest: { timeout: 10_000 },
   });
 
   // Register slash commands and event listeners
