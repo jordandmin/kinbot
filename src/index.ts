@@ -35,9 +35,9 @@ async function main(): Promise<void> {
       Partials.User,
       Partials.GuildMember,
     ],
-    // Bumped timeout from 10s to 20s — my home internet is spotty and 10s
-    // caused occasional false-positive failures during login.
-    rest: { timeout: 20_000 },
+    // Bumped timeout from 10s to 30s — my home internet is spotty and 20s
+    // still caused occasional false-positive failures during login.
+    rest: { timeout: 30_000 },
   });
 
   // Register slash commands and event listeners
