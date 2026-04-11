@@ -61,6 +61,15 @@ async function main(): Promise<void> {
   // in newer Node versions — keep an eye on this if things go silently wrong.
   process.on('unhandledRejection', (reason: unknown) => {
     logger.error('Unhandled promise rejection:', reason);
+    // Don't exit here — a single bad rejection shouldn't take down the whole bot.
+  });
+
+  // Also handle uncaughtException so truly unexpected throws are at least logged
+  // before Node crashes the process.
+  process.on('uncaughtException', (error: Error) => {
+    logger.error('Uncaught exception:', error);
+    client.destroy();
+    process.exit(1);
   });
 
   try {
