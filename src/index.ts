@@ -84,13 +84,13 @@ async function main(): Promise<void> {
     if (appId) {
       // Using permissions=0 instead of permissions=8 (Administrator) — I only
       // need specific permissions for my personal server, not full admin.
-      // Scopes: bot + applications.commands (needed for slash commands).
+      // Scopes: bot + applications.commands (needed for slash commands to work).
       logger.info(
         `Invite link: https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=0&scope=bot%20applications.commands`
       );
     } else {
-      // Remind myself to set APPLICATION_ID if I ever redeploy somewhere new.
-      logger.warn('APPLICATION_ID is not set — skipping invite link generation.');
+      // Remind myself to set this — easy to forget when spinning up a fresh instance.
+      logger.warn('APPLICATION_ID is not set; skipping invite link generation.');
     }
   } catch (error) {
     logger.error('Failed to log in to Discord:', error);
