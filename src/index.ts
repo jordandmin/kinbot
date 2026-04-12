@@ -83,11 +83,17 @@ async function main(): Promise<void> {
     const appId = process.env.APPLICATION_ID;
     if (appId) {
       // Using permissions=0 instead of permissions=8 (Administrator) — I only
-      // need specific permissions for my personal server, not full admin access.
-      logger.info(`Invite URL: https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=0&scope=bot%20applications.commands`);
+      // need specific permissions for my personal server, not full admin.
+      // Scopes: bot + applications.commands (needed for slash commands).
+      logger.info(
+        `Invite link: https://discord.com/api/oauth2/authorize?client_id=${appId}&permissions=0&scope=bot%20applications.commands`
+      );
+    } else {
+      // Remind myself to set APPLICATION_ID if I ever redeploy somewhere new.
+      logger.warn('APPLICATION_ID is not set — skipping invite link generation.');
     }
   } catch (error) {
-    logger.error('Failed to log in:', error);
+    logger.error('Failed to log in to Discord:', error);
     process.exit(1);
   }
 }
