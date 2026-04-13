@@ -20,13 +20,14 @@ const envSchema = z.object({
   BOT_ACTIVITY: z.string().optional(),
   BOT_ACTIVITY_TYPE: z
     .enum(['PLAYING', 'WATCHING', 'LISTENING', 'STREAMING', 'COMPETING'])
-    .default('PLAYING'),
+    .default('WATCHING'),
 
   // Database configuration
   DATABASE_URL: z.string().optional(),
 
   // Logging configuration
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  // Using 'debug' by default locally so I can see what's going on during development
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('debug'),
 
   // Node environment
   NODE_ENV: z
