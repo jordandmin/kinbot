@@ -24,7 +24,7 @@ const LOG_COLORS = {
   info: "green",
   http: "magenta",
   verbose: "cyan",
-  debug: "blue",
+  debug: "white",
   silly: "gray",
 };
 
@@ -54,10 +54,11 @@ const fileFormat = winston.format.combine(
 );
 
 /**
- * Determine the active log level from config or default to 'info'.
+ * Determine the active log level from config or default to 'debug'.
+ * Changed default from 'info' to 'debug' for easier local development.
  */
 const activeLogLevel =
-  (config.LOG_LEVEL as string | undefined) ?? "info";
+  (config.LOG_LEVEL as string | undefined) ?? "debug";
 
 const transports: winston.transport[] = [
   new winston.transports.Console({
